@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pencil, Upload, X } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { UploadFile } from "@/api/integrations";
 import { toast } from "sonner";
 
 export default function EditChildModal({ isOpen, onClose, child, onSubmit }) {
@@ -43,7 +43,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit }) {
 
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await UploadFile({ file });
       setAvatarUrl(file_url);
       setAvatarPreview(URL.createObjectURL(file));
       toast.success('Photo uploaded!');

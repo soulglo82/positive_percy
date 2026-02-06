@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from "@/api/base44Client";
+import React, { useState } from 'react';
+import { Child, Reward } from "@/api/entities";
+import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,30 +12,26 @@ import AddRewardModal from "../components/rewards/AddRewardModal";
 import EditRewardModal from "../components/rewards/EditRewardModal";
 
 export default function Rewards() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showAddReward, setShowAddReward] = useState(false);
   const [showEditReward, setShowEditReward] = useState(false);
   const [selectedReward, setSelectedReward] = useState(null);
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
   const { data: rewards = [] } = useQuery({
     queryKey: ['rewards'],
-    queryFn: () => base44.entities.Reward.list('-created_date'),
+    queryFn: () => Reward.list('-created_date'),
   });
 
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
-    queryFn: () => base44.entities.Child.list(),
+    queryFn: () => Child.list(),
     enabled: !!user,
   });
 
   const createRewardMutation = useMutation({
-    mutationFn: (data) => base44.entities.Reward.create(data),
+    mutationFn: (data) => Reward.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries(['rewards']);
       toast.success("Reward created!");
@@ -42,7 +39,7 @@ export default function Rewards() {
   });
 
   const updateRewardMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Reward.update(id, data),
+    mutationFn: ({ id, data }) => Reward.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['rewards']);
     },

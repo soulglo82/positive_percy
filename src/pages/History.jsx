@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from "@/api/base44Client";
+import React, { useState } from 'react';
+import { Child, Point_Event } from "@/api/entities";
+import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,23 +15,19 @@ import { History as HistoryIcon, Filter } from "lucide-react";
 import PointEventItem from "../components/history/PointEventItem";
 
 export default function History() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [selectedChildId, setSelectedChildId] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
-    queryFn: () => base44.entities.Child.list(),
+    queryFn: () => Child.list(),
     enabled: !!user,
   });
 
   const { data: events = [] } = useQuery({
     queryKey: ['pointEvents'],
-    queryFn: () => base44.entities.Point_Event.list('-created_date', 100),
+    queryFn: () => Point_Event.list('-created_date', 100),
   });
 
   const categories = ["all", ...new Set(events.map(e => e.category))];

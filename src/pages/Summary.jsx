@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from "@/api/base44Client";
+import React from 'react';
+import { Child, Point_Event } from "@/api/entities";
+import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,21 +9,17 @@ import { format, startOfWeek, endOfWeek } from "date-fns";
 import { motion } from "framer-motion";
 
 export default function Summary() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user } = useAuth();
 
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
-    queryFn: () => base44.entities.Child.list(),
+    queryFn: () => Child.list(),
     enabled: !!user,
   });
 
   const { data: allEvents = [] } = useQuery({
     queryKey: ['pointEvents'],
-    queryFn: () => base44.entities.Point_Event.list('-created_date', 200),
+    queryFn: () => Point_Event.list('-created_date', 200),
   });
 
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });

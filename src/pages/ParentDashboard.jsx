@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from "@/api/base44Client";
+import React, { useState } from 'react';
+import { Child, Point_Event, Redemption } from "@/api/entities";
+import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import AddPointsModal from "../components/child/AddPointsModal";
 import RedemptionCard from "../components/redemptions/RedemptionCard";
 
 export default function ParentDashboard() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showAddChild, setShowAddChild] = useState(false);
   const [showEditChild, setShowEditChild] = useState(false);
   const [showAddPoints, setShowAddPoints] = useState(false);
@@ -22,14 +23,10 @@ export default function ParentDashboard() {
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
     queryFn: async () => {
-      const childrenData = await base44.entities.Child.filter({ parent_email: user?.email });
+      const childrenData = await Child.filter({ parent_email: user?.email });
 
       // Check for weekly reset (Monday)
       const today = new Date();
@@ -44,7 +41,7 @@ export default function ParentDashboard() {
         );
 
         if (shouldReset && child.weekly_points > 0) {
-          await base44.entities.Child.update(child.id, {
+          await Child.update(child.id, {
             weekly_points: 0,
             last_reset_date: todayStr,
           });
@@ -60,12 +57,12 @@ export default function ParentDashboard() {
 
   const { data: pendingRedemptions = [] } = useQuery({
     queryKey: ['pendingRedemptions'],
-    queryFn: () => base44.entities.Redemption.filter({ status: 'Pending' }, '-created_date'),
+    queryFn: () => Redemption.filter({ status: 'Pending' }, '-created_date'),
     refetchInterval: 5000,
   });
 
   const createChildMutation = useMutation({
-    mutationFn: (data) => base44.entities.Child.create({
+    mutationFn: (data) => Child.create({
       name: data.name,
       avatar_url: data.avatar_url,
       parent_email: user.email,
@@ -81,14 +78,14 @@ export default function ParentDashboard() {
   });
 
   const updateChildMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Child.update(id, data),
+    mutationFn: ({ id, data }) => Child.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['children']);
     },
   });
 
   const createPointEventMutation = useMutation({
-    mutationFn: (data) => base44.entities.Point_Event.create(data),
+    mutationFn: (data) => Point_Event.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries(['children']);
       toast.success("Points updated!");
@@ -96,7 +93,7 @@ export default function ParentDashboard() {
   });
 
   const updateRedemptionMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Redemption.update(id, data),
+    mutationFn: ({ id, data }) => Redemption.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['pendingRedemptions']);
       queryClient.invalidateQueries(['children']);

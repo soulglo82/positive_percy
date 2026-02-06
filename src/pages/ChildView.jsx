@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from "@/api/base44Client";
+import { Child, Reward, Redemption } from "@/api/entities";
+import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,24 +19,20 @@ import { motion } from "framer-motion";
 import RewardCard from "../components/rewards/RewardCard";
 
 export default function ChildView() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [selectedChildId, setSelectedChildId] = useState(null);
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
-    queryFn: () => base44.entities.Child.list(),
+    queryFn: () => Child.list(),
     enabled: !!user,
   });
 
   const { data: allRewards = [] } = useQuery({
     queryKey: ['rewards'],
-    queryFn: () => base44.entities.Reward.filter({ visible_to_child: true }),
+    queryFn: () => Reward.filter({ visible_to_child: true }),
   });
 
   const rewards = allRewards.filter(reward => {
@@ -51,7 +48,7 @@ export default function ChildView() {
   };
 
   const createRedemptionMutation = useMutation({
-    mutationFn: (data) => base44.entities.Redemption.create(data),
+    mutationFn: (data) => Redemption.create(data),
     onSuccess: () => {
       toast.success("Request sent to your parent!");
     },
@@ -64,7 +61,7 @@ export default function ChildView() {
   }, [children, selectedChildId]);
 
   const selectedChild = children.find(c => c.id === selectedChildId);
-  const progressPercent = selectedChild 
+  const progressPercent = selectedChild
     ? Math.min((selectedChild.weekly_points / selectedChild.weekly_target) * 100, 100)
     : 0;
 
@@ -208,7 +205,7 @@ export default function ChildView() {
                   </Badge>
                 )}
               </div>
-              
+
               {rewards.length === 0 ? (
                 <Card>
                   <CardContent className="py-12 text-center">

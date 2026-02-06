@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from "@/api/base44Client";
+import React, { useState } from 'react';
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,36 +8,22 @@ import { User, Save } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ParentProfile() {
-  const [user, setUser] = useState(null);
+  const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    mum_name: '',
-    dad_name: '',
-    mum_phone: '',
-    dad_phone: '',
+    mum_name: user?.mum_name || '',
+    dad_name: user?.dad_name || '',
+    mum_phone: user?.mum_phone || '',
+    dad_phone: user?.dad_phone || '',
   });
-
-  useEffect(() => {
-    base44.auth.me().then(userData => {
-      setUser(userData);
-      setFormData({
-        mum_name: userData.mum_name || '',
-        dad_name: userData.dad_name || '',
-        mum_phone: userData.mum_phone || '',
-        dad_phone: userData.dad_phone || '',
-      });
-    }).catch(() => {});
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      await base44.auth.updateMe(formData);
+      updateUser(formData);
       toast.success("Profile updated successfully!");
-      const updatedUser = await base44.auth.me();
-      setUser(updatedUser);
     } catch (error) {
       toast.error("Failed to update profile");
     } finally {
