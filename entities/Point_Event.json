@@ -1,0 +1,41 @@
+{
+  "name": "Point_Event",
+  "type": "object",
+  "properties": {
+    "child_id": {
+      "type": "string",
+      "description": "ID of the child this event belongs to"
+    },
+    "points": {
+      "type": "number",
+      "description": "Points added (positive) or removed (negative)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Homework",
+        "Chores",
+        "Kindness",
+        "Good Manners",
+        "Bedtime Routine",
+        "Screen Time",
+        "Misbehavior",
+        "Other"
+      ],
+      "description": "Category of behavior"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional note about the event"
+    },
+    "child_name": {
+      "type": "string",
+      "description": "Name of the child (for quick filtering)"
+    }
+  },
+  "required": [
+    "child_id",
+    "points",
+    "category"
+  ]
+}

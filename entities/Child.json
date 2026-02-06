@@ -1,0 +1,42 @@
+{
+  "name": "Child",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Child's name"
+    },
+    "avatar_url": {
+      "type": "string",
+      "description": "URL to child's avatar image"
+    },
+    "total_points": {
+      "type": "number",
+      "default": 0,
+      "description": "All-time accumulated points"
+    },
+    "weekly_points": {
+      "type": "number",
+      "default": 0,
+      "description": "Points earned this week"
+    },
+    "weekly_target": {
+      "type": "number",
+      "default": 50,
+      "description": "Weekly point goal"
+    },
+    "last_reset_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last time weekly points were reset"
+    },
+    "parent_email": {
+      "type": "string",
+      "description": "Email of the parent who owns this child profile"
+    }
+  },
+  "required": [
+    "name",
+    "parent_email"
+  ]
+}

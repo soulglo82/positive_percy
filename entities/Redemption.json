@@ -1,0 +1,43 @@
+{
+  "name": "Redemption",
+  "type": "object",
+  "properties": {
+    "child_id": {
+      "type": "string",
+      "description": "ID of the child requesting the reward"
+    },
+    "child_name": {
+      "type": "string",
+      "description": "Name of the child"
+    },
+    "reward_id": {
+      "type": "string",
+      "description": "ID of the reward being redeemed"
+    },
+    "reward_title": {
+      "type": "string",
+      "description": "Title of the reward"
+    },
+    "reward_cost": {
+      "type": "number",
+      "description": "Point cost of the reward"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Approved",
+        "Denied"
+      ],
+      "default": "Pending",
+      "description": "Status of the redemption request"
+    }
+  },
+  "required": [
+    "child_id",
+    "child_name",
+    "reward_id",
+    "reward_title",
+    "reward_cost"
+  ]
+}

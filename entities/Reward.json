@@ -1,0 +1,42 @@
+{
+  "name": "Reward",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Reward title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Reward description"
+    },
+    "cost_points": {
+      "type": "number",
+      "description": "How many points this reward costs"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "URL to reward image"
+    },
+    "emoji": {
+      "type": "string",
+      "description": "Emoji icon for the reward"
+    },
+    "visible_to_child": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether children can see this reward"
+    },
+    "assigned_child_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs of children this reward is assigned to (empty = all children)"
+    }
+  },
+  "required": [
+    "title",
+    "cost_points"
+  ]
+}
