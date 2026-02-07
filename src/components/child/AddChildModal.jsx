@@ -18,6 +18,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
   const [startingPoints, setStartingPoints] = useState(0);
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState("");
 
   const handleFileUpload = async (e) => {
@@ -42,20 +43,27 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
     }
   };
 
-  const handleSubmit = () => {
-    if (name.trim()) {
-      onSubmit({ name: name.trim(), weeklyTarget, startingPoints, avatar_url: avatarUrl });
+  const handleSubmit = async () => {
+    if (!name.trim() || saving) return;
+    setSaving(true);
+    try {
+      await onSubmit({ name: name.trim(), weeklyTarget, startingPoints, avatar_url: avatarUrl });
       setName("");
       setWeeklyTarget(50);
       setStartingPoints(0);
       setAvatarUrl("");
       setAvatarPreview("");
       onClose();
+    } catch (error) {
+      console.error('Add child failed:', error);
+      toast.error('Failed to add child');
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
@@ -159,16 +167,17 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
           <Button
             variant="outline"
             onClick={onClose}
+            disabled={saving}
             className="flex-1"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!name.trim() || uploading}
+            disabled={!name.trim() || uploading || saving}
             className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
           >
-            {uploading ? 'Uploading...' : 'Add Child'}
+            {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Add Child'}
           </Button>
         </div>
       </DialogContent>

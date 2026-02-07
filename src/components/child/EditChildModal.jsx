@@ -19,6 +19,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit }) {
   const [weeklyPoints, setWeeklyPoints] = useState(0);
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState("");
 
   useEffect(() => {
@@ -54,21 +55,28 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit }) {
     }
   };
 
-  const handleSubmit = () => {
-    if (name.trim()) {
-      onSubmit({ 
-        name: name.trim(), 
+  const handleSubmit = async () => {
+    if (!name.trim() || saving) return;
+    setSaving(true);
+    try {
+      await onSubmit({
+        name: name.trim(),
         weekly_target: weeklyTarget,
         total_points: totalPoints,
         weekly_points: weeklyPoints,
-        avatar_url: avatarUrl 
+        avatar_url: avatarUrl
       });
       onClose();
+    } catch (error) {
+      console.error('Save failed:', error);
+      toast.error('Failed to save changes');
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
@@ -180,16 +188,17 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit }) {
           <Button
             variant="outline"
             onClick={onClose}
+            disabled={saving}
             className="flex-1"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!name.trim() || uploading}
+            disabled={!name.trim() || uploading || saving}
             className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
           >
-            {uploading ? 'Uploading...' : 'Save Changes'}
+            {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </DialogContent>

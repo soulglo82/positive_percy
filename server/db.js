@@ -85,13 +85,19 @@ export async function initDb() {
       );
     `);
 
-    // Add family_code columns to existing tables if they don't exist
+    // Add columns to existing tables if they don't exist (handles upgrades)
     const migrations = [
+      // family_code on all entity tables
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS family_code TEXT",
       "ALTER TABLE point_events ADD COLUMN IF NOT EXISTS family_code TEXT",
       "ALTER TABLE redemptions ADD COLUMN IF NOT EXISTS family_code TEXT",
       "ALTER TABLE rewards ADD COLUMN IF NOT EXISTS family_code TEXT",
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS family_code TEXT",
+      // user profile columns (may be missing if users table was created earlier)
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS mum_name TEXT",
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS dad_name TEXT",
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS mum_phone TEXT",
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS dad_phone TEXT",
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});

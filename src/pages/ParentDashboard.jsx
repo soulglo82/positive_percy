@@ -297,7 +297,7 @@ export default function ParentDashboard() {
       <AddChildModal
         isOpen={showAddChild}
         onClose={() => setShowAddChild(false)}
-        onSubmit={(data) => createChildMutation.mutate(data)}
+        onSubmit={(data) => createChildMutation.mutateAsync(data)}
       />
 
       <EditChildModal
