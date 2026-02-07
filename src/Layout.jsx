@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { Home, Gift, History, User, UserCircle } from 'lucide-react';
+import { Home, Gift, History, User, UserCircle, LogOut } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Layout({ children, currentPageName }) {
+  const { logout } = useAuth();
   const navItems = [
     { name: 'ParentDashboard', label: 'Dashboard', icon: Home },
     { name: 'Summary', label: 'Summary', icon: History },
@@ -29,11 +31,11 @@ export default function Layout({ children, currentPageName }) {
               />
             </Link>
 
-            <div className="flex gap-1">
+            <div className="flex gap-1 items-center">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPageName === item.name;
-                
+
                 return (
                   <Link
                     key={item.name}
@@ -49,6 +51,13 @@ export default function Layout({ children, currentPageName }) {
                   </Link>
                 );
               })}
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all ml-2"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>

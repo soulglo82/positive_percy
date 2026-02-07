@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Save } from "lucide-react";
+import { User, Save, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ParentProfile() {
-  const { user, updateUser } = useAuth();
+  const { user, familyCode, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState({
     mum_name: user?.mum_name || '',
     dad_name: user?.dad_name || '',
@@ -22,7 +23,7 @@ export default function ParentProfile() {
     setLoading(true);
 
     try {
-      updateUser(formData);
+      await updateUser(formData);
       toast.success("Profile updated successfully!");
     } catch (error) {
       toast.error("Failed to update profile");
@@ -60,6 +61,36 @@ export default function ParentProfile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Family Code */}
+        {familyCode && (
+          <Card className="border-2 border-purple-200 bg-purple-50">
+            <CardHeader>
+              <CardTitle>Family Code</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-slate-600">
+                Share this code with the other parent so they can join your family:
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="text-3xl font-mono font-bold tracking-widest text-purple-700 bg-white rounded-lg px-4 py-2 border">
+                  {familyCode}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(familyCode);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Parent Details */}
         <Card>

@@ -1,5 +1,9 @@
 const API_BASE = '/api';
 
+function getFamilyCode() {
+  return localStorage.getItem('positive_percy_family_code') || '';
+}
+
 class Entity {
   constructor(endpoint) {
     this.endpoint = endpoint;
@@ -9,6 +13,8 @@ class Entity {
     const params = new URLSearchParams();
     if (sortField) params.set('sort', sortField);
     if (limit) params.set('limit', limit);
+    const fc = getFamilyCode();
+    if (fc) params.set('family_code', fc);
     const qs = params.toString();
     const res = await fetch(`${API_BASE}/${this.endpoint}${qs ? '?' + qs : ''}`);
     if (!res.ok) throw new Error(`Failed to list ${this.endpoint}`);
@@ -16,20 +22,24 @@ class Entity {
   }
 
   async filter(filterObj, sortField) {
+    const fc = getFamilyCode();
+    const filter = fc ? { ...filterObj, family_code: fc } : filterObj;
     const res = await fetch(`${API_BASE}/${this.endpoint}/filter`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filter: filterObj, sort: sortField }),
+      body: JSON.stringify({ filter, sort: sortField }),
     });
     if (!res.ok) throw new Error(`Failed to filter ${this.endpoint}`);
     return res.json();
   }
 
   async create(data) {
+    const fc = getFamilyCode();
+    const payload = fc ? { ...data, family_code: fc } : data;
     const res = await fetch(`${API_BASE}/${this.endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(`Failed to create ${this.endpoint}`);
     return res.json();

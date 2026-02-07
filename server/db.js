@@ -9,6 +9,13 @@ export async function initDb() {
   const client = await pool.connect();
   try {
     await client.query(`
+      CREATE TABLE IF NOT EXISTS families (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        family_code TEXT UNIQUE NOT NULL,
+        family_name TEXT NOT NULL,
+        created_date TIMESTAMPTZ DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS children (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name TEXT NOT NULL,
@@ -17,7 +24,8 @@ export async function initDb() {
         weekly_points INTEGER DEFAULT 0,
         weekly_target INTEGER DEFAULT 50,
         last_reset_date TEXT,
-        parent_email TEXT NOT NULL,
+        parent_email TEXT,
+        family_code TEXT,
         created_date TIMESTAMPTZ DEFAULT NOW()
       );
 
@@ -28,6 +36,7 @@ export async function initDb() {
         category TEXT NOT NULL,
         note TEXT,
         child_name TEXT,
+        family_code TEXT,
         created_date TIMESTAMPTZ DEFAULT NOW()
       );
 
@@ -39,6 +48,7 @@ export async function initDb() {
         reward_title TEXT NOT NULL,
         reward_cost INTEGER NOT NULL,
         status TEXT DEFAULT 'Pending',
+        family_code TEXT,
         created_date TIMESTAMPTZ DEFAULT NOW()
       );
 
@@ -51,6 +61,14 @@ export async function initDb() {
         emoji TEXT,
         visible_to_child BOOLEAN DEFAULT true,
         assigned_child_ids TEXT[] DEFAULT '{}',
+        family_code TEXT,
+        created_date TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS uploads (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        data TEXT NOT NULL,
+        content_type TEXT NOT NULL,
         created_date TIMESTAMPTZ DEFAULT NOW()
       );
 
@@ -58,6 +76,7 @@ export async function initDb() {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         email TEXT UNIQUE NOT NULL,
         full_name TEXT,
+        family_code TEXT,
         mum_name TEXT,
         mum_phone TEXT,
         dad_name TEXT,
@@ -65,6 +84,19 @@ export async function initDb() {
         created_date TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+
+    // Add family_code columns to existing tables if they don't exist
+    const migrations = [
+      "ALTER TABLE children ADD COLUMN IF NOT EXISTS family_code TEXT",
+      "ALTER TABLE point_events ADD COLUMN IF NOT EXISTS family_code TEXT",
+      "ALTER TABLE redemptions ADD COLUMN IF NOT EXISTS family_code TEXT",
+      "ALTER TABLE rewards ADD COLUMN IF NOT EXISTS family_code TEXT",
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS family_code TEXT",
+    ];
+    for (const sql of migrations) {
+      await client.query(sql).catch(() => {});
+    }
+
     console.log('Database tables initialized');
   } finally {
     client.release();

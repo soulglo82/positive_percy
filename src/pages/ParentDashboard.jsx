@@ -26,7 +26,7 @@ export default function ParentDashboard() {
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
     queryFn: async () => {
-      const childrenData = await Child.filter({ parent_email: user?.email });
+      const childrenData = await Child.list();
 
       // Check for weekly reset (Monday)
       const today = new Date();
@@ -65,7 +65,6 @@ export default function ParentDashboard() {
     mutationFn: (data) => Child.create({
       name: data.name,
       avatar_url: data.avatar_url,
-      parent_email: user.email,
       total_points: data.startingPoints || 0,
       weekly_points: data.startingPoints || 0,
       weekly_target: data.weeklyTarget,
