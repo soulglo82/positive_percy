@@ -1,70 +1,60 @@
-class LocalEntity {
-  constructor(storageKey) {
-    this.storageKey = storageKey;
-  }
+const API_BASE = '/api';
 
-  _getAll() {
-    const data = localStorage.getItem(this.storageKey);
-    return data ? JSON.parse(data) : [];
-  }
-
-  _saveAll(items) {
-    localStorage.setItem(this.storageKey, JSON.stringify(items));
-  }
-
-  _sort(items, sortField) {
-    if (!sortField) return items;
-    const desc = sortField.startsWith('-');
-    const field = desc ? sortField.slice(1) : sortField;
-    return [...items].sort((a, b) => {
-      const aVal = a[field] || '';
-      const bVal = b[field] || '';
-      if (desc) return bVal > aVal ? 1 : bVal < aVal ? -1 : 0;
-      return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-    });
+class Entity {
+  constructor(endpoint) {
+    this.endpoint = endpoint;
   }
 
   async list(sortField, limit) {
-    let items = this._sort(this._getAll(), sortField);
-    if (limit) items = items.slice(0, limit);
-    return items;
+    const params = new URLSearchParams();
+    if (sortField) params.set('sort', sortField);
+    if (limit) params.set('limit', limit);
+    const qs = params.toString();
+    const res = await fetch(`${API_BASE}/${this.endpoint}${qs ? '?' + qs : ''}`);
+    if (!res.ok) throw new Error(`Failed to list ${this.endpoint}`);
+    return res.json();
   }
 
   async filter(filterObj, sortField) {
-    let items = this._getAll().filter(item =>
-      Object.entries(filterObj).every(([key, value]) => item[key] === value)
-    );
-    return this._sort(items, sortField);
+    const res = await fetch(`${API_BASE}/${this.endpoint}/filter`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filter: filterObj, sort: sortField }),
+    });
+    if (!res.ok) throw new Error(`Failed to filter ${this.endpoint}`);
+    return res.json();
   }
 
   async create(data) {
-    const items = this._getAll();
-    const newItem = {
-      ...data,
-      id: crypto.randomUUID(),
-      created_date: new Date().toISOString(),
-    };
-    items.push(newItem);
-    this._saveAll(items);
-    return newItem;
+    const res = await fetch(`${API_BASE}/${this.endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`Failed to create ${this.endpoint}`);
+    return res.json();
   }
 
   async update(id, data) {
-    const items = this._getAll();
-    const index = items.findIndex(item => item.id === id);
-    if (index === -1) throw new Error(`Entity with id ${id} not found`);
-    items[index] = { ...items[index], ...data };
-    this._saveAll(items);
-    return items[index];
+    const res = await fetch(`${API_BASE}/${this.endpoint}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`Failed to update ${this.endpoint}`);
+    return res.json();
   }
 
   async delete(id) {
-    const items = this._getAll().filter(item => item.id !== id);
-    this._saveAll(items);
+    const res = await fetch(`${API_BASE}/${this.endpoint}/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(`Failed to delete ${this.endpoint}`);
+    return res.json();
   }
 }
 
-export const Child = new LocalEntity('positive_percy_children');
-export const Point_Event = new LocalEntity('positive_percy_point_events');
-export const Redemption = new LocalEntity('positive_percy_redemptions');
-export const Reward = new LocalEntity('positive_percy_rewards');
+export const Child = new Entity('children');
+export const Point_Event = new Entity('point_events');
+export const Redemption = new Entity('redemptions');
+export const Reward = new Entity('rewards');

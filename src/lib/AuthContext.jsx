@@ -2,48 +2,38 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AuthContext = createContext();
 
-const STORAGE_KEY = 'positive_percy_user';
-
-const getStoredUser = () => {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return stored ? JSON.parse(stored) : null;
-};
-
-const saveUser = (user) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-};
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const stored = getStoredUser();
-    if (stored) {
-      setUser(stored);
-      setIsAuthenticated(true);
-    } else {
-      const defaultUser = {
-        email: 'parent@family.local',
-        full_name: 'Parent',
-      };
-      saveUser(defaultUser);
-      setUser(defaultUser);
-      setIsAuthenticated(true);
-    }
-    setIsLoading(false);
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(userData => {
+        setUser(userData);
+        setIsAuthenticated(true);
+      })
+      .catch(() => {
+        setUser({ email: 'parent@family.local', full_name: 'Parent' });
+        setIsAuthenticated(true);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const updateUser = (data) => {
-    const updated = { ...user, ...data };
-    saveUser(updated);
+  const updateUser = async (data) => {
+    const email = user?.email || 'parent@family.local';
+    const res = await fetch(`/api/auth/me?email=${encodeURIComponent(email)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const updated = await res.json();
     setUser(updated);
     return updated;
   };
 
   const logout = () => {
-    localStorage.removeItem(STORAGE_KEY);
     setUser(null);
     setIsAuthenticated(false);
   };
