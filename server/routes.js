@@ -43,7 +43,7 @@ router.post('/api/upload', async (req, res) => {
     res.json({ file_url: `/api/uploads/${rows[0].id}` });
   } catch (err) {
     console.error('Upload error:', err);
-    res.status(500).json({ error: 'Upload failed' });
+    res.status(500).json({ error: err.message || 'Upload failed' });
   }
 });
 
@@ -166,7 +166,7 @@ router.get('/api/auth/me', async (req, res) => {
     res.json({ ...rows[0], family: familyRows[0] });
   } catch (err) {
     console.error('Auth GET error:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -191,7 +191,7 @@ router.put('/api/auth/me', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('Auth PUT error:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -220,7 +220,7 @@ router.get('/api/:entity', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error(`List ${req.params.entity} error:`, err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -251,7 +251,7 @@ router.post('/api/:entity/filter', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error(`Filter ${req.params.entity} error:`, err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -273,7 +273,7 @@ router.post('/api/:entity', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error(`Create ${req.params.entity} error:`, err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -297,7 +297,7 @@ router.put('/api/:entity/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error(`Update ${req.params.entity} error:`, err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -311,7 +311,7 @@ router.delete('/api/:entity/:id', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error(`Delete ${req.params.entity} error:`, err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: err.message });
   }
 });
 

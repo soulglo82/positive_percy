@@ -4,6 +4,15 @@ function getFamilyCode() {
   return localStorage.getItem('positive_percy_family_code') || '';
 }
 
+async function parseError(res, fallback) {
+  try {
+    const body = await res.json();
+    return body.error || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 class Entity {
   constructor(endpoint) {
     this.endpoint = endpoint;
@@ -17,7 +26,7 @@ class Entity {
     if (fc) params.set('family_code', fc);
     const qs = params.toString();
     const res = await fetch(`${API_BASE}/${this.endpoint}${qs ? '?' + qs : ''}`);
-    if (!res.ok) throw new Error(`Failed to list ${this.endpoint}`);
+    if (!res.ok) throw new Error(await parseError(res, `Failed to list ${this.endpoint}`));
     return res.json();
   }
 
@@ -29,7 +38,7 @@ class Entity {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filter, sort: sortField }),
     });
-    if (!res.ok) throw new Error(`Failed to filter ${this.endpoint}`);
+    if (!res.ok) throw new Error(await parseError(res, `Failed to filter ${this.endpoint}`));
     return res.json();
   }
 
@@ -41,7 +50,7 @@ class Entity {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error(`Failed to create ${this.endpoint}`);
+    if (!res.ok) throw new Error(await parseError(res, `Failed to create ${this.endpoint}`));
     return res.json();
   }
 
@@ -51,7 +60,7 @@ class Entity {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error(`Failed to update ${this.endpoint}`);
+    if (!res.ok) throw new Error(await parseError(res, `Failed to update ${this.endpoint}`));
     return res.json();
   }
 
@@ -59,7 +68,7 @@ class Entity {
     const res = await fetch(`${API_BASE}/${this.endpoint}/${id}`, {
       method: 'DELETE',
     });
-    if (!res.ok) throw new Error(`Failed to delete ${this.endpoint}`);
+    if (!res.ok) throw new Error(await parseError(res, `Failed to delete ${this.endpoint}`));
     return res.json();
   }
 }

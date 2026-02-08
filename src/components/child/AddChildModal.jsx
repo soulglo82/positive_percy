@@ -56,7 +56,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
       onClose();
     } catch (error) {
       console.error('Add child failed:', error);
-      toast.error('Failed to add child');
+      toast.error(error.message || 'Failed to add child');
     } finally {
       setSaving(false);
     }

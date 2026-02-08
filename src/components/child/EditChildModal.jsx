@@ -69,7 +69,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit }) {
       onClose();
     } catch (error) {
       console.error('Save failed:', error);
-      toast.error('Failed to save changes');
+      toast.error(error.message || 'Failed to save changes');
     } finally {
       setSaving(false);
     }
