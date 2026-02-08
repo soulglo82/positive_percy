@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Child, Point_Event } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Award, Target, Calendar } from "lucide-react";
+import { TrendingUp, Award, Target, Calendar, ChevronDown, ChevronUp, Plus, Minus } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Summary() {
   const { user } = useAuth();
+  const [expandedChildId, setExpandedChildId] = useState(null);
 
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
@@ -183,11 +184,16 @@ export default function Summary() {
             <Target className="w-6 h-6 text-purple-600" />
             Individual Progress
           </h2>
+          <p className="text-sm text-slate-500 mb-4">Tap a child to see their full point history</p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {children.map((child, index) => {
               const stats = getChildWeeklyStats(child.id, child.name);
               const progressPercent = Math.min((child.weekly_points / child.weekly_target) * 100, 100);
               const isOnTrack = child.weekly_points >= child.weekly_target;
+              const isExpanded = expandedChildId === child.id;
+              const childEvents = weeklyEvents
+                .filter(e => e.child_id === child.id)
+                .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
               return (
                 <motion.div
@@ -196,7 +202,10 @@ export default function Summary() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 * index }}
                 >
-                  <Card className="overflow-hidden border-2 hover:shadow-lg transition-all">
+                  <Card
+                    className={`overflow-hidden border-2 hover:shadow-lg transition-all cursor-pointer ${isExpanded ? 'border-purple-300 shadow-lg' : ''}`}
+                    onClick={() => setExpandedChildId(isExpanded ? null : child.id)}
+                  >
                     <div className={`h-2 ${isOnTrack ? 'bg-green-400' : 'bg-purple-400'}`} />
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
@@ -211,12 +220,17 @@ export default function Summary() {
                             {child.name.charAt(0)}
                           </div>
                         )}
-                        <div>
+                        <div className="flex-1">
                           <h3 className="text-xl font-bold text-slate-800">{child.name}</h3>
                           <Badge className={isOnTrack ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}>
                             {child.weekly_points} / {child.weekly_target} points
                           </Badge>
                         </div>
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-slate-400" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-slate-400" />
+                        )}
                       </div>
 
                       {/* Progress Bar */}
@@ -258,6 +272,53 @@ export default function Summary() {
                           </div>
                         </div>
                       )}
+
+                      {/* Expanded: Point History */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-4 pt-4 border-t border-slate-200">
+                              <p className="text-sm font-semibold text-slate-700 mb-3">Point History (This Week)</p>
+                              {childEvents.length === 0 ? (
+                                <p className="text-sm text-slate-400 text-center py-3">No activity this week</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {childEvents.map((event) => {
+                                    const isPositive = event.points > 0;
+                                    return (
+                                      <div key={event.id} className={`flex items-start gap-3 p-3 rounded-lg ${isPositive ? 'bg-green-50' : 'bg-rose-50'}`}>
+                                        <div className={`p-1.5 rounded-full mt-0.5 ${isPositive ? 'bg-green-200' : 'bg-rose-200'}`}>
+                                          {isPositive ? <Plus className="w-3 h-3 text-green-700" /> : <Minus className="w-3 h-3 text-rose-700" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center justify-between gap-2">
+                                            <Badge variant="outline" className="text-xs">{event.category}</Badge>
+                                            <span className={`font-bold text-sm ${isPositive ? 'text-green-600' : 'text-rose-600'}`}>
+                                              {isPositive ? '+' : ''}{event.points}
+                                            </span>
+                                          </div>
+                                          {event.note && (
+                                            <p className="text-sm text-slate-600 mt-1">{event.note}</p>
+                                          )}
+                                          <p className="text-xs text-slate-400 mt-1">
+                                            {format(new Date(event.created_date), "EEE, MMM d 'at' h:mm a")}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </CardContent>
                   </Card>
                 </motion.div>
