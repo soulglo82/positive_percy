@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserPlus, Gift, History, RefreshCw, Award, TrendingUp } from "lucide-react";
+import { UserPlus, Award } from "lucide-react";
 import { toast } from "sonner";
 
 import ChildCard from "../components/child/ChildCard";
@@ -179,62 +179,18 @@ export default function ParentDashboard() {
     toast.info("Request denied");
   };
 
-  const totalPoints = children.reduce((sum, child) => sum + child.total_points, 0);
-  const totalWeeklyPoints = children.reduce((sum, child) => sum + child.weekly_points, 0);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <img
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6922d1673349deb31c162ae5/46a4a0d5e_82981AEC-56DC-4F47-88A7-BE6A182A15D7.png"
-              alt="Positive Percy"
-              className="h-20 mb-2"
-            />
-            <p className="text-slate-600">Building bright futures, one point at a time ✨</p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setShowAddChild(true)}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-            >
-              <UserPlus className="w-4 h-4 mr-2" />
-              Add Child
-            </Button>
-          </div>
+        <div>
+          <img
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6922d1673349deb31c162ae5/46a4a0d5e_82981AEC-56DC-4F47-88A7-BE6A182A15D7.png"
+            alt="Positive Percy"
+            className="h-20 mb-2"
+          />
+          <p className="text-slate-600">Building bright futures, one point at a time</p>
         </div>
-
-        {/* Stats Cards */}
-        {children.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-600">Total Children</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-purple-600">{children.length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-600">Total Points</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-600">{totalPoints}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-600">This Week</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-amber-600">{totalWeeklyPoints}</div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Pending Redemptions */}
         {pendingRedemptions.length > 0 && (
@@ -289,6 +245,20 @@ export default function ParentDashboard() {
                 onEdit={handleEditChild}
               />
             ))}
+          </div>
+        )}
+
+        {/* Add Child Button */}
+        {children.length > 0 && (
+          <div className="flex justify-center">
+            <Button
+              onClick={() => setShowAddChild(true)}
+              variant="outline"
+              className="border-2 border-dashed border-purple-300 text-purple-600 hover:bg-purple-50 hover:border-purple-400 px-8 py-6"
+            >
+              <UserPlus className="w-5 h-5 mr-2" />
+              Add Child
+            </Button>
           </div>
         )}
       </div>
