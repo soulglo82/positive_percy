@@ -11,29 +11,20 @@ export default function ParentProfile() {
   const { user, familyCode, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [formData, setFormData] = useState({
-    mum_name: user?.mum_name || '',
-    dad_name: user?.dad_name || '',
-    mum_phone: user?.mum_phone || '',
-    dad_phone: user?.dad_phone || '',
-  });
+  const [familyName, setFamilyName] = useState(user?.full_name || '');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      await updateUser(formData);
+      await updateUser({ full_name: familyName });
       toast.success("Profile updated successfully!");
     } catch (error) {
-      toast.error("Failed to update profile");
+      toast.error(error.message || "Failed to update profile");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -42,23 +33,34 @@ export default function ParentProfile() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <User className="w-8 h-8 text-purple-500" />
-          <h1 className="text-3xl font-bold text-slate-800">Parent Profile</h1>
+          <h1 className="text-3xl font-bold text-slate-800">Family Profile</h1>
         </div>
 
-        {/* Account Info */}
+        {/* Family Name */}
         <Card>
           <CardHeader>
-            <CardTitle>Account Information</CardTitle>
+            <CardTitle>Family Name</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label className="text-slate-600">Email</Label>
-              <p className="text-lg font-medium text-slate-800">{user?.email}</p>
-            </div>
-            <div>
-              <Label className="text-slate-600">Full Name</Label>
-              <p className="text-lg font-medium text-slate-800">{user?.full_name}</p>
-            </div>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="family_name">Name</Label>
+                <Input
+                  id="family_name"
+                  value={familyName}
+                  onChange={(e) => setFamilyName(e.target.value)}
+                  placeholder="e.g., The Smiths"
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {loading ? 'Saving...' : 'Save'}
+              </Button>
+            </form>
           </CardContent>
         </Card>
 
@@ -91,71 +93,6 @@ export default function ParentProfile() {
             </CardContent>
           </Card>
         )}
-
-        {/* Parent Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Parent Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Mum Details */}
-              <div className="space-y-4 p-4 bg-pink-50 rounded-lg">
-                <h3 className="font-semibold text-slate-800">Mum's Information</h3>
-                <div>
-                  <Label htmlFor="mum_name">Name</Label>
-                  <Input
-                    id="mum_name"
-                    value={formData.mum_name}
-                    onChange={(e) => handleChange('mum_name', e.target.value)}
-                    placeholder="e.g., Sarah"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="mum_phone">Phone Number</Label>
-                  <Input
-                    id="mum_phone"
-                    value={formData.mum_phone}
-                    onChange={(e) => handleChange('mum_phone', e.target.value)}
-                    placeholder="e.g., 07700 900000"
-                  />
-                </div>
-              </div>
-
-              {/* Dad Details */}
-              <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-semibold text-slate-800">Dad's Information</h3>
-                <div>
-                  <Label htmlFor="dad_name">Name</Label>
-                  <Input
-                    id="dad_name"
-                    value={formData.dad_name}
-                    onChange={(e) => handleChange('dad_name', e.target.value)}
-                    placeholder="e.g., John"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="dad_phone">Phone Number</Label>
-                  <Input
-                    id="dad_phone"
-                    value={formData.dad_phone}
-                    onChange={(e) => handleChange('dad_phone', e.target.value)}
-                    placeholder="e.g., 07700 900000"
-                  />
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {loading ? 'Saving...' : 'Save Profile'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
