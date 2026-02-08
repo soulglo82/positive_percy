@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Save, Copy, Check } from "lucide-react";
+import { User, Save, Copy, Check, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ParentProfile() {
@@ -90,6 +90,28 @@ export default function ParentProfile() {
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
+              <Button
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                onClick={async () => {
+                  const shareText = `Join our family on Positive Percy! Use code: ${familyCode}\n\nhttps://positivepercy.up.railway.app`;
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({ title: 'Join our family on Positive Percy', text: shareText });
+                    } catch (err) {
+                      if (err.name !== 'AbortError') {
+                        navigator.clipboard.writeText(shareText);
+                        toast.success('Share text copied to clipboard');
+                      }
+                    }
+                  } else {
+                    navigator.clipboard.writeText(shareText);
+                    toast.success('Share text copied to clipboard');
+                  }
+                }}
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share with Family
+              </Button>
             </CardContent>
           </Card>
         )}
