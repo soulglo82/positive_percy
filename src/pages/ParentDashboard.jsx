@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
-import { Child, Point_Event, Redemption } from "@/api/entities";
+import React, { useState, useEffect } from 'react';
+import { Child, Point_Event, Reward } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
+import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserPlus, Award } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { UserPlus, Flame } from "lucide-react";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
+import { Badge } from "@/components/ui/badge";
 
 import ChildCard from "../components/child/ChildCard";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
-import RedemptionCard from "../components/redemptions/RedemptionCard";
+import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
+import FamilyGoals from "../components/FamilyGoals";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ErrorCard from "../components/ErrorCard";
 
 export default function ParentDashboard() {
   const { user } = useAuth();
@@ -20,45 +26,40 @@ export default function ParentDashboard() {
   const [showAddPoints, setShowAddPoints] = useState(false);
   const [showSubtractPoints, setShowSubtractPoints] = useState(false);
   const [selectedChild, setSelectedChild] = useState(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [streak, setStreak] = useState(0);
 
   const queryClient = useQueryClient();
 
-  const { data: children = [] } = useQuery({
-    queryKey: ['children'],
-    queryFn: async () => {
-      const childrenData = await Child.list();
+  // Show onboarding tips on first visit
+  useEffect(() => {
+    if (user && shouldShowOnboarding()) {
+      setShowOnboarding(true);
+    }
+  }, [user]);
 
-      // Check for weekly reset (Monday)
-      const today = new Date();
-      const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday
-      const todayStr = today.toISOString().split('T')[0];
-
-      for (const child of childrenData) {
-        const lastReset = child.last_reset_date ? new Date(child.last_reset_date) : null;
-        const shouldReset = !lastReset || (
-          dayOfWeek === 1 && // It's Monday
-          lastReset.toISOString().split('T')[0] !== todayStr // Haven't reset today
-        );
-
-        if (shouldReset && child.weekly_points > 0) {
-          await Child.update(child.id, {
-            weekly_points: 0,
-            last_reset_date: todayStr,
-          });
-          child.weekly_points = 0;
-          child.last_reset_date = todayStr;
-        }
+  // Server-side weekly reset on mount (BUG-002)
+  useEffect(() => {
+    if (!user) return;
+    const token = getToken();
+    fetch('/api/children/weekly-reset', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    }).then(res => res.json()).then(result => {
+      if (result.reset && result.children_reset > 0) {
+        queryClient.invalidateQueries(['children']);
+        toast.info("Weekly points have been reset!");
       }
+    }).catch(() => {});
+  }, [user]);
 
-      return childrenData;
-    },
+  const { data: children = [], isLoading, isError, refetch } = useQuery({
+    queryKey: ['children'],
+    queryFn: () => Child.list(),
     enabled: !!user,
-  });
-
-  const { data: pendingRedemptions = [] } = useQuery({
-    queryKey: ['pendingRedemptions'],
-    queryFn: () => Redemption.filter({ status: 'Pending' }, '-created_date'),
-    refetchInterval: 5000,
   });
 
   const createChildMutation = useMutation({
@@ -91,14 +92,6 @@ export default function ParentDashboard() {
     },
   });
 
-  const updateRedemptionMutation = useMutation({
-    mutationFn: ({ id, data }) => Redemption.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pendingRedemptions']);
-      queryClient.invalidateQueries(['children']);
-    },
-  });
-
   const handleAddPoints = (child) => {
     setSelectedChild(child);
     setShowAddPoints(true);
@@ -122,7 +115,47 @@ export default function ParentDashboard() {
     toast.success(`${data.name}'s profile updated!`);
   };
 
+  const handleDeleteChild = async (child) => {
+    try {
+      await Child.delete(child.id);
+      queryClient.invalidateQueries(['children']);
+      toast.success(`${child.name} has been removed`);
+    } catch {
+      toast.error("Failed to delete child");
+    }
+  };
+
+  const updateStreak = async () => {
+    const token = getToken();
+    try {
+      const res = await fetch('/api/family/check-streak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setStreak(data.streak);
+      if (data.updated && [7, 14, 30, 60, 100].includes(data.streak)) {
+        confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 },
+          colors: ['#f59e0b', '#ef4444', '#f97316'] });
+        toast.success(`${data.streak}-day streak! You're on fire!`);
+      }
+    } catch {}
+  };
+
+  // Load streak on mount
+  useEffect(() => {
+    if (user) updateStreak();
+  }, [user]);
+
+  // BUG-003: Use atomic server-side point adjustment
   const handlePointsSubmit = async (data) => {
+    if (data.points < 0) {
+      const newTotal = selectedChild.total_points + data.points;
+      if (newTotal < 0) {
+        toast.warning(`This will reduce ${selectedChild.name}'s points to 0`);
+      }
+    }
+
     await createPointEventMutation.mutateAsync({
       child_id: selectedChild.id,
       child_name: selectedChild.name,
@@ -131,13 +164,45 @@ export default function ParentDashboard() {
       note: data.note,
     });
 
-    await updateChildMutation.mutateAsync({
-      id: selectedChild.id,
-      data: {
-        total_points: selectedChild.total_points + data.points,
-        weekly_points: selectedChild.weekly_points + data.points,
+    const token = getToken();
+    const res = await fetch(`/api/children/${selectedChild.id}/adjust-points`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
       },
+      body: JSON.stringify({ points: data.points }),
     });
+
+    if (data.points > 0) {
+      // Check if child just hit their weekly goal
+      const updated = await res.json();
+      const wasBelow = selectedChild.weekly_points < selectedChild.weekly_target;
+      const isNowAbove = updated.weekly_points >= updated.weekly_target;
+      if (wasBelow && isNowAbove) {
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
+        });
+        toast.success(`${selectedChild.name} hit their weekly goal!`);
+      }
+    }
+
+    queryClient.invalidateQueries(['children']);
+    updateStreak();
+
+    // FEAT-010: Check badges after point change
+    if (data.points > 0) {
+      try {
+        const badgeToken = getToken();
+        await fetch(`/api/children/${selectedChild.id}/check-badges`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${badgeToken}` },
+        });
+      } catch {}
+    }
   };
 
   const handleResetWeekly = async (child) => {
@@ -151,71 +216,33 @@ export default function ParentDashboard() {
     toast.success(`${child.name}'s weekly points reset!`);
   };
 
-  const handleApproveRedemption = async (redemption) => {
-    const child = children.find(c => c.id === redemption.child_id);
-    if (!child) return;
-
-    await updateRedemptionMutation.mutateAsync({
-      id: redemption.id,
-      data: { status: 'Approved' },
-    });
-
-    await updateChildMutation.mutateAsync({
-      id: child.id,
-      data: {
-        total_points: child.total_points - redemption.reward_cost,
-        weekly_points: Math.max(0, child.weekly_points - redemption.reward_cost),
-      },
-    });
-
-    toast.success(`${redemption.child_name}'s request approved!`);
-  };
-
-  const handleDenyRedemption = async (redemption) => {
-    await updateRedemptionMutation.mutateAsync({
-      id: redemption.id,
-      data: { status: 'Denied' },
-    });
-    toast.info("Request denied");
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Header */}
-        <div>
-          <img
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6922d1673349deb31c162ae5/46a4a0d5e_82981AEC-56DC-4F47-88A7-BE6A182A15D7.png"
-            alt="Positive Percy"
-            className="h-20 mb-2"
-          />
-          <p className="text-slate-600">Building bright futures, one point at a time</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <img
+              src="/logo.png"
+              alt="Positive Percy"
+              className="h-20 mb-2"
+            />
+            <p className="text-slate-600">Building bright futures, one point at a time</p>
+          </div>
+          {streak > 0 && (
+            <Badge className="bg-gradient-to-r from-orange-400 to-red-500 text-white border-0 text-sm px-3 py-1.5 flex items-center gap-1.5">
+              <Flame className="w-4 h-4" />
+              {streak}-day streak
+            </Badge>
+          )}
         </div>
 
-        {/* Pending Redemptions */}
-        {pendingRedemptions.length > 0 && (
-          <Card className="border-2 border-amber-200 bg-amber-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-amber-800">
-                <Award className="w-5 h-5" />
-                Pending Reward Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {pendingRedemptions.map((redemption) => (
-                <RedemptionCard
-                  key={redemption.id}
-                  redemption={redemption}
-                  onApprove={handleApproveRedemption}
-                  onDeny={handleDenyRedemption}
-                />
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
         {/* Children Grid */}
-        {children.length === 0 ? (
+        {isLoading ? (
+          <LoadingSpinner message="Loading your family..." />
+        ) : isError ? (
+          <ErrorCard message="Couldn't load children" onRetry={refetch} />
+        ) : children.length === 0 ? (
           <Card className="border-2 border-dashed border-slate-300">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="text-6xl mb-4">👨‍👩‍👧‍👦</div>
@@ -248,6 +275,9 @@ export default function ParentDashboard() {
           </div>
         )}
 
+        {/* Family Goals */}
+        {children.length > 0 && <FamilyGoals />}
+
         {/* Add Child Button */}
         {children.length > 0 && (
           <div className="flex justify-center">
@@ -278,6 +308,7 @@ export default function ParentDashboard() {
         }}
         child={selectedChild}
         onSubmit={handleEditChildSubmit}
+        onDelete={handleDeleteChild}
       />
 
       <AddPointsModal
@@ -300,6 +331,11 @@ export default function ParentDashboard() {
         child={selectedChild}
         onSubmit={handlePointsSubmit}
         isSubtract={true}
+      />
+
+      <OnboardingTips
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
       />
     </div>
   );

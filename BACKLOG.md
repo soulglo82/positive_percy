@@ -274,6 +274,108 @@ Create `src/data/reward-templates.js` with a static array. Add a scrollable "Ide
 
 ---
 
+### ENH-010: Simplify tracker to total points only
+
+**Category:** ENHANCEMENT
+**Review ref:** User feedback (live app testing)
+**Affected files:**
+- `src/components/child/ChildCard.jsx` (lines 9-10, 54-58, 61-78)
+- `src/pages/ChildView.jsx` (lines 153-164, 166-191)
+- `src/pages/Summary.jsx` (lines 77-79, 191, 225-227)
+- `src/components/child/AddChildModal.jsx` (weekly target field)
+- `src/components/child/EditChildModal.jsx` (weekly points fields)
+
+**Problem:**
+The current child card shows three overlapping numbers that are confusing:
+1. "Total: 24 points" (text under the name)
+2. "2 / 50" (weekly badge in the corner)
+3. "Weekly Progress 4%" (progress bar label)
+
+Parents are the only users of this system and they just want to see how many points a child has. The weekly-target-vs-weekly-points tracking adds cognitive overhead without clear value. "2 / 50" next to "Total: 24" raises the question: which number matters? What does 50 mean? Why are there two different point counts?
+
+**Acceptance criteria:**
+- [ ] ChildCard shows a single, prominent total points number (not weekly vs total)
+- [ ] Remove the weekly `X / Y` badge from ChildCard
+- [ ] Remove the "Weekly Progress" percentage bar from ChildCard
+- [ ] Replace with a simple, clear display: child name + total points
+- [ ] ChildView shows total points as the primary number (remove or de-emphasize weekly split)
+- [ ] Weekly target and weekly points fields become optional/advanced in AddChildModal and EditChildModal
+- [ ] Summary page can still show weekly breakdown for parents who want analytics (this is the right place for that detail)
+- [ ] The progress bar and weekly tracking can remain available as an opt-in "advanced" feature, not the default view
+
+**Implementation notes:**
+The simplest approach is to restructure `ChildCard.jsx`:
+- Remove the `weekly_points / weekly_target` Badge (lines 54-58)
+- Remove the progress bar section (lines 61-78)
+- Make `total_points` the hero number on the card, displayed large and prominent
+- Keep the Add/Remove buttons as-is
+
+In `ChildView.jsx`:
+- Show a single large points display instead of the 2-column Total/This Week grid
+- Move weekly detail to a collapsible "This Week" section if desired
+
+This simplification also reduces the impact of BUG-001 (negative points) and BUG-002 (weekly reset issues) since weekly tracking becomes less prominent.
+
+---
+
+### ENH-011: Remove reward approval process -- direct redemption
+
+**Category:** ENHANCEMENT
+**Review ref:** User feedback (live app testing)
+**Affected files:**
+- `src/pages/ChildView.jsx` (lines 50-54, 68-84: redemption creation)
+- `src/pages/ParentDashboard.jsx` (lines 58-62, 154-180, 196-215: pending redemptions section)
+- `src/components/redemptions/RedemptionCard.jsx` (entire component)
+- `src/components/rewards/RewardCard.jsx` (lines 87-105: request button logic)
+- `server/routes.js` (redemption routes)
+
+**Problem:**
+The current flow is: Child requests reward -> creates "Pending" redemption -> parent sees it on dashboard -> parent approves/denies -> points deducted.
+
+This is pointless because **the only users of the system are parents**. There is no separate child login. The "Child View" is just a tab that parents navigate to. So the parent is effectively requesting a reward from themselves, then switching tabs to approve their own request. This adds unnecessary friction:
+
+1. Parent navigates to Child View
+2. Parent taps "Request" on behalf of the child
+3. Parent navigates back to Dashboard
+4. Parent sees the pending request
+5. Parent taps "Approve"
+6. Points are finally deducted
+
+This should be a single action: parent taps "Redeem" and points are deducted immediately.
+
+**Acceptance criteria:**
+- [ ] "Request" button on RewardCard changes to "Redeem" (or "Use Reward")
+- [ ] Tapping "Redeem" immediately deducts points from the child (no pending state)
+- [ ] Show a confirmation dialog before deducting: "[Child] will spend [X] points on [Reward]. Continue?"
+- [ ] On confirm: deduct points, show success toast, optionally fire confetti
+- [ ] Remove the "Pending Reward Requests" section from ParentDashboard
+- [ ] Remove the 5-second polling for pending redemptions (`refetchInterval: 5000`)
+- [ ] The `redemptions` table can still log completed redemptions for history purposes (status = 'Completed' directly, skip 'Pending')
+- [ ] Remove the weekend-only restriction (`isWeekend()` gate) -- parents should be able to redeem rewards any time since they control the process
+- [ ] The "Rewards" page remains as the parent's tool to create/manage available rewards
+
+**Implementation approach:**
+
+**Option A -- Minimal (recommended):**
+Change `handleRequestReward` in `ChildView.jsx` to:
+1. Show a confirmation dialog (use existing Shadcn `AlertDialog`)
+2. On confirm, call `adjust-points` endpoint (from BUG-003) with negative `reward.cost_points`
+3. Create a redemption record with `status: 'Completed'` for history
+4. Show success toast + confetti
+5. Remove the `isWeekend()` gate
+6. Remove the pending redemptions query and UI from `ParentDashboard.jsx`
+
+**Option B -- Keep approval as opt-in:**
+If some families later want the approval flow (e.g., when children are old enough to have their own device), add a family setting `require_approval: boolean` in the families table. Default to `false` (direct redemption). This can be a future enhancement if demand arises.
+
+**Side effects:**
+- The `RedemptionCard` component becomes unused (or repurposed for history-only display)
+- The 5-second polling on ParentDashboard is eliminated, improving performance
+- The `ChildView` weekend restriction is removed, making rewards accessible any day
+- Dashboard becomes simpler and more focused on the core action: awarding points
+
+---
+
 ### FEAT-004: Parent onboarding tips
 
 **Category:** FEATURE
@@ -701,6 +803,8 @@ There is no way to delete a reward. Outdated or incorrect rewards persist foreve
 | ENH-003 | Paginated history | P2 | ENHANCEMENT | Medium |
 | ENH-004 | Server-side summary aggregation | P2 | ENHANCEMENT | Medium |
 | ENH-005 | Rename "Remove Points" UX | P2 | ENHANCEMENT | Small |
+| ENH-010 | Simplify tracker to total points only | P1 | ENHANCEMENT | Medium |
+| ENH-011 | Remove reward approval -- direct redemption | P1 | ENHANCEMENT | Medium |
 | FEAT-009 | Push notifications (Capacitor) | P3 | FEATURE | Large |
 | FEAT-010 | Milestone badges | P3 | FEATURE | Large |
 | FEAT-011 | Capacitor native wrapper | P3 | FEATURE | Large |

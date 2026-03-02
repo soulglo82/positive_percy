@@ -4,15 +4,17 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Award, Target, Calendar, ChevronDown, ChevronUp, Plus, Minus } from "lucide-react";
+import { TrendingUp, Award, Target, Calendar, ChevronDown, ChevronUp, Plus, Minus, Heart } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ErrorCard from "../components/ErrorCard";
 
 export default function Summary() {
   const { user } = useAuth();
   const [expandedChildId, setExpandedChildId] = useState(null);
 
-  const { data: children = [] } = useQuery({
+  const { data: children = [], isLoading: childrenLoading, isError: childrenError, refetch: childrenRefetch } = useQuery({
     queryKey: ['children'],
     queryFn: () => Child.list(),
     enabled: !!user,
@@ -72,6 +74,35 @@ export default function Summary() {
     return Object.entries(categoryTotals)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5);
+  };
+
+  const getChildRatio = (childId) => {
+    const childEvents = weeklyEvents.filter(e => e.child_id === childId);
+    const positiveCount = childEvents.filter(e => e.points > 0).length;
+    const negativeCount = childEvents.filter(e => e.points < 0).length;
+    if (negativeCount === 0) return { ratio: positiveCount > 0 ? positiveCount : null, positiveCount, negativeCount };
+    return { ratio: Math.round((positiveCount / negativeCount) * 10) / 10, positiveCount, negativeCount };
+  };
+
+  const getRatioColor = (ratio) => {
+    if (ratio === null) return 'text-slate-400';
+    if (ratio >= 5) return 'text-green-600';
+    if (ratio >= 3) return 'text-amber-600';
+    return 'text-rose-600';
+  };
+
+  const getRatioBg = (ratio) => {
+    if (ratio === null) return 'bg-slate-50';
+    if (ratio >= 5) return 'bg-green-50';
+    if (ratio >= 3) return 'bg-amber-50';
+    return 'bg-rose-50';
+  };
+
+  const getRatioMessage = (ratio) => {
+    if (ratio === null) return 'No activity yet';
+    if (ratio >= 5) return 'Great balance!';
+    if (ratio >= 3) return 'Could use more positives';
+    return 'Try to add more positive reinforcement';
   };
 
   const totalWeeklyPoints = getTotalWeeklyPoints();
@@ -144,6 +175,51 @@ export default function Summary() {
             </Card>
           </motion.div>
         </div>
+
+        {/* Positivity Health (FEAT-002) */}
+        {children.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="w-5 h-5 text-pink-500" />
+                Positivity Health
+              </CardTitle>
+              <p className="text-xs text-slate-500 mt-1">
+                Research shows a 5:1 ratio of positive to negative interactions works best
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {children.map((child) => {
+                  const { ratio, positiveCount, negativeCount } = getChildRatio(child.id);
+                  return (
+                    <div key={child.id} className={`rounded-xl p-4 ${getRatioBg(ratio)}`}>
+                      <div className="flex items-center gap-3 mb-2">
+                        {child.avatar_url ? (
+                          <img src={child.avatar_url} alt={child.name} className="w-8 h-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold">
+                            {child.name.charAt(0)}
+                          </div>
+                        )}
+                        <span className="font-semibold text-slate-800">{child.name}</span>
+                      </div>
+                      <div className={`text-2xl font-bold ${getRatioColor(ratio)}`}>
+                        {ratio === null ? '--' : `${ratio}:1`}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        {positiveCount} positive / {negativeCount} adjustments
+                      </div>
+                      <div className={`text-xs font-medium mt-2 ${getRatioColor(ratio)}`}>
+                        {getRatioMessage(ratio)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Top Categories */}
         <Card>

@@ -1,7 +1,18 @@
+import { getToken } from '@/lib/AuthContext';
+
 const API_BASE = '/api';
 
 function getFamilyCode() {
   return localStorage.getItem('positive_percy_family_code') || '';
+}
+
+function authHeaders(extra = {}) {
+  const token = getToken();
+  const headers = { ...extra };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
 }
 
 async function parseError(res, fallback) {
@@ -18,14 +29,17 @@ class Entity {
     this.endpoint = endpoint;
   }
 
-  async list(sortField, limit) {
+  async list(sortField, limit, offset) {
     const params = new URLSearchParams();
     if (sortField) params.set('sort', sortField);
     if (limit) params.set('limit', limit);
+    if (offset) params.set('offset', offset);
     const fc = getFamilyCode();
     if (fc) params.set('family_code', fc);
     const qs = params.toString();
-    const res = await fetch(`${API_BASE}/${this.endpoint}${qs ? '?' + qs : ''}`);
+    const res = await fetch(`${API_BASE}/${this.endpoint}${qs ? '?' + qs : ''}`, {
+      headers: authHeaders(),
+    });
     if (!res.ok) throw new Error(await parseError(res, `Failed to list ${this.endpoint}`));
     return res.json();
   }
@@ -35,7 +49,7 @@ class Entity {
     const filter = fc ? { ...filterObj, family_code: fc } : filterObj;
     const res = await fetch(`${API_BASE}/${this.endpoint}/filter`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ filter, sort: sortField }),
     });
     if (!res.ok) throw new Error(await parseError(res, `Failed to filter ${this.endpoint}`));
@@ -47,7 +61,7 @@ class Entity {
     const payload = fc ? { ...data, family_code: fc } : data;
     const res = await fetch(`${API_BASE}/${this.endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(await parseError(res, `Failed to create ${this.endpoint}`));
@@ -57,7 +71,7 @@ class Entity {
   async update(id, data) {
     const res = await fetch(`${API_BASE}/${this.endpoint}/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error(await parseError(res, `Failed to update ${this.endpoint}`));
@@ -67,6 +81,7 @@ class Entity {
   async delete(id) {
     const res = await fetch(`${API_BASE}/${this.endpoint}/${id}`, {
       method: 'DELETE',
+      headers: authHeaders(),
     });
     if (!res.ok) throw new Error(await parseError(res, `Failed to delete ${this.endpoint}`));
     return res.json();
@@ -77,3 +92,4 @@ export const Child = new Entity('children');
 export const Point_Event = new Entity('point_events');
 export const Redemption = new Entity('redemptions');
 export const Reward = new Entity('rewards');
+export const Family_Goal = new Entity('family_goals');

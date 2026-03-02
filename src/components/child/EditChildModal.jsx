@@ -8,11 +8,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Upload, X } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Pencil, Upload, X, Trash2 } from "lucide-react";
 import { UploadFile } from "@/api/integrations";
 import { toast } from "sonner";
 
-export default function EditChildModal({ isOpen, onClose, child, onSubmit }) {
+export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDelete }) {
   const [name, setName] = useState("");
   const [weeklyTarget, setWeeklyTarget] = useState(50);
   const [totalPoints, setTotalPoints] = useState(0);
@@ -21,6 +31,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit }) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (child) {
@@ -75,7 +86,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit }) {
     }
   };
 
-  return (
+  return (<>
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -201,7 +212,44 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit }) {
             {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
+
+        {onDelete && (
+          <div className="pt-4 border-t">
+            <Button
+              variant="ghost"
+              className="w-full text-red-500 hover:text-red-700 hover:bg-red-50"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Child
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
-  );
+
+    <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete {child?.name}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete {child?.name} and all their point history. This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              onDelete(child);
+              setShowDeleteConfirm(false);
+              onClose();
+            }}
+            className="bg-red-500 hover:bg-red-600"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>);
 }

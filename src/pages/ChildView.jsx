@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Child, Reward, Redemption } from "@/api/entities";
-import { useAuth } from "@/lib/AuthContext";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useAuth, getToken } from "@/lib/AuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -11,24 +10,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Sparkles, Trophy, Target, Gift } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Trophy, Gift, Award } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import confetti from "canvas-confetti";
 
 import RewardCard from "../components/rewards/RewardCard";
+import ShareableCard from "../components/ShareableCard";
+import BadgeDisplay from "../components/BadgeDisplay";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function ChildView() {
   const { user } = useAuth();
   const [selectedChildId, setSelectedChildId] = useState(null);
+  const [redeemConfirm, setRedeemConfirm] = useState(null);
 
   const queryClient = useQueryClient();
 
-  const { data: children = [] } = useQuery({
+  const { data: children = [], isLoading } = useQuery({
     queryKey: ['children'],
     queryFn: () => Child.list(),
     enabled: !!user,
   });
+
+  if (isLoading) return <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 p-6"><LoadingSpinner message="Loading..." /></div>;
 
   const { data: allRewards = [] } = useQuery({
     queryKey: ['rewards'],
@@ -42,18 +57,6 @@ export default function ChildView() {
     return selectedChildId && reward.assigned_child_ids.includes(selectedChildId);
   });
 
-  const isWeekend = () => {
-    const day = new Date().getDay();
-    return day === 0 || day === 6;
-  };
-
-  const createRedemptionMutation = useMutation({
-    mutationFn: (data) => Redemption.create(data),
-    onSuccess: () => {
-      toast.success("Request sent to your parent!");
-    },
-  });
-
   useEffect(() => {
     if (children.length > 0 && !selectedChildId) {
       setSelectedChildId(children[0].id);
@@ -61,11 +64,35 @@ export default function ChildView() {
   }, [children, selectedChildId]);
 
   const selectedChild = children.find(c => c.id === selectedChildId);
-  const progressPercent = selectedChild
-    ? Math.min((selectedChild.weekly_points / selectedChild.weekly_target) * 100, 100)
-    : 0;
 
-  const handleRequestReward = async (reward) => {
+  // FEAT-010: Check badges on child selection
+  const checkBadges = async (childId) => {
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/children/${childId}/check-badges`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.new_badges && data.new_badges.length > 0) {
+        queryClient.invalidateQueries(['children']);
+        toast.success(`New badge${data.new_badges.length > 1 ? 's' : ''} earned!`);
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.6 },
+          colors: ['#f59e0b', '#a855f7', '#22c55e'],
+        });
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (selectedChildId) checkBadges(selectedChildId);
+  }, [selectedChildId]);
+
+  // ENH-011: Direct redemption with confirmation
+  const handleRedeemReward = async (reward) => {
     if (!selectedChild) return;
 
     if (selectedChild.total_points < reward.cost_points) {
@@ -73,14 +100,50 @@ export default function ChildView() {
       return;
     }
 
-    await createRedemptionMutation.mutateAsync({
-      child_id: selectedChild.id,
-      child_name: selectedChild.name,
-      reward_id: reward.id,
-      reward_title: reward.title,
-      reward_cost: reward.cost_points,
-      status: 'Pending',
-    });
+    setRedeemConfirm({ reward, child: selectedChild });
+  };
+
+  const confirmRedemption = async () => {
+    const { reward, child } = redeemConfirm;
+
+    try {
+      // Deduct points atomically via server
+      const token = getToken();
+      await fetch(`/api/children/${child.id}/adjust-points`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ points: -reward.cost_points }),
+      });
+
+      // Log the redemption as completed (for history)
+      await Redemption.create({
+        child_id: child.id,
+        child_name: child.name,
+        reward_id: reward.id,
+        reward_title: reward.title,
+        reward_cost: reward.cost_points,
+        status: 'Completed',
+      });
+
+      queryClient.invalidateQueries(['children']);
+      toast.success(`${child.name} redeemed ${reward.title}!`);
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
+      });
+
+      // Check for new badges after redemption
+      checkBadges(child.id);
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    }
+
+    setRedeemConfirm(null);
   };
 
   if (children.length === 0) {
@@ -150,45 +213,28 @@ export default function ChildView() {
                   </h1>
                   <p className="text-slate-600 mb-6">Keep up the amazing work!</p>
 
-                  <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6">
-                    <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl p-6 text-white">
-                      <Trophy className="w-8 h-8 mb-2 mx-auto" />
-                      <div className="text-4xl font-bold mb-1">{selectedChild.total_points}</div>
+                  {/* ENH-010: Single hero points display */}
+                  <div className="max-w-xs mx-auto">
+                    <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl p-8 text-white">
+                      <Trophy className="w-10 h-10 mb-3 mx-auto" />
+                      <div className="text-5xl font-bold mb-2">{selectedChild.total_points}</div>
                       <div className="text-sm opacity-90">Total Points</div>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl p-6 text-white">
-                      <Sparkles className="w-8 h-8 mb-2 mx-auto" />
-                      <div className="text-4xl font-bold mb-1">{selectedChild.weekly_points}</div>
-                      <div className="text-sm opacity-90">This Week</div>
+                    <div className="mt-3 flex justify-center">
+                      <ShareableCard child={selectedChild} message="Look at my points!" />
                     </div>
                   </div>
 
-                  <div className="max-w-md mx-auto">
-                    <div className="flex items-center justify-between text-sm text-slate-600 mb-2">
-                      <span className="flex items-center gap-1">
-                        <Target className="w-4 h-4" />
-                        Weekly Goal
-                      </span>
-                      <span className="font-bold">{selectedChild.weekly_points} / {selectedChild.weekly_target}</span>
+                  {/* FEAT-010: Badges */}
+                  {selectedChild.badges_earned && selectedChild.badges_earned.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-slate-200">
+                      <h3 className="text-lg font-semibold text-slate-700 flex items-center justify-center gap-2 mb-3">
+                        <Award className="w-5 h-5 text-amber-500" />
+                        My Badges
+                      </h3>
+                      <BadgeDisplay earnedBadgeIds={selectedChild.badges_earned} />
                     </div>
-                    <div className="h-4 bg-slate-200 rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progressPercent}%` }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                      />
-                    </div>
-                    {progressPercent >= 100 && (
-                      <motion.p
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-green-600 font-bold mt-2"
-                      >
-                        🎉 Goal achieved! Amazing!
-                      </motion.p>
-                    )}
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -199,11 +245,6 @@ export default function ChildView() {
                   <Gift className="w-8 h-8 text-pink-500" />
                   Available Treats
                 </h2>
-                {!isWeekend() && (
-                  <Badge className="bg-amber-100 text-amber-700 border-0">
-                    🗓️ Available on weekends
-                  </Badge>
-                )}
               </div>
 
               {rewards.length === 0 ? (
@@ -222,7 +263,7 @@ export default function ChildView() {
                       key={reward.id}
                       reward={reward}
                       isParentView={false}
-                      onRequest={isWeekend() ? handleRequestReward : null}
+                      onRequest={handleRedeemReward}
                       canAfford={selectedChild.total_points >= reward.cost_points}
                     />
                   ))}
@@ -232,6 +273,33 @@ export default function ChildView() {
           </>
         )}
       </div>
+
+      {/* Redemption Confirmation Dialog */}
+      <AlertDialog open={!!redeemConfirm} onOpenChange={(open) => !open && setRedeemConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Redeem Reward</AlertDialogTitle>
+            <AlertDialogDescription>
+              {redeemConfirm && (
+                <>
+                  <span className="font-semibold">{redeemConfirm.child.name}</span> will spend{' '}
+                  <span className="font-semibold">{redeemConfirm.reward.cost_points} points</span> on{' '}
+                  <span className="font-semibold">{redeemConfirm.reward.title}</span>. Continue?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRedemption}
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+            >
+              Redeem
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
