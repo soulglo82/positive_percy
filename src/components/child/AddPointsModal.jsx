@@ -29,11 +29,11 @@ const CATEGORIES = [
   "Other"
 ];
 
-const PRESET_AMOUNTS = [5, 10, 15, 20, 25];
+const PRESET_AMOUNTS = [1, 2, 3, 4, 10];
 
 export default function AddPointsModal({ isOpen, onClose, child, onSubmit, isSubtract = false }) {
-  const [points, setPoints] = useState(10);
-  const [category, setCategory] = useState("Other");
+  const [points, setPoints] = useState(1);
+  const [category, setCategory] = useState("Kindness");
   const [note, setNote] = useState("");
 
   const handleSubmit = () => {
@@ -42,8 +42,8 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit, isSub
       category,
       note,
     });
-    setPoints(10);
-    setCategory("Other");
+    setPoints(1);
+    setCategory("Kindness");
     setNote("");
     onClose();
   };
