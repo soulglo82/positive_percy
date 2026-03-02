@@ -1,14 +1,71 @@
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
 import pool from './db.js';
 
 const router = Router();
 
+const JWT_SECRET = process.env.JWT_SECRET || 'positive-percy-secret-change-in-prod';
+const JWT_EXPIRY = '30d';
+
+function signToken(familyCode) {
+  return jwt.sign({ family_code: familyCode }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+}
+
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+      req.familyCode = decoded.family_code;
+      return next();
+    } catch {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+  }
+  // Fallback: accept family_code from query/body for backward compatibility during migration
+  const fc = req.query.family_code || req.body?.family_code;
+  if (fc) {
+    req.familyCode = fc;
+    return next();
+  }
+  return res.status(401).json({ error: 'Authentication required' });
+}
+
 // ─── Generic helpers ────────────────────────────────────────────────────────
+
+const COLUMN_WHITELIST = {
+  children: new Set(['name', 'avatar_url', 'total_points', 'weekly_points',
+    'weekly_target', 'last_reset_date', 'parent_email', 'family_code', 'date_of_birth']),
+  point_events: new Set(['child_id', 'points', 'category', 'note',
+    'child_name', 'family_code']),
+  redemptions: new Set(['child_id', 'child_name', 'reward_id', 'reward_title',
+    'reward_cost', 'status', 'family_code']),
+  rewards: new Set(['title', 'description', 'cost_points', 'image_url',
+    'emoji', 'visible_to_child', 'assigned_child_ids', 'family_code']),
+};
+
+const SORT_WHITELIST = new Set(['created_date', 'name', 'title', 'points',
+  'total_points', 'weekly_points', 'cost_points', 'status']);
+
+const USER_COLUMN_WHITELIST = new Set(['email', 'full_name', 'family_code',
+  'mum_name', 'mum_phone', 'dad_name', 'dad_phone']);
+
+function validateColumns(table, keys) {
+  const allowed = COLUMN_WHITELIST[table];
+  if (!allowed) return;
+  const invalid = keys.filter(k => !allowed.has(k));
+  if (invalid.length > 0) {
+    const err = new Error(`Invalid columns: ${invalid.join(', ')}`);
+    err.status = 400;
+    throw err;
+  }
+}
 
 function buildSort(sortField) {
   if (!sortField) return 'created_date DESC';
   const desc = sortField.startsWith('-');
   const field = desc ? sortField.slice(1) : sortField;
+  if (!SORT_WHITELIST.has(field)) return 'created_date DESC';
   return `${field} ${desc ? 'DESC' : 'ASC'}`;
 }
 
@@ -89,7 +146,8 @@ router.post('/api/family/create', async (req, res) => {
         'INSERT INTO families (family_code, family_name) VALUES ($1, $2) RETURNING *',
         [family_code, family_name]
       );
-      return res.json(rows[0]);
+      const token = signToken(family_code);
+      return res.json({ ...rows[0], token });
     } catch (err) {
       if (err.code === '23505') {
         attempts++;
@@ -115,7 +173,8 @@ router.post('/api/family/join', async (req, res) => {
     return res.status(404).json({ error: 'Family not found. Check the code and try again.' });
   }
 
-  res.json(rows[0]);
+  const token = signToken(rows[0].family_code);
+  res.json({ ...rows[0], token });
 });
 
 // Get family info
@@ -135,12 +194,9 @@ router.get('/api/family/:code', async (req, res) => {
 // ─── User / Profile routes (MUST be before generic :entity routes) ──────────
 
 // Get or create user by family code
-router.get('/api/auth/me', async (req, res) => {
+router.get('/api/auth/me', authMiddleware, async (req, res) => {
   try {
-    const familyCode = req.query.family_code;
-    if (!familyCode) {
-      return res.status(400).json({ error: 'No family code provided' });
-    }
+    const familyCode = req.familyCode;
 
     const { rows: familyRows } = await pool.query(
       'SELECT * FROM families WHERE family_code = $1',
@@ -171,13 +227,16 @@ router.get('/api/auth/me', async (req, res) => {
 });
 
 // Update user profile
-router.put('/api/auth/me', async (req, res) => {
+router.put('/api/auth/me', authMiddleware, async (req, res) => {
   try {
-    const familyCode = req.query.family_code;
-    if (!familyCode) return res.status(400).json({ error: 'No family code' });
+    const familyCode = req.familyCode;
 
     const data = req.body;
     const keys = Object.keys(data);
+    const invalidKeys = keys.filter(k => !USER_COLUMN_WHITELIST.has(k));
+    if (invalidKeys.length > 0) {
+      return res.status(400).json({ error: `Invalid columns: ${invalidKeys.join(', ')}` });
+    }
     const values = Object.values(data);
     const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
     values.push(familyCode);
@@ -195,10 +254,60 @@ router.put('/api/auth/me', async (req, res) => {
   }
 });
 
+// ─── Children-specific endpoints ─────────────────────────────────────────────
+
+// Weekly reset (server-side, idempotent)
+router.post('/api/children/weekly-reset', authMiddleware, async (req, res) => {
+  try {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    if (dayOfWeek !== 1) return res.json({ reset: false, reason: 'Not Monday' });
+
+    const todayStr = today.toISOString().split('T')[0];
+    const { rowCount } = await pool.query(
+      `UPDATE children
+       SET weekly_points = 0, last_reset_date = $1
+       WHERE family_code = $2
+         AND weekly_points > 0
+         AND (last_reset_date IS NULL OR last_reset_date != $1)`,
+      [todayStr, req.familyCode]
+    );
+    res.json({ reset: true, children_reset: rowCount });
+  } catch (err) {
+    console.error('Weekly reset error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Atomic point adjustment (prevents race conditions)
+router.post('/api/children/:id/adjust-points', authMiddleware, async (req, res) => {
+  try {
+    const { points } = req.body;
+    if (typeof points !== 'number') {
+      return res.status(400).json({ error: 'points must be a number' });
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE children
+       SET total_points = GREATEST(0, total_points + $1),
+           weekly_points = GREATEST(0, weekly_points + $1)
+       WHERE id = $2 AND family_code = $3
+       RETURNING *`,
+      [points, req.params.id, req.familyCode]
+    );
+
+    if (rows.length === 0) return res.status(404).json({ error: 'Child not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Adjust points error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Entity CRUD routes ─────────────────────────────────────────────────────
 
-// LIST  – GET /api/:entity?sort=&limit=&family_code=
-router.get('/api/:entity', async (req, res) => {
+// LIST  – GET /api/:entity?sort=&limit=
+router.get('/api/:entity', authMiddleware, async (req, res) => {
   const table = TABLE_MAP[req.params.entity];
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
@@ -206,12 +315,8 @@ router.get('/api/:entity', async (req, res) => {
     const sort = buildSort(req.query.sort);
     const limit = req.query.limit ? `LIMIT ${parseInt(req.query.limit)}` : '';
 
-    let where = '';
-    const values = [];
-    if (req.query.family_code) {
-      values.push(req.query.family_code);
-      where = `WHERE family_code = $1`;
-    }
+    const values = [req.familyCode];
+    const where = 'WHERE family_code = $1';
 
     const { rows } = await pool.query(
       `SELECT * FROM ${table} ${where} ORDER BY ${sort} ${limit}`,
@@ -225,12 +330,17 @@ router.get('/api/:entity', async (req, res) => {
 });
 
 // FILTER – POST /api/:entity/filter
-router.post('/api/:entity/filter', async (req, res) => {
+router.post('/api/:entity/filter', authMiddleware, async (req, res) => {
   const table = TABLE_MAP[req.params.entity];
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
     const { filter, sort } = req.body;
+    const filterKeys = Object.keys(filter || {});
+    if (filterKeys.length > 0) {
+      validateColumns(table, filterKeys);
+    }
+
     const conditions = [];
     const values = [];
     let idx = 1;
@@ -256,13 +366,14 @@ router.post('/api/:entity/filter', async (req, res) => {
 });
 
 // CREATE – POST /api/:entity
-router.post('/api/:entity', async (req, res) => {
+router.post('/api/:entity', authMiddleware, async (req, res) => {
   const table = TABLE_MAP[req.params.entity];
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
     const data = req.body;
     const keys = Object.keys(data);
+    validateColumns(table, keys);
     const values = Object.values(data);
     const placeholders = keys.map((_, i) => `$${i + 1}`);
 
@@ -278,13 +389,14 @@ router.post('/api/:entity', async (req, res) => {
 });
 
 // UPDATE – PUT /api/:entity/:id
-router.put('/api/:entity/:id', async (req, res) => {
+router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
   const table = TABLE_MAP[req.params.entity];
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
     const data = req.body;
     const keys = Object.keys(data);
+    validateColumns(table, keys);
     const values = Object.values(data);
     const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
     values.push(req.params.id);
@@ -302,7 +414,7 @@ router.put('/api/:entity/:id', async (req, res) => {
 });
 
 // DELETE – DELETE /api/:entity/:id
-router.delete('/api/:entity/:id', async (req, res) => {
+router.delete('/api/:entity/:id', authMiddleware, async (req, res) => {
   const table = TABLE_MAP[req.params.entity];
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 

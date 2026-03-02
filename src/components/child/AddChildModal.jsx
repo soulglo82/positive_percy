@@ -14,12 +14,29 @@ import { toast } from "sonner";
 
 export default function AddChildModal({ isOpen, onClose, onSubmit }) {
   const [name, setName] = useState("");
+  const [age, setAge] = useState("");
   const [weeklyTarget, setWeeklyTarget] = useState(50);
   const [startingPoints, setStartingPoints] = useState(0);
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState("");
+
+  const suggestTarget = (ageNum) => {
+    if (ageNum >= 3 && ageNum <= 5) return 20;
+    if (ageNum >= 6 && ageNum <= 8) return 35;
+    if (ageNum >= 9 && ageNum <= 12) return 50;
+    if (ageNum >= 13) return 75;
+    return 50;
+  };
+
+  const handleAgeChange = (value) => {
+    setAge(value);
+    const ageNum = Number(value);
+    if (ageNum > 0) {
+      setWeeklyTarget(suggestTarget(ageNum));
+    }
+  };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -49,6 +66,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
     try {
       await onSubmit({ name: name.trim(), weeklyTarget, startingPoints, avatar_url: avatarUrl });
       setName("");
+      setAge("");
       setWeeklyTarget(50);
       setStartingPoints(0);
       setAvatarUrl("");
@@ -128,6 +146,24 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
               className="text-lg"
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             />
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+              Age (optional)
+            </Label>
+            <Input
+              type="number"
+              value={age}
+              onChange={(e) => handleAgeChange(e.target.value)}
+              placeholder="e.g., 7"
+              min="1"
+              max="18"
+              className="text-lg"
+            />
+            <p className="text-xs text-slate-500 mt-2">
+              Helps us suggest a good weekly target
+            </p>
           </div>
 
           <div>

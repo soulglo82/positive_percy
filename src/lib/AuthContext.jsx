@@ -3,6 +3,11 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 const AuthContext = createContext();
 
 const FAMILY_CODE_KEY = 'positive_percy_family_code';
+const TOKEN_KEY = 'positive_percy_token';
+
+export function getToken() {
+  return localStorage.getItem(TOKEN_KEY) || '';
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -12,18 +17,30 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const storedCode = localStorage.getItem(FAMILY_CODE_KEY);
-    if (storedCode) {
-      loadUser(storedCode);
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+    if (storedCode && storedToken) {
+      loadUser(storedCode, storedToken);
+    } else if (storedCode) {
+      // Legacy user without token -- need to re-authenticate
+      localStorage.removeItem(FAMILY_CODE_KEY);
+      setIsLoading(false);
     } else {
       setIsLoading(false);
     }
   }, []);
 
-  const loadUser = async (code) => {
+  const loadUser = async (code, token) => {
     try {
-      const res = await fetch(`/api/auth/me?family_code=${encodeURIComponent(code)}`);
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const res = await fetch(`/api/auth/me?family_code=${encodeURIComponent(code)}`, {
+        headers,
+      });
       if (!res.ok) {
         localStorage.removeItem(FAMILY_CODE_KEY);
+        localStorage.removeItem(TOKEN_KEY);
         setIsLoading(false);
         return false;
       }
@@ -32,10 +49,14 @@ export const AuthProvider = ({ children }) => {
       setFamilyCode(code);
       setIsAuthenticated(true);
       localStorage.setItem(FAMILY_CODE_KEY, code);
+      if (token) {
+        localStorage.setItem(TOKEN_KEY, token);
+      }
       setIsLoading(false);
       return true;
     } catch {
       localStorage.removeItem(FAMILY_CODE_KEY);
+      localStorage.removeItem(TOKEN_KEY);
       setIsLoading(false);
       return false;
     }
@@ -49,7 +70,8 @@ export const AuthProvider = ({ children }) => {
     });
     if (!res.ok) throw new Error('Failed to create family');
     const family = await res.json();
-    await loadUser(family.family_code);
+    localStorage.setItem(TOKEN_KEY, family.token);
+    await loadUser(family.family_code, family.token);
     return family;
   };
 
@@ -63,13 +85,19 @@ export const AuthProvider = ({ children }) => {
       const err = await res.json();
       throw new Error(err.error || 'Failed to join family');
     }
-    await loadUser(code.toUpperCase());
+    const family = await res.json();
+    localStorage.setItem(TOKEN_KEY, family.token);
+    await loadUser(code.toUpperCase(), family.token);
   };
 
   const updateUser = async (data) => {
+    const token = getToken();
     const res = await fetch(`/api/auth/me?family_code=${encodeURIComponent(familyCode)}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to update profile');
@@ -80,6 +108,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem(FAMILY_CODE_KEY);
+    localStorage.removeItem(TOKEN_KEY);
     setUser(null);
     setFamilyCode(null);
     setIsAuthenticated(false);

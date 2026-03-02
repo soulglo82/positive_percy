@@ -9,9 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Gift } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Gift, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { REWARD_TEMPLATES } from "@/data/reward-templates";
 
 const EMOJI_OPTIONS = ["🎮", "🍕", "🎬", "🎨", "⚽", "📚", "🎪", "🎭", "🏊", "🎵", "🍦", "🎁"];
+
+const CATEGORY_LABELS = {
+  quick: "Quick Wins (5-15 pts)",
+  medium: "Medium (20-50 pts)",
+  big: "Big Goals (60+ pts)",
+};
 
 export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [] }) {
   const [title, setTitle] = useState("");
@@ -19,6 +27,15 @@ export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [
   const [costPoints, setCostPoints] = useState(50);
   const [emoji, setEmoji] = useState("🎁");
   const [assignedChildIds, setAssignedChildIds] = useState([]);
+  const [showIdeas, setShowIdeas] = useState(false);
+
+  const selectTemplate = (template) => {
+    setTitle(template.title);
+    setDescription(template.description || "");
+    setCostPoints(template.cost_points);
+    setEmoji(template.emoji);
+    setShowIdeas(false);
+  };
 
   const handleSubmit = () => {
     if (title.trim() && costPoints > 0) {
@@ -58,6 +75,45 @@ export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [
         </DialogHeader>
 
         <div className="space-y-5 py-4">
+          {/* Browse Ideas */}
+          <div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-100"
+              onClick={() => setShowIdeas(!showIdeas)}
+            >
+              <Lightbulb className="w-4 h-4 mr-2" />
+              Browse Reward Ideas
+              {showIdeas ? <ChevronUp className="w-4 h-4 ml-auto" /> : <ChevronDown className="w-4 h-4 ml-auto" />}
+            </Button>
+            {showIdeas && (
+              <div className="mt-3 max-h-48 overflow-y-auto border rounded-lg p-3 space-y-3">
+                {Object.entries(CATEGORY_LABELS).map(([cat, label]) => (
+                  <div key={cat}>
+                    <p className="text-xs font-semibold text-slate-500 mb-1">{label}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {REWARD_TEMPLATES.filter(t => t.category === cat).map((t) => (
+                        <button
+                          key={t.title}
+                          type="button"
+                          onClick={() => selectTemplate(t)}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 hover:bg-purple-100 text-xs font-medium text-slate-700 hover:text-purple-700 transition-colors"
+                        >
+                          <span>{t.emoji}</span>
+                          <span>{t.title}</span>
+                          <Badge className="bg-amber-100 text-amber-700 border-0 text-[10px] px-1 py-0 h-4">
+                            {t.cost_points}
+                          </Badge>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Emoji Picker */}
           <div>
             <Label className="text-sm font-medium text-slate-700 mb-2 block">

@@ -100,6 +100,8 @@ export async function initDb() {
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS dad_phone TEXT",
       // Drop NOT NULL on parent_email - no longer used, replaced by family_code
       "ALTER TABLE children ALTER COLUMN parent_email DROP NOT NULL",
+      // Age / date of birth field (FEAT-007)
+      "ALTER TABLE children ADD COLUMN IF NOT EXISTS date_of_birth TEXT",
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});

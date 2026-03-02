@@ -84,24 +84,18 @@ export default function RewardCard({ reward, onRequest, isParentView, onToggleVi
               <Coins className="w-4 h-4 mr-1" />
               {reward.cost_points}
             </Badge>
-            {!isParentView && (
-              onRequest ? (
-                <Button
-                  size="sm"
-                  onClick={() => onRequest(reward)}
-                  disabled={!canAfford}
-                  className={canAfford 
-                    ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                    : "bg-slate-300"
-                  }
-                >
-                  Request
-                </Button>
-              ) : (
-                <Badge variant="outline" className="text-xs text-slate-500">
-                  Weekends only
-                </Badge>
-              )
+            {!isParentView && onRequest && (
+              <Button
+                size="sm"
+                onClick={() => onRequest(reward)}
+                disabled={!canAfford}
+                className={canAfford
+                  ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+                  : "bg-slate-300"
+                }
+              >
+                Redeem
+              </Button>
             )}
           </div>
         </CardContent>

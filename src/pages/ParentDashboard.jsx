@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
-import { Child, Point_Event, Redemption } from "@/api/entities";
+import React, { useState, useEffect } from 'react';
+import { Child, Point_Event } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
+import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserPlus, Award } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 
 import ChildCard from "../components/child/ChildCard";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
-import RedemptionCard from "../components/redemptions/RedemptionCard";
+import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
 
 export default function ParentDashboard() {
   const { user } = useAuth();
@@ -20,45 +22,39 @@ export default function ParentDashboard() {
   const [showAddPoints, setShowAddPoints] = useState(false);
   const [showSubtractPoints, setShowSubtractPoints] = useState(false);
   const [selectedChild, setSelectedChild] = useState(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const queryClient = useQueryClient();
 
+  // Show onboarding tips on first visit
+  useEffect(() => {
+    if (user && shouldShowOnboarding()) {
+      setShowOnboarding(true);
+    }
+  }, [user]);
+
+  // Server-side weekly reset on mount (BUG-002)
+  useEffect(() => {
+    if (!user) return;
+    const token = getToken();
+    fetch('/api/children/weekly-reset', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    }).then(res => res.json()).then(result => {
+      if (result.reset && result.children_reset > 0) {
+        queryClient.invalidateQueries(['children']);
+        toast.info("Weekly points have been reset!");
+      }
+    }).catch(() => {});
+  }, [user]);
+
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
-    queryFn: async () => {
-      const childrenData = await Child.list();
-
-      // Check for weekly reset (Monday)
-      const today = new Date();
-      const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday
-      const todayStr = today.toISOString().split('T')[0];
-
-      for (const child of childrenData) {
-        const lastReset = child.last_reset_date ? new Date(child.last_reset_date) : null;
-        const shouldReset = !lastReset || (
-          dayOfWeek === 1 && // It's Monday
-          lastReset.toISOString().split('T')[0] !== todayStr // Haven't reset today
-        );
-
-        if (shouldReset && child.weekly_points > 0) {
-          await Child.update(child.id, {
-            weekly_points: 0,
-            last_reset_date: todayStr,
-          });
-          child.weekly_points = 0;
-          child.last_reset_date = todayStr;
-        }
-      }
-
-      return childrenData;
-    },
+    queryFn: () => Child.list(),
     enabled: !!user,
-  });
-
-  const { data: pendingRedemptions = [] } = useQuery({
-    queryKey: ['pendingRedemptions'],
-    queryFn: () => Redemption.filter({ status: 'Pending' }, '-created_date'),
-    refetchInterval: 5000,
   });
 
   const createChildMutation = useMutation({
@@ -91,14 +87,6 @@ export default function ParentDashboard() {
     },
   });
 
-  const updateRedemptionMutation = useMutation({
-    mutationFn: ({ id, data }) => Redemption.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pendingRedemptions']);
-      queryClient.invalidateQueries(['children']);
-    },
-  });
-
   const handleAddPoints = (child) => {
     setSelectedChild(child);
     setShowAddPoints(true);
@@ -122,7 +110,15 @@ export default function ParentDashboard() {
     toast.success(`${data.name}'s profile updated!`);
   };
 
+  // BUG-003: Use atomic server-side point adjustment
   const handlePointsSubmit = async (data) => {
+    if (data.points < 0) {
+      const newTotal = selectedChild.total_points + data.points;
+      if (newTotal < 0) {
+        toast.warning(`This will reduce ${selectedChild.name}'s points to 0`);
+      }
+    }
+
     await createPointEventMutation.mutateAsync({
       child_id: selectedChild.id,
       child_name: selectedChild.name,
@@ -131,13 +127,33 @@ export default function ParentDashboard() {
       note: data.note,
     });
 
-    await updateChildMutation.mutateAsync({
-      id: selectedChild.id,
-      data: {
-        total_points: selectedChild.total_points + data.points,
-        weekly_points: selectedChild.weekly_points + data.points,
+    const token = getToken();
+    const res = await fetch(`/api/children/${selectedChild.id}/adjust-points`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
       },
+      body: JSON.stringify({ points: data.points }),
     });
+
+    if (data.points > 0) {
+      // Check if child just hit their weekly goal
+      const updated = await res.json();
+      const wasBelow = selectedChild.weekly_points < selectedChild.weekly_target;
+      const isNowAbove = updated.weekly_points >= updated.weekly_target;
+      if (wasBelow && isNowAbove) {
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
+        });
+        toast.success(`${selectedChild.name} hit their weekly goal!`);
+      }
+    }
+
+    queryClient.invalidateQueries(['children']);
   };
 
   const handleResetWeekly = async (child) => {
@@ -149,34 +165,6 @@ export default function ParentDashboard() {
       },
     });
     toast.success(`${child.name}'s weekly points reset!`);
-  };
-
-  const handleApproveRedemption = async (redemption) => {
-    const child = children.find(c => c.id === redemption.child_id);
-    if (!child) return;
-
-    await updateRedemptionMutation.mutateAsync({
-      id: redemption.id,
-      data: { status: 'Approved' },
-    });
-
-    await updateChildMutation.mutateAsync({
-      id: child.id,
-      data: {
-        total_points: child.total_points - redemption.reward_cost,
-        weekly_points: Math.max(0, child.weekly_points - redemption.reward_cost),
-      },
-    });
-
-    toast.success(`${redemption.child_name}'s request approved!`);
-  };
-
-  const handleDenyRedemption = async (redemption) => {
-    await updateRedemptionMutation.mutateAsync({
-      id: redemption.id,
-      data: { status: 'Denied' },
-    });
-    toast.info("Request denied");
   };
 
   return (
@@ -191,28 +179,6 @@ export default function ParentDashboard() {
           />
           <p className="text-slate-600">Building bright futures, one point at a time</p>
         </div>
-
-        {/* Pending Redemptions */}
-        {pendingRedemptions.length > 0 && (
-          <Card className="border-2 border-amber-200 bg-amber-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-amber-800">
-                <Award className="w-5 h-5" />
-                Pending Reward Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {pendingRedemptions.map((redemption) => (
-                <RedemptionCard
-                  key={redemption.id}
-                  redemption={redemption}
-                  onApprove={handleApproveRedemption}
-                  onDeny={handleDenyRedemption}
-                />
-              ))}
-            </CardContent>
-          </Card>
-        )}
 
         {/* Children Grid */}
         {children.length === 0 ? (
@@ -300,6 +266,11 @@ export default function ParentDashboard() {
         child={selectedChild}
         onSubmit={handlePointsSubmit}
         isSubtract={true}
+      />
+
+      <OnboardingTips
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
       />
     </div>
   );

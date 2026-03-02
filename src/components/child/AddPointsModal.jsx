@@ -25,7 +25,7 @@ const CATEGORIES = [
   "Good Manners",
   "Bedtime Routine",
   "Screen Time",
-  "Misbehavior",
+  "Learning Moment",
   "Other"
 ];
 
@@ -54,8 +54,13 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit, isSub
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Sparkles className={`w-6 h-6 ${isSubtract ? 'text-rose-500' : 'text-green-500'}`} />
-            {isSubtract ? 'Remove Points' : 'Award Points'}
+            {isSubtract ? 'Adjust Points' : 'Award Points'}
           </DialogTitle>
+          {isSubtract && (
+            <p className="text-xs text-amber-600 mt-1">
+              Tip: Try to keep adjustments rare. Research shows 5 positives for every 1 correction works best.
+            </p>
+          )}
         </DialogHeader>
 
         <div className="space-y-5 py-4">
@@ -147,7 +152,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit, isSub
                 : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
             }`}
           >
-            {isSubtract ? 'Remove' : 'Award'} Points
+            {isSubtract ? 'Adjust' : 'Award'} Points
           </Button>
         </div>
       </DialogContent>

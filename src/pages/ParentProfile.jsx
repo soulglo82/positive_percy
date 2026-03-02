@@ -4,14 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Save, Copy, Check, Share2 } from "lucide-react";
+import { User, Save, Copy, Check, Share2, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
+import OnboardingTips from "../components/OnboardingTips";
 
 export default function ParentProfile() {
   const { user, familyCode, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [familyName, setFamilyName] = useState(user?.full_name || '');
+  const [showTips, setShowTips] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -115,7 +117,27 @@ export default function ParentProfile() {
             </CardContent>
           </Card>
         )}
+
+        {/* Tips Card */}
+        <Card>
+          <CardContent className="py-4">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setShowTips(true)}
+            >
+              <Lightbulb className="w-4 h-4 mr-2 text-amber-500" />
+              View Parenting Tips
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+
+      <OnboardingTips
+        isOpen={showTips}
+        onClose={() => setShowTips(false)}
+        forceShow
+      />
     </div>
   );
 }
