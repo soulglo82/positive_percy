@@ -4,6 +4,9 @@ import pool from './db.js';
 
 const router = Router();
 
+let broadcastFn = () => {};
+export function setBroadcast(fn) { broadcastFn = fn; }
+
 const JWT_SECRET = process.env.JWT_SECRET || 'positive-percy-secret-change-in-prod';
 const JWT_EXPIRY = '30d';
 
@@ -42,6 +45,8 @@ const COLUMN_WHITELIST = {
     'reward_cost', 'status', 'family_code']),
   rewards: new Set(['title', 'description', 'cost_points', 'image_url',
     'emoji', 'visible_to_child', 'assigned_child_ids', 'family_code']),
+  family_goals: new Set(['title', 'description', 'emoji', 'target_points',
+    'current_points', 'status', 'family_code']),
 };
 
 const SORT_WHITELIST = new Set(['created_date', 'name', 'title', 'points',
@@ -83,6 +88,7 @@ const TABLE_MAP = {
   point_events: 'point_events',
   redemptions: 'redemptions',
   rewards: 'rewards',
+  family_goals: 'family_goals',
 };
 
 // ─── File upload ────────────────────────────────────────────────────────────
@@ -191,6 +197,43 @@ router.get('/api/family/:code', async (req, res) => {
   res.json(rows[0]);
 });
 
+// Check and update parent streak (FEAT-006)
+router.post('/api/family/check-streak', authMiddleware, async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+    const { rows } = await pool.query(
+      'SELECT current_streak, last_active_date, longest_streak FROM families WHERE family_code = $1',
+      [req.familyCode]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Family not found' });
+
+    const family = rows[0];
+    let newStreak = family.current_streak || 0;
+
+    if (family.last_active_date === today) {
+      return res.json({ streak: newStreak, longest: family.longest_streak || 0, updated: false });
+    } else if (family.last_active_date === yesterday) {
+      newStreak += 1;
+    } else {
+      newStreak = 1;
+    }
+
+    const longestStreak = Math.max(newStreak, family.longest_streak || 0);
+
+    await pool.query(
+      'UPDATE families SET current_streak = $1, last_active_date = $2, longest_streak = $3 WHERE family_code = $4',
+      [newStreak, today, longestStreak, req.familyCode]
+    );
+
+    res.json({ streak: newStreak, longest: longestStreak, updated: true });
+  } catch (err) {
+    console.error('Check streak error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── User / Profile routes (MUST be before generic :entity routes) ──────────
 
 // Get or create user by family code
@@ -297,6 +340,7 @@ router.post('/api/children/:id/adjust-points', authMiddleware, async (req, res) 
     );
 
     if (rows.length === 0) return res.status(404).json({ error: 'Child not found' });
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: req.params.id });
     res.json(rows[0]);
   } catch (err) {
     console.error('Adjust points error:', err);
@@ -304,9 +348,159 @@ router.post('/api/children/:id/adjust-points', authMiddleware, async (req, res) 
   }
 });
 
+// Server-side summary aggregation (ENH-004)
+router.get('/api/summary', authMiddleware, async (req, res) => {
+  try {
+    const weekStart = req.query.week_start;
+    const familyCode = req.familyCode;
+
+    if (!weekStart) return res.status(400).json({ error: 'week_start is required' });
+
+    const { rows: childStats } = await pool.query(`
+      SELECT
+        c.id, c.name, c.avatar_url, c.weekly_points, c.weekly_target, c.total_points,
+        COALESCE(SUM(CASE WHEN pe.points > 0 THEN pe.points ELSE 0 END), 0)::int as positive_points,
+        COALESCE(SUM(CASE WHEN pe.points < 0 THEN ABS(pe.points) ELSE 0 END), 0)::int as negative_points,
+        COUNT(pe.id)::int as total_events
+      FROM children c
+      LEFT JOIN point_events pe ON pe.child_id = c.id
+        AND pe.created_date >= $1
+        AND pe.family_code = $2
+      WHERE c.family_code = $2
+      GROUP BY c.id
+    `, [weekStart, familyCode]);
+
+    const { rows: topCategories } = await pool.query(`
+      SELECT category, SUM(points)::int as total_points, COUNT(*)::int as count
+      FROM point_events
+      WHERE family_code = $1 AND created_date >= $2 AND points > 0
+      GROUP BY category
+      ORDER BY total_points DESC
+      LIMIT 5
+    `, [familyCode, weekStart]);
+
+    const { rows: categoryBreakdowns } = await pool.query(`
+      SELECT child_id, category, COUNT(*)::int as count, SUM(points)::int as points
+      FROM point_events
+      WHERE family_code = $1 AND created_date >= $2
+      GROUP BY child_id, category
+      ORDER BY count DESC
+    `, [familyCode, weekStart]);
+
+    const { rows: weekEvents } = await pool.query(`
+      SELECT id, child_id, points, category, note, created_date
+      FROM point_events
+      WHERE family_code = $1 AND created_date >= $2
+      ORDER BY created_date DESC
+    `, [familyCode, weekStart]);
+
+    res.json({ childStats, topCategories, categoryBreakdowns, weekEvents });
+  } catch (err) {
+    console.error('Summary error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Badge evaluation (FEAT-010) ──────────────────────────────────────────────
+
+// Check and award badges for a child
+router.post('/api/children/:id/check-badges', authMiddleware, async (req, res) => {
+  try {
+    const childId = req.params.id;
+
+    const { rows: childRows } = await pool.query(
+      'SELECT * FROM children WHERE id = $1 AND family_code = $2',
+      [childId, req.familyCode]
+    );
+    if (childRows.length === 0) return res.status(404).json({ error: 'Child not found' });
+
+    const child = childRows[0];
+
+    // Get redemption count for this child
+    const { rows: redemptionCount } = await pool.query(
+      "SELECT COUNT(*)::int as count FROM redemptions WHERE child_id = $1 AND status = 'Completed'",
+      [childId]
+    );
+    const stats = { redemptions: redemptionCount[0]?.count || 0 };
+
+    // Badge definitions evaluated server-side (mirrors client-side BADGE_DEFINITIONS)
+    const BADGES = [
+      { id: 'first_points', check: () => child.total_points >= 1 },
+      { id: 'fifty_club', check: () => child.total_points >= 50 },
+      { id: 'century', check: () => child.total_points >= 100 },
+      { id: 'star_250', check: () => child.total_points >= 250 },
+      { id: 'star_500', check: () => child.total_points >= 500 },
+      { id: 'legend', check: () => child.total_points >= 1000 },
+      { id: 'goal_getter', check: () => child.weekly_points >= child.weekly_target },
+      { id: 'first_reward', check: () => stats.redemptions >= 1 },
+      { id: 'reward_fan', check: () => stats.redemptions >= 5 },
+      { id: 'reward_master', check: () => stats.redemptions >= 10 },
+    ];
+
+    const earned = child.badges_earned || [];
+    const newBadges = [];
+
+    for (const badge of BADGES) {
+      if (!earned.includes(badge.id) && badge.check()) {
+        newBadges.push(badge.id);
+      }
+    }
+
+    if (newBadges.length > 0) {
+      const allBadges = [...earned, ...newBadges];
+      await pool.query(
+        'UPDATE children SET badges_earned = $1 WHERE id = $2',
+        [allBadges, childId]
+      );
+      return res.json({ new_badges: newBadges, all_badges: allBadges });
+    }
+
+    res.json({ new_badges: [], all_badges: earned });
+  } catch (err) {
+    console.error('Check badges error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Family Goals endpoints (FEAT-008) ────────────────────────────────────────
+
+// Contribute points to family goal
+router.post('/api/family-goals/:id/contribute', authMiddleware, async (req, res) => {
+  try {
+    const { points } = req.body;
+    if (typeof points !== 'number' || points <= 0) {
+      return res.status(400).json({ error: 'points must be a positive number' });
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE family_goals
+       SET current_points = LEAST(current_points + $1, target_points)
+       WHERE id = $2 AND family_code = $3 AND status = 'active'
+       RETURNING *`,
+      [points, req.params.id, req.familyCode]
+    );
+
+    if (rows.length === 0) return res.status(404).json({ error: 'Goal not found or already completed' });
+
+    const goal = rows[0];
+    if (goal.current_points >= goal.target_points) {
+      await pool.query(
+        "UPDATE family_goals SET status = 'completed' WHERE id = $1",
+        [goal.id]
+      );
+      goal.status = 'completed';
+    }
+
+    res.json(goal);
+  } catch (err) {
+    console.error('Contribute to goal error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Entity CRUD routes ─────────────────────────────────────────────────────
 
-// LIST  – GET /api/:entity?sort=&limit=
+// LIST  – GET /api/:entity?sort=&limit=&offset=
 router.get('/api/:entity', authMiddleware, async (req, res) => {
   const table = TABLE_MAP[req.params.entity];
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
@@ -314,12 +508,13 @@ router.get('/api/:entity', authMiddleware, async (req, res) => {
   try {
     const sort = buildSort(req.query.sort);
     const limit = req.query.limit ? `LIMIT ${parseInt(req.query.limit)}` : '';
+    const offset = req.query.offset ? `OFFSET ${parseInt(req.query.offset)}` : '';
 
     const values = [req.familyCode];
     const where = 'WHERE family_code = $1';
 
     const { rows } = await pool.query(
-      `SELECT * FROM ${table} ${where} ORDER BY ${sort} ${limit}`,
+      `SELECT * FROM ${table} ${where} ORDER BY ${sort} ${limit} ${offset}`,
       values
     );
     res.json(rows);
@@ -381,6 +576,7 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
       `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
       values
     );
+    broadcastFn(req.familyCode, { type: `${req.params.entity}_created`, id: rows[0].id });
     res.json(rows[0]);
   } catch (err) {
     console.error(`Create ${req.params.entity} error:`, err);
@@ -406,6 +602,14 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
       values
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
+
+    // ENH-006: Cascade child name updates to related tables
+    if (table === 'children' && data.name) {
+      await pool.query('UPDATE point_events SET child_name = $1 WHERE child_id = $2', [data.name, req.params.id]);
+      await pool.query('UPDATE redemptions SET child_name = $1 WHERE child_id = $2', [data.name, req.params.id]);
+    }
+
+    broadcastFn(req.familyCode, { type: `${req.params.entity}_updated`, id: req.params.id });
     res.json(rows[0]);
   } catch (err) {
     console.error(`Update ${req.params.entity} error:`, err);
@@ -419,7 +623,16 @@ router.delete('/api/:entity/:id', authMiddleware, async (req, res) => {
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
+    // Cascade deletes for children and rewards
+    if (table === 'children') {
+      await pool.query('DELETE FROM point_events WHERE child_id = $1', [req.params.id]);
+      await pool.query('DELETE FROM redemptions WHERE child_id = $1', [req.params.id]);
+    } else if (table === 'rewards') {
+      await pool.query("UPDATE redemptions SET status = 'Denied' WHERE reward_id = $1 AND status = 'Pending'", [req.params.id]);
+    }
+
     await pool.query(`DELETE FROM ${table} WHERE id = $1`, [req.params.id]);
+    broadcastFn(req.familyCode, { type: `${req.params.entity}_deleted`, id: req.params.id });
     res.json({ success: true });
   } catch (err) {
     console.error(`Delete ${req.params.entity} error:`, err);

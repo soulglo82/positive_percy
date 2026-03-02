@@ -7,12 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Award, Target, Calendar, ChevronDown, ChevronUp, Plus, Minus, Heart } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ErrorCard from "../components/ErrorCard";
 
 export default function Summary() {
   const { user } = useAuth();
   const [expandedChildId, setExpandedChildId] = useState(null);
 
-  const { data: children = [] } = useQuery({
+  const { data: children = [], isLoading: childrenLoading, isError: childrenError, refetch: childrenRefetch } = useQuery({
     queryKey: ['children'],
     queryFn: () => Child.list(),
     enabled: !!user,

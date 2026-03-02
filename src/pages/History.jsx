@@ -3,6 +3,7 @@ import { Child, Point_Event } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -13,11 +14,19 @@ import {
 import { History as HistoryIcon, Filter } from "lucide-react";
 
 import PointEventItem from "../components/history/PointEventItem";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ErrorCard from "../components/ErrorCard";
+
+const PAGE_SIZE = 50;
 
 export default function History() {
   const { user } = useAuth();
   const [selectedChildId, setSelectedChildId] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [allEvents, setAllEvents] = useState([]);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
@@ -25,14 +34,36 @@ export default function History() {
     enabled: !!user,
   });
 
-  const { data: events = [] } = useQuery({
+  const { isLoading, isError, refetch } = useQuery({
     queryKey: ['pointEvents'],
-    queryFn: () => Point_Event.list('-created_date', 100),
+    queryFn: async () => {
+      const events = await Point_Event.list('-created_date', PAGE_SIZE);
+      setAllEvents(events);
+      setOffset(PAGE_SIZE);
+      setHasMore(events.length === PAGE_SIZE);
+      return events;
+    },
   });
 
-  const categories = ["all", ...new Set(events.map(e => e.category))];
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const moreEvents = await Point_Event.list('-created_date', PAGE_SIZE, offset);
+      setAllEvents(prev => [...prev, ...moreEvents]);
+      setOffset(prev => prev + PAGE_SIZE);
+      setHasMore(moreEvents.length === PAGE_SIZE);
+    } catch {
+      // Silently fail
+    }
+    setLoadingMore(false);
+  };
 
-  const filteredEvents = events.filter(event => {
+  if (isLoading) return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6"><LoadingSpinner message="Loading history..." /></div>;
+  if (isError) return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6"><ErrorCard message="Couldn't load history" onRetry={refetch} /></div>;
+
+  const categories = ["all", ...new Set(allEvents.map(e => e.category))];
+
+  const filteredEvents = allEvents.filter(event => {
     const childMatch = selectedChildId === "all" || event.child_id === selectedChildId;
     const categoryMatch = selectedCategory === "all" || event.category === selectedCategory;
     return childMatch && categoryMatch;
@@ -78,7 +109,7 @@ export default function History() {
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-slate-600">Points Removed</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-600">Points Adjusted</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-rose-600">-{totalNegative}</div>
@@ -143,6 +174,17 @@ export default function History() {
               </div>
             )}
           </CardContent>
+          {hasMore && (
+            <div className="p-4 border-t flex justify-center">
+              <Button
+                variant="outline"
+                onClick={loadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? 'Loading...' : 'Load More'}
+              </Button>
+            </div>
+          )}
         </Card>
       </div>
     </div>

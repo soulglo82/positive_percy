@@ -9,16 +9,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Pencil } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Pencil, Trash2 } from "lucide-react";
 
 const EMOJI_OPTIONS = ["🎮", "🍕", "🎬", "🎨", "⚽", "📚", "🎪", "🎭", "🏊", "🎵", "🍦", "🎁"];
 
-export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, children = [] }) {
+export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, onDelete, children = [] }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [costPoints, setCostPoints] = useState(50);
   const [emoji, setEmoji] = useState("🎁");
   const [assignedChildIds, setAssignedChildIds] = useState([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (reward) {
@@ -52,7 +63,7 @@ export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, chi
     );
   };
 
-  return (
+  return (<>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -174,7 +185,44 @@ export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, chi
             Save Changes
           </Button>
         </div>
+
+        {onDelete && (
+          <div className="pt-4 border-t">
+            <Button
+              variant="ghost"
+              className="w-full text-red-500 hover:text-red-700 hover:bg-red-50"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Reward
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
-  );
+
+    <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete {reward?.title}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete this reward. Any pending redemptions will be denied. This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              onDelete(reward);
+              setShowDeleteConfirm(false);
+              onClose();
+            }}
+            className="bg-red-500 hover:bg-red-600"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>);
 }

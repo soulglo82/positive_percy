@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import RewardCard from "../components/rewards/RewardCard";
 import AddRewardModal from "../components/rewards/AddRewardModal";
 import EditRewardModal from "../components/rewards/EditRewardModal";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ErrorCard from "../components/ErrorCard";
 
 export default function Rewards() {
   const { user } = useAuth();
@@ -19,7 +21,7 @@ export default function Rewards() {
 
   const queryClient = useQueryClient();
 
-  const { data: rewards = [] } = useQuery({
+  const { data: rewards = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['rewards'],
     queryFn: () => Reward.list('-created_date'),
   });
@@ -66,6 +68,20 @@ export default function Rewards() {
     toast.success("Reward updated!");
   };
 
+  const deleteRewardMutation = useMutation({
+    mutationFn: (id) => Reward.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['rewards']);
+      toast.success("Reward deleted");
+    },
+  });
+
+  const handleDeleteReward = async (reward) => {
+    await deleteRewardMutation.mutateAsync(reward.id);
+    setShowEditReward(false);
+    setSelectedReward(null);
+  };
+
   const getAssignedChildren = (reward) => {
     if (!reward.assigned_child_ids || reward.assigned_child_ids.length === 0) {
       return [];
@@ -94,7 +110,11 @@ export default function Rewards() {
         </div>
 
         {/* Rewards Grid */}
-        {rewards.length === 0 ? (
+        {isLoading ? (
+          <LoadingSpinner message="Loading rewards..." />
+        ) : isError ? (
+          <ErrorCard message="Couldn't load rewards" onRetry={refetch} />
+        ) : rewards.length === 0 ? (
           <Card className="border-2 border-dashed border-slate-300">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="text-6xl mb-4">🎁</div>
@@ -145,6 +165,7 @@ export default function Rewards() {
         }}
         reward={selectedReward}
         onSubmit={handleEditRewardSubmit}
+        onDelete={handleDeleteReward}
         children={children}
       />
     </div>

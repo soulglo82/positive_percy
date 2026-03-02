@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Child, Point_Event } from "@/api/entities";
+import { Child, Point_Event, Reward } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Flame } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
+import { Badge } from "@/components/ui/badge";
 
 import ChildCard from "../components/child/ChildCard";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
+import FamilyGoals from "../components/FamilyGoals";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ErrorCard from "../components/ErrorCard";
 
 export default function ParentDashboard() {
   const { user } = useAuth();
@@ -23,6 +27,7 @@ export default function ParentDashboard() {
   const [showSubtractPoints, setShowSubtractPoints] = useState(false);
   const [selectedChild, setSelectedChild] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [streak, setStreak] = useState(0);
 
   const queryClient = useQueryClient();
 
@@ -51,7 +56,7 @@ export default function ParentDashboard() {
     }).catch(() => {});
   }, [user]);
 
-  const { data: children = [] } = useQuery({
+  const { data: children = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['children'],
     queryFn: () => Child.list(),
     enabled: !!user,
@@ -110,6 +115,38 @@ export default function ParentDashboard() {
     toast.success(`${data.name}'s profile updated!`);
   };
 
+  const handleDeleteChild = async (child) => {
+    try {
+      await Child.delete(child.id);
+      queryClient.invalidateQueries(['children']);
+      toast.success(`${child.name} has been removed`);
+    } catch {
+      toast.error("Failed to delete child");
+    }
+  };
+
+  const updateStreak = async () => {
+    const token = getToken();
+    try {
+      const res = await fetch('/api/family/check-streak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setStreak(data.streak);
+      if (data.updated && [7, 14, 30, 60, 100].includes(data.streak)) {
+        confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 },
+          colors: ['#f59e0b', '#ef4444', '#f97316'] });
+        toast.success(`${data.streak}-day streak! You're on fire!`);
+      }
+    } catch {}
+  };
+
+  // Load streak on mount
+  useEffect(() => {
+    if (user) updateStreak();
+  }, [user]);
+
   // BUG-003: Use atomic server-side point adjustment
   const handlePointsSubmit = async (data) => {
     if (data.points < 0) {
@@ -154,6 +191,18 @@ export default function ParentDashboard() {
     }
 
     queryClient.invalidateQueries(['children']);
+    updateStreak();
+
+    // FEAT-010: Check badges after point change
+    if (data.points > 0) {
+      try {
+        const badgeToken = getToken();
+        await fetch(`/api/children/${selectedChild.id}/check-badges`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${badgeToken}` },
+        });
+      } catch {}
+    }
   };
 
   const handleResetWeekly = async (child) => {
@@ -171,17 +220,29 @@ export default function ParentDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Header */}
-        <div>
-          <img
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6922d1673349deb31c162ae5/46a4a0d5e_82981AEC-56DC-4F47-88A7-BE6A182A15D7.png"
-            alt="Positive Percy"
-            className="h-20 mb-2"
-          />
-          <p className="text-slate-600">Building bright futures, one point at a time</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <img
+              src="/logo.png"
+              alt="Positive Percy"
+              className="h-20 mb-2"
+            />
+            <p className="text-slate-600">Building bright futures, one point at a time</p>
+          </div>
+          {streak > 0 && (
+            <Badge className="bg-gradient-to-r from-orange-400 to-red-500 text-white border-0 text-sm px-3 py-1.5 flex items-center gap-1.5">
+              <Flame className="w-4 h-4" />
+              {streak}-day streak
+            </Badge>
+          )}
         </div>
 
         {/* Children Grid */}
-        {children.length === 0 ? (
+        {isLoading ? (
+          <LoadingSpinner message="Loading your family..." />
+        ) : isError ? (
+          <ErrorCard message="Couldn't load children" onRetry={refetch} />
+        ) : children.length === 0 ? (
           <Card className="border-2 border-dashed border-slate-300">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="text-6xl mb-4">👨‍👩‍👧‍👦</div>
@@ -214,6 +275,9 @@ export default function ParentDashboard() {
           </div>
         )}
 
+        {/* Family Goals */}
+        {children.length > 0 && <FamilyGoals />}
+
         {/* Add Child Button */}
         {children.length > 0 && (
           <div className="flex justify-center">
@@ -244,6 +308,7 @@ export default function ParentDashboard() {
         }}
         child={selectedChild}
         onSubmit={handleEditChildSubmit}
+        onDelete={handleDeleteChild}
       />
 
       <AddPointsModal

@@ -29,10 +29,11 @@ class Entity {
     this.endpoint = endpoint;
   }
 
-  async list(sortField, limit) {
+  async list(sortField, limit, offset) {
     const params = new URLSearchParams();
     if (sortField) params.set('sort', sortField);
     if (limit) params.set('limit', limit);
+    if (offset) params.set('offset', offset);
     const fc = getFamilyCode();
     if (fc) params.set('family_code', fc);
     const qs = params.toString();
@@ -91,3 +92,4 @@ export const Child = new Entity('children');
 export const Point_Event = new Entity('point_events');
 export const Redemption = new Entity('redemptions');
 export const Reward = new Entity('rewards');
+export const Family_Goal = new Entity('family_goals');

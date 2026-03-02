@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { Home, Gift, History, User, UserCircle, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import useRealtimeSync from '@/lib/useRealtimeSync';
 
 export default function Layout({ children, currentPageName }) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  useRealtimeSync(user?.family_code);
   const navItems = [
     { name: 'ParentDashboard', label: 'Dashboard', icon: Home },
     { name: 'Summary', label: 'Summary', icon: History },
@@ -25,7 +27,7 @@ export default function Layout({ children, currentPageName }) {
               className="flex items-center"
             >
               <img 
-                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6922d1673349deb31c162ae5/46a4a0d5e_82981AEC-56DC-4F47-88A7-BE6A182A15D7.png"
+                src="/logo.png"
                 alt="Positive Percy Logo"
                 className="h-12"
               />

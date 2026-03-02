@@ -20,12 +20,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trophy, Gift } from "lucide-react";
+import { Trophy, Gift, Award } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 
 import RewardCard from "../components/rewards/RewardCard";
+import ShareableCard from "../components/ShareableCard";
+import BadgeDisplay from "../components/BadgeDisplay";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function ChildView() {
   const { user } = useAuth();
@@ -34,11 +37,13 @@ export default function ChildView() {
 
   const queryClient = useQueryClient();
 
-  const { data: children = [] } = useQuery({
+  const { data: children = [], isLoading } = useQuery({
     queryKey: ['children'],
     queryFn: () => Child.list(),
     enabled: !!user,
   });
+
+  if (isLoading) return <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 p-6"><LoadingSpinner message="Loading..." /></div>;
 
   const { data: allRewards = [] } = useQuery({
     queryKey: ['rewards'],
@@ -59,6 +64,32 @@ export default function ChildView() {
   }, [children, selectedChildId]);
 
   const selectedChild = children.find(c => c.id === selectedChildId);
+
+  // FEAT-010: Check badges on child selection
+  const checkBadges = async (childId) => {
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/children/${childId}/check-badges`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.new_badges && data.new_badges.length > 0) {
+        queryClient.invalidateQueries(['children']);
+        toast.success(`New badge${data.new_badges.length > 1 ? 's' : ''} earned!`);
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.6 },
+          colors: ['#f59e0b', '#a855f7', '#22c55e'],
+        });
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (selectedChildId) checkBadges(selectedChildId);
+  }, [selectedChildId]);
 
   // ENH-011: Direct redemption with confirmation
   const handleRedeemReward = async (reward) => {
@@ -105,6 +136,9 @@ export default function ChildView() {
         origin: { y: 0.6 },
         colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
       });
+
+      // Check for new badges after redemption
+      checkBadges(child.id);
     } catch {
       toast.error("Something went wrong. Please try again.");
     }
@@ -186,7 +220,21 @@ export default function ChildView() {
                       <div className="text-5xl font-bold mb-2">{selectedChild.total_points}</div>
                       <div className="text-sm opacity-90">Total Points</div>
                     </div>
+                    <div className="mt-3 flex justify-center">
+                      <ShareableCard child={selectedChild} message="Look at my points!" />
+                    </div>
                   </div>
+
+                  {/* FEAT-010: Badges */}
+                  {selectedChild.badges_earned && selectedChild.badges_earned.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-slate-200">
+                      <h3 className="text-lg font-semibold text-slate-700 flex items-center justify-center gap-2 mb-3">
+                        <Award className="w-5 h-5 text-amber-500" />
+                        My Badges
+                      </h3>
+                      <BadgeDisplay earnedBadgeIds={selectedChild.badges_earned} />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>

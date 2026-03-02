@@ -72,6 +72,18 @@ export async function initDb() {
         created_date TIMESTAMPTZ DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS family_goals (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title TEXT NOT NULL,
+        description TEXT,
+        emoji TEXT DEFAULT '🎯',
+        target_points INTEGER NOT NULL,
+        current_points INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'active',
+        family_code TEXT,
+        created_date TIMESTAMPTZ DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         email TEXT UNIQUE NOT NULL,
@@ -102,6 +114,12 @@ export async function initDb() {
       "ALTER TABLE children ALTER COLUMN parent_email DROP NOT NULL",
       // Age / date of birth field (FEAT-007)
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS date_of_birth TEXT",
+      // Streak tracking (FEAT-006)
+      "ALTER TABLE families ADD COLUMN IF NOT EXISTS current_streak INTEGER DEFAULT 0",
+      "ALTER TABLE families ADD COLUMN IF NOT EXISTS last_active_date TEXT",
+      "ALTER TABLE families ADD COLUMN IF NOT EXISTS longest_streak INTEGER DEFAULT 0",
+      // Milestone badges (FEAT-010)
+      "ALTER TABLE children ADD COLUMN IF NOT EXISTS badges_earned TEXT[] DEFAULT '{}'",
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});
