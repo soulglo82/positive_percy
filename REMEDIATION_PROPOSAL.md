@@ -6,11 +6,11 @@
 
 ## Executive Summary
 
-Positive Percy is a functional MVP with a sound psychological foundation, but it has **3 critical security/data bugs**, **5 high-priority fixes**, and **18 feature/enhancement opportunities** that will determine whether the product retains users and can be monetized.
+Positive Percy is a functional MVP with a sound psychological foundation, but it has **3 critical security/data bugs**, **7 high-priority fixes**, and **18 feature/enhancement opportunities** that will determine whether the product retains users and can be monetized.
 
-This proposal organizes all 26 backlog items into 6 delivery phases spanning approximately 8 weeks. The first two phases (weeks 1-2) address all security vulnerabilities and data bugs. The remaining phases build the engagement, celebration, and monetization features that will drive retention and revenue.
+This proposal organizes all 28 backlog items into 6 delivery phases spanning approximately 8 weeks. The first two phases (weeks 1-2) address all security vulnerabilities, data bugs, and core UX simplification. The remaining phases build the engagement, celebration, and monetization features that will drive retention and revenue.
 
-**Total estimated effort:** ~160-200 developer hours across 6 phases.
+**Total estimated effort:** ~175-215 developer hours across 6 phases.
 
 ---
 
@@ -255,6 +255,149 @@ const handlePointsSubmit = async (data) => {
 Replace `handleApproveRedemption` (~line 154-172) similarly, calling `adjust-points` with negative `reward_cost`.
 
 **Testing:** Open dashboard on two devices for the same family. Simultaneously award +10 on device A and +5 on device B. Verify child ends up with +15 total (not +10 or +5). Deduct points that exceed balance. Verify floor at 0.
+
+---
+
+### 2.3 -- ENH-010: Simplify tracker to total points only
+
+**Effort:** 6 hours
+**Risk:** Medium (touches multiple components, changes core display model)
+**Dependency:** None
+
+**Problem:**
+The ChildCard currently shows three overlapping numbers:
+1. "Total: 24 points" (text under name)
+2. "2 / 50" (weekly badge in corner)
+3. "Weekly Progress 4%" (progress bar)
+
+Parents -- the only real users -- find this confusing. They just want to see how many points a child has.
+
+**Proposed approach:**
+
+**ChildCard.jsx -- simplify to total points as the hero number:**
+```jsx
+export default function ChildCard({ child, onAddPoints, onSubtractPoints, onEdit }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+      <Card className="overflow-hidden border-2 hover:shadow-xl transition-all duration-300">
+        <div className="h-2 bg-gradient-to-r from-purple-200 via-pink-200 to-blue-200" />
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-4">
+              {/* Avatar (unchanged) */}
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">{child.name}</h3>
+              </div>
+            </div>
+            {/* Single hero number replaces weekly badge */}
+            <div className="text-right">
+              <div className="text-3xl font-bold text-purple-600">{child.total_points}</div>
+              <div className="text-xs text-slate-500">points</div>
+            </div>
+          </div>
+
+          {/* Remove: Weekly Progress bar entirely */}
+          {/* Remove: progressPercent calculation */}
+          {/* Remove: isOnTrack logic */}
+
+          {/* Action Buttons (unchanged) */}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+```
+
+**ChildView.jsx -- single points display:**
+- Replace the 2-column grid (Total Points / This Week) with a single large points card
+- Remove or collapse the "Weekly Goal" progress bar into an optional "This Week" expandable section
+- Remove the `isWeekend()` restriction (addressed in ENH-011)
+
+**AddChildModal.jsx / EditChildModal.jsx:**
+- Make `weekly_target` field hidden or collapsed under "Advanced Settings"
+- Default it to a reasonable value (50) without requiring parent input during onboarding
+
+**Summary.jsx:**
+- Weekly breakdown remains here (this is the right place for detailed analytics)
+- No changes needed -- the Summary page is where weekly data belongs
+
+**Testing:** Create a child. Verify the card shows only the total points as a single clear number. Award points. Verify the number updates. No weekly badge or progress bar visible on the main dashboard.
+
+---
+
+### 2.4 -- ENH-011: Remove reward approval -- direct redemption
+
+**Effort:** 6 hours
+**Risk:** Low (simplifies code, removes complexity)
+**Dependency:** BUG-003 (server-side point adjustment should be in place first)
+
+**Problem:**
+The reward request/approval flow serves no purpose because only parents use the system. A parent navigates to Child View, taps "Request" on behalf of the child, then switches back to the Dashboard to approve their own request. Five steps for what should be one action.
+
+**Proposed approach:**
+
+**ChildView.jsx -- replace request with direct redemption:**
+```jsx
+const handleRedeemReward = async (reward) => {
+  if (!selectedChild) return;
+
+  if (selectedChild.total_points < reward.cost_points) {
+    toast.error("Not enough points yet!");
+    return;
+  }
+
+  // Show confirmation dialog
+  setRedeemConfirm({ reward, child: selectedChild });
+};
+
+const confirmRedemption = async () => {
+  const { reward, child } = redeemConfirm;
+
+  // Deduct points immediately (server-side atomic)
+  await fetch(`/api/children/${child.id}/adjust-points`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ points: -reward.cost_points }),
+  });
+
+  // Log the redemption as completed (for history)
+  await Redemption.create({
+    child_id: child.id,
+    child_name: child.name,
+    reward_id: reward.id,
+    reward_title: reward.title,
+    reward_cost: reward.cost_points,
+    status: 'Completed',
+  });
+
+  queryClient.invalidateQueries(['children']);
+  toast.success(`${child.name} redeemed ${reward.title}!`);
+  confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); // if FEAT-001 is done
+  setRedeemConfirm(null);
+};
+```
+
+Add a confirmation dialog (using existing Shadcn `AlertDialog`):
+```
+"[Child] will spend [X] points on [Reward]. Continue?"
+[Cancel] [Redeem]
+```
+
+**ParentDashboard.jsx -- remove pending redemptions:**
+- Remove the `pendingRedemptions` query (lines 58-62)
+- Remove the `handleApproveRedemption` and `handleDenyRedemption` functions (lines 154-180)
+- Remove the "Pending Reward Requests" card (lines 196-215)
+- Remove the `RedemptionCard` import
+- This eliminates the 5-second polling, improving performance
+
+**RewardCard.jsx:**
+- Change button label from "Request" to "Redeem" (or "Use Reward")
+- Remove the `isWeekend()` gating -- parents can redeem any time
+
+**Files no longer needed (or repurposed):**
+- `src/components/redemptions/RedemptionCard.jsx` -- can be kept for a future "Redemption History" view but is no longer used on the dashboard
+
+**Testing:** Navigate to Child View. Tap "Redeem" on a reward. Confirm in dialog. Verify points deducted immediately. Verify no pending request appears on Dashboard. Verify redemption logged in history. Try to redeem when points are insufficient -- verify error toast.
 
 ---
 
@@ -914,12 +1057,12 @@ After each CRUD mutation in `routes.js`, call `broadcast(familyCode, { type: 'in
 | Phase | Items | Estimated Hours | Timeline |
 |---|---|---|---|
 | **Phase 1: Critical Fixes** | BUG-001, SEC-001, SEC-002 | 18 hours | Week 1 |
-| **Phase 2: Data Integrity** | BUG-002, BUG-003 | 10 hours | Week 2 |
+| **Phase 2: Data Integrity & UX Simplification** | BUG-002, BUG-003, ENH-010, ENH-011 | 22 hours | Week 2 |
 | **Phase 3: Psychology & Safety** | FEAT-002, ENH-005, FEAT-004, FEAT-007 | 18 hours | Week 3 |
 | **Phase 4: Engagement & Delight** | FEAT-001, FEAT-003, FEAT-006, FEAT-005 | 21 hours | Weeks 4-5 |
 | **Phase 5: UX & Performance** | ENH-001 through ENH-009 | 23 hours | Week 6 |
 | **Phase 6: Platform & Monetization** | FEAT-008 through FEAT-012, ENH-007 | 72 hours | Weeks 7-8 |
-| **Total** | **26 items** | **~162 hours** | **~8 weeks** |
+| **Total** | **28 items** | **~174 hours** | **~8 weeks** |
 
 ---
 
@@ -944,9 +1087,11 @@ Phase 1 (Critical)
   ├── SEC-001 (no dependencies)
   └── SEC-002 (no dependencies)
           │
-Phase 2 (Integrity)
+Phase 2 (Integrity & UX Simplification)
   ├── BUG-002 (depends on SEC-001)
-  └── BUG-003 (depends on SEC-001)
+  ├── BUG-003 (depends on SEC-001)
+  ├── ENH-010 Simplify to total points (no dependencies)
+  └── ENH-011 Direct redemption (depends on BUG-003)
           │
 Phase 3 (Psychology)
   ├── FEAT-002 (no dependencies)
