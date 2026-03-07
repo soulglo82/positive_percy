@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Award, Target, Calendar, ChevronDown, ChevronUp, Plus, Minus, Heart } from "lucide-react";
+import { TrendingUp, Award, Target, Calendar, ChevronDown, ChevronUp, Plus, Minus, Heart, ShoppingBag } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -125,7 +125,7 @@ export default function Summary() {
         </div>
 
         {/* Overall Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card>
               <CardHeader className="pb-3">
@@ -171,6 +171,23 @@ export default function Summary() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-amber-600">{weeklyEvents.length}</div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-1">
+                  <ShoppingBag className="w-4 h-4" />
+                  Points Spent
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-orange-600">
+                  {children.reduce((sum, child) => sum + (child.points_spent || 0), 0)}
+                </div>
+                <p className="text-xs text-slate-500 mt-1">on rewards (all time)</p>
               </CardContent>
             </Card>
           </motion.div>
@@ -320,7 +337,7 @@ export default function Summary() {
                       </div>
 
                       {/* Stats */}
-                      <div className="grid grid-cols-3 gap-3 mb-4">
+                      <div className="grid grid-cols-4 gap-3 mb-4">
                         <div className="text-center">
                           <div className="text-2xl font-bold text-green-600">+{stats.positivePoints}</div>
                           <div className="text-xs text-slate-500">Earned</div>
@@ -328,6 +345,10 @@ export default function Summary() {
                         <div className="text-center">
                           <div className="text-2xl font-bold text-rose-600">-{stats.negativePoints}</div>
                           <div className="text-xs text-slate-500">Removed</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-orange-600">{child.points_spent || 0}</div>
+                          <div className="text-xs text-slate-500">Spent</div>
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-slate-800">{stats.totalEvents}</div>
