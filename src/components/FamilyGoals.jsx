@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Target, Plus, Trophy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import SectionHeader from "./SectionHeader";
 import confetti from "canvas-confetti";
 
 const GOAL_EMOJIS = ["🎯", "🏠", "🎢", "🏖️", "🎮", "🍕", "🎬", "⚽", "🚗", "🎪"];
@@ -101,10 +102,7 @@ export default function FamilyGoals() {
     return (
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Target className="w-6 h-6 text-blue-500" />
-            Family Goals
-          </h2>
+          <SectionHeader icon="🎯">Family Goals</SectionHeader>
           <Button
             size="sm"
             onClick={() => setShowAddGoal(true)}

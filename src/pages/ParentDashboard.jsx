@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 
+import SectionHeader from "../components/SectionHeader";
 import ChildCard from "../components/child/ChildCard";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
@@ -296,10 +297,7 @@ export default function ParentDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Add Points Section Header */}
-        <h2 className="text-xl font-semibold text-slate-800" style={{ marginBottom: '-16px' }}>
-          Add Points
-        </h2>
+        <SectionHeader icon="⭐">Add Points</SectionHeader>
 
         {/* Children Grid */}
         {isLoading ? (
@@ -346,7 +344,7 @@ export default function ParentDashboard() {
         {/* Recent Activity Preview */}
         {recentActivity.length > 0 && (
           <div>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">Recent Activity</h2>
+            <SectionHeader icon="📋">Recent Activity</SectionHeader>
             <Card>
               <CardContent className="p-0">
                 <div className="divide-y divide-slate-100">

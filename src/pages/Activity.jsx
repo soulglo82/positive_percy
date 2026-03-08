@@ -15,6 +15,7 @@ import {
 import { Activity as ActivityIcon, Filter, Plus, Minus, Gift } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import SectionHeader from "../components/SectionHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
@@ -98,7 +99,7 @@ export default function Activity() {
           <p className="text-slate-600 mt-1">Track all earned and spent points</p>
         </div>
 
-        {/* Toggle Filter */}
+        <SectionHeader icon="🔍">Filter</SectionHeader>
         <div className="flex gap-2">
           {[
             { key: 'all', label: 'All' },
@@ -139,7 +140,7 @@ export default function Activity() {
           </div>
         )}
 
-        {/* Activity Feed */}
+        <SectionHeader icon="📋">Activity Feed</SectionHeader>
         <Card>
           <CardContent className="p-0">
             {filteredEvents.length === 0 ? (
