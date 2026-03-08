@@ -12,11 +12,13 @@ export default function RedemptionCard({ redemption, onApprove, onDeny }) {
   const statusConfig = {
     Pending: { icon: Clock, color: "bg-amber-100 text-amber-700", iconColor: "text-amber-600" },
     Approved: { icon: CheckCircle, color: "bg-green-100 text-green-700", iconColor: "text-green-600" },
+    Completed: { icon: CheckCircle, color: "bg-green-100 text-green-700", iconColor: "text-green-600" },
     Denied: { icon: XCircle, color: "bg-rose-100 text-rose-700", iconColor: "text-rose-600" },
   };
 
   const config = statusConfig[redemption.status] || statusConfig.Pending;
   const StatusIcon = config.icon;
+  const isCompleted = redemption.status === "Completed";
 
   return (
     <motion.div
@@ -32,7 +34,8 @@ export default function RedemptionCard({ redemption, onApprove, onDeny }) {
                 {redemption.child_name}
               </h4>
               <p className="text-sm text-slate-600 mb-2">
-                wants: <span className="font-semibold">{redemption.reward_title}</span>
+                {isCompleted ? "redeemed:" : "wants:"}{" "}
+                <span className="font-semibold">{redemption.reward_title}</span>
               </p>
               <div className="flex items-center gap-3 text-xs text-slate-500">
                 <span className="flex items-center gap-1">

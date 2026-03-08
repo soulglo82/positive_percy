@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trophy, Gift, Award } from "lucide-react";
+import { Trophy, Gift, Award, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -116,6 +116,16 @@ export default function ChildView() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ points: -reward.cost_points }),
+      });
+
+      // Track points spent on rewards
+      await fetch(`/api/children/${child.id}/track-spending`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ points: reward.cost_points }),
       });
 
       // Log the redemption as completed (for history)
@@ -214,12 +224,21 @@ export default function ChildView() {
                   <p className="text-slate-600 mb-6">Keep up the amazing work!</p>
 
                   {/* ENH-010: Single hero points display */}
-                  <div className="max-w-xs mx-auto">
+                  <div className="max-w-sm mx-auto">
                     <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl p-8 text-white">
                       <Trophy className="w-10 h-10 mb-3 mx-auto" />
                       <div className="text-5xl font-bold mb-2">{selectedChild.total_points}</div>
                       <div className="text-sm opacity-90">Total Points</div>
                     </div>
+                    {(selectedChild.points_spent || 0) > 0 && (
+                      <div className="mt-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-4 text-white flex items-center justify-center gap-3">
+                        <ShoppingBag className="w-6 h-6" />
+                        <div>
+                          <div className="text-2xl font-bold">{selectedChild.points_spent}</div>
+                          <div className="text-xs opacity-90">Points Spent on Rewards</div>
+                        </div>
+                      </div>
+                    )}
                     <div className="mt-3 flex justify-center">
                       <ShareableCard child={selectedChild} message="Look at my points!" />
                     </div>

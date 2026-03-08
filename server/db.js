@@ -120,6 +120,8 @@ export async function initDb() {
       "ALTER TABLE families ADD COLUMN IF NOT EXISTS longest_streak INTEGER DEFAULT 0",
       // Milestone badges (FEAT-010)
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS badges_earned TEXT[] DEFAULT '{}'",
+      // Track points spent on rewards
+      "ALTER TABLE children ADD COLUMN IF NOT EXISTS points_spent INTEGER DEFAULT 0",
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});

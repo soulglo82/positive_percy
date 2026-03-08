@@ -38,7 +38,7 @@ function authMiddleware(req, res, next) {
 
 const COLUMN_WHITELIST = {
   children: new Set(['name', 'avatar_url', 'total_points', 'weekly_points',
-    'weekly_target', 'last_reset_date', 'parent_email', 'family_code', 'date_of_birth']),
+    'weekly_target', 'last_reset_date', 'parent_email', 'family_code', 'date_of_birth', 'points_spent']),
   point_events: new Set(['child_id', 'points', 'category', 'note',
     'child_name', 'family_code']),
   redemptions: new Set(['child_id', 'child_name', 'reward_id', 'reward_title',
@@ -344,6 +344,30 @@ router.post('/api/children/:id/adjust-points', authMiddleware, async (req, res) 
     res.json(rows[0]);
   } catch (err) {
     console.error('Adjust points error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Track points spent on rewards (atomic increment)
+router.post('/api/children/:id/track-spending', authMiddleware, async (req, res) => {
+  try {
+    const { points } = req.body;
+    if (typeof points !== 'number' || points <= 0) {
+      return res.status(400).json({ error: 'points must be a positive number' });
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE children
+       SET points_spent = COALESCE(points_spent, 0) + $1
+       WHERE id = $2 AND family_code = $3
+       RETURNING *`,
+      [points, req.params.id, req.familyCode]
+    );
+
+    if (rows.length === 0) return res.status(404).json({ error: 'Child not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Track spending error:', err);
     res.status(500).json({ error: err.message });
   }
 });

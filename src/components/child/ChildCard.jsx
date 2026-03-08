@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, Pencil } from "lucide-react";
+import { Plus, Minus, Pencil, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function ChildCard({ child, onAddPoints, onSubtractPoints, onEdit }) {
@@ -44,6 +44,12 @@ export default function ChildCard({ child, onAddPoints, onSubtractPoints, onEdit
             <div className="text-right">
               <div className="text-3xl font-bold text-purple-600">{child.total_points}</div>
               <div className="text-xs text-slate-500">points</div>
+              {(child.points_spent || 0) > 0 && (
+                <div className="flex items-center justify-end gap-1 mt-1">
+                  <ShoppingBag className="w-3 h-3 text-amber-500" />
+                  <span className="text-xs text-amber-600 font-medium">{child.points_spent} spent</span>
+                </div>
+              )}
             </div>
           </div>
 
