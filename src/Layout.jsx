@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { Home, Gift, Activity, UserCircle, LogOut } from 'lucide-react';
+import { Home, Gift, Activity, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import useRealtimeSync from '@/lib/useRealtimeSync';
 
@@ -12,7 +12,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'ParentDashboard', label: 'Home', icon: Home },
     { name: 'Activity', label: 'Activity', icon: Activity },
     { name: 'Rewards', label: 'Rewards', icon: Gift },
-    { name: 'ParentProfile', label: 'Profile', icon: UserCircle },
+    { name: 'ParentProfile', label: 'Settings', icon: Settings },
   ];
 
   return (
