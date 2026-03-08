@@ -597,6 +597,145 @@ router.post('/api/children/:id/check-badges', authMiddleware, async (req, res) =
   }
 });
 
+// ─── Quick Actions CRUD ─────────────────────────────────────────────────────
+
+// List quick actions for family
+router.get('/api/quick-actions', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM quick_actions WHERE family_code = $1 ORDER BY display_order ASC, created_date ASC',
+      [req.familyCode]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('List quick actions error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create quick action
+router.post('/api/quick-actions', authMiddleware, async (req, res) => {
+  try {
+    const { label, points, icon, display_order } = req.body;
+    if (!label || typeof label !== 'string') {
+      return res.status(400).json({ error: 'Label is required' });
+    }
+    if (typeof points !== 'number' || points < 1) {
+      return res.status(400).json({ error: 'Points must be at least 1' });
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO quick_actions (family_code, label, points, icon, display_order)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [req.familyCode, sanitizeString(label, MAX_NAME_LENGTH), points, icon || '⭐', display_order || 0]
+    );
+    broadcastFn(req.familyCode, { type: 'quick_actions_updated' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Create quick action error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update quick action
+router.put('/api/quick-actions/:id', authMiddleware, async (req, res) => {
+  try {
+    const { label, points, icon, display_order } = req.body;
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    if (label !== undefined) { updates.push(`label = $${idx++}`); values.push(sanitizeString(label, MAX_NAME_LENGTH)); }
+    if (points !== undefined) { updates.push(`points = $${idx++}`); values.push(points); }
+    if (icon !== undefined) { updates.push(`icon = $${idx++}`); values.push(icon); }
+    if (display_order !== undefined) { updates.push(`display_order = $${idx++}`); values.push(display_order); }
+
+    if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+
+    values.push(req.params.id, req.familyCode);
+    const { rows } = await pool.query(
+      `UPDATE quick_actions SET ${updates.join(', ')} WHERE id = $${idx++} AND family_code = $${idx} RETURNING *`,
+      values
+    );
+
+    if (rows.length === 0) return res.status(404).json({ error: 'Quick action not found' });
+    broadcastFn(req.familyCode, { type: 'quick_actions_updated' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Update quick action error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete quick action
+router.delete('/api/quick-actions/:id', authMiddleware, async (req, res) => {
+  try {
+    const { rowCount } = await pool.query(
+      'DELETE FROM quick_actions WHERE id = $1 AND family_code = $2',
+      [req.params.id, req.familyCode]
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Quick action not found' });
+    broadcastFn(req.familyCode, { type: 'quick_actions_updated' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete quick action error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Unified Activity Feed ──────────────────────────────────────────────────
+
+// Merges point_events and redemptions into a single feed
+router.get('/api/activity-feed', authMiddleware, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+    const filter = req.query.filter || 'all'; // all, earned, spent
+
+    let query;
+    if (filter === 'earned') {
+      query = `
+        SELECT id, child_id, child_name, points, category as label, note, 'earn' as type, created_date
+        FROM point_events
+        WHERE family_code = $1 AND points > 0
+        ORDER BY created_date DESC
+        LIMIT $2 OFFSET $3
+      `;
+    } else if (filter === 'spent') {
+      query = `
+        (SELECT id, child_id, child_name, -reward_cost as points, reward_title as label, NULL as note, 'spend' as type, created_date
+         FROM redemptions
+         WHERE family_code = $1 AND status = 'Completed')
+        UNION ALL
+        (SELECT id, child_id, child_name, points, category as label, note, 'adjust' as type, created_date
+         FROM point_events
+         WHERE family_code = $1 AND points < 0)
+        ORDER BY created_date DESC
+        LIMIT $2 OFFSET $3
+      `;
+    } else {
+      query = `
+        (SELECT id, child_id, child_name, points, category as label, note,
+          CASE WHEN points > 0 THEN 'earn' ELSE 'adjust' END as type, created_date
+         FROM point_events
+         WHERE family_code = $1)
+        UNION ALL
+        (SELECT id, child_id, child_name, -reward_cost as points, reward_title as label, NULL as note, 'spend' as type, created_date
+         FROM redemptions
+         WHERE family_code = $1 AND status = 'Completed')
+        ORDER BY created_date DESC
+        LIMIT $2 OFFSET $3
+      `;
+    }
+
+    const { rows } = await pool.query(query, [req.familyCode, limit, offset]);
+    res.json(rows);
+  } catch (err) {
+    console.error('Activity feed error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Family Goals endpoints (FEAT-008) ────────────────────────────────────────
 
 // Contribute points to family goal
