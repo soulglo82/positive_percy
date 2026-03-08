@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Child, Reward, Redemption } from "@/api/entities";
+import { Child, Reward } from "@/api/entities";
 import { useAuth, getToken } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -107,38 +107,30 @@ export default function ChildView() {
     const { reward, child } = redeemConfirm;
 
     try {
-      // Deduct points atomically via server
       const token = getToken();
-      await fetch(`/api/children/${child.id}/adjust-points`, {
+      const res = await fetch(`/api/children/${child.id}/redeem`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ points: -reward.cost_points }),
+        body: JSON.stringify({
+          reward_id: reward.id,
+          reward_title: reward.title,
+          reward_cost: reward.cost_points,
+          child_name: child.name,
+        }),
       });
 
-      // Track points spent on rewards
-      await fetch(`/api/children/${child.id}/track-spending`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ points: reward.cost_points }),
-      });
-
-      // Log the redemption as completed (for history)
-      await Redemption.create({
-        child_id: child.id,
-        child_name: child.name,
-        reward_id: reward.id,
-        reward_title: reward.title,
-        reward_cost: reward.cost_points,
-        status: 'Completed',
-      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Something went wrong. Please try again.");
+        setRedeemConfirm(null);
+        return;
+      }
 
       queryClient.invalidateQueries(['children']);
+      queryClient.invalidateQueries(['redemptions']);
       toast.success(`${child.name} redeemed ${reward.title}!`);
       confetti({
         particleCount: 100,

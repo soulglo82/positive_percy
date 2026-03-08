@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Child, Point_Event } from "@/api/entities";
+import { Child, Point_Event, Redemption } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Award, Target, Calendar, ChevronDown, ChevronUp, Plus, Minus, Heart, ShoppingBag } from "lucide-react";
+import { TrendingUp, Award, Target, Calendar, ChevronDown, ChevronUp, Plus, Minus, Heart, ShoppingBag, Gift } from "lucide-react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -23,6 +23,12 @@ export default function Summary() {
   const { data: allEvents = [] } = useQuery({
     queryKey: ['pointEvents'],
     queryFn: () => Point_Event.list('-created_date', 200),
+  });
+
+  const { data: allRedemptions = [] } = useQuery({
+    queryKey: ['redemptions'],
+    queryFn: () => Redemption.list('-created_date', 200),
+    enabled: !!user,
   });
 
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -287,6 +293,9 @@ export default function Summary() {
               const childEvents = weeklyEvents
                 .filter(e => e.child_id === child.id)
                 .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+              const childRedemptions = allRedemptions
+                .filter(r => r.child_id === child.id)
+                .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
               return (
                 <motion.div
@@ -410,6 +419,38 @@ export default function Summary() {
                                       </div>
                                     );
                                   })}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Reward Redemption History */}
+                            <div className="mt-4 pt-4 border-t border-slate-200">
+                              <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                                <ShoppingBag className="w-4 h-4 text-amber-500" />
+                                Rewards Redeemed ({childRedemptions.length})
+                              </p>
+                              {childRedemptions.length === 0 ? (
+                                <p className="text-sm text-slate-400 text-center py-3">No rewards redeemed yet</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {childRedemptions.map((redemption) => (
+                                    <div key={redemption.id} className="flex items-start gap-3 p-3 rounded-lg bg-amber-50">
+                                      <div className="p-1.5 rounded-full mt-0.5 bg-amber-200">
+                                        <Gift className="w-3 h-3 text-amber-700" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="font-semibold text-sm text-slate-800">{redemption.reward_title}</span>
+                                          <span className="font-bold text-sm text-amber-600">
+                                            -{redemption.reward_cost} pts
+                                          </span>
+                                        </div>
+                                        <p className="text-xs text-slate-400 mt-1">
+                                          {format(new Date(redemption.created_date), "EEE, MMM d 'at' h:mm a")}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                             </div>
