@@ -10,7 +10,14 @@ export default function ChildCard({ child, onAddPoints, onAdjustPoints, onEdit, 
     .filter(r => r.cost_points > child.total_points)
     .sort((a, b) => a.cost_points - b.cost_points)[0];
 
-  const progress = nextReward ? Math.min((child.total_points / nextReward.cost_points) * 100, 100) : 0;
+  // If child has enough points for all rewards, show the most expensive reward at 100%
+  const displayReward = nextReward || (rewards.length > 0
+    ? [...rewards].sort((a, b) => b.cost_points - a.cost_points)[0]
+    : null);
+
+  const progress = displayReward
+    ? Math.min((child.total_points / displayReward.cost_points) * 100, 100)
+    : 0;
 
   return (
     <motion.div
@@ -62,11 +69,11 @@ export default function ChildCard({ child, onAddPoints, onAdjustPoints, onEdit, 
 
           {/* Reward Progress Bar */}
           <div className="mb-3">
-            {nextReward ? (
+            {displayReward ? (
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-medium text-slate-600">
-                    Progress to {nextReward.emoji || '🎁'} {nextReward.title}
+                    {progress >= 100 ? '🎉 Ready to redeem' : 'Progress to'} {displayReward.emoji || '🎁'} {displayReward.title}
                   </span>
                   <span className="text-xs font-medium text-slate-500">
                     {Math.round(progress)}%
