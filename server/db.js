@@ -127,6 +127,21 @@ export async function initDb() {
       await client.query(sql).catch(() => {});
     }
 
+    // Backfill points_spent from existing redemptions for children that still show 0
+    await client.query(`
+      UPDATE children c
+      SET points_spent = sub.total_spent
+      FROM (
+        SELECT child_id, COALESCE(SUM(reward_cost), 0) AS total_spent
+        FROM redemptions
+        WHERE status IN ('Completed', 'Approved')
+        GROUP BY child_id
+      ) sub
+      WHERE c.id = sub.child_id
+        AND COALESCE(c.points_spent, 0) = 0
+        AND sub.total_spent > 0
+    `).catch(() => {});
+
     console.log('Database tables initialized');
   } finally {
     client.release();

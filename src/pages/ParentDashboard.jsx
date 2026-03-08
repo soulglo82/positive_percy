@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Child, Point_Event, Reward, Redemption } from "@/api/entities";
+import { Child, Point_Event, Reward } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus, Flame, ShoppingBag } from "lucide-react";
+import { UserPlus, Flame } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,6 @@ import EditChildModal from "../components/child/EditChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
 import FamilyGoals from "../components/FamilyGoals";
-import RedemptionCard from "../components/redemptions/RedemptionCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
@@ -60,12 +59,6 @@ export default function ParentDashboard() {
   const { data: children = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['children'],
     queryFn: () => Child.list(),
-    enabled: !!user,
-  });
-
-  const { data: redemptions = [] } = useQuery({
-    queryKey: ['redemptions'],
-    queryFn: () => Redemption.list('-created_date', 10),
     enabled: !!user,
   });
 
@@ -284,24 +277,6 @@ export default function ParentDashboard() {
 
         {/* Family Goals */}
         {children.length > 0 && <FamilyGoals />}
-
-        {/* Recent Redemptions */}
-        {redemptions.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-amber-500" />
-              <h2 className="text-xl font-bold text-slate-800">Recent Reward Redemptions</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {redemptions.map((redemption) => (
-                <RedemptionCard
-                  key={redemption.id}
-                  redemption={redemption}
-                />
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Add Child Button */}
         {children.length > 0 && (
