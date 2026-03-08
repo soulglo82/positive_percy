@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Child } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -6,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Save, Copy, Check, Share2, Lightbulb, Plus, Pencil, Trash2, Zap } from "lucide-react";
+import { Settings, Save, Copy, Check, Share2, Lightbulb, Plus, Pencil, Trash2, Zap, Users, Key, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import OnboardingTips from "../components/OnboardingTips";
+import AddChildModal from "../components/child/AddChildModal";
+import EditChildModal from "../components/child/EditChildModal";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +20,13 @@ import {
 } from "@/components/ui/dialog";
 
 const EMOJI_OPTIONS = ['⭐', '📚', '🧹', '🤝', '💪', '🎨', '🏃', '🎵', '🧠', '💤', '🦷', '🍎'];
+
+const DEFAULT_QUICK_ACTIONS = [
+  { id: 'default-1', label: "Kindness", points: 5, icon: "⭐" },
+  { id: 'default-2', label: "Homework", points: 10, icon: "📚" },
+  { id: 'default-3', label: "Chores", points: 5, icon: "🧹" },
+  { id: 'default-4', label: "Manners", points: 5, icon: "🤝" },
+];
 
 export default function ParentProfile() {
   const { user, familyCode, updateUser } = useAuth();
@@ -27,9 +37,17 @@ export default function ParentProfile() {
   const [showTips, setShowTips] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
   const [editingAction, setEditingAction] = useState(null);
+  const [showAddChild, setShowAddChild] = useState(false);
+  const [showEditChild, setShowEditChild] = useState(false);
+  const [selectedChild, setSelectedChild] = useState(null);
 
-  // Quick Actions CRUD
-  const { data: quickActions = [], refetch: refetchActions } = useQuery({
+  const { data: children = [] } = useQuery({
+    queryKey: ['children'],
+    queryFn: () => Child.list(),
+    enabled: !!user,
+  });
+
+  const { data: quickActions = [] } = useQuery({
     queryKey: ['quickActions'],
     queryFn: async () => {
       const token = getToken();
@@ -42,15 +60,17 @@ export default function ParentProfile() {
     enabled: !!user,
   });
 
+  const displayActions = quickActions.length > 0 ? quickActions : DEFAULT_QUICK_ACTIONS;
+  const isUsingDefaults = quickActions.length === 0;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       await updateUser({ full_name: familyName });
-      toast.success("Profile updated successfully!");
+      toast.success("Family name updated!");
     } catch (error) {
-      toast.error(error.message || "Failed to update profile");
+      toast.error(error.message || "Failed to update");
     } finally {
       setLoading(false);
     }
@@ -84,108 +104,148 @@ export default function ParentProfile() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <div className="max-w-3xl mx-auto p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <User className="w-8 h-8 text-purple-500" />
-          <h1 className="text-3xl font-bold text-slate-800">Family Profile</h1>
+        <div className="flex items-center gap-3 mb-2">
+          <Settings className="w-8 h-8 text-purple-500" />
+          <h1 className="text-3xl font-bold text-slate-800">Family Settings</h1>
         </div>
 
-        {/* Family Name */}
+        {/* Quick Actions */}
         <Card>
-          <CardHeader>
-            <CardTitle>Family Name</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="family_name">Name</Label>
-                <Input
-                  id="family_name"
-                  value={familyName}
-                  onChange={(e) => setFamilyName(e.target.value)}
-                  placeholder="e.g., The Smiths"
-                />
-              </div>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {loading ? 'Saving...' : 'Save'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions Settings */}
-        <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-amber-500" />
               Quick Actions
             </CardTitle>
+            <p className="text-sm text-slate-500">
+              Choose the behaviours you reward most often.
+            </p>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-sm text-slate-500 mb-4">
-              Customise the quick reward buttons shown on child cards.
-            </p>
-            {quickActions.length === 0 ? (
-              <p className="text-sm text-slate-400 italic py-4 text-center">
-                No custom quick actions yet. Default actions will be used.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {quickActions.map((action) => (
-                  <div
-                    key={action.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">{action.icon}</span>
-                      <span className="font-medium text-slate-700">{action.label}</span>
-                      <span className="text-sm text-green-600 font-bold">+{action.points} pts</span>
-                    </div>
+            {isUsingDefaults && (
+              <p className="text-xs text-slate-400 italic">Using defaults — add your own to customise.</p>
+            )}
+            <div className="space-y-1.5">
+              {displayActions.map((action) => (
+                <div
+                  key={action.id}
+                  className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{action.icon}</span>
+                    <span className="font-medium text-slate-700">{action.label}</span>
+                    <span className="text-sm text-green-600 font-bold">+{action.points} pts</span>
+                  </div>
+                  {!isUsingDefaults && (
                     <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditAction(action)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleEditAction(action)}>
                         <Pencil className="w-4 h-4 text-slate-400" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteAction(action.id)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteAction(action.id)}>
                         <Trash2 className="w-4 h-4 text-rose-400" />
                       </Button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <Button
-              variant="outline"
-              className="w-full mt-2"
-              onClick={handleNewAction}
-            >
+                  )}
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" className="w-full" onClick={handleNewAction}>
               <Plus className="w-4 h-4 mr-2" />
               Add Action
             </Button>
           </CardContent>
         </Card>
 
-        {/* Family Code */}
+        {/* Children */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-500" />
+              Children
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {children.length === 0 ? (
+              <p className="text-sm text-slate-400 italic py-2 text-center">No children added yet.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {children.map((child) => (
+                  <div
+                    key={child.id}
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100"
+                  >
+                    <div className="flex items-center gap-3">
+                      {child.avatar_url ? (
+                        <img src={child.avatar_url} alt={child.name} className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold">
+                          {child.name.charAt(0)}
+                        </div>
+                      )}
+                      <span className="font-medium text-slate-700">{child.name}</span>
+                      <span className="text-sm text-purple-600 font-bold">{child.total_points} pts</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedChild(child);
+                        setShowEditChild(true);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4 text-slate-400" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button variant="outline" className="w-full" onClick={() => setShowAddChild(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Add Child
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Family Name */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2">
+              <span className="text-lg">👪</span>
+              Family Name
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <Input
+                value={familyName}
+                onChange={(e) => setFamilyName(e.target.value)}
+                placeholder="e.g., The Smiths"
+                className="flex-1"
+              />
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              >
+                <Save className="w-4 h-4 mr-1" />
+                {loading ? 'Saving...' : 'Save'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Invite Parent */}
         {familyCode && (
-          <Card className="border-2 border-purple-200 bg-purple-50">
-            <CardHeader>
-              <CardTitle>Family Code</CardTitle>
+          <Card className="border-2 border-purple-200 bg-purple-50/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2">
+                <Key className="w-5 h-5 text-purple-500" />
+                Invite Parent
+              </CardTitle>
+              <p className="text-sm text-slate-600">
+                Share this code so another parent can join your family.
+              </p>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-slate-600">
-                Share this code with the other parent so they can join your family:
-              </p>
               <div className="flex items-center gap-3">
                 <div className="text-3xl font-mono font-bold tracking-widest text-purple-700 bg-white rounded-lg px-4 py-2 border">
                   {familyCode}
@@ -202,6 +262,7 @@ export default function ParentProfile() {
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
+              <p className="text-xs text-slate-500">Both parents can add points and manage rewards.</p>
               <Button
                 className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                 onClick={async () => {
@@ -222,25 +283,20 @@ export default function ParentProfile() {
                 }}
               >
                 <Share2 className="w-4 h-4 mr-2" />
-                Share with Family
+                Share Invite Link
               </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Tips Card */}
-        <Card>
-          <CardContent className="py-4">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setShowTips(true)}
-            >
-              <Lightbulb className="w-4 h-4 mr-2 text-amber-500" />
-              View Parenting Tips
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Parenting Tips - bottom link */}
+        <button
+          onClick={() => setShowTips(true)}
+          className="w-full text-center text-sm text-slate-400 hover:text-purple-500 transition-colors py-2"
+        >
+          <Lightbulb className="w-4 h-4 inline mr-1" />
+          Need help rewarding behaviour? View Parenting Tips
+        </button>
       </div>
 
       <OnboardingTips
@@ -262,6 +318,40 @@ export default function ParentProfile() {
           setEditingAction(null);
         }}
       />
+
+      <AddChildModal
+        isOpen={showAddChild}
+        onClose={() => setShowAddChild(false)}
+        onSubmit={async (data) => {
+          await Child.create(data);
+          queryClient.invalidateQueries(['children']);
+          setShowAddChild(false);
+          toast.success("Child added!");
+        }}
+      />
+
+      {selectedChild && (
+        <EditChildModal
+          isOpen={showEditChild}
+          onClose={() => {
+            setShowEditChild(false);
+            setSelectedChild(null);
+          }}
+          child={selectedChild}
+          onSubmit={async (data) => {
+            await Child.update(selectedChild.id, data);
+            queryClient.invalidateQueries(['children']);
+            toast.success(`${data.name}'s profile updated!`);
+          }}
+          onDelete={async (child) => {
+            await Child.delete(child.id);
+            queryClient.invalidateQueries(['children']);
+            setShowEditChild(false);
+            setSelectedChild(null);
+            toast.success(`${child.name} has been removed`);
+          }}
+        />
+      )}
     </div>
   );
 }
