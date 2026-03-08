@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { Home, Gift, History, User, UserCircle, LogOut } from 'lucide-react';
+import { Home, Gift, Activity, UserCircle, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import useRealtimeSync from '@/lib/useRealtimeSync';
 
@@ -9,10 +9,9 @@ export default function Layout({ children, currentPageName }) {
   const { logout, user } = useAuth();
   useRealtimeSync(user?.family_code);
   const navItems = [
-    { name: 'ParentDashboard', label: 'Dashboard', icon: Home },
-    { name: 'Summary', label: 'Summary', icon: History },
+    { name: 'ParentDashboard', label: 'Home', icon: Home },
+    { name: 'Activity', label: 'Activity', icon: Activity },
     { name: 'Rewards', label: 'Rewards', icon: Gift },
-    { name: 'ChildView', label: 'Child View', icon: User },
     { name: 'ParentProfile', label: 'Profile', icon: UserCircle },
   ];
 

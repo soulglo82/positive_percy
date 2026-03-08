@@ -95,6 +95,16 @@ export async function initDb() {
         dad_phone TEXT,
         created_date TIMESTAMPTZ DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS quick_actions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        family_code TEXT NOT NULL,
+        label TEXT NOT NULL,
+        points INTEGER NOT NULL DEFAULT 5,
+        icon TEXT DEFAULT '⭐',
+        display_order INTEGER DEFAULT 0,
+        created_date TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
 
     // Add columns to existing tables if they don't exist (handles upgrades)

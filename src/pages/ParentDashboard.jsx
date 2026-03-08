@@ -5,40 +5,49 @@ import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus, Flame } from "lucide-react";
+import { UserPlus, Flame, Plus, Minus, Gift } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { motion } from "framer-motion";
 
 import ChildCard from "../components/child/ChildCard";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
+import AdjustPointsModal from "../components/child/AdjustPointsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
 import FamilyGoals from "../components/FamilyGoals";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
+
+const DEFAULT_QUICK_ACTIONS = [
+  { id: 'default-1', label: "Kindness", points: 5, icon: "⭐", category: "Kindness" },
+  { id: 'default-2', label: "Homework", points: 10, icon: "📚", category: "Homework" },
+  { id: 'default-3', label: "Chores", points: 5, icon: "🧹", category: "Chores" },
+  { id: 'default-4', label: "Manners", points: 5, icon: "🤝", category: "Good Manners" },
+];
 
 export default function ParentDashboard() {
   const { user } = useAuth();
   const [showAddChild, setShowAddChild] = useState(false);
   const [showEditChild, setShowEditChild] = useState(false);
   const [showAddPoints, setShowAddPoints] = useState(false);
-  const [showSubtractPoints, setShowSubtractPoints] = useState(false);
+  const [showAdjustPoints, setShowAdjustPoints] = useState(false);
   const [selectedChild, setSelectedChild] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [streak, setStreak] = useState(0);
 
   const queryClient = useQueryClient();
 
-  // Show onboarding tips on first visit
   useEffect(() => {
     if (user && shouldShowOnboarding()) {
       setShowOnboarding(true);
     }
   }, [user]);
 
-  // Server-side weekly reset on mount (BUG-002)
+  // Server-side weekly reset on mount
   useEffect(() => {
     if (!user) return;
     const token = getToken();
@@ -59,6 +68,45 @@ export default function ParentDashboard() {
   const { data: children = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['children'],
     queryFn: () => Child.list(),
+    enabled: !!user,
+  });
+
+  const { data: rewards = [] } = useQuery({
+    queryKey: ['rewards'],
+    queryFn: () => Reward.list(),
+    enabled: !!user,
+  });
+
+  // Fetch quick actions from DB
+  const { data: quickActions } = useQuery({
+    queryKey: ['quickActions'],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch('/api/quick-actions', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user,
+  });
+
+  // Use DB quick actions if available, otherwise defaults
+  const activeQuickActions = (quickActions && quickActions.length > 0)
+    ? quickActions.map(qa => ({ ...qa, category: qa.label }))
+    : DEFAULT_QUICK_ACTIONS;
+
+  // Fetch recent activity feed
+  const { data: recentActivity = [] } = useQuery({
+    queryKey: ['recentActivity'],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch('/api/activity-feed?limit=5&filter=all', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
     enabled: !!user,
   });
 
@@ -88,6 +136,8 @@ export default function ParentDashboard() {
     mutationFn: (data) => Point_Event.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries(['children']);
+      queryClient.invalidateQueries(['recentActivity']);
+      queryClient.invalidateQueries(['activityFeed']);
       toast.success("Points updated!");
     },
   });
@@ -97,9 +147,9 @@ export default function ParentDashboard() {
     setShowAddPoints(true);
   };
 
-  const handleSubtractPoints = (child) => {
+  const handleAdjustPoints = (child) => {
     setSelectedChild(child);
-    setShowSubtractPoints(true);
+    setShowAdjustPoints(true);
   };
 
   const handleEditChild = (child) => {
@@ -142,12 +192,10 @@ export default function ParentDashboard() {
     } catch {}
   };
 
-  // Load streak on mount
   useEffect(() => {
     if (user) updateStreak();
   }, [user]);
 
-  // BUG-003: Use atomic server-side point adjustment
   const handlePointsSubmit = async (data) => {
     if (data.points < 0) {
       const newTotal = selectedChild.total_points + data.points;
@@ -175,7 +223,6 @@ export default function ParentDashboard() {
     });
 
     if (data.points > 0) {
-      // Check if child just hit their weekly goal
       const updated = await res.json();
       const wasBelow = selectedChild.weekly_points < selectedChild.weekly_target;
       const isNowAbove = updated.weekly_points >= updated.weekly_target;
@@ -191,9 +238,9 @@ export default function ParentDashboard() {
     }
 
     queryClient.invalidateQueries(['children']);
+    queryClient.invalidateQueries(['recentActivity']);
     updateStreak();
 
-    // FEAT-010: Check badges after point change
     if (data.points > 0) {
       try {
         const badgeToken = getToken();
@@ -211,7 +258,7 @@ export default function ParentDashboard() {
         child_id: child.id,
         child_name: child.name,
         points: action.points,
-        category: action.category,
+        category: action.category || action.label,
         note: '',
       });
 
@@ -239,9 +286,9 @@ export default function ParentDashboard() {
       }
 
       queryClient.invalidateQueries(['children']);
+      queryClient.invalidateQueries(['recentActivity']);
       updateStreak();
 
-      // Check badges
       try {
         await fetch(`/api/children/${child.id}/check-badges`, {
           method: 'POST',
@@ -253,37 +300,13 @@ export default function ParentDashboard() {
     }
   };
 
-  const handleResetWeekly = async (child) => {
-    await updateChildMutation.mutateAsync({
-      id: child.id,
-      data: {
-        weekly_points: 0,
-        last_reset_date: new Date().toISOString().split('T')[0],
-      },
-    });
-    toast.success(`${child.name}'s weekly points reset!`);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <img
-              src="/logo.png"
-              alt="Positive Percy"
-              className="h-20 mb-2"
-            />
-            <p className="text-slate-600">Building bright futures, one point at a time</p>
-          </div>
-          {streak > 0 && (
-            <Badge className="bg-gradient-to-r from-orange-400 to-red-500 text-white border-0 text-sm px-3 py-1.5 flex items-center gap-1.5">
-              <Flame className="w-4 h-4" />
-              {streak}-day streak
-            </Badge>
-          )}
-        </div>
+        {/* Add Points Section Header */}
+        <h2 className="text-xl font-semibold text-slate-800" style={{ marginBottom: '-16px' }}>
+          Add Points
+        </h2>
 
         {/* Children Grid */}
         {isLoading ? (
@@ -316,11 +339,47 @@ export default function ParentDashboard() {
                 key={child.id}
                 child={child}
                 onAddPoints={handleAddPoints}
-                onSubtractPoints={handleSubtractPoints}
+                onAdjustPoints={handleAdjustPoints}
                 onEdit={handleEditChild}
                 onQuickAction={handleQuickAction}
+                quickActions={activeQuickActions}
+                rewards={rewards}
               />
             ))}
+          </div>
+        )}
+
+        {/* Recent Activity Preview */}
+        {recentActivity.length > 0 && (
+          <div>
+            <h2 className="text-lg font-semibold text-slate-800 mb-3">Recent Activity</h2>
+            <Card>
+              <CardContent className="p-0">
+                <div className="divide-y divide-slate-100">
+                  {recentActivity.map((event) => {
+                    const isEarn = event.type === 'earn';
+                    const isSpend = event.type === 'spend';
+                    const icon = isEarn ? '⭐' : isSpend ? '🎁' : '⚙️';
+                    const colorClass = isEarn ? 'text-green-600' : isSpend ? 'text-orange-600' : 'text-slate-500';
+
+                    return (
+                      <div key={`${event.type}-${event.id}`} className="flex items-center gap-3 px-4 py-3">
+                        <span className="text-lg">{icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-slate-700">{event.label}</span>
+                          <span className="text-xs text-slate-400 ml-2">
+                            {event.child_name} · {format(new Date(event.created_date), "MMM d")}
+                          </span>
+                        </div>
+                        <span className={`text-sm font-bold ${colorClass}`}>
+                          {event.points > 0 ? '+' : ''}{event.points} pts
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -340,6 +399,22 @@ export default function ParentDashboard() {
             </Button>
           </div>
         )}
+
+        {/* Branding Footer */}
+        <div className="flex flex-col items-center gap-2 pt-4 pb-8">
+          <img
+            src="/logo.png"
+            alt="Positive Percy"
+            className="h-16 opacity-60"
+          />
+          <p className="text-sm text-slate-400">Building bright futures, one point at a time</p>
+          {streak > 0 && (
+            <Badge className="bg-gradient-to-r from-orange-400 to-red-500 text-white border-0 text-sm px-3 py-1.5 flex items-center gap-1.5">
+              <Flame className="w-4 h-4" />
+              {streak}-day streak
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Modals */}
@@ -371,15 +446,14 @@ export default function ParentDashboard() {
         isSubtract={false}
       />
 
-      <AddPointsModal
-        isOpen={showSubtractPoints}
+      <AdjustPointsModal
+        isOpen={showAdjustPoints}
         onClose={() => {
-          setShowSubtractPoints(false);
+          setShowAdjustPoints(false);
           setSelectedChild(null);
         }}
         child={selectedChild}
         onSubmit={handlePointsSubmit}
-        isSubtract={true}
       />
 
       <OnboardingTips
