@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Gift } from "lucide-react";
 import { toast } from "sonner";
 
+import SectionHeader from "../components/SectionHeader";
 import RewardCard from "../components/rewards/RewardCard";
 import AddRewardModal from "../components/rewards/AddRewardModal";
 import EditRewardModal from "../components/rewards/EditRewardModal";
@@ -109,7 +110,7 @@ export default function Rewards() {
           </Button>
         </div>
 
-        {/* Rewards Grid */}
+        <SectionHeader icon="🎁">Available Rewards</SectionHeader>
         {isLoading ? (
           <LoadingSpinner message="Loading rewards..." />
         ) : isError ? (

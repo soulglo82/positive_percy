@@ -3,12 +3,13 @@ import { Child } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings, Save, Copy, Check, Share2, Lightbulb, Plus, Pencil, Trash2, Zap, Users, Key, UserPlus } from "lucide-react";
+import { Settings, Save, Copy, Check, Share2, Lightbulb, Plus, Pencil, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import SectionHeader from "../components/SectionHeader";
 import OnboardingTips from "../components/OnboardingTips";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
@@ -110,17 +111,9 @@ export default function ParentProfile() {
         </div>
 
         {/* Quick Actions */}
+        <SectionHeader icon="⚡">Quick Actions</SectionHeader>
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-500" />
-              Quick Actions
-            </CardTitle>
-            <p className="text-sm text-slate-500">
-              Choose the behaviours you reward most often.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 pt-4">
             {isUsingDefaults && (
               <p className="text-xs text-slate-400 italic">Using defaults — add your own to customise.</p>
             )}
@@ -156,14 +149,9 @@ export default function ParentProfile() {
         </Card>
 
         {/* Children */}
+        <SectionHeader icon="👨‍👩‍👧‍👦">Children</SectionHeader>
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-500" />
-              Children
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 pt-4">
             {children.length === 0 ? (
               <p className="text-sm text-slate-400 italic py-2 text-center">No children added yet.</p>
             ) : (
@@ -206,14 +194,9 @@ export default function ParentProfile() {
         </Card>
 
         {/* Family Name */}
+        <SectionHeader icon="👪">Family Name</SectionHeader>
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2">
-              <span className="text-lg">👪</span>
-              Family Name
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <form onSubmit={handleSubmit} className="flex gap-2">
               <Input
                 value={familyName}
@@ -235,17 +218,10 @@ export default function ParentProfile() {
 
         {/* Invite Parent */}
         {familyCode && (
+          <>
+          <SectionHeader icon="🔑">Invite Parent</SectionHeader>
           <Card className="border-2 border-purple-200 bg-purple-50/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2">
-                <Key className="w-5 h-5 text-purple-500" />
-                Invite Parent
-              </CardTitle>
-              <p className="text-sm text-slate-600">
-                Share this code so another parent can join your family.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 pt-4">
               <div className="flex items-center gap-3">
                 <div className="text-3xl font-mono font-bold tracking-widest text-purple-700 bg-white rounded-lg px-4 py-2 border">
                   {familyCode}
@@ -287,6 +263,7 @@ export default function ParentProfile() {
               </Button>
             </CardContent>
           </Card>
+          </>
         )}
 
         {/* Parenting Tips - bottom link */}

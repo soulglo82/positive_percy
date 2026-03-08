@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 
+import SectionHeader from "../components/SectionHeader";
 import ChildCard from "../components/child/ChildCard";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
@@ -296,10 +297,16 @@ export default function ParentDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Add Points Section Header */}
-        <h2 className="text-xl font-semibold text-slate-800" style={{ marginBottom: '-16px' }}>
-          Add Points
-        </h2>
+        {streak > 0 && (
+          <div className="flex justify-center">
+            <Badge className="bg-gradient-to-r from-orange-400 to-red-500 text-white border-0 text-sm px-3 py-1.5 flex items-center gap-1.5">
+              <Flame className="w-4 h-4" />
+              {streak}-day streak
+            </Badge>
+          </div>
+        )}
+
+        <SectionHeader icon="⭐">Add Points</SectionHeader>
 
         {/* Children Grid */}
         {isLoading ? (
@@ -346,7 +353,7 @@ export default function ParentDashboard() {
         {/* Recent Activity Preview */}
         {recentActivity.length > 0 && (
           <div>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">Recent Activity</h2>
+            <SectionHeader icon="📋">Recent Activity</SectionHeader>
             <Card>
               <CardContent className="p-0">
                 <div className="divide-y divide-slate-100">
@@ -399,15 +406,9 @@ export default function ParentDashboard() {
           <img
             src="/logo.png"
             alt="Positive Percy"
-            className="h-16 opacity-60"
+            className="h-28 opacity-60"
           />
           <p className="text-sm text-slate-400">Building bright futures, one point at a time</p>
-          {streak > 0 && (
-            <Badge className="bg-gradient-to-r from-orange-400 to-red-500 text-white border-0 text-sm px-3 py-1.5 flex items-center gap-1.5">
-              <Flame className="w-4 h-4" />
-              {streak}-day streak
-            </Badge>
-          )}
         </div>
       </div>
 
