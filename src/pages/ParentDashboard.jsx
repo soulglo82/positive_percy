@@ -343,7 +343,9 @@ export default function ParentDashboard() {
                 onEdit={handleEditChild}
                 onQuickAction={handleQuickAction}
                 quickActions={activeQuickActions}
-                rewards={rewards}
+                rewards={rewards.filter(r =>
+                  !r.assigned_child_ids || r.assigned_child_ids.length === 0 || r.assigned_child_ids.includes(child.id)
+                )}
               />
             ))}
           </div>
