@@ -73,7 +73,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
             <Label className="text-sm font-medium text-slate-700 mb-3 block">
               Points
             </Label>
-            <div className="flex gap-2 mb-2">
+            <div className="grid grid-cols-6 gap-2 mb-2">
               {POSITIVE_AMOUNTS.map((amount) => (
                 <Button
                   key={amount}
@@ -89,7 +89,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
                 </Button>
               ))}
             </div>
-            <div className="flex gap-2 mb-3">
+            <div className="grid grid-cols-6 gap-2 mb-3">
               {NEGATIVE_AMOUNTS.map((amount) => (
                 <Button
                   key={amount}
