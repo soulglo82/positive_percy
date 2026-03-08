@@ -29,17 +29,20 @@ const CATEGORIES = [
   "Other"
 ];
 
-const PRESET_AMOUNTS = [1, 2, 3, 4, 10];
+const POSITIVE_AMOUNTS = [1, 2, 3, 4, 5, 10];
+const NEGATIVE_AMOUNTS = [-1, -2, -3, -4, -5, -10];
 
-export default function AddPointsModal({ isOpen, onClose, child, onSubmit, isSubtract = false }) {
+export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
   const [points, setPoints] = useState(1);
   const [category, setCategory] = useState("Kindness");
   const [note, setNote] = useState("");
 
+  const isNegative = points < 0;
+
   const handleSubmit = () => {
     onSubmit({
-      points: isSubtract ? -Math.abs(points) : Math.abs(points),
-      category,
+      points,
+      category: isNegative ? "Adjustment" : category,
       note,
     });
     setPoints(1);
@@ -53,14 +56,9 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit, isSub
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
-            <Sparkles className={`w-6 h-6 ${isSubtract ? 'text-rose-500' : 'text-green-500'}`} />
-            {isSubtract ? 'Adjust Points' : 'Award Points'}
+            <Sparkles className={`w-6 h-6 ${isNegative ? 'text-rose-500' : 'text-green-500'}`} />
+            {isNegative ? 'Adjust Points' : 'Award Points'}
           </DialogTitle>
-          {isSubtract && (
-            <p className="text-xs text-amber-600 mt-1">
-              Tip: Try to keep adjustments rare. Research shows 5 positives for every 1 correction works best.
-            </p>
-          )}
         </DialogHeader>
 
         <div className="space-y-5 py-4">
@@ -75,16 +73,32 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit, isSub
             <Label className="text-sm font-medium text-slate-700 mb-3 block">
               Points
             </Label>
-            <div className="flex gap-2 mb-3">
-              {PRESET_AMOUNTS.map((amount) => (
+            <div className="flex gap-2 mb-2">
+              {POSITIVE_AMOUNTS.map((amount) => (
                 <Button
                   key={amount}
                   variant={points === amount ? "default" : "outline"}
                   size="sm"
                   onClick={() => setPoints(amount)}
-                  className={points === amount 
-                    ? (isSubtract ? "bg-rose-500 hover:bg-rose-600" : "bg-green-500 hover:bg-green-600")
+                  className={points === amount
+                    ? "bg-green-500 hover:bg-green-600"
                     : ""
+                  }
+                >
+                  +{amount}
+                </Button>
+              ))}
+            </div>
+            <div className="flex gap-2 mb-3">
+              {NEGATIVE_AMOUNTS.map((amount) => (
+                <Button
+                  key={amount}
+                  variant={points === amount ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPoints(amount)}
+                  className={points === amount
+                    ? "bg-rose-500 hover:bg-rose-600"
+                    : "text-rose-600 border-rose-200 hover:bg-rose-50"
                   }
                 >
                   {amount}
@@ -95,29 +109,30 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit, isSub
               type="number"
               value={points}
               onChange={(e) => setPoints(Number(e.target.value))}
-              min="1"
               className="text-lg font-semibold"
             />
           </div>
 
-          {/* Category */}
-          <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
-              Category
-            </Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Category - only for positive points */}
+          {!isNegative && (
+            <div>
+              <Label className="text-sm font-medium text-slate-700 mb-2 block">
+                Category
+              </Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Note */}
           <div>
@@ -127,8 +142,8 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit, isSub
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder={isSubtract 
-                ? "What happened?" 
+              placeholder={isNegative
+                ? "Why are you adjusting points?"
                 : "What did they do well?"
               }
               rows={3}
@@ -146,13 +161,14 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit, isSub
           </Button>
           <Button
             onClick={handleSubmit}
+            disabled={points === 0}
             className={`flex-1 ${
-              isSubtract 
-                ? 'bg-rose-500 hover:bg-rose-600' 
+              isNegative
+                ? 'bg-rose-500 hover:bg-rose-600'
                 : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
             }`}
           >
-            {isSubtract ? 'Adjust' : 'Award'} Points
+            {isNegative ? 'Adjust' : 'Award'} Points
           </Button>
         </div>
       </DialogContent>

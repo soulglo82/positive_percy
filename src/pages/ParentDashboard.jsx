@@ -437,7 +437,6 @@ export default function ParentDashboard() {
         }}
         child={selectedChild}
         onSubmit={handlePointsSubmit}
-        isSubtract={false}
       />
 
       <OnboardingTips
