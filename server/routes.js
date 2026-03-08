@@ -25,13 +25,59 @@ function authMiddleware(req, res, next) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
   }
-  // Fallback: accept family_code from query/body for backward compatibility during migration
-  const fc = req.query.family_code || req.body?.family_code;
-  if (fc) {
-    req.familyCode = fc;
-    return next();
-  }
   return res.status(401).json({ error: 'Authentication required' });
+}
+
+// ─── Input validation helpers ───────────────────────────────────────────────
+
+const MAX_NAME_LENGTH = 100;
+const MAX_NOTE_LENGTH = 500;
+const MAX_DESCRIPTION_LENGTH = 1000;
+
+function sanitizeString(str, maxLength) {
+  if (typeof str !== 'string') return str;
+  return str.trim().slice(0, maxLength);
+}
+
+function validateCreatePayload(table, data) {
+  if (table === 'children') {
+    if (data.name !== undefined) {
+      data.name = sanitizeString(data.name, MAX_NAME_LENGTH);
+      if (!data.name) throw Object.assign(new Error('Child name is required'), { status: 400 });
+    }
+  }
+  if (table === 'rewards') {
+    if (data.title !== undefined) {
+      data.title = sanitizeString(data.title, MAX_NAME_LENGTH);
+      if (!data.title) throw Object.assign(new Error('Reward title is required'), { status: 400 });
+    }
+    if (data.description !== undefined) {
+      data.description = sanitizeString(data.description, MAX_DESCRIPTION_LENGTH);
+    }
+    if (data.cost_points !== undefined) {
+      if (typeof data.cost_points !== 'number' || data.cost_points < 1) {
+        throw Object.assign(new Error('Reward cost must be at least 1 point'), { status: 400 });
+      }
+    }
+  }
+  if (table === 'point_events') {
+    if (data.note !== undefined) {
+      data.note = sanitizeString(data.note, MAX_NOTE_LENGTH);
+    }
+    if (data.category !== undefined) {
+      data.category = sanitizeString(data.category, MAX_NAME_LENGTH);
+    }
+  }
+  if (table === 'family_goals') {
+    if (data.title !== undefined) {
+      data.title = sanitizeString(data.title, MAX_NAME_LENGTH);
+      if (!data.title) throw Object.assign(new Error('Goal title is required'), { status: 400 });
+    }
+    if (data.description !== undefined) {
+      data.description = sanitizeString(data.description, MAX_DESCRIPTION_LENGTH);
+    }
+  }
+  return data;
 }
 
 // ─── Generic helpers ────────────────────────────────────────────────────────
@@ -372,6 +418,71 @@ router.post('/api/children/:id/track-spending', authMiddleware, async (req, res)
   }
 });
 
+// Atomic reward redemption (prevents double-spend via DB transaction)
+router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { reward_id, reward_title, reward_cost, child_name } = req.body;
+    const childId = req.params.id;
+
+    if (!reward_id || !reward_title || typeof reward_cost !== 'number' || reward_cost < 1) {
+      return res.status(400).json({ error: 'Invalid redemption data' });
+    }
+
+    await client.query('BEGIN');
+
+    // Lock the child row and check balance
+    const { rows: childRows } = await client.query(
+      'SELECT total_points, weekly_points FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
+      [childId, req.familyCode]
+    );
+
+    if (childRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Child not found' });
+    }
+
+    if (childRows[0].total_points < reward_cost) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Not enough points' });
+    }
+
+    // Deduct points
+    await client.query(
+      `UPDATE children
+       SET total_points = GREATEST(0, total_points - $1),
+           weekly_points = GREATEST(0, weekly_points - $1),
+           points_spent = COALESCE(points_spent, 0) + $1
+       WHERE id = $2`,
+      [reward_cost, childId]
+    );
+
+    // Create redemption record
+    const { rows: redemptionRows } = await client.query(
+      `INSERT INTO redemptions (child_id, child_name, reward_id, reward_title, reward_cost, status, family_code)
+       VALUES ($1, $2, $3, $4, $5, 'Completed', $6) RETURNING *`,
+      [childId, child_name || '', reward_id, reward_title, reward_cost, req.familyCode]
+    );
+
+    await client.query('COMMIT');
+
+    // Fetch updated child
+    const { rows: updatedChild } = await pool.query(
+      'SELECT * FROM children WHERE id = $1',
+      [childId]
+    );
+
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
+    res.json({ child: updatedChild[0], redemption: redemptionRows[0] });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('Redeem error:', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 // Server-side summary aggregation (ENH-004)
 router.get('/api/summary', authMiddleware, async (req, res) => {
   try {
@@ -590,9 +701,10 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
-    const data = req.body;
+    let data = req.body;
     const keys = Object.keys(data);
     validateColumns(table, keys);
+    data = validateCreatePayload(table, data);
     const values = Object.values(data);
     const placeholders = keys.map((_, i) => `$${i + 1}`);
 
@@ -603,6 +715,7 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
     broadcastFn(req.familyCode, { type: `${req.params.entity}_created`, id: rows[0].id });
     res.json(rows[0]);
   } catch (err) {
+    if (err.status === 400) return res.status(400).json({ error: err.message });
     console.error(`Create ${req.params.entity} error:`, err);
     res.status(500).json({ error: err.message });
   }
@@ -614,9 +727,10 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
-    const data = req.body;
+    let data = req.body;
     const keys = Object.keys(data);
     validateColumns(table, keys);
+    data = validateCreatePayload(table, data);
     const values = Object.values(data);
     const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
     values.push(req.params.id);
