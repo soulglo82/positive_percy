@@ -205,6 +205,54 @@ export default function ParentDashboard() {
     }
   };
 
+  const handleQuickAction = async (child, action) => {
+    try {
+      await createPointEventMutation.mutateAsync({
+        child_id: child.id,
+        child_name: child.name,
+        points: action.points,
+        category: action.category,
+        note: '',
+      });
+
+      const token = getToken();
+      const res = await fetch(`/api/children/${child.id}/adjust-points`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ points: action.points }),
+      });
+
+      const updated = await res.json();
+      const wasBelow = child.weekly_points < child.weekly_target;
+      const isNowAbove = updated.weekly_points >= updated.weekly_target;
+      if (wasBelow && isNowAbove) {
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
+        });
+        toast.success(`${child.name} hit their weekly goal!`);
+      }
+
+      queryClient.invalidateQueries(['children']);
+      updateStreak();
+
+      // Check badges
+      try {
+        await fetch(`/api/children/${child.id}/check-badges`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        });
+      } catch {}
+    } catch {
+      toast.error("Failed to award points");
+    }
+  };
+
   const handleResetWeekly = async (child) => {
     await updateChildMutation.mutateAsync({
       id: child.id,
@@ -270,6 +318,7 @@ export default function ParentDashboard() {
                 onAddPoints={handleAddPoints}
                 onSubtractPoints={handleSubtractPoints}
                 onEdit={handleEditChild}
+                onQuickAction={handleQuickAction}
               />
             ))}
           </div>

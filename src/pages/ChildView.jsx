@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Child, Reward } from "@/api/entities";
+import { Child, Reward, Point_Event } from "@/api/entities";
 import { useAuth, getToken } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,9 +20,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trophy, Gift, Award, ShoppingBag } from "lucide-react";
+import { Trophy, Gift, Award, ShoppingBag, Plus, Minus, History } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 import confetti from "canvas-confetti";
 
 import RewardCard from "../components/rewards/RewardCard";
@@ -48,6 +50,12 @@ export default function ChildView() {
   const { data: allRewards = [] } = useQuery({
     queryKey: ['rewards'],
     queryFn: () => Reward.filter({ visible_to_child: true }),
+  });
+
+  const { data: allEvents = [] } = useQuery({
+    queryKey: ['pointEvents'],
+    queryFn: () => Point_Event.list('-created_date', 50),
+    enabled: !!user,
   });
 
   const rewards = allRewards.filter(reward => {
@@ -269,18 +277,74 @@ export default function ChildView() {
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {rewards.map((reward) => (
+                  {[...rewards]
+                    .sort((a, b) => {
+                      const aAfford = selectedChild.total_points >= a.cost_points ? 0 : 1;
+                      const bAfford = selectedChild.total_points >= b.cost_points ? 0 : 1;
+                      if (aAfford !== bAfford) return aAfford - bAfford;
+                      return a.cost_points - b.cost_points;
+                    })
+                    .map((reward) => (
                     <RewardCard
                       key={reward.id}
                       reward={reward}
                       isParentView={false}
                       onRequest={handleRedeemReward}
                       canAfford={selectedChild.total_points >= reward.cost_points}
+                      childPoints={selectedChild.total_points}
                     />
                   ))}
                 </div>
               )}
             </div>
+
+            {/* Recent Activity Feed */}
+            {(() => {
+              const childEvents = allEvents
+                .filter(e => e.child_id === selectedChildId)
+                .slice(0, 10);
+              if (childEvents.length === 0) return null;
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2 mb-4">
+                    <History className="w-6 h-6 text-purple-500" />
+                    Recent Activity
+                  </h2>
+                  <Card>
+                    <CardContent className="p-4 space-y-2">
+                      {childEvents.map((event) => {
+                        const isPositive = event.points > 0;
+                        return (
+                          <div key={event.id} className={`flex items-center gap-3 p-3 rounded-lg ${isPositive ? 'bg-green-50' : 'bg-rose-50'}`}>
+                            <div className={`p-1.5 rounded-full ${isPositive ? 'bg-green-200' : 'bg-rose-200'}`}>
+                              {isPositive ? <Plus className="w-3 h-3 text-green-700" /> : <Minus className="w-3 h-3 text-rose-700" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <Badge variant="outline" className="text-xs">{event.category}</Badge>
+                                <span className={`font-bold text-sm ${isPositive ? 'text-green-600' : 'text-rose-600'}`}>
+                                  {isPositive ? '+' : ''}{event.points}
+                                </span>
+                              </div>
+                              {event.note && (
+                                <p className="text-xs text-slate-500 mt-0.5 truncate">{event.note}</p>
+                              )}
+                            </div>
+                            <span className="text-xs text-slate-400 shrink-0">
+                              {format(new Date(event.created_date), "MMM d")}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })()}
           </>
         )}
       </div>
