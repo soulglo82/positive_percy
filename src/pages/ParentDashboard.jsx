@@ -16,7 +16,6 @@ import ChildCard from "../components/child/ChildCard";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
-import AdjustPointsModal from "../components/child/AdjustPointsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
 import FamilyGoals from "../components/FamilyGoals";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -34,7 +33,6 @@ export default function ParentDashboard() {
   const [showAddChild, setShowAddChild] = useState(false);
   const [showEditChild, setShowEditChild] = useState(false);
   const [showAddPoints, setShowAddPoints] = useState(false);
-  const [showAdjustPoints, setShowAdjustPoints] = useState(false);
   const [selectedChild, setSelectedChild] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [streak, setStreak] = useState(0);
@@ -145,11 +143,6 @@ export default function ParentDashboard() {
   const handleAddPoints = (child) => {
     setSelectedChild(child);
     setShowAddPoints(true);
-  };
-
-  const handleAdjustPoints = (child) => {
-    setSelectedChild(child);
-    setShowAdjustPoints(true);
   };
 
   const handleEditChild = (child) => {
@@ -339,11 +332,12 @@ export default function ParentDashboard() {
                 key={child.id}
                 child={child}
                 onAddPoints={handleAddPoints}
-                onAdjustPoints={handleAdjustPoints}
                 onEdit={handleEditChild}
                 onQuickAction={handleQuickAction}
                 quickActions={activeQuickActions}
-                rewards={rewards}
+                rewards={rewards.filter(r =>
+                  !r.assigned_child_ids || r.assigned_child_ids.length === 0 || r.assigned_child_ids.includes(child.id)
+                )}
               />
             ))}
           </div>
@@ -444,16 +438,6 @@ export default function ParentDashboard() {
         child={selectedChild}
         onSubmit={handlePointsSubmit}
         isSubtract={false}
-      />
-
-      <AdjustPointsModal
-        isOpen={showAdjustPoints}
-        onClose={() => {
-          setShowAdjustPoints(false);
-          setSelectedChild(null);
-        }}
-        child={selectedChild}
-        onSubmit={handlePointsSubmit}
       />
 
       <OnboardingTips

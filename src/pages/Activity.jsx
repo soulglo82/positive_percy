@@ -192,36 +192,35 @@ function ActivityItem({ event }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex items-start gap-4 p-4 hover:bg-slate-50 transition-colors"
+      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
     >
-      <div className={`p-2 rounded-full ${bgClass} text-lg`}>
+      <div className={`p-1.5 rounded-full ${bgClass} text-base`}>
         {icon}
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-baseline gap-2 min-w-0">
             <h4 className="font-semibold text-slate-800">
               {event.child_name}
             </h4>
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-slate-600 truncate">
               {event.label}
             </span>
+            <span className="text-xs text-slate-400 whitespace-nowrap">
+              {format(new Date(event.created_date), "MMM d")}
+            </span>
           </div>
-          <span className={`font-bold text-lg ${colorClass}`}>
+          <span className={`font-bold text-sm ${colorClass} whitespace-nowrap`}>
             {event.points > 0 ? '+' : ''}{event.points} pts
           </span>
         </div>
 
         {event.note && (
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500">
             {event.note}
           </p>
         )}
-
-        <p className="text-xs text-slate-400 mt-1">
-          {format(new Date(event.created_date), "MMM d, yyyy")}
-        </p>
       </div>
     </motion.div>
   );

@@ -1,16 +1,23 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, SlidersHorizontal, Pencil, ShoppingBag } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function ChildCard({ child, onAddPoints, onAdjustPoints, onEdit, onQuickAction, quickActions = [], rewards = [] }) {
+export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, quickActions = [], rewards = [] }) {
   // Find next reward the child is working toward
   const nextReward = rewards
     .filter(r => r.cost_points > child.total_points)
     .sort((a, b) => a.cost_points - b.cost_points)[0];
 
-  const progress = nextReward ? Math.min((child.total_points / nextReward.cost_points) * 100, 100) : 0;
+  // If child has enough points for all rewards, show the most expensive reward at 100%
+  const displayReward = nextReward || (rewards.length > 0
+    ? [...rewards].sort((a, b) => b.cost_points - a.cost_points)[0]
+    : null);
+
+  const progress = displayReward
+    ? Math.min((child.total_points / displayReward.cost_points) * 100, 100)
+    : 0;
 
   return (
     <motion.div
@@ -51,22 +58,16 @@ export default function ChildCard({ child, onAddPoints, onAdjustPoints, onEdit, 
             <div className="text-right">
               <div className="text-3xl font-bold text-purple-600">{child.total_points}</div>
               <div className="text-xs text-slate-500">pts available</div>
-              {(child.points_spent || 0) > 0 && (
-                <div className="flex items-center justify-end gap-1 mt-1">
-                  <ShoppingBag className="w-3 h-3 text-amber-500" />
-                  <span className="text-xs text-amber-600 font-medium">{child.points_spent} pts spent</span>
-                </div>
-              )}
             </div>
           </div>
 
           {/* Reward Progress Bar */}
           <div className="mb-3">
-            {nextReward ? (
+            {displayReward ? (
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-medium text-slate-600">
-                    Progress to {nextReward.emoji || '🎁'} {nextReward.title}
+                    {progress >= 100 ? '🎉 Ready to redeem' : 'Progress to'} {displayReward.emoji || '🎁'} {displayReward.title}
                   </span>
                   <span className="text-xs font-medium text-slate-500">
                     {Math.round(progress)}%
@@ -103,24 +104,14 @@ export default function ChildCard({ child, onAddPoints, onAdjustPoints, onEdit, 
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              onClick={() => onAddPoints(child)}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 min-h-[44px]"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add
-            </Button>
-            <Button
-              onClick={() => onAdjustPoints(child)}
-              variant="outline"
-              className="border-2 border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 min-h-[44px]"
-            >
-              <SlidersHorizontal className="w-4 h-4 mr-1" />
-              Adjust
-            </Button>
-          </div>
+          {/* Action Button */}
+          <Button
+            onClick={() => onAddPoints(child)}
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 min-h-[44px]"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Add
+          </Button>
         </CardContent>
       </Card>
     </motion.div>
