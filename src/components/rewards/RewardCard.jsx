@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Coins, Eye, EyeOff, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function RewardCard({ reward, onRequest, isParentView, onToggleVisibility, onEdit, canAfford, assignedChildren = [] }) {
+export default function RewardCard({ reward, onRequest, isParentView, onToggleVisibility, onEdit, canAfford, childPoints, assignedChildren = [] }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -79,6 +79,24 @@ export default function RewardCard({ reward, onRequest, isParentView, onToggleVi
             </div>
           )}
 
+          {/* Progress bar (child view only) */}
+          {!isParentView && typeof childPoints === 'number' && (
+            <div className="mb-3">
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-slate-500">{childPoints} / {reward.cost_points} pts</span>
+                <span className={`font-semibold ${canAfford ? 'text-green-600' : 'text-amber-600'}`}>
+                  {canAfford ? 'Ready!' : `${reward.cost_points - childPoints} more`}
+                </span>
+              </div>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${canAfford ? 'bg-green-500' : 'bg-amber-400'}`}
+                  style={{ width: `${Math.min((childPoints / reward.cost_points) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <Badge className="bg-amber-100 text-amber-700 border-0 text-base px-3 py-1">
               <Coins className="w-4 h-4 mr-1" />
@@ -89,10 +107,10 @@ export default function RewardCard({ reward, onRequest, isParentView, onToggleVi
                 size="sm"
                 onClick={() => onRequest(reward)}
                 disabled={!canAfford}
-                className={canAfford
+                className={`min-h-[44px] ${canAfford
                   ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
                   : "bg-slate-300"
-                }
+                }`}
               >
                 Redeem
               </Button>

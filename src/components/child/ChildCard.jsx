@@ -4,7 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Plus, Minus, Pencil, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function ChildCard({ child, onAddPoints, onSubtractPoints, onEdit }) {
+const QUICK_ACTIONS = [
+  { label: "Kindness", points: 5, category: "Kindness" },
+  { label: "Homework", points: 5, category: "Homework" },
+  { label: "Chores", points: 5, category: "Chores" },
+  { label: "Manners", points: 5, category: "Good Manners" },
+];
+
+export default function ChildCard({ child, onAddPoints, onSubtractPoints, onEdit, onQuickAction }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -53,11 +60,26 @@ export default function ChildCard({ child, onAddPoints, onSubtractPoints, onEdit
             </div>
           </div>
 
+          {/* Quick Action Buttons */}
+          {onQuickAction && (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {QUICK_ACTIONS.map((action) => (
+                <button
+                  key={action.category}
+                  onClick={() => onQuickAction(child, action)}
+                  className="text-xs font-medium px-3 py-1.5 rounded-full bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:border-green-300 transition-colors min-h-[36px]"
+                >
+                  +{action.points} {action.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-2">
             <Button
               onClick={() => onAddPoints(child)}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 min-h-[44px]"
             >
               <Plus className="w-4 h-4 mr-1" />
               Add
@@ -65,7 +87,7 @@ export default function ChildCard({ child, onAddPoints, onSubtractPoints, onEdit
             <Button
               onClick={() => onSubtractPoints(child)}
               variant="outline"
-              className="border-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300"
+              className="border-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 min-h-[44px]"
             >
               <Minus className="w-4 h-4 mr-1" />
               Adjust
