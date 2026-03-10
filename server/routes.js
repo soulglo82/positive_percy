@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import pool from './db.js';
 
 const router = Router();
@@ -9,6 +10,8 @@ export function setBroadcast(fn) { broadcastFn = fn; }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'positive-percy-secret-change-in-prod';
 const JWT_EXPIRY = '30d';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 function signToken(familyCode) {
   return jwt.sign({ family_code: familyCode }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
@@ -99,7 +102,7 @@ const SORT_WHITELIST = new Set(['created_date', 'name', 'title', 'points',
   'total_points', 'weekly_points', 'cost_points', 'status']);
 
 const USER_COLUMN_WHITELIST = new Set(['email', 'full_name', 'family_code',
-  'mum_name', 'mum_phone', 'dad_name', 'dad_phone']);
+  'mum_name', 'mum_phone', 'dad_name', 'dad_phone', 'google_id', 'avatar_url']);
 
 function validateColumns(table, keys) {
   const allowed = COLUMN_WHITELIST[table];
@@ -227,6 +230,99 @@ router.post('/api/family/join', async (req, res) => {
 
   const token = signToken(rows[0].family_code);
   res.json({ ...rows[0], token });
+});
+
+// Google authentication - create or join family with Google account
+router.post('/api/auth/google', async (req, res) => {
+  const { credential, mode, family_name, family_code } = req.body;
+  if (!credential) return res.status(400).json({ error: 'Google credential is required' });
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    if (mode === 'create') {
+      if (!family_name) return res.status(400).json({ error: 'Family name is required' });
+
+      let familyCodeGen;
+      let attempts = 0;
+      while (attempts < 10) {
+        familyCodeGen = generateFamilyCode();
+        try {
+          const { rows } = await pool.query(
+            'INSERT INTO families (family_code, family_name) VALUES ($1, $2) RETURNING *',
+            [familyCodeGen, family_name]
+          );
+          const token = signToken(familyCodeGen);
+
+          // Create or update user with Google info
+          await pool.query(
+            `INSERT INTO users (email, full_name, family_code, google_id, avatar_url) VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (email) DO UPDATE SET full_name = $2, family_code = $3, google_id = $4, avatar_url = $5`,
+            [email, name, familyCodeGen, googleId, picture]
+          );
+
+          return res.json({ ...rows[0], token });
+        } catch (err) {
+          if (err.code === '23505' && err.constraint !== 'users_email_key') {
+            attempts++;
+            continue;
+          }
+          throw err;
+        }
+      }
+      return res.status(500).json({ error: 'Could not generate unique family code' });
+    } else if (mode === 'join') {
+      if (!family_code) return res.status(400).json({ error: 'Family code is required' });
+      const { rows } = await pool.query(
+        'SELECT * FROM families WHERE family_code = $1',
+        [family_code.toUpperCase()]
+      );
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'Family not found. Check the code and try again.' });
+      }
+      const token = signToken(rows[0].family_code);
+
+      // Create or update user with Google info
+      await pool.query(
+        `INSERT INTO users (email, full_name, family_code, google_id, avatar_url) VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (email) DO UPDATE SET full_name = $2, family_code = $3, google_id = $4, avatar_url = $5`,
+        [email, name, rows[0].family_code, googleId, picture]
+      );
+
+      return res.json({ ...rows[0], token });
+    } else {
+      // Auto mode: check if Google user already has a family
+      const { rows: existingUser } = await pool.query(
+        'SELECT * FROM users WHERE google_id = $1 OR email = $2',
+        [googleId, email]
+      );
+      if (existingUser.length > 0 && existingUser[0].family_code) {
+        const { rows: familyRows } = await pool.query(
+          'SELECT * FROM families WHERE family_code = $1',
+          [existingUser[0].family_code]
+        );
+        if (familyRows.length > 0) {
+          const token = signToken(familyRows[0].family_code);
+          // Update user info from Google in case it changed
+          await pool.query(
+            'UPDATE users SET full_name = $1, avatar_url = $2, google_id = $3 WHERE id = $4',
+            [name, picture, googleId, existingUser[0].id]
+          );
+          return res.json({ ...familyRows[0], token, returning_user: true });
+        }
+      }
+      // No existing family found - tell the client to ask user what to do
+      return res.json({ needs_action: true, google_name: name, google_email: email });
+    }
+  } catch (err) {
+    console.error('Google auth error:', err);
+    res.status(401).json({ error: 'Invalid Google credential' });
+  }
 });
 
 // Get family info

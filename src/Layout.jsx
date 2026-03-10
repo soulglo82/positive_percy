@@ -4,6 +4,10 @@ import { createPageUrl } from './utils';
 import { Home, Gift, Activity, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import useRealtimeSync from '@/lib/useRealtimeSync';
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 
 export default function Layout({ children, currentPageName }) {
   const { logout, user } = useAuth();
@@ -21,11 +25,11 @@ export default function Layout({ children, currentPageName }) {
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-16">
-            <Link 
+            <Link
               to={createPageUrl('ParentDashboard')}
               className="flex items-center"
             >
-              <img 
+              <img
                 src="/logo.png"
                 alt="Positive Percy Logo"
                 className="h-12"
@@ -52,13 +56,33 @@ export default function Layout({ children, currentPageName }) {
                   </Link>
                 );
               })}
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all ml-2"
-                title="Logout"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all ml-2"
+                    title="Logout"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Sign out?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      You'll need your family code to sign back in. Make sure you have it saved before signing out.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={logout}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      Sign Out
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </div>

@@ -132,6 +132,9 @@ export async function initDb() {
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS badges_earned TEXT[] DEFAULT '{}'",
       // Track points spent on rewards
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS points_spent INTEGER DEFAULT 0",
+      // Google auth columns
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT",
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT",
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});

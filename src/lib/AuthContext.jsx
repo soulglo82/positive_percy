@@ -106,6 +106,25 @@ export const AuthProvider = ({ children }) => {
     return updated;
   };
 
+  const googleSignIn = async (credential, mode, extra = {}) => {
+    const res = await fetch('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential, mode, ...extra }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Google sign-in failed');
+    }
+    const data = await res.json();
+    if (data.needs_action) {
+      return data; // caller needs to ask user to create or join
+    }
+    localStorage.setItem(TOKEN_KEY, data.token);
+    await loadUser(data.family_code, data.token);
+    return data;
+  };
+
   const logout = () => {
     localStorage.removeItem(FAMILY_CODE_KEY);
     localStorage.removeItem(TOKEN_KEY);
@@ -122,6 +141,7 @@ export const AuthProvider = ({ children }) => {
       isLoading,
       createFamily,
       joinFamily,
+      googleSignIn,
       updateUser,
       logout,
     }}>
