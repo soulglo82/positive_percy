@@ -296,10 +296,11 @@ router.post('/api/auth/google', async (req, res) => {
 
       return res.json({ ...rows[0], token });
     } else {
-      // Auto mode: check if Google user already has a family
+      // Auto mode: check if Google user already has a linked family
+      // Only match on google_id (not email) to prevent token theft via pre-claimed emails
       const { rows: existingUser } = await pool.query(
-        'SELECT * FROM users WHERE google_id = $1 OR email = $2',
-        [googleId, email]
+        'SELECT * FROM users WHERE google_id = $1',
+        [googleId]
       );
       if (existingUser.length > 0 && existingUser[0].family_code) {
         const { rows: familyRows } = await pool.query(

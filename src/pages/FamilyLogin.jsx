@@ -24,21 +24,36 @@ export default function FamilyLogin() {
   const googleBtnRef = useRef(null);
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || typeof window.google === 'undefined') return;
+    if (!GOOGLE_CLIENT_ID) return;
 
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: handleGoogleResponse,
-    });
-
-    if (googleBtnRef.current) {
-      window.google.accounts.id.renderButton(googleBtnRef.current, {
-        theme: 'outline',
-        size: 'large',
-        width: '100%',
-        text: 'continue_with',
-        shape: 'pill',
+    const initGoogle = () => {
+      if (typeof window.google === 'undefined') return;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
       });
+      if (googleBtnRef.current) {
+        window.google.accounts.id.renderButton(googleBtnRef.current, {
+          theme: 'outline',
+          size: 'large',
+          width: '100%',
+          text: 'continue_with',
+          shape: 'pill',
+        });
+      }
+    };
+
+    if (typeof window.google !== 'undefined') {
+      initGoogle();
+    } else {
+      // Script still loading — wait for it
+      const check = setInterval(() => {
+        if (typeof window.google !== 'undefined') {
+          clearInterval(check);
+          initGoogle();
+        }
+      }, 100);
+      return () => clearInterval(check);
     }
   }, [mode]);
 
