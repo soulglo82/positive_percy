@@ -89,16 +89,16 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
 
           {/* Quick Action Buttons */}
           {onQuickAction && quickActions.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mb-3">
               {quickActions.map((action) => (
                 <button
                   key={action.id || action.label}
                   onClick={() => onQuickAction(child, action)}
-                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:border-green-300 transition-colors min-h-[36px]"
+                  className="w-full flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:border-green-300 transition-colors min-h-[36px]"
                 >
                   <span>{action.icon || '⭐'}</span>
-                  <span>{action.label}</span>
-                  <span className="font-bold">+{action.points} pts</span>
+                  <span className="truncate">{action.label}</span>
+                  <span className="font-bold shrink-0">+{action.points} pts</span>
                 </button>
               ))}
             </div>
