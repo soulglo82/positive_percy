@@ -1,15 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { Home, Gift, Activity, Settings, LogOut } from 'lucide-react';
+import { Home, Gift, Activity, Settings, LogOut, User } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import useRealtimeSync from '@/lib/useRealtimeSync';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Layout({ children, currentPageName }) {
   const { logout, user } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   useRealtimeSync(user?.family_code);
   const navItems = [
     { name: 'ParentDashboard', label: 'Home', icon: Home },
+    { name: 'ChildView', label: 'Child Mode', icon: User },
     { name: 'Activity', label: 'Activity', icon: Activity },
     { name: 'Rewards', label: 'Rewards', icon: Gift },
     { name: 'ParentProfile', label: 'Settings', icon: Settings },
@@ -53,7 +65,7 @@ export default function Layout({ children, currentPageName }) {
                 );
               })}
               <button
-                onClick={logout}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all ml-2"
                 title="Logout"
               >
@@ -68,6 +80,27 @@ export default function Layout({ children, currentPageName }) {
       <main className="flex-1">
         {children}
       </main>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to sign out of Positive Percy?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={logout}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Yes, log out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

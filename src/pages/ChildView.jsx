@@ -45,8 +45,6 @@ export default function ChildView() {
     enabled: !!user,
   });
 
-  if (isLoading) return <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 p-6"><LoadingSpinner message="Loading..." /></div>;
-
   const { data: allRewards = [] } = useQuery({
     queryKey: ['rewards'],
     queryFn: () => Reward.filter({ visible_to_child: true }),
@@ -58,20 +56,11 @@ export default function ChildView() {
     enabled: !!user,
   });
 
-  const rewards = allRewards.filter(reward => {
-    if (!reward.assigned_child_ids || reward.assigned_child_ids.length === 0) {
-      return true;
-    }
-    return selectedChildId && reward.assigned_child_ids.includes(selectedChildId);
-  });
-
   useEffect(() => {
     if (children.length > 0 && !selectedChildId) {
       setSelectedChildId(children[0].id);
     }
   }, [children, selectedChildId]);
-
-  const selectedChild = children.find(c => c.id === selectedChildId);
 
   // FEAT-010: Check badges on child selection
   const checkBadges = async (childId) => {
@@ -98,6 +87,17 @@ export default function ChildView() {
   useEffect(() => {
     if (selectedChildId) checkBadges(selectedChildId);
   }, [selectedChildId]);
+
+  if (isLoading) return <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 p-6"><LoadingSpinner message="Loading..." /></div>;
+
+  const rewards = allRewards.filter(reward => {
+    if (!reward.assigned_child_ids || reward.assigned_child_ids.length === 0) {
+      return true;
+    }
+    return selectedChildId && reward.assigned_child_ids.includes(selectedChildId);
+  });
+
+  const selectedChild = children.find(c => c.id === selectedChildId);
 
   // ENH-011: Direct redemption with confirmation
   const handleRedeemReward = async (reward) => {
