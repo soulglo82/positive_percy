@@ -21,7 +21,7 @@ export default function Layout({ children, currentPageName }) {
   useRealtimeSync(user?.family_code);
   const navItems = [
     { name: 'ParentDashboard', label: 'Home', icon: Home },
-    { name: 'ChildView', label: 'Child Mode', icon: User },
+    { name: 'ChildView', label: 'Child View', icon: User },
     { name: 'Activity', label: 'Activity', icon: Activity },
     { name: 'Rewards', label: 'Rewards', icon: Gift },
     { name: 'ParentProfile', label: 'Settings', icon: Settings },
