@@ -393,7 +393,7 @@ Instrument lightweight event tracking (privacy-respecting, no child PII in analy
 
 | Debt item | Impact | Resolution phase |
 |---|---|---|
-| Hardcoded category list in Add Points modal | Blocks unified categories (Finding 5) | Phase 2 — **IMPL-5 (active)** |
+| Hardcoded category list in Add Points modal | Blocks unified categories (Finding 5) | Phase 2 |
 | Onboarding state in localStorage only | Lost on device switch; blocks cross-device onboarding | Phase 1 |
 | No shared terminology constants file | Every string change requires multi-file grep | Phase 1 |
 | No entitlement/plan schema in database | Blocks all monetization work | Phase 4 |
@@ -684,154 +684,14 @@ export const PERCY = {
 
 ---
 
-### IMPL-5: Customizable behavior categories (parent-managed)
-
-**Findings addressed:** 5 (Parent editability of awarding categories is partial), 23 (Tech debt: hardcoded category list)
-
-#### Step 5.1 — Database: create `behavior_categories` table
-
-**New migration file:** `server/migrations/XXX_create_behavior_categories.sql`
-
-```sql
-CREATE TABLE behavior_categories (
-  id SERIAL PRIMARY KEY,
-  family_id INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
-  name VARCHAR(100) NOT NULL,
-  icon VARCHAR(50) DEFAULT '⭐',
-  sort_order INTEGER NOT NULL DEFAULT 0,
-  is_default BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (family_id, name)
-);
-
-CREATE INDEX idx_behavior_categories_family ON behavior_categories(family_id);
-```
-
-**Seed script:** Insert default categories for all existing families:
-
-| Default category | Icon |
-|---|---|
-| Helpfulness | 🤝 |
-| Kindness | 💛 |
-| Learning | 📚 |
-| Responsibility | ✅ |
-| Creativity | 🎨 |
-| Physical Activity | 🏃 |
-
-**Rollback:** `DROP TABLE IF EXISTS behavior_categories;`
-
-**Acceptance criteria:**
-- [ ] Table creates with correct schema, constraints, and index
-- [ ] Unique constraint prevents duplicate category names per family
-- [ ] Cascade delete removes categories when family is deleted
-- [ ] Seed script populates defaults for all existing families
-- [ ] Rollback drops table cleanly with no orphaned references
-
-#### Step 5.2 — Backend: CRUD API endpoints for behavior categories
-
-**Files to modify:**
-- `server/routes.js` — add category CRUD routes
-
-**Endpoints:**
-
-| Method | Route | Description |
-|---|---|---|
-| `GET` | `/api/families/:familyId/categories` | List all categories for family (sorted by `sort_order`) |
-| `POST` | `/api/families/:familyId/categories` | Create new category (`name`, `icon`, `sort_order`) |
-| `PUT` | `/api/families/:familyId/categories/:id` | Update category |
-| `DELETE` | `/api/families/:familyId/categories/:id` | Delete category (only if `is_default = false`) |
-| `POST` | `/api/families/:familyId/categories/reorder` | Batch update `sort_order` values |
-
-**Validation rules:**
-- `name`: required, 1–100 chars, trimmed, unique per family (case-insensitive)
-- `icon`: optional, defaults to ⭐, single emoji character
-- Cannot delete a default category (return 400 with message)
-- Cannot delete a category that has associated `point_events` — soft-block with confirmation or reassign prompt
-- All endpoints scoped to authenticated family (middleware enforces `familyId` matches session)
-
-**Acceptance criteria:**
-- [ ] All five endpoints return correct responses for happy path
-- [ ] Family scoping enforced — Family A cannot access Family B's categories
-- [ ] Validation rejects empty names, duplicate names, overly long names
-- [ ] Delete blocked for default categories with clear error message
-- [ ] Delete of category with existing point events returns warning (not silent delete)
-- [ ] Reorder endpoint updates all sort_order values atomically
-- [ ] Response time < 200ms for all endpoints
-
-#### Step 5.3 — Frontend: Category management UI in Family Settings
-
-**New file:** `src/components/settings/BehaviorCategoryManager.jsx`
-
-**Behavior:**
-- Renders within existing Family Settings page (not a new route)
-- Shows ordered list of categories with icon, name, and drag handle
-- Inline edit: tap category name to edit in-place
-- Add button at bottom opens inline form (name + emoji picker)
-- Delete button with confirmation for non-default categories
-- Drag-to-reorder (or up/down buttons for accessibility)
-- Default categories show lock icon and cannot be deleted (edit allowed)
-- Empty state: should not occur (defaults always present), but graceful fallback if it does
-
-**Acceptance criteria:**
-- [ ] Lists all family categories in sort order
-- [ ] Create new category → appears in list immediately
-- [ ] Edit category name/icon → persists on reload
-- [ ] Delete non-default category → removed from list with confirmation
-- [ ] Delete default category → button disabled with tooltip explaining why
-- [ ] Reorder persists on reload
-- [ ] Keyboard accessible: all operations achievable via Tab/Enter/Arrow keys
-- [ ] Touch targets ≥ 44×44px
-- [ ] Uses `PERCY.POINTS` terminology from constants where applicable
-- [ ] axe-core: 0 critical/serious violations
-
-#### Step 5.4 — Frontend: Migrate AddPointsModal to API-driven categories
-
-**Files to modify:**
-- `src/components/child/AddPointsModal.jsx` — replace hardcoded category list with API fetch
-
-**Changes:**
-- On modal open: fetch `GET /api/families/:familyId/categories`
-- Populate dropdown/select with returned categories (ordered by `sort_order`)
-- Show loading state while fetching (skeleton or spinner, not empty dropdown)
-- Cache categories in component state or context for the session (invalidate on settings change)
-- Remove all hardcoded category arrays from this file
-
-**Acceptance criteria:**
-- [ ] Dropdown shows categories from API, not hardcoded values
-- [ ] Categories appear in correct sort order
-- [ ] Loading state shown during fetch (no flash of empty dropdown)
-- [ ] New categories added in Settings appear in modal without page refresh (context invalidation)
-- [ ] Deleted categories no longer appear in dropdown
-- [ ] Existing point events retain their original category string (no data loss)
-- [ ] Zero hardcoded category arrays remain in `AddPointsModal.jsx`
-- [ ] AdjustPointsModal also updated if it has category selection
-
-#### Step 5.5 — Seed defaults on family creation
-
-**Files to modify:**
-- `server/routes.js` — family creation endpoint
-
-**Changes:**
-- After creating a new family, insert the 6 default categories with `is_default = true`
-- Wrap in same transaction as family creation
-
-**Acceptance criteria:**
-- [ ] New family immediately has 6 default categories
-- [ ] Categories created atomically with family (no partial state on failure)
-- [ ] Default categories match seed script values exactly
-
----
-
-### IMPL-6: Activity feed + calendar readability improvements
+### IMPL-5: Activity feed + calendar readability improvements
 
 **Findings addressed:** 8 (Activity page is visually blunt), 18 (Calendar view)
 
-#### Step 6.1 — Reformat activity feed entries
+#### Step 5.1 — Reformat activity feed entries
 
 **Files to modify:**
 - `src/components/history/PointEventItem.jsx` — rewrite to narrative format
-
 
 **New format:**
 - Primary line: `⭐ {childName} earned +{points} Percy Points`
@@ -845,7 +705,7 @@ CREATE INDEX idx_behavior_categories_family ON behavior_categories(family_id);
 - [ ] Increased line-height and spacing between entries (minimum 8px gap)
 - [ ] Typography contrast: primary line bolder than subline
 
-#### Step 6.2 — Add calendar heatmap view (Phase 3 prep, basic version)
+#### Step 5.2 — Add calendar heatmap view (Phase 3 prep, basic version)
 
 **New file:** `src/components/history/CalendarView.jsx`
 
@@ -916,8 +776,7 @@ Every implementation item above must pass these regression checks before merge. 
 | IMPL-2 (Reward progress) | Reward display breaks, redemption flow breaks, progress misleading | REG-09, REG-10, REG-11, REG-12, REG-13 |
 | IMPL-3 (Accessibility) | Layout shifts from ARIA additions, modal focus traps break close behavior | REG-01, REG-06, REG-07, REG-21, REG-26, REG-28 |
 | IMPL-4 (Motivation metrics) | Child page breaks, points_spent removal affects parent view, API errors | REG-03, REG-04, REG-06, REG-08, REG-14, REG-28 |
-| IMPL-5 (Behavior categories) | Add Points modal breaks, settings page breaks, category data lost on migration | REG-06, REG-07, REG-24, REG-25, REG-28 |
-| IMPL-6 (Activity feed + calendar) | Feed pagination breaks, filters stop working, new view crashes on empty data | REG-14, REG-15, REG-16, REG-28, REG-29, REG-30 |
+| IMPL-5 (Activity feed + calendar) | Feed pagination breaks, filters stop working, new view crashes on empty data | REG-14, REG-15, REG-16, REG-28, REG-29, REG-30 |
 
 ### Regression test execution protocol
 
@@ -932,12 +791,11 @@ Every implementation item above must pass these regression checks before merge. 
 
 ### Active priorities
 
-1. ~~Home framing card + Percy naming consistency + terminology constants~~ — **IMPL-1 COMPLETE** (`837eed7`)
-2. ~~Reward progress state copy cleanup~~ — **IMPL-2 COMPLETE** (`be9e17d`)
-3. ~~Accessibility baseline (WCAG 2.1 AA) + axe-core in CI~~ — **IMPL-3 COMPLETE** (`5d6f6db`)
-4. ~~Replace child `points_spent` with motivation metrics~~ — **IMPL-4 COMPLETE** (`ad32883`)
-5. ~~Customizable behavior categories (parent-managed)~~ — **IMPL-5 COMPLETE** (`87fcc5f`)
-6. ~~Activity feed + calendar readability improvements~~ — **IMPL-6 COMPLETE** (`afdb592`)
+1. Home framing card + Percy naming consistency + terminology constants
+2. Reward progress state copy cleanup
+3. Accessibility baseline (WCAG 2.1 AA) + axe-core in CI
+4. Replace child `points_spent` with motivation metrics
+5. Activity feed + calendar readability improvements
 
 ### Parked (pending clarification)
 
