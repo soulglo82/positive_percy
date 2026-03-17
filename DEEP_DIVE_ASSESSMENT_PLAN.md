@@ -475,15 +475,333 @@ Instrument lightweight event tracking (privacy-respecting, no child PII in analy
 
 ---
 
-## Priority stack (top 7)
+## Detailed implementation plan
+
+This section specifies the exact files, components, API changes, and database migrations required for each active priority. Each item includes acceptance criteria, implementation steps, and file-level change maps.
+
+---
+
+### IMPL-1: Home framing card + Percy naming consistency + terminology constants
+
+**Findings addressed:** 1 (Home page feels unfinished), 2 (Floating streak badge), 3 (Inconsistent language), 9 (Helper text), 14 (Brand voice)
+
+#### Step 1.1 — Create terminology constants
+
+**New file:** `src/constants/terminology.js`
+
+```js
+export const PERCY = {
+  POINTS: 'Percy Points',
+  POINTS_COMPACT: 'Points',
+  REWARDS: 'Percy Rewards',
+  STREAK: 'Percy Streak',
+  BADGES: 'Percy Badges',
+  PRODUCT_STATEMENT: 'Build habits with Percy Points.',
+  HELPER_TEXT_QUICK_ACTIONS: 'Default behaviours are active. Edit or add your own below.',
+};
+```
+
+**Acceptance criteria:**
+- [ ] File exports all product terms as named constants
+- [ ] No constant contains `pts`, `points available`, or bare `points`
+- [ ] Constants file is the sole import for Percy terminology across the app
+
+#### Step 1.2 — Audit and replace all legacy terminology
+
+**Files to modify (grep for `pts`, `points available`, `points`, `Points`):**
+- `src/components/child/ChildCard.jsx` — replace `pts available` with `PERCY.POINTS`
+- `src/components/child/AddPointsModal.jsx` — replace point label strings
+- `src/components/child/AdjustPointsModal.jsx` — replace point label strings
+- `src/components/rewards/RewardCard.jsx` — replace reward copy
+- `src/components/redemptions/RedemptionCard.jsx` — replace redemption copy
+- `src/components/history/PointEventItem.jsx` — replace event descriptions
+- Any page-level components that render point/reward strings
+
+**Acceptance criteria:**
+- [ ] Full-app grep for `'pts'`, `'points available'`, `"pts"`, `"points available"` returns zero matches outside `terminology.js` and test files
+- [ ] All user-facing strings import from `terminology.js`
+- [ ] Backend API responses remain unchanged (terminology is frontend-only)
+
+#### Step 1.3 — Build HeroCard component
+
+**New file:** `src/components/dashboard/HeroCard.jsx`
+
+**Behavior:**
+- Renders product statement (`PERCY.PRODUCT_STATEMENT`)
+- Shows per-child snapshot: current points, next reward distance, current streak
+- Shows single CTA for families with no children yet ("Add your first child")
+- Collapses to compact bar when onboarding checklist is 100% complete
+- Accepts `children` and `onboardingComplete` props
+
+**Acceptance criteria:**
+- [ ] Renders above action cards on `ParentDashboard`
+- [ ] Shows correct data for 0, 1, and multiple children
+- [ ] Compact mode activates when all onboarding steps are done
+- [ ] Meets WCAG 2.1 AA: contrast, touch targets, ARIA labels
+- [ ] Uses constants from `terminology.js`
+
+#### Step 1.4 — Reposition streak into child context
+
+**Files to modify:**
+- `ParentDashboard` page component — remove standalone `StreakBadge` from top-level render
+- `src/components/child/ChildCard.jsx` — embed streak display within child progress block
+- `HeroCard.jsx` — include streak in per-child snapshot row
+
+**Acceptance criteria:**
+- [ ] Streak no longer renders as a centered standalone badge above content
+- [ ] Streak appears inline within each child's progress section
+- [ ] Streak value matches current backend calculation
+- [ ] Screen readers announce streak in context ("Joud: 7-day Percy Streak")
+
+#### Step 1.5 — Update family settings helper text
+
+**Files to modify:**
+- Settings/family page component — replace `Using defaults — add your own to customise.` with `PERCY.HELPER_TEXT_QUICK_ACTIONS`
+
+**Acceptance criteria:**
+- [ ] Exact string rendered: `Default behaviours are active. Edit or add your own below.`
+- [ ] String sourced from `terminology.js`, not hardcoded
+
+---
+
+### IMPL-2: Reward progress state copy cleanup
+
+**Findings addressed:** 4 (Confusing reward progress copy)
+
+#### Step 2.1 — Rewrite reward progress display logic
+
+**Files to modify:**
+- `src/components/rewards/RewardCard.jsx` — primary render logic
+- `src/components/child/ChildCard.jsx` — reward summary line (if rendered here)
+
+**Three explicit states:**
+
+| State | Condition | Display |
+|---|---|---|
+| In progress | `child.points < reward.cost` | `{reward.name} — {child.points} / {reward.cost} Percy Points` |
+| Unlocked | `child.points >= reward.cost` | `Reward unlocked: {reward.name} ✓` |
+| All unlocked | All rewards meet threshold | `All current rewards unlocked!` |
+
+**Acceptance criteria:**
+- [ ] Percentage display removed from primary copy
+- [ ] Progress bar (optional) uses `aria-valuenow`, `aria-valuemin`, `aria-valuemax`
+- [ ] Zero-point reward immediately shows "Unlocked"
+- [ ] Zero-point child shows `0 / {cost} Percy Points`
+- [ ] "All unlocked" state renders when every active reward is reachable
+- [ ] Copy uses `PERCY.POINTS` from constants
+
+---
+
+### IMPL-3: Accessibility baseline (WCAG 2.1 AA) + axe-core in CI
+
+**Findings addressed:** 20 (Accessibility baseline)
+
+#### Step 3.1 — Add axe-core to test infrastructure
+
+**Files to create/modify:**
+- `package.json` — add `@axe-core/react` (dev), `jest-axe` (dev)
+- CI config (GitHub Actions or Railway build) — add accessibility check step
+- `src/test/setup.js` or equivalent — configure jest-axe matchers
+
+**Acceptance criteria:**
+- [ ] `jest-axe` runs on every component test file
+- [ ] CI pipeline fails on critical or serious axe violations
+- [ ] Baseline scan of current app produces a known violations list (to fix, not to skip)
+
+#### Step 3.2 — Remediate existing surfaces
+
+**Audit scope (all component directories):**
+- `src/components/child/*.jsx` — contrast, labels, touch targets
+- `src/components/rewards/*.jsx` — contrast, labels, touch targets
+- `src/components/redemptions/*.jsx` — contrast, labels
+- `src/components/history/*.jsx` — contrast, labels
+- `src/components/ui/*.jsx` — base component a11y (shadcn defaults are mostly good)
+- All page-level components — tab order, focus management, landmark roles
+
+**Key fixes expected:**
+- Add `aria-label` to icon-only buttons (e.g., edit, delete, share icons)
+- Add `role="progressbar"` with ARIA attributes to reward progress bars
+- Add `aria-live="polite"` region for point award announcements
+- Verify all modals trap focus and restore on close
+- Add `prefers-reduced-motion` media query to confetti/celebration animations
+- Ensure all form inputs have associated `<label>` elements
+
+**Acceptance criteria:**
+- [ ] axe-core scan: 0 critical violations, 0 serious violations
+- [ ] Manual keyboard test: all flows completable via Tab/Enter/Escape
+- [ ] Manual screen reader test: VoiceOver or NVDA reads all content meaningfully
+- [ ] All touch targets ≥ 44×44px
+- [ ] All text contrast ≥ 4.5:1 (normal) / 3:1 (large)
+- [ ] `prefers-reduced-motion` disables all non-essential animations
+
+---
+
+### IMPL-4: Replace child `points_spent` with motivation metrics
+
+**Findings addressed:** 6 (Low-value metric), 7 (Lacks value narrative)
+
+#### Step 4.1 — Backend: add motivation metrics endpoint
+
+**Files to modify:**
+- `server/routes.js` — add new route or extend existing child detail route
+
+**New response fields:**
+```json
+{
+  "rewards_earned_count": 12,
+  "best_streak": 14,
+  "next_unlock": {
+    "reward_name": "Weekly Treat",
+    "points_remaining": 4,
+    "eta_days": 2
+  }
+}
+```
+
+**Queries:**
+- `rewards_earned_count`: `SELECT COUNT(*) FROM redemptions WHERE child_id = $1`
+- `best_streak`: derive from `point_events` table (consecutive days with ≥1 event)
+- `next_unlock.eta_days`: `points_remaining / avg_daily_earning_rate` (last 7 days)
+
+**Acceptance criteria:**
+- [ ] Endpoint returns correct values for child with history
+- [ ] Endpoint handles child with zero history (all fields return 0 or null gracefully)
+- [ ] `points_spent` still available in response (for parent analytics) but marked as non-primary
+- [ ] Response time < 200ms
+
+#### Step 4.2 — Frontend: replace child hero metric
+
+**Files to modify:**
+- Child page component — remove `Points Spent on Rewards` from child-facing hero
+- Create `src/components/child/MotivationCard.jsx` — displays rewards earned, best streak, next unlock ETA
+
+**Acceptance criteria:**
+- [ ] `points_spent` not visible on child-facing view
+- [ ] `MotivationCard` renders three metrics with appropriate icons
+- [ ] Handles zero-history child: shows encouraging empty state, not zeroes
+- [ ] Next unlock ETA with zero earning rate shows "Keep earning to unlock!" instead of infinity/NaN
+- [ ] All strings use `terminology.js` constants
+
+---
+
+### IMPL-5: Activity feed + calendar readability improvements
+
+**Findings addressed:** 8 (Activity page is visually blunt), 18 (Calendar view)
+
+#### Step 5.1 — Reformat activity feed entries
+
+**Files to modify:**
+- `src/components/history/PointEventItem.jsx` — rewrite to narrative format
+
+**New format:**
+- Primary line: `⭐ {childName} earned +{points} Percy Points`
+- Subline (conditional): `{category} — {note}` (hidden if no note)
+- Date group headers: `Today`, `Yesterday`, `This Week`, `Earlier`
+
+**Acceptance criteria:**
+- [ ] All feed entries use narrative format
+- [ ] Subline hidden when note is empty/null
+- [ ] Date group headers render correctly for each group
+- [ ] Increased line-height and spacing between entries (minimum 8px gap)
+- [ ] Typography contrast: primary line bolder than subline
+
+#### Step 5.2 — Add calendar heatmap view (Phase 3 prep, basic version)
+
+**New file:** `src/components/history/CalendarView.jsx`
+
+**Behavior:**
+- Parent view: all children, filterable, daily point totals, color-coded intensity
+- Child view: personal trend only, no sibling data
+- Renders as a month grid with day cells
+- Empty days show neutral state
+
+**Backend support:**
+- `server/routes.js` — add `/api/calendar/:childId?start=&end=` or `/api/calendar/family?start=&end=`
+- Returns `[{ date: "2026-03-15", child_id: 1, total_points: 12 }, ...]`
+
+**Acceptance criteria:**
+- [ ] Parent can see all children's data on one calendar
+- [ ] Child view shows only their own data
+- [ ] Color intensity scales correctly (0 = neutral, max = darkest)
+- [ ] Navigable by keyboard (arrow keys move between days)
+- [ ] Screen reader announces day, child name, point total
+- [ ] Handles months with no data gracefully
+
+---
+
+## Regression test plan
+
+Every implementation item above must pass these regression checks before merge. Regressions are tested against the existing baseline to ensure no existing functionality is broken.
+
+### Global regression suite
+
+| Reg ID | Area | Test description | Pass criteria |
+|---|---|---|---|
+| REG-01 | Authentication | Family login flow completes successfully | Login → dashboard renders with correct family data |
+| REG-02 | Authentication | Family code validation still works | Invalid code rejected, valid code accepted |
+| REG-03 | Child CRUD | Add child → child appears on dashboard and child list | New child visible immediately |
+| REG-04 | Child CRUD | Edit child → changes persist on reload | Updated name/avatar saved |
+| REG-05 | Child CRUD | Delete child → removed from dashboard, points/events preserved in DB for parent analytics | Child removed from UI |
+| REG-06 | Points — Add | Quick-add points → child total updates, event logged | Correct total, event in feed |
+| REG-07 | Points — Add | Add points via modal → child total updates, category and note saved | All fields persisted |
+| REG-08 | Points — Adjust | Adjust (deduct) points → total decreases, negative event logged | Correct total, no negative balance |
+| REG-09 | Rewards CRUD | Add reward → appears in reward list | Reward visible |
+| REG-10 | Rewards CRUD | Edit reward → changes persist | Updated fields saved |
+| REG-11 | Rewards CRUD | Delete reward → removed from list | Reward removed |
+| REG-12 | Redemption | Redeem reward when sufficient points → points deducted, redemption logged | Correct balance, redemption in history |
+| REG-13 | Redemption | Attempt redeem with insufficient points → blocked with message | No state change |
+| REG-14 | Activity feed | Feed shows correct events in reverse chronological order | Latest events first |
+| REG-15 | Activity feed | Filters (child, category, date range) work correctly | Filtered results match criteria |
+| REG-16 | Activity feed | Pagination loads additional events | Next page loads, no duplicates |
+| REG-17 | Streak | Consecutive-day point awards maintain streak count | Streak increments correctly |
+| REG-18 | Streak | Gap in point awards resets streak | Streak resets to 0 or 1 |
+| REG-19 | Badges | Badge earned on qualifying event → badge displayed on child page | Badge appears |
+| REG-20 | Badges | Badge not awarded for non-qualifying events | No false positives |
+| REG-21 | Confetti | Confetti fires on point award and reward unlock | Animation plays |
+| REG-22 | Confetti | Confetti respects `prefers-reduced-motion` | No animation when preference set |
+| REG-23 | Share card | Share card generates correctly for child | Card content matches child data |
+| REG-24 | Family settings | Quick actions CRUD works | Add/edit/delete quick actions persisted |
+| REG-25 | Family settings | Settings changes persist on reload | All settings saved |
+| REG-26 | Onboarding tips | Tips modal opens and dismisses | Modal state persisted |
+| REG-27 | Parent profile | Profile updates save correctly | Changes persisted |
+| REG-28 | Navigation | All page routes load without 404 or crash | All routes render |
+| REG-29 | Responsive layout | Dashboard renders correctly on mobile (375px), tablet (768px), desktop (1280px) | No overflow, no hidden content |
+| REG-30 | Performance | Dashboard initial load < 3 seconds on throttled 3G | Lighthouse performance score ≥ 70 |
+
+### Per-implementation regression focus
+
+| Implementation | Highest-risk regressions | Must-pass IDs |
+|---|---|---|
+| IMPL-1 (Hero + terminology) | Dashboard layout breaks, existing copy disappears, streak stops rendering | REG-01, REG-03, REG-06, REG-17, REG-28, REG-29 |
+| IMPL-2 (Reward progress) | Reward display breaks, redemption flow breaks, progress misleading | REG-09, REG-10, REG-11, REG-12, REG-13 |
+| IMPL-3 (Accessibility) | Layout shifts from ARIA additions, modal focus traps break close behavior | REG-01, REG-06, REG-07, REG-21, REG-26, REG-28 |
+| IMPL-4 (Motivation metrics) | Child page breaks, points_spent removal affects parent view, API errors | REG-03, REG-04, REG-06, REG-08, REG-14, REG-28 |
+| IMPL-5 (Activity feed + calendar) | Feed pagination breaks, filters stop working, new view crashes on empty data | REG-14, REG-15, REG-16, REG-28, REG-29, REG-30 |
+
+### Regression test execution protocol
+
+1. **Before starting any IMPL:** Run full regression suite and record baseline pass count.
+2. **After each IMPL:** Run full regression suite. Compare to baseline. Any new failures must be investigated and fixed before merge.
+3. **Before phase sign-off:** Run full regression suite + all phase-specific unit/integration/a11y tests. 100% pass rate required.
+4. **Smoke test after deploy:** Run REG-01, REG-03, REG-06, REG-09, REG-12, REG-14, REG-28 against production within 15 minutes of deploy.
+
+---
+
+## Priority backlog
+
+### Active priorities
 
 1. Home framing card + Percy naming consistency + terminology constants
 2. Reward progress state copy cleanup
 3. Accessibility baseline (WCAG 2.1 AA) + axe-core in CI
-4. Child Snapshot Mode (share-safe layout, replaces generic share)
-5. Replace child `points_spent` with motivation metrics
-6. Activity feed + calendar readability improvements
-7. Parent/child nudges with guardrails + privacy controls
+4. Replace child `points_spent` with motivation metrics
+5. Activity feed + calendar readability improvements
+
+### Parked (pending clarification)
+
+6. Child Snapshot Mode (clarify: replace vs parallel to generic share flow)
+7. Parent/child nudges with guardrails (clarify: per-role limits, quiet hours, opt-out scope)
+8. AI insights with parent consent gate (clarify: consent model, external API policy)
 
 ---
 
