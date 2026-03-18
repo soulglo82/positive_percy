@@ -597,6 +597,93 @@ router.post('/api/children/:id/check-badges', authMiddleware, async (req, res) =
   }
 });
 
+// ─── Motivation Metrics (IMPL-4) ──────────────────────────────────────────────
+
+// Get motivation metrics for a child (replaces points_spent in child-facing views)
+router.get('/api/children/:id/motivation', authMiddleware, async (req, res) => {
+  try {
+    const childId = req.params.id;
+
+    // Verify child belongs to this family
+    const { rows: childRows } = await pool.query(
+      'SELECT id, total_points, weekly_points, weekly_target FROM children WHERE id = $1 AND family_code = $2',
+      [childId, req.familyCode]
+    );
+    if (childRows.length === 0) return res.status(404).json({ error: 'Child not found' });
+
+    // Rewards earned count
+    const { rows: redemptionCount } = await pool.query(
+      "SELECT COUNT(*)::int as count FROM redemptions WHERE child_id = $1 AND status IN ('Completed', 'Approved')",
+      [childId]
+    );
+
+    // Best streak: consecutive days with at least one positive point event
+    const { rows: eventDays } = await pool.query(
+      `SELECT DISTINCT DATE(created_date) as day
+       FROM point_events
+       WHERE child_id = $1 AND points > 0
+       ORDER BY day DESC`,
+      [childId]
+    );
+
+    let bestStreak = 0;
+    let currentRun = 0;
+    for (let i = 0; i < eventDays.length; i++) {
+      if (i === 0) {
+        currentRun = 1;
+      } else {
+        const prev = new Date(eventDays[i - 1].day);
+        const curr = new Date(eventDays[i].day);
+        const diffDays = (prev - curr) / (1000 * 60 * 60 * 24);
+        if (diffDays === 1) {
+          currentRun++;
+        } else {
+          currentRun = 1;
+        }
+      }
+      bestStreak = Math.max(bestStreak, currentRun);
+    }
+
+    // Next unlock ETA: nearest reward not yet affordable
+    const { rows: rewards } = await pool.query(
+      `SELECT title, cost_points FROM rewards
+       WHERE family_code = $1 AND visible_to_child = true
+         AND cost_points > $2
+       ORDER BY cost_points ASC LIMIT 1`,
+      [req.familyCode, childRows[0].total_points]
+    );
+
+    // Average daily earning rate over last 7 days
+    const { rows: avgRate } = await pool.query(
+      `SELECT COALESCE(SUM(points), 0)::int as total
+       FROM point_events
+       WHERE child_id = $1 AND points > 0
+         AND created_date >= NOW() - INTERVAL '7 days'`,
+      [childId]
+    );
+
+    let nextUnlock = null;
+    if (rewards.length > 0) {
+      const pointsRemaining = rewards[0].cost_points - childRows[0].total_points;
+      const dailyRate = avgRate[0].total / 7;
+      nextUnlock = {
+        reward_name: rewards[0].title,
+        points_remaining: pointsRemaining,
+        eta_days: dailyRate > 0 ? Math.ceil(pointsRemaining / dailyRate) : null,
+      };
+    }
+
+    res.json({
+      rewards_earned_count: redemptionCount[0]?.count || 0,
+      best_streak: bestStreak,
+      next_unlock: nextUnlock,
+    });
+  } catch (err) {
+    console.error('Motivation metrics error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Quick Actions CRUD ─────────────────────────────────────────────────────
 
 // List quick actions for family

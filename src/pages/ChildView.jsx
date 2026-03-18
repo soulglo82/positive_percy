@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trophy, Gift, Award, ShoppingBag, Plus, Minus, History } from "lucide-react";
+import { Trophy, Gift, Award, Plus, Minus, History } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,7 @@ import { PERCY } from "@/constants/terminology";
 import RewardCard from "../components/rewards/RewardCard";
 import ShareableCard from "../components/ShareableCard";
 import BadgeDisplay from "../components/BadgeDisplay";
+import MotivationCard from "../components/child/MotivationCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function ChildView() {
@@ -55,6 +56,20 @@ export default function ChildView() {
     queryKey: ['pointEvents'],
     queryFn: () => Point_Event.list('-created_date', 50),
     enabled: !!user,
+  });
+
+  // IMPL-4: Fetch motivation metrics for the selected child
+  const { data: motivationMetrics } = useQuery({
+    queryKey: ['motivationMetrics', selectedChildId],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch(`/api/children/${selectedChildId}/motivation`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!selectedChildId,
   });
 
   useEffect(() => {
@@ -231,15 +246,8 @@ export default function ChildView() {
                       <div className="text-5xl font-bold mb-2">{selectedChild.total_points}</div>
                       <div className="text-sm opacity-90">{PERCY.POINTS}</div>
                     </div>
-                    {(selectedChild.points_spent || 0) > 0 && (
-                      <div className="mt-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-4 text-white flex items-center justify-center gap-3">
-                        <ShoppingBag className="w-6 h-6" />
-                        <div>
-                          <div className="text-2xl font-bold">{selectedChild.points_spent}</div>
-                          <div className="text-xs opacity-90">Points Spent on Rewards</div>
-                        </div>
-                      </div>
-                    )}
+                    {/* IMPL-4: Motivation metrics replace points_spent */}
+                    <MotivationCard metrics={motivationMetrics} />
                     <div className="mt-3 flex justify-center">
                       <ShareableCard child={selectedChild} message="Look at my points!" />
                     </div>
