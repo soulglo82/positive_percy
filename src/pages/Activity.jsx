@@ -15,6 +15,7 @@ import {
 import { Activity as ActivityIcon, Filter, Plus, Minus, Gift } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { formatPoints } from "@/constants/terminology";
 import SectionHeader from "../components/SectionHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
@@ -213,7 +214,7 @@ function ActivityItem({ event }) {
             </span>
           </div>
           <span className={`font-bold text-sm ${colorClass} whitespace-nowrap`}>
-            {event.points > 0 ? '+' : ''}{event.points} pts
+            {formatPoints(event.points, { compact: true, showSign: true })}
           </span>
         </div>
 

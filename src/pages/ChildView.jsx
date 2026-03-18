@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import confetti from "canvas-confetti";
 
+import { PERCY } from "@/constants/terminology";
 import RewardCard from "../components/rewards/RewardCard";
 import ShareableCard from "../components/ShareableCard";
 import BadgeDisplay from "../components/BadgeDisplay";
@@ -228,7 +229,7 @@ export default function ChildView() {
                     <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl p-8 text-white">
                       <Trophy className="w-10 h-10 mb-3 mx-auto" />
                       <div className="text-5xl font-bold mb-2">{selectedChild.total_points}</div>
-                      <div className="text-sm opacity-90">Total Points</div>
+                      <div className="text-sm opacity-90">{PERCY.POINTS}</div>
                     </div>
                     {(selectedChild.points_spent || 0) > 0 && (
                       <div className="mt-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-4 text-white flex items-center justify-center gap-3">
@@ -249,7 +250,7 @@ export default function ChildView() {
                     <div className="mt-6 pt-6 border-t border-slate-200">
                       <h3 className="text-lg font-semibold text-slate-700 flex items-center justify-center gap-2 mb-3">
                         <Award className="w-5 h-5 text-amber-500" />
-                        My Badges
+                        My {PERCY.BADGES}
                       </h3>
                       <BadgeDisplay earnedBadgeIds={selectedChild.badges_earned} />
                     </div>
@@ -358,7 +359,7 @@ export default function ChildView() {
               {redeemConfirm && (
                 <>
                   <span className="font-semibold">{redeemConfirm.child.name}</span> will spend{' '}
-                  <span className="font-semibold">{redeemConfirm.reward.cost_points} points</span> on{' '}
+                  <span className="font-semibold">{redeemConfirm.reward.cost_points} {PERCY.POINTS_COMPACT}</span> on{' '}
                   <span className="font-semibold">{redeemConfirm.reward.title}</span>. Continue?
                 </>
               )}

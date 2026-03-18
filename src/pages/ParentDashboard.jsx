@@ -5,13 +5,13 @@ import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus, Flame, Plus, Minus, Gift } from "lucide-react";
+import { UserPlus, Plus, Minus, Gift } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
-import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 
+import { PERCY, formatPoints } from "@/constants/terminology";
 import SectionHeader from "../components/SectionHeader";
 import ChildCard from "../components/child/ChildCard";
 import AddChildModal from "../components/child/AddChildModal";
@@ -19,6 +19,7 @@ import EditChildModal from "../components/child/EditChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
 import FamilyGoals from "../components/FamilyGoals";
+import HeroCard from "../components/dashboard/HeroCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
@@ -297,16 +298,14 @@ export default function ParentDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {streak > 0 && (
-          <div className="flex justify-center">
-            <Badge className="bg-gradient-to-r from-orange-400 to-red-500 text-white border-0 text-sm px-3 py-1.5 flex items-center gap-1.5">
-              <Flame className="w-4 h-4" />
-              {streak}-day streak
-            </Badge>
-          </div>
-        )}
+        <HeroCard
+          children={children}
+          streak={streak}
+          rewards={rewards}
+          onAddFirstChild={() => setShowAddChild(true)}
+        />
 
-        <SectionHeader icon="⭐">Add Points</SectionHeader>
+        <SectionHeader icon="⭐">Add {PERCY.POINTS_COMPACT}</SectionHeader>
 
         {/* Children Grid */}
         {isLoading ? (
@@ -373,7 +372,7 @@ export default function ParentDashboard() {
                           </span>
                         </div>
                         <span className={`text-sm font-bold ${colorClass}`}>
-                          {event.points > 0 ? '+' : ''}{event.points} pts
+                          {formatPoints(event.points, { compact: true, showSign: true })}
                         </span>
                       </div>
                     );
@@ -408,7 +407,7 @@ export default function ParentDashboard() {
             alt="Positive Percy"
             className="h-28 opacity-60"
           />
-          <p className="text-sm text-slate-400">Building bright futures, one point at a time</p>
+          <p className="text-sm text-slate-400">{PERCY.TAGLINE}</p>
         </div>
       </div>
 

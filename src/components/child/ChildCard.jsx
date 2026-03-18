@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
+import { PERCY, formatPoints, formatPointsBadge } from "@/constants/terminology";
 
 export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, quickActions = [], rewards = [] }) {
   // Find next reward the child is working toward
@@ -57,7 +58,7 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
             </div>
             <div className="text-right">
               <div className="text-3xl font-bold text-purple-600">{child.total_points}</div>
-              <div className="text-xs text-slate-500">pts available</div>
+              <div className="text-xs text-slate-500">{PERCY.POINTS_COMPACT}</div>
             </div>
           </div>
 
@@ -98,7 +99,7 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
                 >
                   <span>{action.icon || '⭐'}</span>
                   <span className="truncate">{action.label}</span>
-                  <span className="font-bold shrink-0">+{action.points} pts</span>
+                  <span className="font-bold shrink-0">{formatPointsBadge(action.points)}</span>
                 </button>
               ))}
             </div>

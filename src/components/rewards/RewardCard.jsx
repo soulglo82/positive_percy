@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Coins, Eye, EyeOff, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
+import { PERCY, formatPoints } from "@/constants/terminology";
 
 export default function RewardCard({ reward, onRequest, isParentView, onToggleVisibility, onEdit, canAfford, childPoints, assignedChildren = [] }) {
   return (
@@ -83,7 +84,7 @@ export default function RewardCard({ reward, onRequest, isParentView, onToggleVi
           {!isParentView && typeof childPoints === 'number' && (
             <div className="mb-3">
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-slate-500">{childPoints} / {reward.cost_points} pts</span>
+                <span className="text-slate-500">{childPoints} / {reward.cost_points} {PERCY.POINTS_COMPACT}</span>
                 <span className={`font-semibold ${canAfford ? 'text-green-600' : 'text-amber-600'}`}>
                   {canAfford ? 'Ready!' : `${reward.cost_points - childPoints} more`}
                 </span>

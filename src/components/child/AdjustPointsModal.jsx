@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { SlidersHorizontal } from "lucide-react";
+import { PERCY, formatPoints } from "@/constants/terminology";
 
 const ADJUST_AMOUNTS = [-5, -2, -1, 1, 2, 5];
 
@@ -50,7 +51,7 @@ export default function AdjustPointsModal({ isOpen, onClose, child, onSubmit }) 
               For: {child?.name}
             </Label>
             <p className="text-xs text-slate-500">
-              Current balance: {child?.total_points || 0} pts
+              Current balance: {formatPoints(child?.total_points || 0, { compact: true })}
             </p>
           </div>
 
@@ -77,7 +78,7 @@ export default function AdjustPointsModal({ isOpen, onClose, child, onSubmit }) 
             </div>
             {delta !== 0 && (
               <p className={`text-sm font-medium mt-3 ${delta < 0 ? 'text-rose-600' : 'text-green-600'}`}>
-                New balance: {Math.max(0, (child?.total_points || 0) + delta)} pts
+                New balance: {formatPoints(Math.max(0, (child?.total_points || 0) + delta), { compact: true })}
               </p>
             )}
           </div>
@@ -115,7 +116,7 @@ export default function AdjustPointsModal({ isOpen, onClose, child, onSubmit }) 
                   : ''
             }`}
           >
-            {delta === 0 ? 'Select Amount' : `Adjust ${delta > 0 ? '+' : ''}${delta} pts`}
+            {delta === 0 ? 'Select Amount' : `Adjust ${delta > 0 ? '+' : ''}${delta} ${PERCY.POINTS_COMPACT}`}
           </Button>
         </div>
       </DialogContent>
