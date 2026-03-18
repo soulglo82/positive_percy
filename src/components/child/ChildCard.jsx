@@ -11,10 +11,11 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
     .filter(r => r.cost_points > child.total_points)
     .sort((a, b) => a.cost_points - b.cost_points)[0];
 
-  // If child has enough points for all rewards, show the most expensive reward at 100%
-  const displayReward = nextReward || (rewards.length > 0
-    ? [...rewards].sort((a, b) => b.cost_points - a.cost_points)[0]
-    : null);
+  // Check if all rewards are unlocked
+  const allUnlocked = rewards.length > 0 && rewards.every(r => child.total_points >= r.cost_points);
+
+  // Display reward: next in progress, or null if all unlocked
+  const displayReward = nextReward || null;
 
   const progress = displayReward
     ? Math.min((child.total_points / displayReward.cost_points) * 100, 100)
@@ -62,19 +63,26 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
             </div>
           </div>
 
-          {/* Reward Progress Bar */}
+          {/* Reward Progress */}
           <div className="mb-3">
-            {displayReward ? (
+            {allUnlocked ? (
+              <div className="text-xs font-medium text-green-600 bg-green-50 rounded-lg px-3 py-2 text-center">
+                ✅ All current rewards unlocked!
+              </div>
+            ) : displayReward ? (
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-medium text-slate-600">
-                    {progress >= 100 ? '🎉 Ready to redeem' : 'Progress to'} {displayReward.emoji || '🎁'} {displayReward.title}
-                  </span>
-                  <span className="text-xs font-medium text-slate-500">
-                    {Math.round(progress)}%
+                    {displayReward.emoji || '🎁'} {displayReward.title} — {child.total_points} / {displayReward.cost_points} {PERCY.POINTS_COMPACT}
                   </span>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden"
+                  role="progressbar"
+                  aria-valuenow={child.total_points}
+                  aria-valuemin={0}
+                  aria-valuemax={displayReward.cost_points}
+                  aria-label={`Progress toward ${displayReward.title}`}
+                >
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500"
                     style={{ width: `${progress}%` }}
