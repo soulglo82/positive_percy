@@ -223,6 +223,7 @@ function GoalCard({ goal, onContribute, onDelete }) {
           </div>
           <button
             onClick={onDelete}
+            aria-label={`Delete goal: ${goal.title}`}
             className="text-slate-400 hover:text-red-500 transition-colors p-1"
           >
             <Trash2 className="w-4 h-4" />

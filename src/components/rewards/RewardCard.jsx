@@ -42,6 +42,7 @@ export default function RewardCard({ reward, onRequest, isParentView, onToggleVi
                   size="icon"
                   className="h-7 w-7 -mt-1"
                   onClick={() => onEdit(reward)}
+                  aria-label={`Edit ${reward.title}`}
                 >
                   <Pencil className="w-4 h-4 text-slate-400" />
                 </Button>
@@ -50,6 +51,7 @@ export default function RewardCard({ reward, onRequest, isParentView, onToggleVi
                   size="icon"
                   className="h-7 w-7 -mt-1"
                   onClick={() => onToggleVisibility(reward)}
+                  aria-label={reward.visible_to_child ? `Hide ${reward.title} from children` : `Show ${reward.title} to children`}
                 >
                   {reward.visible_to_child ? (
                     <Eye className="w-4 h-4 text-slate-400" />

@@ -47,6 +47,7 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
                 {onEdit && (
                   <button
                     onClick={() => onEdit(child)}
+                    aria-label={`Edit ${child.name}`}
                     className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Pencil className="w-5 h-5 text-white" />
