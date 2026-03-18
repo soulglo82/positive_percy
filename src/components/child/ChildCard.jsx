@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
+import { PERCY, formatPoints, formatPointsBadge } from "@/constants/terminology";
 
 export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, quickActions = [], rewards = [] }) {
   // Find next reward the child is working toward
@@ -10,10 +11,11 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
     .filter(r => r.cost_points > child.total_points)
     .sort((a, b) => a.cost_points - b.cost_points)[0];
 
-  // If child has enough points for all rewards, show the most expensive reward at 100%
-  const displayReward = nextReward || (rewards.length > 0
-    ? [...rewards].sort((a, b) => b.cost_points - a.cost_points)[0]
-    : null);
+  // Check if all rewards are unlocked
+  const allUnlocked = rewards.length > 0 && rewards.every(r => child.total_points >= r.cost_points);
+
+  // Display reward: next in progress, or null if all unlocked
+  const displayReward = nextReward || null;
 
   const progress = displayReward
     ? Math.min((child.total_points / displayReward.cost_points) * 100, 100)
@@ -45,6 +47,7 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
                 {onEdit && (
                   <button
                     onClick={() => onEdit(child)}
+                    aria-label={`Edit ${child.name}`}
                     className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Pencil className="w-5 h-5 text-white" />
@@ -57,23 +60,30 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
             </div>
             <div className="text-right">
               <div className="text-3xl font-bold text-purple-600">{child.total_points}</div>
-              <div className="text-xs text-slate-500">pts available</div>
+              <div className="text-xs text-slate-500">{PERCY.POINTS_COMPACT}</div>
             </div>
           </div>
 
-          {/* Reward Progress Bar */}
+          {/* Reward Progress */}
           <div className="mb-3">
-            {displayReward ? (
+            {allUnlocked ? (
+              <div className="text-xs font-medium text-green-600 bg-green-50 rounded-lg px-3 py-2 text-center">
+                ✅ All current rewards unlocked!
+              </div>
+            ) : displayReward ? (
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-medium text-slate-600">
-                    {progress >= 100 ? '🎉 Ready to redeem' : 'Progress to'} {displayReward.emoji || '🎁'} {displayReward.title}
-                  </span>
-                  <span className="text-xs font-medium text-slate-500">
-                    {Math.round(progress)}%
+                    {displayReward.emoji || '🎁'} {displayReward.title} — {child.total_points} / {displayReward.cost_points} {PERCY.POINTS_COMPACT}
                   </span>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden"
+                  role="progressbar"
+                  aria-valuenow={child.total_points}
+                  aria-valuemin={0}
+                  aria-valuemax={displayReward.cost_points}
+                  aria-label={`Progress toward ${displayReward.title}`}
+                >
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500"
                     style={{ width: `${progress}%` }}
@@ -98,7 +108,7 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
                 >
                   <span>{action.icon || '⭐'}</span>
                   <span className="truncate">{action.label}</span>
-                  <span className="font-bold shrink-0">+{action.points} pts</span>
+                  <span className="font-bold shrink-0">{formatPointsBadge(action.points)}</span>
                 </button>
               ))}
             </div>

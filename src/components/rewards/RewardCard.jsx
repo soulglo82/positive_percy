@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Coins, Eye, EyeOff, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
+import { PERCY, formatPoints } from "@/constants/terminology";
 
 export default function RewardCard({ reward, onRequest, isParentView, onToggleVisibility, onEdit, canAfford, childPoints, assignedChildren = [] }) {
   return (
@@ -41,6 +42,7 @@ export default function RewardCard({ reward, onRequest, isParentView, onToggleVi
                   size="icon"
                   className="h-7 w-7 -mt-1"
                   onClick={() => onEdit(reward)}
+                  aria-label={`Edit ${reward.title}`}
                 >
                   <Pencil className="w-4 h-4 text-slate-400" />
                 </Button>
@@ -49,6 +51,7 @@ export default function RewardCard({ reward, onRequest, isParentView, onToggleVi
                   size="icon"
                   className="h-7 w-7 -mt-1"
                   onClick={() => onToggleVisibility(reward)}
+                  aria-label={reward.visible_to_child ? `Hide ${reward.title} from children` : `Show ${reward.title} to children`}
                 >
                   {reward.visible_to_child ? (
                     <Eye className="w-4 h-4 text-slate-400" />
@@ -79,21 +82,32 @@ export default function RewardCard({ reward, onRequest, isParentView, onToggleVi
             </div>
           )}
 
-          {/* Progress bar (child view only) */}
+          {/* Progress display (child view only) */}
           {!isParentView && typeof childPoints === 'number' && (
             <div className="mb-3">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-slate-500">{childPoints} / {reward.cost_points} pts</span>
-                <span className={`font-semibold ${canAfford ? 'text-green-600' : 'text-amber-600'}`}>
-                  {canAfford ? 'Ready!' : `${reward.cost_points - childPoints} more`}
-                </span>
-              </div>
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${canAfford ? 'bg-green-500' : 'bg-amber-400'}`}
-                  style={{ width: `${Math.min((childPoints / reward.cost_points) * 100, 100)}%` }}
-                />
-              </div>
+              {canAfford ? (
+                <div className="text-xs font-semibold text-green-600 bg-green-50 rounded-lg px-3 py-2 text-center">
+                  Reward unlocked: {reward.title} ✓
+                </div>
+              ) : (
+                <>
+                  <div className="text-xs text-slate-500 mb-1">
+                    {reward.title} — {childPoints} / {reward.cost_points} {PERCY.POINTS_COMPACT}
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden"
+                    role="progressbar"
+                    aria-valuenow={childPoints}
+                    aria-valuemin={0}
+                    aria-valuemax={reward.cost_points}
+                    aria-label={`Progress toward ${reward.title}`}
+                  >
+                    <div
+                      className="h-full rounded-full transition-all bg-amber-400"
+                      style={{ width: `${Math.min((childPoints / reward.cost_points) * 100, 100)}%` }}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
 

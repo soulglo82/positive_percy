@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Target, Plus, Trophy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { PERCY } from "@/constants/terminology";
 import SectionHeader from "./SectionHeader";
 import confetti from "canvas-confetti";
 
@@ -222,6 +223,7 @@ function GoalCard({ goal, onContribute, onDelete }) {
           </div>
           <button
             onClick={onDelete}
+            aria-label={`Delete goal: ${goal.title}`}
             className="text-slate-400 hover:text-red-500 transition-colors p-1"
           >
             <Trash2 className="w-4 h-4" />
@@ -230,7 +232,7 @@ function GoalCard({ goal, onContribute, onDelete }) {
 
         <div className="mb-2">
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-slate-600">{goal.current_points} / {goal.target_points} pts</span>
+            <span className="text-slate-600">{goal.current_points} / {goal.target_points} {PERCY.POINTS_COMPACT}</span>
             <span className="font-medium text-blue-600">{progress}%</span>
           </div>
           <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">

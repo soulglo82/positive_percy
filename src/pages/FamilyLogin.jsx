@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Users, Plus, LogIn, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import { PERCY } from "@/constants/terminology";
 
 export default function FamilyLogin() {
   const { createFamily, joinFamily } = useAuth();
@@ -89,7 +90,7 @@ export default function FamilyLogin() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             Positive Percy
           </h1>
-          <p className="text-slate-600">Building bright futures, one point at a time</p>
+          <p className="text-slate-600">{PERCY.TAGLINE}</p>
         </div>
 
         {!mode && (

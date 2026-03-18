@@ -3,6 +3,7 @@ import html2canvas from 'html2canvas';
 import { Button } from "@/components/ui/button";
 import { Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { PERCY } from "@/constants/terminology";
 
 export default function ShareableCard({ child, message = "Weekly Goal Achieved!" }) {
   const cardRef = useRef(null);
@@ -89,7 +90,7 @@ export default function ShareableCard({ child, message = "Weekly Goal Achieved!"
             {child.name}
           </div>
           <div style={{ fontSize: 48, fontWeight: 'bold', color: 'white', marginBottom: 4 }}>
-            {child.total_points} pts
+            {child.total_points} {PERCY.POINTS_COMPACT}
           </div>
           <div style={{
             fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.9)',

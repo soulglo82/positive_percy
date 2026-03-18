@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Settings, Save, Copy, Check, Share2, Lightbulb, Plus, Pencil, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { PERCY, formatPointsBadge, formatPoints } from "@/constants/terminology";
 import SectionHeader from "../components/SectionHeader";
 import OnboardingTips from "../components/OnboardingTips";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
+import BehaviorCategoryManager from "../components/settings/BehaviorCategoryManager";
 import {
   Dialog,
   DialogContent,
@@ -23,10 +25,10 @@ import {
 const EMOJI_OPTIONS = ['⭐', '📚', '🧹', '🤝', '💪', '🎨', '🏃', '🎵', '🧠', '💤', '🦷', '🍎'];
 
 const DEFAULT_QUICK_ACTIONS = [
-  { id: 'default-1', label: "Kindness", points: 5, icon: "⭐" },
-  { id: 'default-2', label: "Homework", points: 10, icon: "📚" },
-  { id: 'default-3', label: "Chores", points: 5, icon: "🧹" },
-  { id: 'default-4', label: "Manners", points: 5, icon: "🤝" },
+  { id: 'default-1', label: "Helpfulness", points: 5, icon: "🤝" },
+  { id: 'default-2', label: "Learning", points: 10, icon: "📚" },
+  { id: 'default-3', label: "Responsibility", points: 5, icon: "✅" },
+  { id: 'default-4', label: "Kindness", points: 5, icon: "💛" },
 ];
 
 export default function ParentProfile() {
@@ -115,7 +117,7 @@ export default function ParentProfile() {
         <Card>
           <CardContent className="space-y-3 pt-4">
             {isUsingDefaults && (
-              <p className="text-xs text-slate-400 italic">Using defaults — add your own to customise.</p>
+              <p className="text-xs text-slate-400 italic">{PERCY.HELPER_TEXT_QUICK_ACTIONS}</p>
             )}
             <div className="space-y-1.5">
               {displayActions.map((action) => (
@@ -126,7 +128,7 @@ export default function ParentProfile() {
                   <div className="flex items-center gap-3">
                     <span className="text-lg">{action.icon}</span>
                     <span className="font-medium text-slate-700">{action.label}</span>
-                    <span className="text-sm text-green-600 font-bold">+{action.points} pts</span>
+                    <span className="text-sm text-green-600 font-bold">{formatPointsBadge(action.points)}</span>
                   </div>
                   {!isUsingDefaults && (
                     <div className="flex items-center gap-1">
@@ -147,6 +149,9 @@ export default function ParentProfile() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Behavior Categories */}
+        <BehaviorCategoryManager />
 
         {/* Children */}
         <SectionHeader icon="👨‍👩‍👧‍👦">Children</SectionHeader>
@@ -170,7 +175,7 @@ export default function ParentProfile() {
                         </div>
                       )}
                       <span className="font-medium text-slate-700">{child.name}</span>
-                      <span className="text-sm text-purple-600 font-bold">{child.total_points} pts</span>
+                      <span className="text-sm text-purple-600 font-bold">{formatPoints(child.total_points, { compact: true })}</span>
                     </div>
                     <Button
                       variant="ghost"
@@ -440,7 +445,7 @@ function QuickActionModal({ isOpen, onClose, action, onSaved }) {
             <div className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 w-fit">
               <span>{icon}</span>
               <span>{label || 'Label'}</span>
-              <span className="font-bold">+{points} pts</span>
+              <span className="font-bold">{formatPointsBadge(points)}</span>
             </div>
           </div>
         </div>

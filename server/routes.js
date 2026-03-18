@@ -198,6 +198,20 @@ router.post('/api/family/create', async (req, res) => {
         'INSERT INTO families (family_code, family_name) VALUES ($1, $2) RETURNING *',
         [family_code, family_name]
       );
+
+      // IMPL-5.5: Seed default behavior categories atomically
+      await pool.query(
+        `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default) VALUES
+          ($1, 'Helpfulness', '🤝', 0, true),
+          ($1, 'Kindness', '💛', 1, true),
+          ($1, 'Learning', '📚', 2, true),
+          ($1, 'Responsibility', '✅', 3, true),
+          ($1, 'Creativity', '🎨', 4, true),
+          ($1, 'Physical Activity', '🏃', 5, true)
+        ON CONFLICT (family_code, name) DO NOTHING`,
+        [family_code]
+      );
+
       const token = signToken(family_code);
       return res.json({ ...rows[0], token });
     } catch (err) {
@@ -593,6 +607,252 @@ router.post('/api/children/:id/check-badges', authMiddleware, async (req, res) =
     res.json({ new_badges: [], all_badges: earned });
   } catch (err) {
     console.error('Check badges error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Behavior Categories CRUD (IMPL-5) ────────────────────────────────────────
+
+// List all categories for family (sorted by sort_order)
+router.get('/api/behavior-categories', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM behavior_categories WHERE family_code = $1 ORDER BY sort_order ASC, created_date ASC',
+      [req.familyCode]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('List categories error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create new category
+router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
+  try {
+    const { name, icon } = req.body;
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(422).json({ error: 'Category name is required' });
+    }
+    const trimmedName = name.trim().slice(0, 100);
+
+    // Get max sort_order
+    const { rows: maxOrder } = await pool.query(
+      'SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM behavior_categories WHERE family_code = $1',
+      [req.familyCode]
+    );
+
+    const { rows } = await pool.query(
+      `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default)
+       VALUES ($1, $2, $3, $4, false) RETURNING *`,
+      [req.familyCode, trimmedName, icon || '⭐', maxOrder[0].next_order]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(422).json({ error: 'A category with this name already exists' });
+    }
+    console.error('Create category error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update category
+router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
+  try {
+    const { name, icon } = req.body;
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    if (name !== undefined) {
+      const trimmedName = String(name).trim().slice(0, 100);
+      if (!trimmedName) return res.status(422).json({ error: 'Category name cannot be empty' });
+      updates.push(`name = $${idx++}`);
+      values.push(trimmedName);
+    }
+    if (icon !== undefined) {
+      updates.push(`icon = $${idx++}`);
+      values.push(icon);
+    }
+    if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+
+    updates.push(`updated_date = NOW()`);
+    values.push(req.params.id, req.familyCode);
+
+    const { rows } = await pool.query(
+      `UPDATE behavior_categories SET ${updates.join(', ')} WHERE id = $${idx++} AND family_code = $${idx} RETURNING *`,
+      values
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Category not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(422).json({ error: 'A category with this name already exists' });
+    }
+    console.error('Update category error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete category (only non-default)
+router.delete('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
+  try {
+    // Check if category exists at all, then verify ownership
+    const { rows: allRows } = await pool.query(
+      'SELECT is_default, name, family_code FROM behavior_categories WHERE id = $1',
+      [req.params.id]
+    );
+    if (allRows.length === 0) return res.status(404).json({ error: 'Category not found' });
+    if (allRows[0].family_code !== req.familyCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const catRows = allRows;
+    if (catRows[0].is_default) {
+      return res.status(400).json({ error: 'Default categories cannot be deleted' });
+    }
+
+    // Check if category has associated point events
+    const { rows: eventCount } = await pool.query(
+      'SELECT COUNT(*)::int as count FROM point_events WHERE family_code = $1 AND category = $2',
+      [req.familyCode, catRows[0].name]
+    );
+    if (eventCount[0].count > 0) {
+      return res.status(400).json({
+        error: `This category has ${eventCount[0].count} associated events. Reassign them first.`,
+        has_events: true,
+        event_count: eventCount[0].count,
+      });
+    }
+
+    await pool.query(
+      'DELETE FROM behavior_categories WHERE id = $1 AND family_code = $2',
+      [req.params.id, req.familyCode]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete category error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Batch reorder categories
+router.post('/api/behavior-categories/reorder', authMiddleware, async (req, res) => {
+  try {
+    const { order } = req.body; // Array of { id, sort_order }
+    if (!Array.isArray(order)) return res.status(400).json({ error: 'order must be an array' });
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      for (const item of order) {
+        await client.query(
+          'UPDATE behavior_categories SET sort_order = $1 WHERE id = $2 AND family_code = $3',
+          [item.sort_order, item.id, req.familyCode]
+        );
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    const { rows } = await pool.query(
+      'SELECT * FROM behavior_categories WHERE family_code = $1 ORDER BY sort_order ASC',
+      [req.familyCode]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Reorder categories error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Motivation Metrics (IMPL-4) ──────────────────────────────────────────────
+
+// Get motivation metrics for a child (replaces points_spent in child-facing views)
+router.get('/api/children/:id/motivation', authMiddleware, async (req, res) => {
+  try {
+    const childId = req.params.id;
+
+    // Verify child belongs to this family
+    const { rows: childRows } = await pool.query(
+      'SELECT id, total_points, weekly_points, weekly_target FROM children WHERE id = $1 AND family_code = $2',
+      [childId, req.familyCode]
+    );
+    if (childRows.length === 0) return res.status(404).json({ error: 'Child not found' });
+
+    // Rewards earned count (scoped to family)
+    const { rows: redemptionCount } = await pool.query(
+      "SELECT COUNT(*)::int as count FROM redemptions WHERE child_id = $1 AND family_code = $2 AND status IN ('Completed', 'Approved')",
+      [childId, req.familyCode]
+    );
+
+    // Best streak: consecutive days with at least one positive point event (scoped to family)
+    const { rows: eventDays } = await pool.query(
+      `SELECT DISTINCT DATE(created_date) as day
+       FROM point_events
+       WHERE child_id = $1 AND family_code = $2 AND points > 0
+       ORDER BY day DESC`,
+      [childId, req.familyCode]
+    );
+
+    let bestStreak = 0;
+    let currentRun = 0;
+    for (let i = 0; i < eventDays.length; i++) {
+      if (i === 0) {
+        currentRun = 1;
+      } else {
+        const prev = new Date(eventDays[i - 1].day);
+        const curr = new Date(eventDays[i].day);
+        const diffDays = (prev - curr) / (1000 * 60 * 60 * 24);
+        if (diffDays === 1) {
+          currentRun++;
+        } else {
+          currentRun = 1;
+        }
+      }
+      bestStreak = Math.max(bestStreak, currentRun);
+    }
+
+    // Next unlock ETA: nearest reward not yet affordable
+    const { rows: rewards } = await pool.query(
+      `SELECT title, cost_points FROM rewards
+       WHERE family_code = $1 AND visible_to_child = true
+         AND cost_points > $2
+       ORDER BY cost_points ASC LIMIT 1`,
+      [req.familyCode, childRows[0].total_points]
+    );
+
+    // Average daily earning rate over last 7 days (scoped to family)
+    const { rows: avgRate } = await pool.query(
+      `SELECT COALESCE(SUM(points), 0)::int as total
+       FROM point_events
+       WHERE child_id = $1 AND family_code = $2 AND points > 0
+         AND created_date >= NOW() - INTERVAL '7 days'`,
+      [childId, req.familyCode]
+    );
+
+    let nextUnlock = null;
+    if (rewards.length > 0) {
+      const pointsRemaining = rewards[0].cost_points - childRows[0].total_points;
+      const dailyRate = avgRate[0].total / 7;
+      nextUnlock = {
+        reward_name: rewards[0].title,
+        points_remaining: pointsRemaining,
+        eta_days: dailyRate > 0 ? Math.ceil(pointsRemaining / dailyRate) : null,
+      };
+    }
+
+    res.json({
+      rewards_earned_count: redemptionCount[0]?.count || 0,
+      best_streak: bestStreak,
+      next_unlock: nextUnlock,
+    });
+  } catch (err) {
+    console.error('Motivation metrics error:', err);
     res.status(500).json({ error: err.message });
   }
 });

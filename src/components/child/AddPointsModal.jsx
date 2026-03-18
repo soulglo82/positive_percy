@@ -16,26 +16,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sparkles } from "lucide-react";
-
-const CATEGORIES = [
-  "Homework",
-  "Chores",
-  "Kindness",
-  "Good Manners",
-  "Bedtime Routine",
-  "Screen Time",
-  "Learning Moment",
-  "Other"
-];
+import { Sparkles, Loader2 } from "lucide-react";
+import { getToken } from "@/lib/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { PERCY } from "@/constants/terminology";
 
 const POSITIVE_AMOUNTS = [1, 2, 3, 4, 5, 10];
 const NEGATIVE_AMOUNTS = [-1, -2, -3, -4, -5, -10];
 
 export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
   const [points, setPoints] = useState(1);
-  const [category, setCategory] = useState("Kindness");
+  const [category, setCategory] = useState("");
   const [note, setNote] = useState("");
+
+  // IMPL-5.4: Fetch categories from API instead of hardcoded list
+  const { data: categories = [], isLoading: loadingCategories } = useQuery({
+    queryKey: ['behaviorCategories'],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch('/api/behavior-categories', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: isOpen,
+  });
+
+  // Set default category when categories load
+  React.useEffect(() => {
+    if (categories.length > 0 && !category) {
+      setCategory(categories[0].name);
+    }
+  }, [categories, category]);
 
   const isNegative = points < 0;
 
@@ -46,7 +59,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
       note,
     });
     setPoints(1);
-    setCategory("Kindness");
+    setCategory(categories.length > 0 ? categories[0].name : "");
     setNote("");
     onClose();
   };
@@ -57,7 +70,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Sparkles className={`w-6 h-6 ${isNegative ? 'text-rose-500' : 'text-green-500'}`} />
-            {isNegative ? 'Adjust Points' : 'Award Points'}
+            {isNegative ? `Adjust ${PERCY.POINTS_COMPACT}` : `Award ${PERCY.POINTS_COMPACT}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -71,7 +84,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
           {/* Quick Amount Buttons */}
           <div>
             <Label className="text-sm font-medium text-slate-700 mb-3 block">
-              Points
+              {PERCY.POINTS_COMPACT}
             </Label>
             <div className="grid grid-cols-6 gap-2 mb-2">
               {POSITIVE_AMOUNTS.map((amount) => (
@@ -113,24 +126,32 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
             />
           </div>
 
-          {/* Category - only for positive points */}
+          {/* Category - only for positive points, API-driven */}
           {!isNegative && (
             <div>
               <Label className="text-sm font-medium text-slate-700 mb-2 block">
                 Category
               </Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {loadingCategories ? (
+                <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading categories...
+                </div>
+              ) : (
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.name}>
+                        {cat.icon} {cat.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           )}
 
@@ -168,7 +189,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
                 : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
             }`}
           >
-            {isNegative ? 'Adjust' : 'Award'} Points
+            {isNegative ? 'Adjust' : 'Award'} {PERCY.POINTS_COMPACT}
           </Button>
         </div>
       </DialogContent>

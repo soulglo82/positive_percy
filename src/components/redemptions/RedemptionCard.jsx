@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle, XCircle, Coins } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { PERCY } from "@/constants/terminology";
 
 export default function RedemptionCard({ redemption, onApprove, onDeny }) {
   const isPending = redemption.status === "Pending";
@@ -40,7 +41,7 @@ export default function RedemptionCard({ redemption, onApprove, onDeny }) {
               <div className="flex items-center gap-3 text-xs text-slate-500">
                 <span className="flex items-center gap-1">
                   <Coins className="w-3 h-3" />
-                  {redemption.reward_cost} points
+                  {redemption.reward_cost} {PERCY.POINTS_COMPACT}
                 </span>
                 <span>
                   {format(new Date(redemption.created_date), "MMM d, h:mm a")}

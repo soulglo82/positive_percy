@@ -12,13 +12,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Gift, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 import { REWARD_TEMPLATES } from "@/data/reward-templates";
+import { PERCY } from "@/constants/terminology";
 
 const EMOJI_OPTIONS = ["🎮", "🍕", "🎬", "🎨", "⚽", "📚", "🎪", "🎭", "🏊", "🎵", "🍦", "🎁"];
 
 const CATEGORY_LABELS = {
-  quick: "Quick Wins (5-15 pts)",
-  medium: "Medium (20-50 pts)",
-  big: "Big Goals (60+ pts)",
+  quick: PERCY.REWARD_CAT_QUICK,
+  medium: PERCY.REWARD_CAT_MEDIUM,
+  big: PERCY.REWARD_CAT_BIG,
 };
 
 export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [] }) {

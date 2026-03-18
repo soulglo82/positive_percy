@@ -21,6 +21,7 @@ import {
 import { Pencil, Upload, X, Trash2 } from "lucide-react";
 import { UploadFile } from "@/api/integrations";
 import { toast } from "sonner";
+import { PERCY } from "@/constants/terminology";
 
 export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDelete }) {
   const [name, setName] = useState("");
@@ -156,7 +157,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
 
           <div>
             <Label className="text-sm font-medium text-slate-700 mb-2 block">
-              Weekly Points Target
+              Weekly {PERCY.POINTS_COMPACT} Target
             </Label>
             <Input
               type="number"
@@ -170,7 +171,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-sm font-medium text-slate-700 mb-2 block">
-                Total Points
+                {PERCY.POINTS_COMPACT}
               </Label>
               <Input
                 type="number"
@@ -182,7 +183,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
             </div>
             <div>
               <Label className="text-sm font-medium text-slate-700 mb-2 block">
-                Weekly Points
+                Weekly {PERCY.POINTS_COMPACT}
               </Label>
               <Input
                 type="number"
