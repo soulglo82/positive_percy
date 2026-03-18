@@ -14,6 +14,7 @@ import SectionHeader from "../components/SectionHeader";
 import OnboardingTips from "../components/OnboardingTips";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
+import BehaviorCategoryManager from "../components/settings/BehaviorCategoryManager";
 import {
   Dialog,
   DialogContent,
@@ -148,6 +149,9 @@ export default function ParentProfile() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Behavior Categories */}
+        <BehaviorCategoryManager />
 
         {/* Children */}
         <SectionHeader icon="👨‍👩‍👧‍👦">Children</SectionHeader>

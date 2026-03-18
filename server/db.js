@@ -105,6 +105,21 @@ export async function initDb() {
         display_order INTEGER DEFAULT 0,
         created_date TIMESTAMPTZ DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS behavior_categories (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        family_code TEXT NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        icon VARCHAR(50) DEFAULT '⭐',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        is_default BOOLEAN NOT NULL DEFAULT false,
+        created_date TIMESTAMPTZ DEFAULT NOW(),
+        updated_date TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (family_code, name)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_behavior_categories_family
+        ON behavior_categories(family_code);
     `);
 
     // Add columns to existing tables if they don't exist (handles upgrades)
@@ -136,6 +151,25 @@ export async function initDb() {
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});
     }
+
+    // IMPL-5: Seed default behavior categories for existing families that don't have any
+    await client.query(`
+      INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default)
+      SELECT f.family_code, d.name, d.icon, d.sort_order, true
+      FROM families f
+      CROSS JOIN (VALUES
+        ('Helpfulness', '🤝', 0),
+        ('Kindness', '💛', 1),
+        ('Learning', '📚', 2),
+        ('Responsibility', '✅', 3),
+        ('Creativity', '🎨', 4),
+        ('Physical Activity', '🏃', 5)
+      ) AS d(name, icon, sort_order)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM behavior_categories bc WHERE bc.family_code = f.family_code
+      )
+      ON CONFLICT (family_code, name) DO NOTHING
+    `).catch(() => {});
 
     // Backfill points_spent from existing redemptions for children that still show 0
     await client.query(`

@@ -198,6 +198,20 @@ router.post('/api/family/create', async (req, res) => {
         'INSERT INTO families (family_code, family_name) VALUES ($1, $2) RETURNING *',
         [family_code, family_name]
       );
+
+      // IMPL-5.5: Seed default behavior categories atomically
+      await pool.query(
+        `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default) VALUES
+          ($1, 'Helpfulness', '🤝', 0, true),
+          ($1, 'Kindness', '💛', 1, true),
+          ($1, 'Learning', '📚', 2, true),
+          ($1, 'Responsibility', '✅', 3, true),
+          ($1, 'Creativity', '🎨', 4, true),
+          ($1, 'Physical Activity', '🏃', 5, true)
+        ON CONFLICT (family_code, name) DO NOTHING`,
+        [family_code]
+      );
+
       const token = signToken(family_code);
       return res.json({ ...rows[0], token });
     } catch (err) {
@@ -593,6 +607,161 @@ router.post('/api/children/:id/check-badges', authMiddleware, async (req, res) =
     res.json({ new_badges: [], all_badges: earned });
   } catch (err) {
     console.error('Check badges error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Behavior Categories CRUD (IMPL-5) ────────────────────────────────────────
+
+// List all categories for family (sorted by sort_order)
+router.get('/api/behavior-categories', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM behavior_categories WHERE family_code = $1 ORDER BY sort_order ASC, created_date ASC',
+      [req.familyCode]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('List categories error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create new category
+router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
+  try {
+    const { name, icon } = req.body;
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(422).json({ error: 'Category name is required' });
+    }
+    const trimmedName = name.trim().slice(0, 100);
+
+    // Get max sort_order
+    const { rows: maxOrder } = await pool.query(
+      'SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM behavior_categories WHERE family_code = $1',
+      [req.familyCode]
+    );
+
+    const { rows } = await pool.query(
+      `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default)
+       VALUES ($1, $2, $3, $4, false) RETURNING *`,
+      [req.familyCode, trimmedName, icon || '⭐', maxOrder[0].next_order]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(422).json({ error: 'A category with this name already exists' });
+    }
+    console.error('Create category error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update category
+router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
+  try {
+    const { name, icon } = req.body;
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    if (name !== undefined) {
+      const trimmedName = String(name).trim().slice(0, 100);
+      if (!trimmedName) return res.status(422).json({ error: 'Category name cannot be empty' });
+      updates.push(`name = $${idx++}`);
+      values.push(trimmedName);
+    }
+    if (icon !== undefined) {
+      updates.push(`icon = $${idx++}`);
+      values.push(icon);
+    }
+    if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+
+    updates.push(`updated_date = NOW()`);
+    values.push(req.params.id, req.familyCode);
+
+    const { rows } = await pool.query(
+      `UPDATE behavior_categories SET ${updates.join(', ')} WHERE id = $${idx++} AND family_code = $${idx} RETURNING *`,
+      values
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Category not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(422).json({ error: 'A category with this name already exists' });
+    }
+    console.error('Update category error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete category (only non-default)
+router.delete('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
+  try {
+    // Check if category is default
+    const { rows: catRows } = await pool.query(
+      'SELECT is_default, name FROM behavior_categories WHERE id = $1 AND family_code = $2',
+      [req.params.id, req.familyCode]
+    );
+    if (catRows.length === 0) return res.status(404).json({ error: 'Category not found' });
+    if (catRows[0].is_default) {
+      return res.status(400).json({ error: 'Default categories cannot be deleted' });
+    }
+
+    // Check if category has associated point events
+    const { rows: eventCount } = await pool.query(
+      'SELECT COUNT(*)::int as count FROM point_events WHERE family_code = $1 AND category = $2',
+      [req.familyCode, catRows[0].name]
+    );
+    if (eventCount[0].count > 0) {
+      return res.status(400).json({
+        error: `This category has ${eventCount[0].count} associated events. Reassign them first.`,
+        has_events: true,
+        event_count: eventCount[0].count,
+      });
+    }
+
+    await pool.query(
+      'DELETE FROM behavior_categories WHERE id = $1 AND family_code = $2',
+      [req.params.id, req.familyCode]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete category error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Batch reorder categories
+router.post('/api/behavior-categories/reorder', authMiddleware, async (req, res) => {
+  try {
+    const { order } = req.body; // Array of { id, sort_order }
+    if (!Array.isArray(order)) return res.status(400).json({ error: 'order must be an array' });
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      for (const item of order) {
+        await client.query(
+          'UPDATE behavior_categories SET sort_order = $1 WHERE id = $2 AND family_code = $3',
+          [item.sort_order, item.id, req.familyCode]
+        );
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    const { rows } = await pool.query(
+      'SELECT * FROM behavior_categories WHERE family_code = $1 ORDER BY sort_order ASC',
+      [req.familyCode]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Reorder categories error:', err);
     res.status(500).json({ error: err.message });
   }
 });
