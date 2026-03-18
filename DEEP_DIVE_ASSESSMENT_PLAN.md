@@ -932,12 +932,12 @@ Every implementation item above must pass these regression checks before merge. 
 
 ### Active priorities
 
-1. Home framing card + Percy naming consistency + terminology constants
-2. Reward progress state copy cleanup
-3. Accessibility baseline (WCAG 2.1 AA) + axe-core in CI
-4. Replace child `points_spent` with motivation metrics
-5. Customizable behavior categories (parent-managed)
-6. Activity feed + calendar readability improvements
+1. ~~Home framing card + Percy naming consistency + terminology constants~~ — **IMPL-1 COMPLETE** (`837eed7`)
+2. ~~Reward progress state copy cleanup~~ — **IMPL-2 COMPLETE** (`be9e17d`)
+3. ~~Accessibility baseline (WCAG 2.1 AA) + axe-core in CI~~ — **IMPL-3 COMPLETE** (`5d6f6db`)
+4. ~~Replace child `points_spent` with motivation metrics~~ — **IMPL-4 COMPLETE** (`ad32883`)
+5. ~~Customizable behavior categories (parent-managed)~~ — **IMPL-5 COMPLETE** (`87fcc5f`)
+6. ~~Activity feed + calendar readability improvements~~ — **IMPL-6 COMPLETE** (`afdb592`)
 
 ### Parked (pending clarification)
 
