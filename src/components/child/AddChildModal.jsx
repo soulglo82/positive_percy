@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { UserPlus, Upload, X } from "lucide-react";
 import { UploadFile } from "@/api/integrations";
 import { toast } from "sonner";
+import { PERCY } from "@/constants/terminology";
 
 export default function AddChildModal({ isOpen, onClose, onSubmit }) {
   const [name, setName] = useState("");
@@ -168,7 +169,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
 
           <div>
             <Label className="text-sm font-medium text-slate-700 mb-2 block">
-              Weekly Points Target
+              Weekly {PERCY.POINTS_COMPACT} Target
             </Label>
             <Input
               type="number"

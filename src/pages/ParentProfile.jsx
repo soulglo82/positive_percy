@@ -25,10 +25,10 @@ import {
 const EMOJI_OPTIONS = ['⭐', '📚', '🧹', '🤝', '💪', '🎨', '🏃', '🎵', '🧠', '💤', '🦷', '🍎'];
 
 const DEFAULT_QUICK_ACTIONS = [
-  { id: 'default-1', label: "Kindness", points: 5, icon: "⭐" },
-  { id: 'default-2', label: "Homework", points: 10, icon: "📚" },
-  { id: 'default-3', label: "Chores", points: 5, icon: "🧹" },
-  { id: 'default-4', label: "Manners", points: 5, icon: "🤝" },
+  { id: 'default-1', label: "Helpfulness", points: 5, icon: "🤝" },
+  { id: 'default-2', label: "Learning", points: 10, icon: "📚" },
+  { id: 'default-3', label: "Responsibility", points: 5, icon: "✅" },
+  { id: 'default-4', label: "Kindness", points: 5, icon: "💛" },
 ];
 
 export default function ParentProfile() {

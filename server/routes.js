@@ -698,12 +698,16 @@ router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
 // Delete category (only non-default)
 router.delete('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
   try {
-    // Check if category is default
-    const { rows: catRows } = await pool.query(
-      'SELECT is_default, name FROM behavior_categories WHERE id = $1 AND family_code = $2',
-      [req.params.id, req.familyCode]
+    // Check if category exists at all, then verify ownership
+    const { rows: allRows } = await pool.query(
+      'SELECT is_default, name, family_code FROM behavior_categories WHERE id = $1',
+      [req.params.id]
     );
-    if (catRows.length === 0) return res.status(404).json({ error: 'Category not found' });
+    if (allRows.length === 0) return res.status(404).json({ error: 'Category not found' });
+    if (allRows[0].family_code !== req.familyCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const catRows = allRows;
     if (catRows[0].is_default) {
       return res.status(400).json({ error: 'Default categories cannot be deleted' });
     }
@@ -780,19 +784,19 @@ router.get('/api/children/:id/motivation', authMiddleware, async (req, res) => {
     );
     if (childRows.length === 0) return res.status(404).json({ error: 'Child not found' });
 
-    // Rewards earned count
+    // Rewards earned count (scoped to family)
     const { rows: redemptionCount } = await pool.query(
-      "SELECT COUNT(*)::int as count FROM redemptions WHERE child_id = $1 AND status IN ('Completed', 'Approved')",
-      [childId]
+      "SELECT COUNT(*)::int as count FROM redemptions WHERE child_id = $1 AND family_code = $2 AND status IN ('Completed', 'Approved')",
+      [childId, req.familyCode]
     );
 
-    // Best streak: consecutive days with at least one positive point event
+    // Best streak: consecutive days with at least one positive point event (scoped to family)
     const { rows: eventDays } = await pool.query(
       `SELECT DISTINCT DATE(created_date) as day
        FROM point_events
-       WHERE child_id = $1 AND points > 0
+       WHERE child_id = $1 AND family_code = $2 AND points > 0
        ORDER BY day DESC`,
-      [childId]
+      [childId, req.familyCode]
     );
 
     let bestStreak = 0;
@@ -822,13 +826,13 @@ router.get('/api/children/:id/motivation', authMiddleware, async (req, res) => {
       [req.familyCode, childRows[0].total_points]
     );
 
-    // Average daily earning rate over last 7 days
+    // Average daily earning rate over last 7 days (scoped to family)
     const { rows: avgRate } = await pool.query(
       `SELECT COALESCE(SUM(points), 0)::int as total
        FROM point_events
-       WHERE child_id = $1 AND points > 0
+       WHERE child_id = $1 AND family_code = $2 AND points > 0
          AND created_date >= NOW() - INTERVAL '7 days'`,
-      [childId]
+      [childId, req.familyCode]
     );
 
     let nextUnlock = null;

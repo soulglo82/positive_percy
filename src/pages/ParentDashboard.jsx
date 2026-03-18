@@ -24,10 +24,10 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
 const DEFAULT_QUICK_ACTIONS = [
-  { id: 'default-1', label: "Kindness", points: 5, icon: "⭐", category: "Kindness" },
-  { id: 'default-2', label: "Homework", points: 10, icon: "📚", category: "Homework" },
-  { id: 'default-3', label: "Chores", points: 5, icon: "🧹", category: "Chores" },
-  { id: 'default-4', label: "Manners", points: 5, icon: "🤝", category: "Good Manners" },
+  { id: 'default-1', label: "Helpfulness", points: 5, icon: "🤝", category: "Helpfulness" },
+  { id: 'default-2', label: "Learning", points: 10, icon: "📚", category: "Learning" },
+  { id: 'default-3', label: "Responsibility", points: 5, icon: "✅", category: "Responsibility" },
+  { id: 'default-4', label: "Kindness", points: 5, icon: "💛", category: "Kindness" },
 ];
 
 export default function ParentDashboard() {
