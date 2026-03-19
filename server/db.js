@@ -149,6 +149,10 @@ export async function initDb() {
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS points_spent INTEGER DEFAULT 0",
       // Reward stack: queued rewards awaiting parent confirmation
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS reward_stack JSONB DEFAULT '[]'",
+      // FIX-1: Merge quick actions into behavior categories
+      "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 5",
+      "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS is_quick_action BOOLEAN DEFAULT false",
+      "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS assigned_children TEXT[] DEFAULT '{}'",
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});

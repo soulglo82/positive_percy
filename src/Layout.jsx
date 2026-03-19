@@ -43,20 +43,23 @@ export default function Layout({ children, currentPageName }) {
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-14">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Link
                 to={createPageUrl('ParentDashboard')}
-                className="flex items-center shrink-0"
+                className="flex items-center gap-2 shrink-0"
               >
                 <img
                   src="/logo.png"
                   alt="Positive Percy"
-                  className="h-9"
+                  className="h-10 min-w-[120px] w-auto object-contain"
                 />
+                <span className="text-base font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent whitespace-nowrap">
+                  Positive Percy
+                </span>
               </Link>
               {pageTitle && (
-                <span className="text-sm font-semibold text-slate-700 hidden sm:block">
-                  {pageTitle}
+                <span className="text-xs font-medium text-slate-400 hidden sm:block">
+                  / {pageTitle}
                 </span>
               )}
             </div>

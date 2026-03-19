@@ -7,7 +7,7 @@
 export const PERCY = {
   // Core nouns
   POINTS: 'Percy Points',
-  POINTS_COMPACT: 'Points',
+  POINTS_COMPACT: 'Percy Points',
   REWARDS: 'Percy Rewards',
   STREAK: 'Percy Streak',
   BADGES: 'Percy Badges',
@@ -20,9 +20,9 @@ export const PERCY = {
   HELPER_TEXT_QUICK_ACTIONS: 'Default behaviours are active. Edit or add your own below.',
 
   // Reward template categories
-  REWARD_CAT_QUICK: 'Quick Wins (5–15 Points)',
-  REWARD_CAT_MEDIUM: 'Medium (20–50 Points)',
-  REWARD_CAT_BIG: 'Big Goals (60+ Points)',
+  REWARD_CAT_QUICK: 'Quick Wins (5–15 Percy Points)',
+  REWARD_CAT_MEDIUM: 'Medium (20–50 Percy Points)',
+  REWARD_CAT_BIG: 'Big Goals (60+ Percy Points)',
 };
 
 /**

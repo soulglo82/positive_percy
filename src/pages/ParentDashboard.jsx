@@ -23,10 +23,10 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
 const DEFAULT_QUICK_ACTIONS = [
-  { id: 'default-1', label: "Helpfulness", points: 5, icon: "🤝", category: "Helpfulness" },
-  { id: 'default-2', label: "Learning", points: 10, icon: "📚", category: "Learning" },
-  { id: 'default-3', label: "Responsibility", points: 5, icon: "✅", category: "Responsibility" },
-  { id: 'default-4', label: "Kindness", points: 5, icon: "💛", category: "Kindness" },
+  { id: 'default-1', label: "Helpfulness", points: 5, icon: "🤝", category: "Helpfulness", assigned_children: [] },
+  { id: 'default-2', label: "Learning", points: 10, icon: "📚", category: "Learning", assigned_children: [] },
+  { id: 'default-3', label: "Responsibility", points: 5, icon: "✅", category: "Responsibility", assigned_children: [] },
+  { id: 'default-4', label: "Kindness", points: 5, icon: "💛", category: "Kindness", assigned_children: [] },
 ];
 
 export default function ParentDashboard() {
@@ -76,12 +76,12 @@ export default function ParentDashboard() {
     enabled: !!user,
   });
 
-  // Fetch quick actions from DB
-  const { data: quickActions } = useQuery({
-    queryKey: ['quickActions'],
+  // Fetch behavior categories (quick actions are now derived from categories)
+  const { data: behaviorCategories } = useQuery({
+    queryKey: ['behaviorCategories'],
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch('/api/quick-actions', {
+      const res = await fetch('/api/behavior-categories', {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (!res.ok) return [];
@@ -90,9 +90,14 @@ export default function ParentDashboard() {
     enabled: !!user,
   });
 
-  // Use DB quick actions if available, otherwise defaults
-  const activeQuickActions = (quickActions && quickActions.length > 0)
-    ? quickActions.map(qa => ({ ...qa, category: qa.label }))
+  // Derive quick actions from categories with is_quick_action=true
+  const categoryQuickActions = (behaviorCategories || [])
+    .filter(c => c.is_quick_action)
+    .map(c => ({ id: c.id, label: c.name, points: c.points || 5, icon: c.icon, category: c.name, assigned_children: c.assigned_children || [] }));
+
+  // Fall back to defaults if no categories have quick action enabled
+  const allQuickActions = categoryQuickActions.length > 0
+    ? categoryQuickActions
     : DEFAULT_QUICK_ACTIONS;
 
   // Fetch recent activity feed
@@ -338,7 +343,9 @@ export default function ParentDashboard() {
                 onAddPoints={handleAddPoints}
                 onEdit={handleEditChild}
                 onQuickAction={handleQuickAction}
-                quickActions={activeQuickActions}
+                quickActions={allQuickActions.filter(qa =>
+                  !qa.assigned_children || qa.assigned_children.length === 0 || qa.assigned_children.includes(child.id)
+                )}
                 rewards={rewards.filter(r =>
                   !r.assigned_child_ids || r.assigned_child_ids.length === 0 || r.assigned_child_ids.includes(child.id)
                 )}

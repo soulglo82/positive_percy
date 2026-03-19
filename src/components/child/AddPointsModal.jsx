@@ -43,12 +43,19 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
     enabled: isOpen,
   });
 
+  // Filter categories by child assignment
+  const filteredCategories = categories.filter(cat => {
+    const assigned = cat.assigned_children || [];
+    if (assigned.length === 0) return true;
+    return child && assigned.includes(child.id);
+  });
+
   // Set default category when categories load
   React.useEffect(() => {
-    if (categories.length > 0 && !category) {
-      setCategory(categories[0].name);
+    if (filteredCategories.length > 0 && !category) {
+      setCategory(filteredCategories[0].name);
     }
-  }, [categories, category]);
+  }, [filteredCategories, category]);
 
   const isNegative = points < 0;
 
@@ -59,7 +66,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
       note,
     });
     setPoints(1);
-    setCategory(categories.length > 0 ? categories[0].name : "");
+    setCategory(filteredCategories.length > 0 ? filteredCategories[0].name : "");
     setNote("");
     onClose();
   };
@@ -143,7 +150,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((cat) => (
+                    {filteredCategories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.name}>
                         {cat.icon} {cat.name}
                       </SelectItem>
