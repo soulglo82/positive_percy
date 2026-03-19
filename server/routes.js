@@ -7,7 +7,13 @@ const router = Router();
 let broadcastFn = () => {};
 export function setBroadcast(fn) { broadcastFn = fn; }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'positive-percy-secret-change-in-prod';
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'positive-percy-secret-change-in-prod') {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET must be set in environment — refusing to start');
+  }
+  console.warn('WARNING: Using insecure default JWT_SECRET — set JWT_SECRET env var before deploying');
+}
+const JWT_SECRET = process.env.JWT_SECRET || 'positive-percy-secret-dev-only';
 const JWT_EXPIRY = '30d';
 
 function signToken(familyCode) {
@@ -84,7 +90,7 @@ function validateCreatePayload(table, data) {
 
 const COLUMN_WHITELIST = {
   children: new Set(['name', 'avatar_url', 'total_points', 'weekly_points',
-    'weekly_target', 'last_reset_date', 'parent_email', 'family_code', 'date_of_birth', 'points_spent', 'reward_stack']),
+    'weekly_target', 'last_reset_date', 'parent_email', 'family_code', 'points_spent', 'reward_stack']),
   point_events: new Set(['child_id', 'points', 'category', 'note',
     'child_name', 'family_code']),
   redemptions: new Set(['child_id', 'child_name', 'reward_id', 'reward_title',
@@ -157,14 +163,39 @@ const TABLE_MAP = {
 // ─── File upload ────────────────────────────────────────────────────────────
 
 // Upload file (accepts base64 data URL in JSON body)
+const ALLOWED_UPLOAD_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_UPLOAD_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
+
 router.post('/api/upload', async (req, res) => {
   try {
     const { data, content_type } = req.body;
     if (!data) return res.status(400).json({ error: 'No data provided' });
 
+    // Validate content type
+    const resolvedType = content_type || 'image/png';
+    if (!ALLOWED_UPLOAD_TYPES.has(resolvedType)) {
+      return res.status(400).json({ error: `Invalid file type: ${resolvedType}. Accepted: jpeg, png, webp` });
+    }
+
+    // Also check data URL prefix if present
+    if (data.startsWith('data:')) {
+      const match = data.match(/^data:([^;]+);/);
+      if (match && !ALLOWED_UPLOAD_TYPES.has(match[1])) {
+        return res.status(400).json({ error: `Invalid file type in data URL: ${match[1]}. Accepted: jpeg, png, webp` });
+      }
+    }
+
+    // Validate size — base64 is ~4/3 of raw, but check raw string length as upper bound
+    const rawSize = data.startsWith('data:')
+      ? Buffer.byteLength(data.replace(/^data:[^;]+;base64,/, ''), 'base64')
+      : Buffer.byteLength(data, 'utf8');
+    if (rawSize > MAX_UPLOAD_SIZE_BYTES) {
+      return res.status(400).json({ error: `File too large (${Math.round(rawSize / 1024)}KB). Maximum: 2MB` });
+    }
+
     const { rows } = await pool.query(
       'INSERT INTO uploads (data, content_type) VALUES ($1, $2) RETURNING id',
-      [data, content_type || 'image/png']
+      [data, resolvedType]
     );
     res.json({ file_url: `/api/uploads/${rows[0].id}` });
   } catch (err) {
@@ -1327,10 +1358,10 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
     data = validateCreatePayload(table, data);
     const values = Object.values(data);
     const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
-    values.push(req.params.id);
+    values.push(req.params.id, req.familyCode);
 
     const { rows } = await pool.query(
-      `UPDATE ${table} SET ${setClause} WHERE id = $${values.length} RETURNING *`,
+      `UPDATE ${table} SET ${setClause} WHERE id = $${values.length - 1} AND family_code = $${values.length} RETURNING *`,
       values
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
@@ -1355,6 +1386,13 @@ router.delete('/api/:entity/:id', authMiddleware, async (req, res) => {
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
+    // Verify ownership before any cascade operations
+    const { rows: ownerCheck } = await pool.query(
+      `SELECT id FROM ${table} WHERE id = $1 AND family_code = $2`,
+      [req.params.id, req.familyCode]
+    );
+    if (ownerCheck.length === 0) return res.status(404).json({ error: 'Not found' });
+
     // Cascade deletes for children and rewards
     if (table === 'children') {
       await pool.query('DELETE FROM point_events WHERE child_id = $1', [req.params.id]);
@@ -1363,7 +1401,7 @@ router.delete('/api/:entity/:id', authMiddleware, async (req, res) => {
       await pool.query("UPDATE redemptions SET status = 'Denied' WHERE reward_id = $1 AND status = 'Pending'", [req.params.id]);
     }
 
-    await pool.query(`DELETE FROM ${table} WHERE id = $1`, [req.params.id]);
+    await pool.query(`DELETE FROM ${table} WHERE id = $1 AND family_code = $2`, [req.params.id, req.familyCode]);
     broadcastFn(req.familyCode, { type: `${req.params.entity}_deleted`, id: req.params.id });
     res.json({ success: true });
   } catch (err) {

@@ -137,8 +137,8 @@ export async function initDb() {
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS dad_phone TEXT",
       // Drop NOT NULL on parent_email - no longer used, replaced by family_code
       "ALTER TABLE children ALTER COLUMN parent_email DROP NOT NULL",
-      // Age / date of birth field (FEAT-007)
-      "ALTER TABLE children ADD COLUMN IF NOT EXISTS date_of_birth TEXT",
+      // COPPA: Drop date_of_birth — children should store first name only
+      "ALTER TABLE children DROP COLUMN IF EXISTS date_of_birth",
       // Streak tracking (FEAT-006)
       "ALTER TABLE families ADD COLUMN IF NOT EXISTS current_streak INTEGER DEFAULT 0",
       "ALTER TABLE families ADD COLUMN IF NOT EXISTS last_active_date TEXT",
