@@ -120,6 +120,47 @@ export async function initDb() {
 
       CREATE INDEX IF NOT EXISTS idx_behavior_categories_family
         ON behavior_categories(family_code);
+
+      -- Phase 1: Account-based authentication
+      CREATE TABLE IF NOT EXISTS accounts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT,
+        email TEXT UNIQUE NOT NULL,
+        auth_method TEXT, -- 'google' | 'magic_link'
+        google_id TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS account_families (
+        account_id UUID REFERENCES accounts(id) ON DELETE CASCADE,
+        family_id UUID REFERENCES families(id) ON DELETE CASCADE,
+        role TEXT DEFAULT 'member', -- 'owner' | 'member'
+        joined_at TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (account_id, family_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        account_id UUID REFERENCES accounts(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS magic_link_tokens (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email TEXT NOT NULL,
+        token_hash TEXT NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        used BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_accounts_google_id ON accounts(google_id);
+      CREATE INDEX IF NOT EXISTS idx_accounts_email ON accounts(email);
+      CREATE INDEX IF NOT EXISTS idx_account_families_account ON account_families(account_id);
+      CREATE INDEX IF NOT EXISTS idx_account_families_family ON account_families(family_id);
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_account ON refresh_tokens(account_id);
     `);
 
     // Add columns to existing tables if they don't exist (handles upgrades)
@@ -149,6 +190,8 @@ export async function initDb() {
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS points_spent INTEGER DEFAULT 0",
       // Reward stack: queued rewards awaiting parent confirmation
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS reward_stack JSONB DEFAULT '[]'",
+      // Phase 1: Onboarding step tracking
+      "ALTER TABLE families ADD COLUMN IF NOT EXISTS onboarding_step INTEGER DEFAULT NULL",
       // FIX-1: Merge quick actions into behavior categories
       "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 5",
       "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS is_quick_action BOOLEAN DEFAULT false",

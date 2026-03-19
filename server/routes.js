@@ -133,7 +133,7 @@ const BLOCKED_CODE_PATTERNS = [
   'PUS', 'RAP', 'SEX', 'SHT', 'SLU', 'TIT', 'WTF', 'XXX',
 ];
 
-function generateFamilyCode() {
+export function generateFamilyCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   for (let attempt = 0; attempt < 20; attempt++) {
     let code = '';

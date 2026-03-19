@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
 import { initDb } from './db.js';
 import routes, { setBroadcast } from './routes.js';
+import authRoutes from './auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -13,7 +14,10 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
-// API routes
+// Auth routes (new account-based auth)
+app.use(authRoutes);
+
+// API routes (legacy family-code auth + all entity CRUD)
 app.use(routes);
 
 // Serve the built React frontend

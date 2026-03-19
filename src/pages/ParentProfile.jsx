@@ -5,7 +5,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, Save, Copy, Check, Share2, Lightbulb, UserPlus } from "lucide-react";
+import { Settings, Save, Copy, Check, Share2, Lightbulb, UserPlus, Download, Trash2, Pencil } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatPoints } from "@/constants/terminology";
 import SectionHeader from "../components/SectionHeader";
@@ -13,10 +23,9 @@ import OnboardingTips from "../components/OnboardingTips";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import BehaviorCategoryManager from "../components/settings/BehaviorCategoryManager";
-import { Pencil } from "lucide-react";
 
 export default function ParentProfile() {
-  const { user, familyCode, updateUser } = useAuth();
+  const { user, account, familyCode, updateUser, deleteAccount, exportData } = useAuth();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -25,6 +34,7 @@ export default function ParentProfile() {
   const [showAddChild, setShowAddChild] = useState(false);
   const [showEditChild, setShowEditChild] = useState(false);
   const [selectedChild, setSelectedChild] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
@@ -175,6 +185,41 @@ export default function ParentProfile() {
           </>
         )}
 
+        {/* Account & Data Management */}
+        <SectionHeader icon="🔒">Account & Data</SectionHeader>
+        <Card>
+          <CardContent className="space-y-3 pt-4">
+            {account && (
+              <p className="text-sm text-slate-500">
+                Signed in as <span className="font-medium text-slate-700">{account.email}</span>
+              </p>
+            )}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                try {
+                  await exportData();
+                  toast.success('Data exported successfully');
+                } catch {
+                  toast.error('Export failed');
+                }
+              }}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download My Data
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Account
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Parenting Tips - bottom link */}
         <button
           onClick={() => setShowTips(true)}
@@ -224,6 +269,34 @@ export default function ParentProfile() {
           }}
         />
       )}
+
+      {/* Delete Account Confirmation */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your account and ALL family data including children, points, rewards, and activity history. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                try {
+                  await deleteAccount();
+                  toast.success('Account deleted');
+                } catch (err) {
+                  toast.error(err.message || 'Failed to delete account');
+                }
+              }}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Yes, delete everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
