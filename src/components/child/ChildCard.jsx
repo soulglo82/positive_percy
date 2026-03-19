@@ -1,25 +1,60 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
+import confetti from "canvas-confetti";
+import { useQueryClient } from "@tanstack/react-query";
 import { PERCY, formatPoints, formatPointsBadge } from "@/constants/terminology";
+import { getToken } from "@/lib/AuthContext";
+import RewardStackSummary from "../rewards/RewardStackSummary";
 
 export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, quickActions = [], rewards = [] }) {
-  // Find next reward the child is working toward
-  const nextReward = rewards
-    .filter(r => r.cost_points > child.total_points)
-    .sort((a, b) => a.cost_points - b.cost_points)[0];
+  const [isConfirming, setIsConfirming] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Check if all rewards are unlocked
-  const allUnlocked = rewards.length > 0 && rewards.every(r => child.total_points >= r.cost_points);
+  const stack = child.reward_stack || [];
+  const stackTotal = stack.reduce((sum, item) => sum + item.cost, 0);
 
-  // Display reward: next in progress, or null if all unlocked
-  const displayReward = nextReward || null;
+  // How many rewards can this child take?
+  const affordableCount = rewards.filter(r => child.total_points >= r.cost_points).length;
 
-  const progress = displayReward
-    ? Math.min((child.total_points / displayReward.cost_points) * 100, 100)
-    : 0;
+  const handleConfirmRewards = async () => {
+    setIsConfirming(true);
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/children/${child.id}/stack/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to confirm rewards');
+        setIsConfirming(false);
+        return;
+      }
+
+      const result = await res.json();
+      queryClient.invalidateQueries(['children']);
+      queryClient.invalidateQueries(['recentActivity']);
+      queryClient.invalidateQueries(['activityFeed']);
+      toast.success(`Confirmed ${result.confirmed_count} reward${result.confirmed_count > 1 ? 's' : ''} for ${child.name}!`);
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
+      });
+    } catch {
+      toast.error('Failed to confirm rewards');
+    }
+    setIsConfirming(false);
+  };
 
   return (
     <motion.div
@@ -56,45 +91,17 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
               </div>
               <div>
                 <h3 className="text-xl font-bold text-slate-800">{child.name}</h3>
+                <p className="text-sm text-slate-500">
+                  {affordableCount > 0
+                    ? `Can take ${affordableCount} reward${affordableCount > 1 ? 's' : ''}`
+                    : 'Earning toward rewards'}
+                </p>
               </div>
             </div>
             <div className="text-right">
               <div className="text-3xl font-bold text-purple-600">{child.total_points}</div>
               <div className="text-xs text-slate-500">{PERCY.POINTS_COMPACT}</div>
             </div>
-          </div>
-
-          {/* Reward Progress */}
-          <div className="mb-3">
-            {allUnlocked ? (
-              <div className="text-xs font-medium text-green-600 bg-green-50 rounded-lg px-3 py-2 text-center">
-                ✅ All current rewards unlocked!
-              </div>
-            ) : displayReward ? (
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-slate-600">
-                    {displayReward.emoji || '🎁'} {displayReward.title} — {child.total_points} / {displayReward.cost_points} {PERCY.POINTS_COMPACT}
-                  </span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden"
-                  role="progressbar"
-                  aria-valuenow={child.total_points}
-                  aria-valuemin={0}
-                  aria-valuemax={displayReward.cost_points}
-                  aria-label={`Progress toward ${displayReward.title}`}
-                >
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-            ) : (
-              rewards.length === 0 && (
-                <p className="text-xs text-slate-400 italic">Add a reward to start earning!</p>
-              )
-            )}
           </div>
 
           {/* Quick Action Buttons */}
@@ -122,6 +129,14 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, q
             <Plus className="w-4 h-4 mr-1" />
             Add
           </Button>
+
+          {/* Reward Stack Summary — only shown when stack is non-empty */}
+          <RewardStackSummary
+            stack={stack}
+            childName={child.name}
+            onConfirm={handleConfirmRewards}
+            isConfirming={isConfirming}
+          />
         </CardContent>
       </Card>
     </motion.div>

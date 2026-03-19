@@ -2,11 +2,13 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Coins, Eye, EyeOff, Pencil } from "lucide-react";
+import { Coins, Eye, EyeOff, Pencil, Plus, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { PERCY, formatPoints } from "@/constants/terminology";
 
-export default function RewardCard({ reward, onRequest, isParentView, onToggleVisibility, onEdit, canAfford, childPoints, assignedChildren = [] }) {
+export default function RewardCard({ reward, onToggleStack, isParentView, onToggleVisibility, onEdit, canAfford, childPoints, assignedChildren = [], isInStack = false }) {
+  const pointsNeeded = reward.cost_points - (childPoints || 0);
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -15,11 +17,11 @@ export default function RewardCard({ reward, onRequest, isParentView, onToggleVi
     >
       <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 ${
         !reward.visible_to_child && isParentView ? 'opacity-60' : ''
-      }`}>
+      } ${isInStack ? 'ring-2 ring-purple-400 bg-purple-50/30' : ''}`}>
         {/* Image/Emoji Header */}
         <div className={`h-32 flex items-center justify-center ${
-          reward.image_url 
-            ? 'bg-cover bg-center' 
+          reward.image_url
+            ? 'bg-cover bg-center'
             : 'bg-gradient-to-br from-amber-300 via-orange-300 to-pink-300'
         }`}
         style={reward.image_url ? { backgroundImage: `url(${reward.image_url})` } : {}}>
@@ -82,52 +84,42 @@ export default function RewardCard({ reward, onRequest, isParentView, onToggleVi
             </div>
           )}
 
-          {/* Progress display (child view only) */}
-          {!isParentView && typeof childPoints === 'number' && (
-            <div className="mb-3">
-              {canAfford ? (
-                <div className="text-xs font-semibold text-green-600 bg-green-50 rounded-lg px-3 py-2 text-center">
-                  Reward unlocked: {reward.title} ✓
-                </div>
-              ) : (
-                <>
-                  <div className="text-xs text-slate-500 mb-1">
-                    {reward.title} — {childPoints} / {reward.cost_points} {PERCY.POINTS_COMPACT}
-                  </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden"
-                    role="progressbar"
-                    aria-valuenow={childPoints}
-                    aria-valuemin={0}
-                    aria-valuemax={reward.cost_points}
-                    aria-label={`Progress toward ${reward.title}`}
-                  >
-                    <div
-                      className="h-full rounded-full transition-all bg-amber-400"
-                      style={{ width: `${Math.min((childPoints / reward.cost_points) * 100, 100)}%` }}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
           <div className="flex items-center justify-between">
             <Badge className="bg-amber-100 text-amber-700 border-0 text-base px-3 py-1">
               <Coins className="w-4 h-4 mr-1" />
               {reward.cost_points}
             </Badge>
-            {!isParentView && onRequest && (
-              <Button
-                size="sm"
-                onClick={() => onRequest(reward)}
-                disabled={!canAfford}
-                className={`min-h-[44px] ${canAfford
-                  ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                  : "bg-slate-300"
-                }`}
-              >
-                Redeem
-              </Button>
+            {!isParentView && onToggleStack && (
+              <>
+                {isInStack ? (
+                  <Button
+                    size="sm"
+                    onClick={() => onToggleStack(reward)}
+                    className="min-h-[44px] bg-purple-100 text-purple-700 hover:bg-red-50 hover:text-red-600 border border-purple-200"
+                    variant="outline"
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    Added
+                  </Button>
+                ) : canAfford ? (
+                  <Button
+                    size="sm"
+                    onClick={() => onToggleStack(reward)}
+                    className="min-h-[44px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add to stack
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    disabled
+                    className="min-h-[44px] bg-slate-300"
+                  >
+                    Need {pointsNeeded} more pts
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </CardContent>
