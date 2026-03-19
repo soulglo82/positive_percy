@@ -3,17 +3,9 @@ import { Child, Reward } from "@/api/entities";
 import { useAuth, getToken } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Trophy, Gift } from "lucide-react";
+import { Gift } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import confetti from "canvas-confetti";
 
 import { PERCY } from "@/constants/terminology";
 import RewardCard from "../components/rewards/RewardCard";
@@ -57,12 +49,10 @@ export default function ChildView() {
   const stackTotal = stack.reduce((sum, item) => sum + item.cost, 0);
   const remainingAfterStack = (selectedChild?.total_points || 0) - stackTotal;
 
-  // Check if a reward is already in the stack
   const isInStack = (rewardId) => stack.some(item => item.rewardId === rewardId);
 
-  // Can the child afford this reward given their remaining balance (after stack)?
   const canAffordWithStack = (reward) => {
-    if (isInStack(reward.id)) return true; // already in stack
+    if (isInStack(reward.id)) return true;
     return remainingAfterStack >= reward.cost_points;
   };
 
@@ -71,7 +61,6 @@ export default function ChildView() {
     const token = getToken();
 
     if (isInStack(reward.id)) {
-      // Remove from stack
       const index = stack.findIndex(item => item.rewardId === reward.id);
       if (index === -1) return;
 
@@ -91,7 +80,6 @@ export default function ChildView() {
         toast.error('Failed to remove from stack');
       }
     } else {
-      // Add to stack
       if (remainingAfterStack < reward.cost_points) {
         toast.error('Not enough points remaining');
         return;
@@ -165,96 +153,85 @@ export default function ChildView() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100">
-      <div className="max-w-6xl mx-auto p-6 space-y-8">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+
+        {/* Avatar Tab Selector — only shown when multiple children */}
         {children.length > 1 && (
-          <div className="flex justify-center">
-            <Select value={selectedChildId} onValueChange={setSelectedChildId}>
-              <SelectTrigger className="w-64 bg-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {children.map((child) => (
-                  <SelectItem key={child.id} value={child.id}>
-                    {child.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex justify-center gap-3">
+            {children.map((child) => (
+              <button
+                key={child.id}
+                onClick={() => setSelectedChildId(child.id)}
+                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
+                  selectedChildId === child.id
+                    ? 'bg-white shadow-lg scale-105 ring-2 ring-purple-400'
+                    : 'bg-white/50 hover:bg-white/80'
+                }`}
+              >
+                {child.avatar_url ? (
+                  <img
+                    src={child.avatar_url}
+                    alt={child.name}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-purple-200"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-lg font-bold border-2 border-purple-200">
+                    {child.name.charAt(0)}
+                  </div>
+                )}
+                <span className={`text-xs font-medium ${
+                  selectedChildId === child.id ? 'text-purple-700' : 'text-slate-500'
+                }`}>
+                  {child.name}
+                </span>
+              </button>
+            ))}
           </div>
         )}
 
         {selectedChild && (
           <>
-            {/* Greeting + Points */}
+            {/* Greeting + Points — compact */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              key={selectedChildId}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.3 }}
+              className="text-center"
             >
-              <Card className="overflow-hidden border-4 border-white shadow-2xl">
-                <div className="h-3 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400" />
-                <CardContent className="p-8 text-center">
-                  <div className="mb-4 flex justify-center">
-                    {selectedChild.avatar_url ? (
-                      <img
-                        src={selectedChild.avatar_url}
-                        alt={selectedChild.name}
-                        className="w-24 h-24 rounded-full object-cover border-6 border-purple-200"
-                      />
-                    ) : (
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-4xl font-bold border-6 border-purple-200">
-                        {selectedChild.name.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-
-                  <h1 className="text-3xl font-bold text-slate-800 mb-1">
-                    Hi {selectedChild.name}! 👋
-                  </h1>
-
-                  <div className="max-w-xs mx-auto mt-4">
-                    <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl p-6 text-white">
-                      <Trophy className="w-8 h-8 mb-2 mx-auto" />
-                      <div className="text-4xl font-bold mb-1">{selectedChild.total_points}</div>
-                      <div className="text-sm opacity-90">{PERCY.POINTS}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <h1 className="text-2xl font-bold text-slate-800">
+                Hi {selectedChild.name}! 👋
+              </h1>
+              <p className="text-lg text-slate-600 mt-1">
+                You have <span className="font-bold text-purple-600 text-2xl">{selectedChild.total_points}</span> {PERCY.POINTS}
+              </p>
             </motion.div>
 
-            {/* Reward Stack */}
-            <div>
-              <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2 mb-4">
-                🛒 Your Reward Stack
-              </h2>
-              <RewardStack
-                stack={stack}
-                totalPoints={selectedChild.total_points}
-                onRemove={handleRemoveFromStack}
-              />
-            </div>
+            {/* Reward Stack — primary interactive element */}
+            <RewardStack
+              stack={stack}
+              totalPoints={selectedChild.total_points}
+              onRemove={handleRemoveFromStack}
+            />
 
-            {/* Reward Grid */}
+            {/* Reward Grid — affordable first, ascending cost */}
             <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
-                  <Gift className="w-8 h-8 text-pink-500" />
-                  Available Treats
-                </h2>
-              </div>
+              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4">
+                <Gift className="w-6 h-6 text-pink-500" />
+                Available Treats
+              </h2>
 
               {rewards.length === 0 ? (
                 <Card>
-                  <CardContent className="py-12 text-center">
-                    <div className="text-6xl mb-4">🎁</div>
+                  <CardContent className="py-8 text-center">
+                    <div className="text-5xl mb-3">🎁</div>
                     <p className="text-slate-600">
                       No rewards available yet. Check back soon!
                     </p>
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[...rewards]
                     .sort((a, b) => {
                       const aAfford = canAffordWithStack(a) ? 0 : 1;
