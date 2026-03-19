@@ -120,8 +120,25 @@ function buildSort(sortField) {
   return `${field} ${desc ? 'DESC' : 'ASC'}`;
 }
 
+// Substrings to reject in generated family codes (case-insensitive check)
+const BLOCKED_CODE_PATTERNS = [
+  'ASS', 'BUT', 'CUM', 'DAM', 'DIK', 'DIC', 'FAG', 'FAT', 'FUC', 'FUK',
+  'GAY', 'GOD', 'HEL', 'JEW', 'KKK', 'NAZ', 'NIG', 'PEN', 'PIZ', 'POO',
+  'PUS', 'RAP', 'SEX', 'SHT', 'SLU', 'TIT', 'WTF', 'XXX',
+];
+
 function generateFamilyCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  for (let attempt = 0; attempt < 20; attempt++) {
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    if (!BLOCKED_CODE_PATTERNS.some(p => code.includes(p))) {
+      return code;
+    }
+  }
+  // Extremely unlikely fallback — 20 attempts all flagged
   let code = '';
   for (let i = 0; i < 6; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));

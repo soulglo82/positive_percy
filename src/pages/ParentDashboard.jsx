@@ -381,15 +381,6 @@ export default function ParentDashboard() {
           </div>
         )}
 
-        {/* Branding Footer */}
-        <div className="flex flex-col items-center gap-2 pt-4 pb-8">
-          <img
-            src="/logo.png"
-            alt="Positive Percy"
-            className="h-28 opacity-60"
-          />
-          <p className="text-sm text-slate-400">{PERCY.TAGLINE}</p>
-        </div>
       </div>
 
       {/* Modals */}
