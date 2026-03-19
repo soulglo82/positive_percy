@@ -18,7 +18,6 @@ import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
-import FamilyGoals from "../components/FamilyGoals";
 import HeroCard from "../components/dashboard/HeroCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
@@ -301,7 +300,6 @@ export default function ParentDashboard() {
         <HeroCard
           children={children}
           streak={streak}
-          rewards={rewards}
           onAddFirstChild={() => setShowAddChild(true)}
         />
 
@@ -383,32 +381,6 @@ export default function ParentDashboard() {
           </div>
         )}
 
-        {/* Family Goals */}
-        {children.length > 0 && <FamilyGoals />}
-
-        {/* Add Child Button */}
-        {children.length > 0 && (
-          <div className="flex justify-center">
-            <Button
-              onClick={() => setShowAddChild(true)}
-              variant="outline"
-              className="border-2 border-dashed border-purple-300 text-purple-600 hover:bg-purple-50 hover:border-purple-400 px-8 py-6"
-            >
-              <UserPlus className="w-5 h-5 mr-2" />
-              Add Child
-            </Button>
-          </div>
-        )}
-
-        {/* Branding Footer */}
-        <div className="flex flex-col items-center gap-2 pt-4 pb-8">
-          <img
-            src="/logo.png"
-            alt="Positive Percy"
-            className="h-28 opacity-60"
-          />
-          <p className="text-sm text-slate-400">{PERCY.TAGLINE}</p>
-        </div>
       </div>
 
       {/* Modals */}

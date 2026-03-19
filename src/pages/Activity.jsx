@@ -12,9 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Activity as ActivityIcon, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, isToday, isYesterday, startOfWeek, isSameWeek, startOfMonth, endOfMonth, eachDayOfInterval, getDay, subMonths, addMonths } from "date-fns";
-import { motion } from "framer-motion";
+import { Activity as ActivityIcon, ChevronDown, ChevronUp } from "lucide-react";
+import { format, isToday, isYesterday, isSameWeek, startOfWeek } from "date-fns";
 import { PERCY, formatPoints } from "@/constants/terminology";
 import SectionHeader from "../components/SectionHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -38,11 +37,26 @@ export default function Activity() {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [feedExpanded, setFeedExpanded] = useState(false);
 
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
     queryFn: () => Child.list(),
+    enabled: !!user,
+  });
+
+  // Weekly summary from existing /api/summary endpoint
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString();
+  const { data: summary } = useQuery({
+    queryKey: ['weeklySummary', weekStart],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch(`/api/summary?week_start=${encodeURIComponent(weekStart)}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
     enabled: !!user,
   });
 
@@ -68,32 +82,6 @@ export default function Activity() {
       setOffset(PAGE_SIZE);
       setHasMore(events.length === PAGE_SIZE);
       return events;
-    },
-    enabled: !!user,
-  });
-
-  // Calendar data: aggregate points per day per child for the selected month
-  const { data: calendarData = [] } = useQuery({
-    queryKey: ['calendarData', calendarMonth.toISOString().slice(0, 7)],
-    queryFn: async () => {
-      const token = getToken();
-      const monthStart = startOfMonth(calendarMonth).toISOString();
-      const monthEnd = endOfMonth(calendarMonth).toISOString();
-      const res = await fetch(`/api/activity-feed?filter=earned&limit=500&offset=0`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!res.ok) return [];
-      const events = await res.json();
-      // Aggregate by date
-      const byDate = {};
-      for (const e of events) {
-        const day = format(new Date(e.created_date), 'yyyy-MM-dd');
-        const monthKey = format(calendarMonth, 'yyyy-MM');
-        if (day.startsWith(monthKey)) {
-          byDate[day] = (byDate[day] || 0) + (e.points > 0 ? e.points : 0);
-        }
-      }
-      return byDate;
     },
     enabled: !!user,
   });
@@ -136,103 +124,149 @@ export default function Activity() {
     groupedEvents.push({ type: 'event', event });
   }
 
+  // Compute weekly summary stats
+  const totalWeeklyPoints = summary?.childStats?.reduce((sum, c) => sum + c.positive_points, 0) || 0;
+  const activeDays = summary?.weekEvents
+    ? new Set(summary.weekEvents.filter(e => e.points > 0).map(e => format(new Date(e.created_date), 'yyyy-MM-dd'))).size
+    : 0;
+  const topCategories = summary?.topCategories?.slice(0, 3) || [];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
             <ActivityIcon className="w-10 h-10 text-blue-600" />
-            Recent Activity
+            Activity
           </h1>
-          <p className="text-slate-600 mt-1">Track all earned and spent {PERCY.POINTS_COMPACT.toLowerCase()}</p>
         </div>
 
-        <SectionHeader icon="🔍">Filter</SectionHeader>
-        <div className="flex gap-2">
-          {[
-            { key: 'all', label: 'All' },
-            { key: 'earned', label: 'Earned' },
-            { key: 'spent', label: 'Spent' },
-          ].map(({ key, label }) => (
-            <Button
-              key={key}
-              variant={activeFilter === key ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleFilterChange(key)}
-              className={activeFilter === key
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                : ''
-              }
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
-
-        {/* Child Filter */}
-        {children.length > 1 && (
-          <div className="max-w-xs">
-            <Select value={selectedChildId} onValueChange={setSelectedChildId}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Children" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Children</SelectItem>
-                {children.map((child) => (
-                  <SelectItem key={child.id} value={child.id}>
-                    {child.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Calendar Heatmap */}
-        <SectionHeader icon="📅">Monthly Overview</SectionHeader>
-        <CalendarHeatmap
-          month={calendarMonth}
-          data={calendarData}
-          onPrevMonth={() => setCalendarMonth(subMonths(calendarMonth, 1))}
-          onNextMonth={() => setCalendarMonth(addMonths(calendarMonth, 1))}
-        />
-
-        <SectionHeader icon="📋">Activity Feed</SectionHeader>
-        <Card>
-          <CardContent className="p-0">
-            {groupedEvents.length === 0 ? (
-              <div className="py-12 text-center text-slate-500">
-                No activity found
+        {/* Weekly Summary — primary view */}
+        <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 via-white to-purple-50">
+          <CardContent className="p-5">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">This Week</h2>
+            <div className="flex flex-wrap gap-4 mb-4">
+              <div className="bg-white rounded-lg border border-slate-200 px-4 py-3 min-w-[120px]">
+                <div className="text-2xl font-bold text-green-600">+{totalWeeklyPoints}</div>
+                <div className="text-xs text-slate-500">{PERCY.POINTS} earned</div>
               </div>
-            ) : (
+              <div className="bg-white rounded-lg border border-slate-200 px-4 py-3 min-w-[120px]">
+                <div className="text-2xl font-bold text-purple-600">{activeDays}</div>
+                <div className="text-xs text-slate-500">active day{activeDays !== 1 ? 's' : ''}</div>
+              </div>
+            </div>
+            {topCategories.length > 0 && (
               <div>
-                {groupedEvents.map((item, i) => {
-                  if (item.type === 'header') {
-                    return (
-                      <div key={`header-${item.label}`} className="px-4 py-2 bg-slate-50 border-b border-slate-100">
-                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                          {item.label}
-                        </span>
-                      </div>
-                    );
-                  }
-                  return <NarrativeItem key={`${item.event.type}-${item.event.id}`} event={item.event} />;
-                })}
+                <h3 className="text-xs font-semibold text-slate-500 mb-2">Top categories</h3>
+                <div className="space-y-1">
+                  {topCategories.map((cat) => (
+                    <div key={cat.category} className="flex items-center justify-between text-sm">
+                      <span className="text-slate-700">{cat.category}</span>
+                      <span className="font-semibold text-slate-600">+{cat.total_points}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
+            {totalWeeklyPoints === 0 && topCategories.length === 0 && (
+              <p className="text-sm text-slate-400">No activity yet this week. Award some points to get started!</p>
+            )}
           </CardContent>
-          {hasMore && (
-            <div className="p-4 border-t flex justify-center">
-              <Button
-                variant="outline"
-                onClick={loadMore}
-                disabled={loadingMore}
-              >
-                {loadingMore ? 'Loading...' : 'Load More'}
-              </Button>
-            </div>
-          )}
         </Card>
+
+        {/* Raw Feed — collapsed by default */}
+        <div>
+          <button
+            onClick={() => setFeedExpanded(!feedExpanded)}
+            className="flex items-center gap-2 w-full text-left mb-3"
+          >
+            <SectionHeader icon="📋">Activity Log</SectionHeader>
+            <span className="text-slate-400 mt-1">
+              {feedExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </span>
+          </button>
+
+          {feedExpanded && (
+            <>
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <div className="flex gap-2">
+                  {[
+                    { key: 'all', label: 'All' },
+                    { key: 'earned', label: 'Earned' },
+                    { key: 'spent', label: 'Spent' },
+                  ].map(({ key, label }) => (
+                    <Button
+                      key={key}
+                      variant={activeFilter === key ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleFilterChange(key)}
+                      className={activeFilter === key
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                        : ''
+                      }
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+
+                {children.length > 1 && (
+                  <div className="max-w-[180px]">
+                    <Select value={selectedChildId} onValueChange={setSelectedChildId}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="All Children" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Children</SelectItem>
+                        {children.map((child) => (
+                          <SelectItem key={child.id} value={child.id}>
+                            {child.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              <Card>
+                <CardContent className="p-0">
+                  {groupedEvents.length === 0 ? (
+                    <div className="py-12 text-center text-slate-500">
+                      No activity found
+                    </div>
+                  ) : (
+                    <div>
+                      {groupedEvents.map((item) => {
+                        if (item.type === 'header') {
+                          return (
+                            <div key={`header-${item.label}`} className="px-4 py-2 bg-slate-50 border-b border-slate-100">
+                              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                {item.label}
+                              </span>
+                            </div>
+                          );
+                        }
+                        return <NarrativeItem key={`${item.event.type}-${item.event.id}`} event={item.event} />;
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+                {hasMore && (
+                  <div className="p-4 border-t flex justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={loadMore}
+                      disabled={loadingMore}
+                    >
+                      {loadingMore ? 'Loading...' : 'Load More'}
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -249,8 +283,15 @@ function NarrativeItem({ event }) {
       ? 'text-orange-600'
       : 'text-slate-500';
 
-  // Narrative line format
-  const action = isEarn ? 'earned' : isSpend ? 'spent' : 'adjusted';
+  const action = isEarn ? 'earned' : isSpend ? 'redeemed' : 'adjusted';
+
+  // Use note as primary label when category is "Other"
+  const displayLabel = event.label === 'Other' && event.note
+    ? event.note
+    : event.label;
+  const displayNote = event.label === 'Other' && event.note
+    ? null
+    : event.note;
 
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-b-0">
@@ -262,13 +303,18 @@ function NarrativeItem({ event }) {
             <p className="text-sm font-semibold text-slate-800 leading-snug break-words">
               {event.child_name} {action}{' '}
               <span className={colorClass}>
-                {formatPoints(Math.abs(event.points), { compact: true, showSign: isEarn })}
+                {isSpend
+                  ? displayLabel
+                  : formatPoints(Math.abs(event.points), { compact: true, showSign: isEarn })}
               </span>
             </p>
-            {(event.label || event.note) && (
+            {!isSpend && displayLabel && (
               <p className="text-xs text-slate-500 mt-0.5 truncate">
-                {event.label}{event.note ? ` — ${event.note}` : ''}
+                {displayLabel}{displayNote ? ` — ${displayNote}` : ''}
               </p>
+            )}
+            {isSpend && displayNote && (
+              <p className="text-xs text-slate-500 mt-0.5 truncate">{displayNote}</p>
             )}
           </div>
           <span className="text-xs text-slate-400 whitespace-nowrap shrink-0 mt-0.5">
@@ -277,94 +323,5 @@ function NarrativeItem({ event }) {
         </div>
       </div>
     </div>
-  );
-}
-
-function CalendarHeatmap({ month, data, onPrevMonth, onNextMonth }) {
-  const monthStart = startOfMonth(month);
-  const monthEnd = endOfMonth(month);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-
-  // Calculate max for color scaling
-  const values = Object.values(data || {}).filter(v => v > 0);
-  const maxPoints = values.length > 0 ? Math.max(...values) : 1;
-
-  // Pad start for alignment (week starts on Monday)
-  const startDayOfWeek = (getDay(monthStart) + 6) % 7; // 0=Mon
-  const paddedDays = Array(startDayOfWeek).fill(null).concat(days);
-
-  const getIntensity = (day) => {
-    if (!day) return 0;
-    const key = format(day, 'yyyy-MM-dd');
-    const val = (data || {})[key] || 0;
-    if (val === 0) return 0;
-    return Math.max(0.2, val / maxPoints);
-  };
-
-  const getColorClass = (intensity) => {
-    if (intensity === 0) return 'bg-slate-100';
-    if (intensity < 0.3) return 'bg-green-200';
-    if (intensity < 0.6) return 'bg-green-400';
-    return 'bg-green-600';
-  };
-
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="sm" onClick={onPrevMonth} aria-label="Previous month">
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <h3 className="text-sm font-semibold text-slate-700">
-            {format(month, 'MMMM yyyy')}
-          </h3>
-          <Button variant="ghost" size="sm" onClick={onNextMonth} aria-label="Next month">
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Day labels */}
-        <div className="grid grid-cols-7 gap-1 mb-1">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-            <div key={d} className="text-xs text-slate-400 text-center font-medium">{d}</div>
-          ))}
-        </div>
-
-        {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-1" role="grid" aria-label={`Activity calendar for ${format(month, 'MMMM yyyy')}`}>
-          {paddedDays.map((day, i) => {
-            if (!day) return <div key={`pad-${i}`} className="aspect-square" />;
-            const intensity = getIntensity(day);
-            const key = format(day, 'yyyy-MM-dd');
-            const pointsForDay = (data || {})[key] || 0;
-            return (
-              <div
-                key={key}
-                className={`aspect-square rounded-sm flex items-center justify-center text-xs ${getColorClass(intensity)} ${
-                  isToday(day) ? 'ring-2 ring-purple-400' : ''
-                }`}
-                role="gridcell"
-                aria-label={`${format(day, 'MMMM d')}: ${pointsForDay} ${PERCY.POINTS_COMPACT.toLowerCase()}`}
-                title={`${format(day, 'MMM d')}: ${pointsForDay} ${PERCY.POINTS_COMPACT.toLowerCase()}`}
-              >
-                <span className={`${intensity > 0.5 ? 'text-white' : 'text-slate-500'} text-[10px]`}>
-                  {format(day, 'd')}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Legend */}
-        <div className="flex items-center justify-end gap-1 mt-3 text-xs text-slate-400">
-          <span>Less</span>
-          <div className="w-3 h-3 rounded-sm bg-slate-100" />
-          <div className="w-3 h-3 rounded-sm bg-green-200" />
-          <div className="w-3 h-3 rounded-sm bg-green-400" />
-          <div className="w-3 h-3 rounded-sm bg-green-600" />
-          <span>More</span>
-        </div>
-      </CardContent>
-    </Card>
   );
 }

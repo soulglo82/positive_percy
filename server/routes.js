@@ -84,7 +84,7 @@ function validateCreatePayload(table, data) {
 
 const COLUMN_WHITELIST = {
   children: new Set(['name', 'avatar_url', 'total_points', 'weekly_points',
-    'weekly_target', 'last_reset_date', 'parent_email', 'family_code', 'date_of_birth', 'points_spent']),
+    'weekly_target', 'last_reset_date', 'parent_email', 'family_code', 'date_of_birth', 'points_spent', 'reward_stack']),
   point_events: new Set(['child_id', 'points', 'category', 'note',
     'child_name', 'family_code']),
   redemptions: new Set(['child_id', 'child_name', 'reward_id', 'reward_title',
@@ -120,8 +120,25 @@ function buildSort(sortField) {
   return `${field} ${desc ? 'DESC' : 'ASC'}`;
 }
 
+// Substrings to reject in generated family codes (case-insensitive check)
+const BLOCKED_CODE_PATTERNS = [
+  'ASS', 'BUT', 'CUM', 'DAM', 'DIK', 'DIC', 'FAG', 'FAT', 'FUC', 'FUK',
+  'GAY', 'GOD', 'HEL', 'JEW', 'KKK', 'NAZ', 'NIG', 'PEN', 'PIZ', 'POO',
+  'PUS', 'RAP', 'SEX', 'SHT', 'SLU', 'TIT', 'WTF', 'XXX',
+];
+
 function generateFamilyCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  for (let attempt = 0; attempt < 20; attempt++) {
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    if (!BLOCKED_CODE_PATTERNS.some(p => code.includes(p))) {
+      return code;
+    }
+  }
+  // Extremely unlikely fallback — 20 attempts all flagged
   let code = '';
   for (let i = 0; i < 6; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -491,6 +508,170 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     console.error('Redeem error:', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── Reward Stack endpoints ──────────────────────────────────────────────────
+
+// Add reward to child's stack
+router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { reward_id, reward_title, reward_cost } = req.body;
+    const childId = req.params.id;
+
+    if (!reward_id || !reward_title || typeof reward_cost !== 'number' || reward_cost < 1) {
+      return res.status(400).json({ error: 'Invalid reward data' });
+    }
+
+    await client.query('BEGIN');
+
+    const { rows: childRows } = await client.query(
+      'SELECT total_points, reward_stack FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
+      [childId, req.familyCode]
+    );
+
+    if (childRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Child not found' });
+    }
+
+    const stack = childRows[0].reward_stack || [];
+    const stackTotal = stack.reduce((sum, item) => sum + item.cost, 0);
+
+    if (stackTotal + reward_cost > childRows[0].total_points) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'Not enough points',
+        stack_total: stackTotal,
+        new_item_cost: reward_cost,
+        balance: childRows[0].total_points,
+      });
+    }
+
+    stack.push({ rewardId: reward_id, name: reward_title, cost: reward_cost });
+
+    await client.query(
+      'UPDATE children SET reward_stack = $1 WHERE id = $2',
+      [JSON.stringify(stack), childId]
+    );
+
+    await client.query('COMMIT');
+
+    broadcastFn(req.familyCode, { type: 'stack_updated', child_id: childId });
+    res.json({ reward_stack: stack });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('Stack add error:', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// Remove reward from child's stack by index
+router.delete('/api/children/:id/stack/:index', authMiddleware, async (req, res) => {
+  try {
+    const childId = req.params.id;
+    const index = parseInt(req.params.index);
+
+    const { rows: childRows } = await pool.query(
+      'SELECT reward_stack FROM children WHERE id = $1 AND family_code = $2',
+      [childId, req.familyCode]
+    );
+
+    if (childRows.length === 0) return res.status(404).json({ error: 'Child not found' });
+
+    const stack = childRows[0].reward_stack || [];
+    if (index < 0 || index >= stack.length) {
+      return res.status(400).json({ error: 'Invalid stack index' });
+    }
+
+    stack.splice(index, 1);
+
+    await pool.query(
+      'UPDATE children SET reward_stack = $1 WHERE id = $2 AND family_code = $3',
+      [JSON.stringify(stack), childId, req.familyCode]
+    );
+
+    broadcastFn(req.familyCode, { type: 'stack_updated', child_id: childId });
+    res.json({ reward_stack: stack });
+  } catch (err) {
+    console.error('Stack remove error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Confirm rewards — parent action: deduct points + clear stack + log redemptions (atomic)
+router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const childId = req.params.id;
+
+    await client.query('BEGIN');
+
+    // Lock child row
+    const { rows: childRows } = await client.query(
+      'SELECT total_points, weekly_points, reward_stack, name FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
+      [childId, req.familyCode]
+    );
+
+    if (childRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Child not found' });
+    }
+
+    const child = childRows[0];
+    const stack = child.reward_stack || [];
+
+    if (stack.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Stack is empty' });
+    }
+
+    const stackTotal = stack.reduce((sum, item) => sum + item.cost, 0);
+
+    if (stackTotal > child.total_points) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Not enough points for stacked rewards' });
+    }
+
+    // 1. Deduct points
+    await client.query(
+      `UPDATE children
+       SET total_points = GREATEST(0, total_points - $1),
+           weekly_points = GREATEST(0, weekly_points - $1),
+           points_spent = COALESCE(points_spent, 0) + $1,
+           reward_stack = '[]'
+       WHERE id = $2`,
+      [stackTotal, childId]
+    );
+
+    // 2. Log each reward as a redemption
+    for (const item of stack) {
+      await client.query(
+        `INSERT INTO redemptions (child_id, child_name, reward_id, reward_title, reward_cost, status, family_code)
+         VALUES ($1, $2, $3, $4, $5, 'Completed', $6)`,
+        [childId, child.name, item.rewardId, item.name, item.cost, req.familyCode]
+      );
+    }
+
+    await client.query('COMMIT');
+
+    // Fetch updated child
+    const { rows: updatedChild } = await pool.query(
+      'SELECT * FROM children WHERE id = $1',
+      [childId]
+    );
+
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
+    res.json({ child: updatedChild[0], confirmed_count: stack.length, points_deducted: stackTotal });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('Stack confirm error:', err);
     res.status(500).json({ error: err.message });
   } finally {
     client.release();

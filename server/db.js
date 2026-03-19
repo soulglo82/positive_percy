@@ -147,6 +147,8 @@ export async function initDb() {
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS badges_earned TEXT[] DEFAULT '{}'",
       // Track points spent on rewards
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS points_spent INTEGER DEFAULT 0",
+      // Reward stack: queued rewards awaiting parent confirmation
+      "ALTER TABLE children ADD COLUMN IF NOT EXISTS reward_stack JSONB DEFAULT '[]'",
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});
