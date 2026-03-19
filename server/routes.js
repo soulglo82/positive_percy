@@ -811,7 +811,7 @@ router.get('/api/behavior-categories', authMiddleware, async (req, res) => {
 // Create new category
 router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
   try {
-    const { name, icon } = req.body;
+    const { name, icon, points, is_quick_action, assigned_children } = req.body;
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(422).json({ error: 'Category name is required' });
     }
@@ -824,9 +824,11 @@ router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
     );
 
     const { rows } = await pool.query(
-      `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default)
-       VALUES ($1, $2, $3, $4, false) RETURNING *`,
-      [req.familyCode, trimmedName, icon || '⭐', maxOrder[0].next_order]
+      `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default, points, is_quick_action, assigned_children)
+       VALUES ($1, $2, $3, $4, false, $5, $6, $7) RETURNING *`,
+      [req.familyCode, trimmedName, icon || '⭐', maxOrder[0].next_order,
+       Math.max(1, Number(points) || 5), Boolean(is_quick_action),
+       Array.isArray(assigned_children) ? assigned_children : []]
     );
     res.json(rows[0]);
   } catch (err) {
@@ -841,7 +843,7 @@ router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
 // Update category
 router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
   try {
-    const { name, icon } = req.body;
+    const { name, icon, points, is_quick_action, assigned_children } = req.body;
     const updates = [];
     const values = [];
     let idx = 1;
@@ -855,6 +857,18 @@ router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
     if (icon !== undefined) {
       updates.push(`icon = $${idx++}`);
       values.push(icon);
+    }
+    if (points !== undefined) {
+      updates.push(`points = $${idx++}`);
+      values.push(Math.max(1, Number(points)));
+    }
+    if (is_quick_action !== undefined) {
+      updates.push(`is_quick_action = $${idx++}`);
+      values.push(Boolean(is_quick_action));
+    }
+    if (assigned_children !== undefined) {
+      updates.push(`assigned_children = $${idx++}`);
+      values.push(Array.isArray(assigned_children) ? assigned_children : []);
     }
     if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
 
