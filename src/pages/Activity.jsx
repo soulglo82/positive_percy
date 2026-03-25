@@ -133,7 +133,7 @@ export default function Activity() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
             <ActivityIcon className="w-10 h-10 text-blue-600" />

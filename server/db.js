@@ -164,12 +164,14 @@ export async function initDb() {
       SELECT f.family_code, d.name, d.icon, d.sort_order, true
       FROM families f
       CROSS JOIN (VALUES
-        ('Helpfulness', '🤝', 0),
-        ('Kindness', '💛', 1),
-        ('Learning', '📚', 2),
-        ('Responsibility', '✅', 3),
-        ('Creativity', '🎨', 4),
-        ('Physical Activity', '🏃', 5)
+        ('Kindness', '💛', 0),
+        ('Helpfulness', '🤝', 1),
+        ('Bravery', '🦁', 2),
+        ('Resilience', '💪', 3),
+        ('Caring', '🫶', 4),
+        ('Chores', '🧹', 5),
+        ('Homework', '📖', 6),
+        ('Adventurous', '🌟', 7)
       ) AS d(name, icon, sort_order)
       WHERE NOT EXISTS (
         SELECT 1 FROM behavior_categories bc WHERE bc.family_code = f.family_code

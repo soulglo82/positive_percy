@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { Home, Gift, Activity, Settings, LogOut, User } from 'lucide-react';
@@ -27,9 +27,10 @@ export default function Layout({ children, currentPageName }) {
   const { logout, user } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   useRealtimeSync(user?.family_code);
+
   const navItems = [
     { name: 'ParentDashboard', label: 'Home', icon: Home },
-    { name: 'ChildView', label: 'Child View', icon: User },
+    { name: 'ChildView', label: 'Child', icon: User },
     { name: 'Activity', label: 'Activity', icon: Activity },
     { name: 'Rewards', label: 'Rewards', icon: Gift },
     { name: 'ParentProfile', label: 'Settings', icon: Settings },
@@ -38,9 +39,9 @@ export default function Layout({ children, currentPageName }) {
   const pageTitle = PAGE_TITLES[currentPageName] || '';
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div className="min-h-screen flex flex-col pb-16 sm:pb-0">
+      {/* Desktop top nav — hidden on mobile */}
+      <nav className="hidden sm:block bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-14">
             <div className="flex items-center gap-2">
@@ -58,7 +59,7 @@ export default function Layout({ children, currentPageName }) {
                 </span>
               </Link>
               {pageTitle && (
-                <span className="text-xs font-medium text-slate-400 hidden sm:block">
+                <span className="text-xs font-medium text-slate-400">
                   / {pageTitle}
                 </span>
               )}
@@ -81,7 +82,7 @@ export default function Layout({ children, currentPageName }) {
                     title={item.label}
                   >
                     <Icon className="w-4 h-4" />
-                    <span className="hidden sm:inline text-sm">{item.label}</span>
+                    <span className="text-sm">{item.label}</span>
                   </Link>
                 );
               })}
@@ -97,10 +98,56 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </nav>
 
+      {/* Mobile top header — visible on mobile only */}
+      <header className="sm:hidden bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="flex items-center justify-between px-4 h-12">
+          <Link to={createPageUrl('ParentDashboard')} className="flex items-center gap-2">
+            <img src="/logo.png" alt="Positive Percy" className="h-8 w-auto object-contain" />
+            <span className="text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+              Positive Percy
+            </span>
+          </Link>
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </header>
+
       {/* Main Content */}
       <main className="flex-1">
         {children}
       </main>
+
+      {/* Mobile bottom tab bar */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom">
+        <div className="flex justify-around items-center h-16 px-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentPageName === item.name;
+
+            return (
+              <Link
+                key={item.name}
+                to={createPageUrl(item.name)}
+                className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1 rounded-lg transition-all min-h-[48px] ${
+                  isActive
+                    ? 'text-purple-600'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : ''}`} />
+                <span className={`text-[10px] font-medium ${isActive ? 'text-purple-600' : ''}`}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* Logout Confirmation Dialog */}
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>

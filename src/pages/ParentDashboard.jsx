@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Child, Point_Event, Reward } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus, Plus, Minus, Gift } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
-import { motion } from "framer-motion";
 
 import { PERCY, formatPoints } from "@/constants/terminology";
 import SectionHeader from "../components/SectionHeader";
@@ -17,16 +16,17 @@ import ChildCard from "../components/child/ChildCard";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
+import SpendRewardsModal from "../components/child/SpendRewardsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
 import HeroCard from "../components/dashboard/HeroCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
 const DEFAULT_QUICK_ACTIONS = [
-  { id: 'default-1', label: "Helpfulness", points: 5, icon: "🤝", category: "Helpfulness", assigned_children: [] },
-  { id: 'default-2', label: "Learning", points: 10, icon: "📚", category: "Learning", assigned_children: [] },
-  { id: 'default-3', label: "Responsibility", points: 5, icon: "✅", category: "Responsibility", assigned_children: [] },
-  { id: 'default-4', label: "Kindness", points: 5, icon: "💛", category: "Kindness", assigned_children: [] },
+  { id: 'default-1', label: "Kindness", points: 5, icon: "💛", category: "Kindness", assigned_children: [] },
+  { id: 'default-2', label: "Helpfulness", points: 5, icon: "🤝", category: "Helpfulness", assigned_children: [] },
+  { id: 'default-3', label: "Bravery", points: 10, icon: "🦁", category: "Bravery", assigned_children: [] },
+  { id: 'default-4', label: "Caring", points: 5, icon: "🫶", category: "Caring", assigned_children: [] },
 ];
 
 export default function ParentDashboard() {
@@ -34,6 +34,7 @@ export default function ParentDashboard() {
   const [showAddChild, setShowAddChild] = useState(false);
   const [showEditChild, setShowEditChild] = useState(false);
   const [showAddPoints, setShowAddPoints] = useState(false);
+  const [showSpendRewards, setShowSpendRewards] = useState(false);
   const [selectedChild, setSelectedChild] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [streak, setStreak] = useState(0);
@@ -149,6 +150,11 @@ export default function ParentDashboard() {
   const handleAddPoints = (child) => {
     setSelectedChild(child);
     setShowAddPoints(true);
+  };
+
+  const handleSpendRewards = (child) => {
+    setSelectedChild(child);
+    setShowSpendRewards(true);
   };
 
   const handleEditChild = (child) => {
@@ -301,7 +307,7 @@ export default function ParentDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         <HeroCard
           children={children}
           streak={streak}
@@ -343,6 +349,7 @@ export default function ParentDashboard() {
                 onAddPoints={handleAddPoints}
                 onEdit={handleEditChild}
                 onQuickAction={handleQuickAction}
+                onSpendRewards={handleSpendRewards}
                 quickActions={allQuickActions.filter(qa =>
                   !qa.assigned_children || qa.assigned_children.length === 0 || qa.assigned_children.includes(child.id)
                 )}
@@ -416,6 +423,18 @@ export default function ParentDashboard() {
         }}
         child={selectedChild}
         onSubmit={handlePointsSubmit}
+      />
+
+      <SpendRewardsModal
+        isOpen={showSpendRewards}
+        onClose={() => {
+          setShowSpendRewards(false);
+          setSelectedChild(null);
+        }}
+        child={selectedChild}
+        rewards={rewards.filter(r =>
+          !selectedChild || !r.assigned_child_ids || r.assigned_child_ids.length === 0 || r.assigned_child_ids.includes(selectedChild.id)
+        )}
       />
 
       <OnboardingTips
