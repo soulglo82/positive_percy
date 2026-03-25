@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
 
-import { PERCY, formatPoints } from "@/constants/terminology";
 import SectionHeader from "../components/SectionHeader";
 import ChildCard from "../components/child/ChildCard";
 import AddChildModal from "../components/child/AddChildModal";
@@ -314,8 +313,6 @@ export default function ParentDashboard() {
           onAddFirstChild={() => setShowAddChild(true)}
         />
 
-        <SectionHeader icon="⭐">Add {PERCY.POINTS_COMPACT}</SectionHeader>
-
         {/* Children Grid */}
         {isLoading ? (
           <LoadingSpinner message="Loading your family..." />
@@ -371,20 +368,32 @@ export default function ParentDashboard() {
                   {recentActivity.map((event) => {
                     const isEarn = event.type === 'earn';
                     const isSpend = event.type === 'spend';
-                    const icon = isEarn ? '⭐' : isSpend ? '🎁' : '⚙️';
                     const colorClass = isEarn ? 'text-green-600' : isSpend ? 'text-orange-600' : 'text-slate-500';
+                    const action = isEarn ? 'earned' : isSpend ? 'spent on' : 'adjusted';
+                    const eventChild = children.find(c => c.id === event.child_id);
 
                     return (
                       <div key={`${event.type}-${event.id}`} className="flex items-center gap-3 px-4 py-3">
-                        <span className="text-lg">{icon}</span>
+                        {/* Child avatar */}
+                        {eventChild?.avatar_url ? (
+                          <img src={eventChild.avatar_url} alt={event.child_name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                            {(event.child_name || '?').charAt(0)}
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium text-slate-700">{event.label}</span>
-                          <span className="text-xs text-slate-400 ml-2">
-                            {event.child_name} · {format(new Date(event.created_date), "MMM d")}
-                          </span>
+                          <p className="text-sm leading-snug">
+                            <span className="font-semibold text-slate-800">{event.child_name}</span>
+                            {' '}<span className="text-slate-500">{action}</span>{' '}
+                            <span className="font-medium text-slate-700">{event.label}</span>
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {format(new Date(event.created_date), "MMM d, h:mm a")}
+                          </p>
                         </div>
-                        <span className={`text-sm font-bold ${colorClass}`}>
-                          {formatPoints(event.points, { compact: true, showSign: true })}
+                        <span className={`text-sm font-bold shrink-0 ${colorClass}`}>
+                          {isEarn ? '+' : isSpend ? '-' : ''}{Math.abs(event.points)}pts
                         </span>
                       </div>
                     );

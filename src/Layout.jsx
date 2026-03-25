@@ -43,23 +43,23 @@ export default function Layout({ children, currentPageName }) {
       {/* Desktop top nav — hidden on mobile */}
       <nav className="hidden sm:block bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex justify-between items-center h-14">
-            <div className="flex items-center gap-2">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-3">
               <Link
                 to={createPageUrl('ParentDashboard')}
-                className="flex items-center gap-2 shrink-0"
+                className="flex items-center gap-2.5 shrink-0"
               >
                 <img
                   src="/logo.png"
                   alt="Positive Percy"
-                  className="h-10 min-w-[120px] w-auto object-contain"
+                  className="h-12 w-auto object-contain"
                 />
-                <span className="text-base font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent whitespace-nowrap">
+                <span className="text-xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent whitespace-nowrap">
                   Positive Percy
                 </span>
               </Link>
               {pageTitle && (
-                <span className="text-xs font-medium text-slate-400">
+                <span className="text-sm font-medium text-slate-400">
                   / {pageTitle}
                 </span>
               )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Child } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Activity as ActivityIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { format, isToday, isYesterday, isSameWeek, startOfWeek } from "date-fns";
-import { PERCY, formatPoints } from "@/constants/terminology";
+import { PERCY } from "@/constants/terminology";
 import SectionHeader from "../components/SectionHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
@@ -276,14 +276,13 @@ function NarrativeItem({ event }) {
   const isEarn = event.type === 'earn';
   const isSpend = event.type === 'spend';
 
-  const icon = isEarn ? '⭐' : isSpend ? '🎁' : '⚙️';
   const colorClass = isEarn
     ? 'text-green-600'
     : isSpend
       ? 'text-orange-600'
       : 'text-slate-500';
 
-  const action = isEarn ? 'earned' : isSpend ? 'redeemed' : 'adjusted';
+  const action = isEarn ? 'earned' : isSpend ? 'spent on' : 'adjusted';
 
   // Use note as primary label when category is "Other"
   const displayLabel = event.label === 'Other' && event.note
@@ -294,34 +293,31 @@ function NarrativeItem({ event }) {
     : event.note;
 
   return (
-    <div className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-b-0">
-      <span className="text-lg mt-0.5 shrink-0">{icon}</span>
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-b-0">
+      {/* Child avatar */}
+      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold shrink-0">
+        {(event.child_name || '?').charAt(0)}
+      </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-800 leading-snug break-words">
-              {event.child_name} {action}{' '}
-              <span className={colorClass}>
-                {isSpend
-                  ? displayLabel
-                  : formatPoints(Math.abs(event.points), { compact: true, showSign: isEarn })}
-              </span>
-            </p>
-            {!isSpend && displayLabel && (
-              <p className="text-xs text-slate-500 mt-0.5 truncate">
-                {displayLabel}{displayNote ? ` — ${displayNote}` : ''}
-              </p>
-            )}
-            {isSpend && displayNote && (
-              <p className="text-xs text-slate-500 mt-0.5 truncate">{displayNote}</p>
-            )}
-          </div>
-          <span className="text-xs text-slate-400 whitespace-nowrap shrink-0 mt-0.5">
-            {format(new Date(event.created_date), "h:mm a")}
+        <p className="text-sm leading-snug">
+          <span className="font-semibold text-slate-800">{event.child_name}</span>
+          {' '}<span className="text-slate-500">{action}</span>{' '}
+          <span className="font-medium text-slate-700">
+            {isSpend ? displayLabel : displayLabel}
           </span>
-        </div>
+        </p>
+        {displayNote && !isSpend && (
+          <p className="text-xs text-slate-400 mt-0.5 truncate">{displayNote}</p>
+        )}
+        <p className="text-xs text-slate-400 mt-0.5">
+          {format(new Date(event.created_date), "MMM d, h:mm a")}
+        </p>
       </div>
+
+      <span className={`text-sm font-bold shrink-0 ${colorClass}`}>
+        {isEarn ? '+' : isSpend ? '-' : ''}{Math.abs(event.points)}pts
+      </span>
     </div>
   );
 }
