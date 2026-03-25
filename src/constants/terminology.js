@@ -45,5 +45,5 @@ export function formatPoints(value, { compact = false, showSign = false } = {}) 
  * @returns {string}
  */
 export function formatPointsBadge(value) {
-  return `+${value} ${PERCY.POINTS_COMPACT}`;
+  return `+${value}pts`;
 }
