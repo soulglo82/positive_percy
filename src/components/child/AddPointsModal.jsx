@@ -9,13 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Sparkles, Loader2 } from "lucide-react";
 import { getToken } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -29,7 +22,6 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
   const [category, setCategory] = useState("");
   const [note, setNote] = useState("");
 
-  // IMPL-5.4: Fetch categories from API instead of hardcoded list
   const { data: categories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ['behaviorCategories'],
     queryFn: async () => {
@@ -133,7 +125,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
             />
           </div>
 
-          {/* Category - only for positive points, API-driven */}
+          {/* Category — tappable boxes */}
           {!isNegative && (
             <div>
               <Label className="text-sm font-medium text-slate-700 mb-2 block">
@@ -145,19 +137,34 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
                   Loading categories...
                 </div>
               ) : (
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredCategories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.name}>
-                        {cat.icon} {cat.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-wrap gap-2">
+                  {filteredCategories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setCategory(cat.name)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all min-h-[38px] ${
+                        category === cat.name
+                          ? 'bg-purple-100 border-purple-400 text-purple-800 ring-2 ring-purple-300'
+                          : 'bg-white border-slate-200 text-slate-700 hover:border-purple-300 hover:bg-purple-50'
+                      }`}
+                    >
+                      <span>{cat.icon}</span>
+                      <span>{cat.name}</span>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setCategory("Other")}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all min-h-[38px] ${
+                      category === "Other"
+                        ? 'bg-purple-100 border-purple-400 text-purple-800 ring-2 ring-purple-300'
+                        : 'bg-white border-slate-200 text-slate-700 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
+                  >
+                    <span>Other</span>
+                  </button>
+                </div>
               )}
             </div>
           )}
