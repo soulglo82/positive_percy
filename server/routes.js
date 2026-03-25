@@ -218,13 +218,15 @@ router.post('/api/family/create', async (req, res) => {
 
       // IMPL-5.5: Seed default behavior categories atomically
       await pool.query(
-        `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default) VALUES
-          ($1, 'Helpfulness', '🤝', 0, true),
-          ($1, 'Kindness', '💛', 1, true),
-          ($1, 'Learning', '📚', 2, true),
-          ($1, 'Responsibility', '✅', 3, true),
-          ($1, 'Creativity', '🎨', 4, true),
-          ($1, 'Physical Activity', '🏃', 5, true)
+        `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default, points, is_quick_action) VALUES
+          ($1, 'Kindness', '💛', 0, true, 5, true),
+          ($1, 'Helpfulness', '🤝', 1, true, 5, true),
+          ($1, 'Bravery', '🦁', 2, true, 10, true),
+          ($1, 'Resilience', '💪', 3, true, 10, false),
+          ($1, 'Caring', '🫶', 4, true, 5, true),
+          ($1, 'Chores', '🧹', 5, true, 5, false),
+          ($1, 'Homework', '📖', 6, true, 5, false),
+          ($1, 'Adventurous', '🌟', 7, true, 10, false)
         ON CONFLICT (family_code, name) DO NOTHING`,
         [family_code]
       );
