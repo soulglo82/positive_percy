@@ -42,7 +42,7 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, o
               <h3 className="text-xl font-bold text-slate-800 truncate">{child.name}</h3>
               <p className="text-sm text-slate-500">
                 {(child.weekly_points || 0) > 0
-                  ? `${child.weekly_points} this week — keep it up!`
+                  ? `${child.weekly_points} Percy Points earned this week - Keep it up!`
                   : 'Ready to earn some points!'}
               </p>
             </div>
