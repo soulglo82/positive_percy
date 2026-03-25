@@ -40,11 +40,13 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, o
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-xl font-bold text-slate-800 truncate">{child.name}</h3>
-              <p className="text-sm text-slate-500">
-                {(child.weekly_points || 0) > 0
-                  ? `${child.weekly_points} Percy Points earned this week - Keep it up!`
-                  : 'Ready to earn some points!'}
-              </p>
+              {(child.weekly_points || 0) > 0 ? (
+                <p className="text-sm text-slate-500">
+                  <span className="font-semibold text-purple-600">{child.weekly_points}</span> Percy Points this week — <span className="text-green-600 font-medium">Keep it up!</span>
+                </p>
+              ) : (
+                <p className="text-sm text-slate-400 italic">Ready to earn some points!</p>
+              )}
             </div>
             <div className="text-right shrink-0">
               <div className="text-3xl font-bold text-purple-600">{child.total_points}</div>
