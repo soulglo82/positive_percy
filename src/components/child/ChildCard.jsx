@@ -41,7 +41,9 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, o
             <div className="flex-1 min-w-0">
               <h3 className="text-xl font-bold text-slate-800 truncate">{child.name}</h3>
               <p className="text-sm text-slate-500">
-                {child.weekly_points || 0} this week
+                {(child.weekly_points || 0) > 0
+                  ? `${child.weekly_points} this week — keep it up!`
+                  : 'Ready to earn some points!'}
               </p>
             </div>
             <div className="text-right shrink-0">
