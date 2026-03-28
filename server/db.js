@@ -179,6 +179,39 @@ export async function initDb() {
       ON CONFLICT (family_code, name) DO NOTHING
     `).catch(() => {});
 
+    // Migrate existing families from old default categories to new ones
+    // Delete old defaults that aren't in the new set, then insert new ones
+    const OLD_DEFAULTS = ['Learning', 'Responsibility', 'Creativity', 'Physical Activity'];
+    const NEW_CATEGORIES = [
+      { name: 'Kindness', icon: '💛', sort_order: 0, points: 5, is_quick_action: true },
+      { name: 'Helpfulness', icon: '🤝', sort_order: 1, points: 5, is_quick_action: true },
+      { name: 'Bravery', icon: '🦁', sort_order: 2, points: 10, is_quick_action: true },
+      { name: 'Resilience', icon: '💪', sort_order: 3, points: 10, is_quick_action: false },
+      { name: 'Caring', icon: '🫶', sort_order: 4, points: 5, is_quick_action: true },
+      { name: 'Chores', icon: '🧹', sort_order: 5, points: 5, is_quick_action: false },
+      { name: 'Homework', icon: '📖', sort_order: 6, points: 5, is_quick_action: false },
+      { name: 'Adventurous', icon: '🌟', sort_order: 7, points: 10, is_quick_action: false },
+    ];
+
+    // Remove old defaults that no longer exist
+    await client.query(
+      `DELETE FROM behavior_categories WHERE is_default = true AND name = ANY($1)`,
+      [OLD_DEFAULTS]
+    ).catch(() => {});
+
+    // Insert new defaults for all families (skip if already exists)
+    for (const cat of NEW_CATEGORIES) {
+      await client.query(
+        `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default, points, is_quick_action)
+         SELECT f.family_code, $1, $2, $3, true, $4, $5
+         FROM families f
+         ON CONFLICT (family_code, name) DO UPDATE
+           SET icon = EXCLUDED.icon, sort_order = EXCLUDED.sort_order,
+               points = EXCLUDED.points, is_quick_action = EXCLUDED.is_quick_action`,
+        [cat.name, cat.icon, cat.sort_order, cat.points, cat.is_quick_action]
+      ).catch(() => {});
+    }
+
     // Backfill points_spent from existing redemptions for children that still show 0
     await client.query(`
       UPDATE children c
