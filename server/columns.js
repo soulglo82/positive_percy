@@ -30,3 +30,24 @@ export function pickAllowedColumns(table, data) {
   }
   return result;
 }
+
+// Columns the DB declares NOT NULL with no default. A create missing any of
+// these would reach the INSERT and fail with a 500, so the create route rejects
+// with a clean 400 first. (family_code is stamped server-side, so it is not
+// listed here.) Updates are partial and skip this check.
+export const REQUIRED_COLUMNS = {
+  children: ['name'],
+  rewards: ['title', 'cost_points'],
+  point_events: ['child_id', 'points', 'category'],
+  redemptions: ['child_id', 'child_name', 'reward_id', 'reward_title', 'reward_cost'],
+  family_goals: ['title', 'target_points'],
+};
+
+// Which required columns are absent/blank in `data` for `table`.
+export function findMissingRequired(table, data) {
+  const required = REQUIRED_COLUMNS[table] || [];
+  return required.filter((c) => {
+    const v = data?.[c];
+    return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
+  });
+}

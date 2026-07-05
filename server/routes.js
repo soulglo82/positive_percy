@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import pool from './db.js';
-import { pickAllowedColumns } from './columns.js';
+import { pickAllowedColumns, findMissingRequired } from './columns.js';
 
 const router = Router();
 
@@ -40,11 +40,21 @@ function sanitizeString(str, maxLength) {
   return str.trim().slice(0, maxLength);
 }
 
-function validateCreatePayload(table, data) {
+function validateCreatePayload(table, data, { isCreate = false } = {}) {
+  if (isCreate && findMissingRequired(table, data).length > 0) {
+    // Generic, user-safe message — do not echo the specific column names.
+    throw Object.assign(new Error('Missing required fields'), { status: 400 });
+  }
   if (table === 'children') {
     if (data.name !== undefined) {
       data.name = sanitizeString(data.name, MAX_NAME_LENGTH);
       if (!data.name) throw Object.assign(new Error('Child name is required'), { status: 400 });
+    }
+    if (data.age !== undefined) {
+      // age is an INTEGER column — normalize whatever the client sent to a
+      // whole positive number, or null. Server is authoritative here.
+      const n = Number(data.age);
+      data.age = Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
     }
   }
   if (table === 'rewards') {
@@ -1243,10 +1253,14 @@ router.post('/api/:entity/filter', authMiddleware, async (req, res) => {
     // out of the query and guarantees only whitelisted identifiers are ever
     // interpolated into SQL below.
     const safeFilter = pickAllowedColumns(table, filter || {});
+    // Tenant scope is enforced server-side, never from the client payload — a
+    // client-supplied family_code is ignored so an empty/forged filter can't
+    // read across families.
+    delete safeFilter.family_code;
 
-    const conditions = [];
-    const values = [];
-    let idx = 1;
+    const conditions = ['family_code = $1'];
+    const values = [req.familyCode];
+    let idx = 2;
 
     for (const [key, value] of Object.entries(safeFilter)) {
       conditions.push(`${key} = $${idx}`);
@@ -1254,7 +1268,7 @@ router.post('/api/:entity/filter', authMiddleware, async (req, res) => {
       idx++;
     }
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const where = `WHERE ${conditions.join(' AND ')}`;
     const orderBy = buildSort(sort);
 
     const { rows } = await pool.query(
@@ -1274,11 +1288,20 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
-    // Drop unexpected keys silently (mass-assignment protection), then run
-    // per-table field validation on what remains.
+    // Drop unexpected keys silently (mass-assignment protection), then enforce
+    // required fields so a missing NOT NULL column is a clean 400, not a DB 500.
     let data = pickAllowedColumns(table, req.body);
-    data = validateCreatePayload(table, data);
+    data = validateCreatePayload(table, data, { isCreate: true });
+    // Tenant scope is authoritative from the JWT — never trust a client-supplied
+    // family_code (it comes from user-editable localStorage). This prevents
+    // cross-tenant writes and orphaned (NULL family_code) rows.
+    data.family_code = req.familyCode;
     const keys = Object.keys(data);
+    // Fallback: nothing valid to insert (only reachable for a table with no
+    // required columns). Reject cleanly instead of building empty SQL.
+    if (keys.length === 0) {
+      return res.status(400).json({ error: 'No valid fields provided' });
+    }
     const values = Object.values(data);
     const placeholders = keys.map((_, i) => `$${i + 1}`);
 
@@ -1304,6 +1327,11 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
     let data = pickAllowedColumns(table, req.body);
     data = validateCreatePayload(table, data);
     const keys = Object.keys(data);
+    // Nothing valid to update after stripping unknown keys — reject cleanly
+    // instead of building `UPDATE t SET  WHERE ...` and 500-ing.
+    if (keys.length === 0) {
+      return res.status(400).json({ error: 'No valid fields provided' });
+    }
     const values = Object.values(data);
     const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
     values.push(req.params.id);

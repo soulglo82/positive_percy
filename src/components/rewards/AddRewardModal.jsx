@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import NumberInput from "@/components/ui/NumberInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -169,10 +170,9 @@ export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [
             <Label className="text-sm font-medium text-slate-700 mb-2 block">
               Point Cost
             </Label>
-            <Input
-              type="number"
+            <NumberInput
               value={costPoints}
-              onChange={(e) => setCostPoints(Number(e.target.value))}
+              onChange={setCostPoints}
               min="1"
               className="text-lg font-semibold"
             />

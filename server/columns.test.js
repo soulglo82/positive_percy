@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pickAllowedColumns, COLUMN_WHITELIST } from './columns.js';
+import { pickAllowedColumns, COLUMN_WHITELIST, findMissingRequired } from './columns.js';
 
 describe('pickAllowedColumns — children', () => {
   it('keeps every intended Add Child column', () => {
@@ -53,5 +53,39 @@ describe('pickAllowedColumns — children', () => {
 describe('COLUMN_WHITELIST', () => {
   it('includes age for children', () => {
     expect(COLUMN_WHITELIST.children.has('age')).toBe(true);
+  });
+});
+
+describe('pickAllowedColumns — table without a whitelist entry', () => {
+  it('returns the data unfiltered (documents the fallback path)', () => {
+    // 'users' is intentionally not in COLUMN_WHITELIST; its route enforces its
+    // own USER_COLUMN_WHITELIST. This asserts the helper's documented fallback.
+    const result = pickAllowedColumns('users', { email: 'a@b.com', isAdmin: true });
+    expect(result).toEqual({ email: 'a@b.com', isAdmin: true });
+  });
+});
+
+describe('findMissingRequired', () => {
+  it('flags a child create missing its required name', () => {
+    expect(findMissingRequired('children', { age: 5 })).toEqual(['name']);
+    expect(findMissingRequired('children', { name: '   ' })).toEqual(['name']); // blank
+    expect(findMissingRequired('children', { name: null })).toEqual(['name']);
+  });
+
+  it('passes a child create that has a name', () => {
+    expect(findMissingRequired('children', { name: 'Emma' })).toEqual([]);
+  });
+
+  it('flags each missing required reward column', () => {
+    expect(findMissingRequired('rewards', {}).sort()).toEqual(['cost_points', 'title']);
+    expect(findMissingRequired('rewards', { title: 'Ice cream', cost_points: 10 })).toEqual([]);
+  });
+
+  it('does not require family_code (it is stamped from the token)', () => {
+    expect(findMissingRequired('children', { name: 'Emma' })).not.toContain('family_code');
+  });
+
+  it('requires nothing for a table with no required columns', () => {
+    expect(findMissingRequired('users', { anything: 1 })).toEqual([]);
   });
 });

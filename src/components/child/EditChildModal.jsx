@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import NumberInput from "@/components/ui/NumberInput";
 import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
@@ -159,10 +160,9 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
             <Label className="text-sm font-medium text-slate-700 mb-2 block">
               Weekly {PERCY.POINTS_COMPACT} Target
             </Label>
-            <Input
-              type="number"
+            <NumberInput
               value={weeklyTarget}
-              onChange={(e) => setWeeklyTarget(Number(e.target.value))}
+              onChange={setWeeklyTarget}
               min="1"
               className="text-lg font-semibold"
             />
@@ -173,11 +173,11 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
               <Label className="text-sm font-medium text-slate-700 mb-2 block">
                 {PERCY.POINTS_COMPACT}
               </Label>
-              <Input
-                type="number"
+              <NumberInput
                 value={totalPoints}
-                onChange={(e) => setTotalPoints(Number(e.target.value))}
+                onChange={setTotalPoints}
                 min="0"
+                placeholder="0"
                 className="text-lg font-semibold"
               />
             </div>
@@ -185,11 +185,11 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
               <Label className="text-sm font-medium text-slate-700 mb-2 block">
                 Weekly {PERCY.POINTS_COMPACT}
               </Label>
-              <Input
-                type="number"
+              <NumberInput
                 value={weeklyPoints}
-                onChange={(e) => setWeeklyPoints(Number(e.target.value))}
+                onChange={setWeeklyPoints}
                 min="0"
+                placeholder="0"
                 className="text-lg font-semibold"
               />
             </div>
