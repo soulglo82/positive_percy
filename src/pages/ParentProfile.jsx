@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Child } from "@/api/entities";
+import { buildChildCreatePayload } from "@/lib/childPayload";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -195,7 +196,7 @@ export default function ParentProfile() {
         isOpen={showAddChild}
         onClose={() => setShowAddChild(false)}
         onSubmit={async (data) => {
-          await Child.create(data);
+          await Child.create(buildChildCreatePayload(data));
           queryClient.invalidateQueries(['children']);
           setShowAddChild(false);
           toast.success("Child added!");

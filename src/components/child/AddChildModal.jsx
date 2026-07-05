@@ -65,7 +65,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
     if (!name.trim() || saving) return;
     setSaving(true);
     try {
-      await onSubmit({ name: name.trim(), weeklyTarget, startingPoints, avatar_url: avatarUrl });
+      await onSubmit({ name: name.trim(), age, weeklyTarget, startingPoints, avatar_url: avatarUrl });
       setName("");
       setAge("");
       setWeeklyTarget(50);

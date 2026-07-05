@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Child, Point_Event, Reward } from "@/api/entities";
+import { buildChildCreatePayload } from "@/lib/childPayload";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -115,14 +116,7 @@ export default function ParentDashboard() {
   });
 
   const createChildMutation = useMutation({
-    mutationFn: (data) => Child.create({
-      name: data.name,
-      avatar_url: data.avatar_url,
-      total_points: data.startingPoints || 0,
-      weekly_points: data.startingPoints || 0,
-      weekly_target: data.weeklyTarget,
-      last_reset_date: new Date().toISOString().split('T')[0],
-    }),
+    mutationFn: (data) => Child.create(buildChildCreatePayload(data)),
     onSuccess: () => {
       queryClient.invalidateQueries(['children']);
       toast.success("Child added successfully!");
