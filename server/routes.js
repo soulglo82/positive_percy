@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import pool from './db.js';
-import { pickAllowedColumns } from './columns.js';
+import { pickAllowedColumns, findMissingRequired } from './columns.js';
 
 const router = Router();
 
@@ -40,7 +40,11 @@ function sanitizeString(str, maxLength) {
   return str.trim().slice(0, maxLength);
 }
 
-function validateCreatePayload(table, data) {
+function validateCreatePayload(table, data, { isCreate = false } = {}) {
+  if (isCreate && findMissingRequired(table, data).length > 0) {
+    // Generic, user-safe message — do not echo the specific column names.
+    throw Object.assign(new Error('Missing required fields'), { status: 400 });
+  }
   if (table === 'children') {
     if (data.name !== undefined) {
       data.name = sanitizeString(data.name, MAX_NAME_LENGTH);
@@ -1284,13 +1288,17 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
-    // Drop unexpected keys silently (mass-assignment protection), then run
-    // per-table field validation on what remains.
+    // Drop unexpected keys silently (mass-assignment protection), then enforce
+    // required fields so a missing NOT NULL column is a clean 400, not a DB 500.
     let data = pickAllowedColumns(table, req.body);
-    data = validateCreatePayload(table, data);
+    data = validateCreatePayload(table, data, { isCreate: true });
+    // Tenant scope is authoritative from the JWT — never trust a client-supplied
+    // family_code (it comes from user-editable localStorage). This prevents
+    // cross-tenant writes and orphaned (NULL family_code) rows.
+    data.family_code = req.familyCode;
     const keys = Object.keys(data);
-    // After stripping unknown keys the payload can be empty; reject cleanly
-    // instead of building `INSERT INTO t () VALUES ()` and 500-ing.
+    // Fallback: nothing valid to insert (only reachable for a table with no
+    // required columns). Reject cleanly instead of building empty SQL.
     if (keys.length === 0) {
       return res.status(400).json({ error: 'No valid fields provided' });
     }
