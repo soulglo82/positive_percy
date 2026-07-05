@@ -160,6 +160,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
               placeholder="e.g., 7"
               min="1"
               max="18"
+              step="1"
               className="text-lg"
             />
             <p className="text-xs text-slate-500 mt-2">

@@ -55,3 +55,12 @@ describe('COLUMN_WHITELIST', () => {
     expect(COLUMN_WHITELIST.children.has('age')).toBe(true);
   });
 });
+
+describe('pickAllowedColumns — table without a whitelist entry', () => {
+  it('returns the data unfiltered (documents the fallback path)', () => {
+    // 'users' is intentionally not in COLUMN_WHITELIST; its route enforces its
+    // own USER_COLUMN_WHITELIST. This asserts the helper's documented fallback.
+    const result = pickAllowedColumns('users', { email: 'a@b.com', isAdmin: true });
+    expect(result).toEqual({ email: 'a@b.com', isAdmin: true });
+  });
+});

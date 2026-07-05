@@ -55,4 +55,10 @@ describe('buildChildCreatePayload', () => {
     expect(buildChildCreatePayload({ name: 'Emma', age: '' }).age).toBeNull();
     expect(buildChildCreatePayload({ name: 'Emma', age: 0 }).age).toBeNull();
   });
+
+  it('truncates a non-integer age to a whole number (INTEGER column)', () => {
+    expect(buildChildCreatePayload({ name: 'Emma', age: 7.5 }).age).toBe(7);
+    expect(buildChildCreatePayload({ name: 'Emma', age: '9.9' }).age).toBe(9);
+    expect(Number.isInteger(buildChildCreatePayload({ name: 'Emma', age: 7.5 }).age)).toBe(true);
+  });
 });

@@ -9,7 +9,10 @@ export function buildChildCreatePayload(form = {}) {
   // startingPoints seeds the child's spendable balance (total_points, shown on
   // the child card) and their weekly progress. Applied once, here, at creation.
   const startingPoints = Number(form.startingPoints) || 0;
+  // children.age is an INTEGER column: truncate to a whole number so values
+  // like 7.5 don't fail the insert or store an unintended coerced value.
   const ageNum = Number(form.age);
+  const age = Number.isFinite(ageNum) && ageNum > 0 ? Math.trunc(ageNum) : null;
 
   return {
     name: typeof form.name === 'string' ? form.name.trim() : form.name,
@@ -17,7 +20,7 @@ export function buildChildCreatePayload(form = {}) {
     weekly_target: Number(form.weeklyTarget) || 50,
     total_points: startingPoints,
     weekly_points: startingPoints,
-    age: Number.isFinite(ageNum) && ageNum > 0 ? ageNum : null,
+    age,
     last_reset_date: new Date().toISOString().split('T')[0],
   };
 }
