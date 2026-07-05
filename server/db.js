@@ -23,6 +23,7 @@ export async function initDb() {
         total_points INTEGER DEFAULT 0,
         weekly_points INTEGER DEFAULT 0,
         weekly_target INTEGER DEFAULT 50,
+        age INTEGER,
         last_reset_date TEXT,
         parent_email TEXT,
         family_code TEXT,
@@ -139,6 +140,8 @@ export async function initDb() {
       "ALTER TABLE children ALTER COLUMN parent_email DROP NOT NULL",
       // Age / date of birth field (FEAT-007)
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS date_of_birth TEXT",
+      // Age captured at Add Child time (nullable; existing rows stay NULL)
+      "ALTER TABLE children ADD COLUMN IF NOT EXISTS age INTEGER",
       // Streak tracking (FEAT-006)
       "ALTER TABLE families ADD COLUMN IF NOT EXISTS current_streak INTEGER DEFAULT 0",
       "ALTER TABLE families ADD COLUMN IF NOT EXISTS last_active_date TEXT",

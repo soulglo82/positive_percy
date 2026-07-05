@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import pool from './db.js';
+import { pickAllowedColumns } from './columns.js';
 
 const router = Router();
 
@@ -82,35 +83,11 @@ function validateCreatePayload(table, data) {
 
 // ─── Generic helpers ────────────────────────────────────────────────────────
 
-const COLUMN_WHITELIST = {
-  children: new Set(['name', 'avatar_url', 'total_points', 'weekly_points',
-    'weekly_target', 'last_reset_date', 'parent_email', 'family_code', 'date_of_birth', 'points_spent', 'reward_stack']),
-  point_events: new Set(['child_id', 'points', 'category', 'note',
-    'child_name', 'family_code']),
-  redemptions: new Set(['child_id', 'child_name', 'reward_id', 'reward_title',
-    'reward_cost', 'status', 'family_code']),
-  rewards: new Set(['title', 'description', 'cost_points', 'image_url',
-    'emoji', 'visible_to_child', 'assigned_child_ids', 'family_code']),
-  family_goals: new Set(['title', 'description', 'emoji', 'target_points',
-    'current_points', 'status', 'family_code']),
-};
-
 const SORT_WHITELIST = new Set(['created_date', 'name', 'title', 'points',
   'total_points', 'weekly_points', 'cost_points', 'status']);
 
 const USER_COLUMN_WHITELIST = new Set(['email', 'full_name', 'family_code',
   'mum_name', 'mum_phone', 'dad_name', 'dad_phone']);
-
-function validateColumns(table, keys) {
-  const allowed = COLUMN_WHITELIST[table];
-  if (!allowed) return;
-  const invalid = keys.filter(k => !allowed.has(k));
-  if (invalid.length > 0) {
-    const err = new Error(`Invalid columns: ${invalid.join(', ')}`);
-    err.status = 400;
-    throw err;
-  }
-}
 
 function buildSort(sortField) {
   if (!sortField) return 'created_date DESC';
@@ -1262,16 +1239,16 @@ router.post('/api/:entity/filter', authMiddleware, async (req, res) => {
 
   try {
     const { filter, sort } = req.body;
-    const filterKeys = Object.keys(filter || {});
-    if (filterKeys.length > 0) {
-      validateColumns(table, filterKeys);
-    }
+    // Silently drop any key that is not a real column: keeps unexpected fields
+    // out of the query and guarantees only whitelisted identifiers are ever
+    // interpolated into SQL below.
+    const safeFilter = pickAllowedColumns(table, filter || {});
 
     const conditions = [];
     const values = [];
     let idx = 1;
 
-    for (const [key, value] of Object.entries(filter || {})) {
+    for (const [key, value] of Object.entries(safeFilter)) {
       conditions.push(`${key} = $${idx}`);
       values.push(value);
       idx++;
@@ -1297,10 +1274,11 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
-    let data = req.body;
-    const keys = Object.keys(data);
-    validateColumns(table, keys);
+    // Drop unexpected keys silently (mass-assignment protection), then run
+    // per-table field validation on what remains.
+    let data = pickAllowedColumns(table, req.body);
     data = validateCreatePayload(table, data);
+    const keys = Object.keys(data);
     const values = Object.values(data);
     const placeholders = keys.map((_, i) => `$${i + 1}`);
 
@@ -1323,10 +1301,9 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
-    let data = req.body;
-    const keys = Object.keys(data);
-    validateColumns(table, keys);
+    let data = pickAllowedColumns(table, req.body);
     data = validateCreatePayload(table, data);
+    const keys = Object.keys(data);
     const values = Object.values(data);
     const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
     values.push(req.params.id);
