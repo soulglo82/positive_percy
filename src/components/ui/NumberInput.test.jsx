@@ -50,4 +50,19 @@ describe('NumberInput', () => {
     fireEvent.change(input, { target: { value: '' } });
     expect(screen.getByTestId('val')).toHaveTextContent('1');
   });
+
+  it('supports typing a negative number character by character', () => {
+    render(<Harness initial={0} />);
+    const input = screen.getByLabelText('n');
+    fireEvent.focus(input);
+    // A lone "-" is a transient, not-yet-valid number: field stays editable and
+    // the parent is not handed NaN.
+    fireEvent.change(input, { target: { value: '-' } });
+    expect(input).toHaveValue(null);
+    expect(screen.getByTestId('val')).toHaveTextContent('0');
+    // Completing it reports the negative value.
+    fireEvent.change(input, { target: { value: '-5' } });
+    expect(input).toHaveValue(-5);
+    expect(screen.getByTestId('val')).toHaveTextContent('-5');
+  });
 });
