@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import NumberInput from "@/components/ui/NumberInput";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -275,10 +276,9 @@ export default function BehaviorCategoryManager() {
                                   if (e.key === 'Escape') cancelEdit();
                                 }}
                               />
-                              <Input
-                                type="number"
+                              <NumberInput
                                 value={editPoints}
-                                onChange={(e) => setEditPoints(Math.max(1, Number(e.target.value)))}
+                                onChange={setEditPoints}
                                 className="w-20 h-9 text-sm"
                                 min="1"
                               />
@@ -450,11 +450,10 @@ function AddCategoryModal({ isOpen, onClose, onSubmit }) {
 
           <div>
             <Label htmlFor="cat_points" className="text-sm font-medium mb-2 block">Percy Points</Label>
-            <Input
+            <NumberInput
               id="cat_points"
-              type="number"
               value={points}
-              onChange={(e) => setPoints(Math.max(1, Number(e.target.value)))}
+              onChange={setPoints}
               min="1"
             />
           </div>

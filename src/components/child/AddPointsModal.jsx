@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import NumberInput from "@/components/ui/NumberInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Loader2 } from "lucide-react";
@@ -117,10 +117,9 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
                 </Button>
               ))}
             </div>
-            <Input
-              type="number"
+            <NumberInput
               value={points}
-              onChange={(e) => setPoints(Number(e.target.value))}
+              onChange={setPoints}
               className="text-lg font-semibold"
             />
           </div>
