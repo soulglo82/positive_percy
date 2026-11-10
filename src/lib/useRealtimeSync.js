@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { getToken } from '@/lib/AuthContext';
 
 export default function useRealtimeSync(familyCode) {
   const queryClient = useQueryClient();
@@ -15,7 +16,8 @@ export default function useRealtimeSync(familyCode) {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'join', family_code: familyCode }));
+        // The server picks the room from the token; family_code is not sent.
+        ws.send(JSON.stringify({ type: 'join', token: getToken() }));
       };
 
       ws.onmessage = (event) => {
@@ -32,7 +34,10 @@ export default function useRealtimeSync(familyCode) {
         } catch {}
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
+        // Rejected for no valid session: retrying with the same token cannot
+        // succeed. The next API call returns 401 and the app signs out.
+        if (event.code === 4401) return;
         // Auto-reconnect after 3 seconds
         reconnectTimer.current = setTimeout(connect, 3000);
       };

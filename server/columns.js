@@ -7,7 +7,7 @@
 export const COLUMN_WHITELIST = {
   children: new Set(['name', 'avatar_url', 'total_points', 'weekly_points',
     'weekly_target', 'last_reset_date', 'parent_email', 'family_code',
-    'date_of_birth', 'age', 'points_spent', 'reward_stack']),
+    'age', 'points_spent', 'reward_stack']),
   point_events: new Set(['child_id', 'points', 'category', 'note',
     'child_name', 'family_code']),
   redemptions: new Set(['child_id', 'child_name', 'reward_id', 'reward_title',
