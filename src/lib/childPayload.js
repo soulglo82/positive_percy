@@ -20,8 +20,6 @@ export function buildChildCreatePayload(form = {}) {
     avatar_url: form.avatar_url || '',
     weekly_target: Number(form.weeklyTarget) || 50,
     total_points: startingPoints,
-    weekly_points: startingPoints,
     age,
-    last_reset_date: new Date().toISOString().split('T')[0],
   };
 }

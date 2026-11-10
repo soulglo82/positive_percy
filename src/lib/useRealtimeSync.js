@@ -6,7 +6,8 @@ import { POINTS_QUERY_KEYS } from '@/lib/points';
 // Server event type -> query keys to refresh.
 export function keysForEvent(type) {
   if (!type) return [];
-  if (type === 'points_updated' || type === 'stack_updated' || type.startsWith('children_')) return POINTS_QUERY_KEYS;
+  // family_updated: the timezone changed, which moves the week's start.
+  if (type === 'points_updated' || type === 'stack_updated' || type === 'family_updated' || type.startsWith('children_')) return POINTS_QUERY_KEYS;
   if (type.startsWith('rewards_')) return [['rewards'], ['children']];
   if (type.startsWith('behavior_categories_') || type.startsWith('quick_actions_')) return [['behaviorCategories']];
   return [];

@@ -48,26 +48,24 @@ export default function ParentDashboard() {
     }
   }, [user]);
 
-  // Server-side weekly reset on mount
+  // The family's timezone: filled in once from this browser if it was never
+  // set. The server ignores it otherwise (A2 W1).
   useEffect(() => {
     if (!user) return;
-    const token = getToken();
-    fetch('/api/children/weekly-reset', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    }).then(res => res.json()).then(result => {
-      if (result.reset && result.children_reset > 0) {
-        queryClient.invalidateQueries({ queryKey: ['children'] });
-        toast.info("Weekly points have been reset!");
-      }
+    let tz;
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return; }
+    if (!tz) return;
+    fetch('/api/family/timezone', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+      body: JSON.stringify({ timezone: tz, auto: true }),
     }).catch(() => {});
   }, [user]);
 
   const { data: children = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['children'],
+    // A dashboard left open rolls into the new week when looked at again.
+    refetchOnWindowFocus: true,
     queryFn: () => Child.list(),
     enabled: !!user,
   });
@@ -204,14 +202,15 @@ export default function ParentDashboard() {
     awarding.current.add(child.id);
     setAwardingIds([...awarding.current]);
     try {
-      const { child: updated, capped, event, streak: streakResult, duplicate } = await awardPoints(child.id, { points, category, note });
+      const { child: updated, capped, event, streak: streakResult, duplicate, week_points_before: weekBefore, week_points_after: weekAfter } = await awardPoints(child.id, { points, category, note });
       if (capped) {
         toast.warning(`${child.name} only had ${Math.abs(event.points)} points, so ${Math.abs(event.points)} were taken away.`);
       } else {
         toast.success(points > 0 ? `+${points} ${category} for ${child.name}` : `${points} points for ${child.name}`);
       }
-      const wasBelow = child.weekly_points < child.weekly_target;
-      const isNowAbove = updated.weekly_points >= updated.weekly_target;
+      // This week from history; a replay carries no figures, so no confetti.
+      const wasBelow = typeof weekBefore === 'number' && weekBefore < updated.weekly_target;
+      const isNowAbove = typeof weekAfter === 'number' && updated.weekly_target > 0 && weekAfter >= updated.weekly_target;
       if (points > 0 && wasBelow && isNowAbove) {
         confetti({
           particleCount: 150,

@@ -15,11 +15,12 @@ describe('buildChildCreatePayload', () => {
       name: 'Emma',
       weekly_target: 35,
       total_points: 20,
-      weekly_points: 20,
       age: 7,
       avatar_url: '/api/uploads/1',
     });
-    expect(out).toHaveProperty('last_reset_date');
+    // "This week" comes from history (A2), so the client never sends it.
+    expect(out).not.toHaveProperty('weekly_points');
+    expect(out).not.toHaveProperty('last_reset_date');
   });
 
   it('emits only keys that are valid children columns', () => {
@@ -34,13 +35,11 @@ describe('buildChildCreatePayload', () => {
   it('startingPoints seeds the balance: 0 -> 0', () => {
     const out = buildChildCreatePayload({ name: 'Emma', startingPoints: 0 });
     expect(out.total_points).toBe(0);
-    expect(out.weekly_points).toBe(0);
   });
 
   it('startingPoints seeds the balance: 20 -> 20', () => {
     const out = buildChildCreatePayload({ name: 'Emma', startingPoints: 20 });
     expect(out.total_points).toBe(20);
-    expect(out.weekly_points).toBe(20);
   });
 
   it('falls back to defaults when optionals are omitted (name only)', () => {

@@ -183,6 +183,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
               value={weeklyTarget}
               onChange={setWeeklyTarget}
               min="1"
+              max="10000"
               className="text-lg font-semibold"
             />
             <p className="text-xs text-slate-500 mt-2">

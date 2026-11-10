@@ -14,6 +14,7 @@ import OnboardingTips from "../components/OnboardingTips";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import BehaviorCategoryManager from "../components/settings/BehaviorCategoryManager";
+import FamilyTimezone from "../components/settings/FamilyTimezone";
 import { Pencil } from "lucide-react";
 
 export default function ParentProfile() {
@@ -57,6 +58,9 @@ export default function ParentProfile() {
 
         {/* Behavior Categories (includes Quick Action toggle + per-child assignment) */}
         <BehaviorCategoryManager />
+
+        {/* When the week starts and which day counts for the streak */}
+        <FamilyTimezone />
 
         {/* Children */}
         <SectionHeader icon="👨‍👩‍👧‍👦">Children</SectionHeader>

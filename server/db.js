@@ -1,5 +1,5 @@
 import pg from 'pg';
-import { backfillUploadOwners } from './uploads.js';
+import { runMigrations } from './migrate.js';
 
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
@@ -166,15 +166,16 @@ export async function initDb() {
       // Batch A: one award per request_id per family (retry safety)
       "ALTER TABLE point_events ADD COLUMN IF NOT EXISTS request_id UUID",
       "CREATE UNIQUE INDEX IF NOT EXISTS point_events_family_request ON point_events (family_code, request_id) WHERE request_id IS NOT NULL",
-      // Batch A: category points are whole numbers from 1 to 1000
-      "UPDATE behavior_categories SET points = LEAST(1000, GREATEST(1, points)) WHERE points > 1000 OR points < 1",
+      // (Batch A's category-points clamp ran here; retired in A2 M1. It has
+      // run on every boot since Batch A, and writes are validated since.)
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});
     }
 
     // P-1: uploads carry their family. Not swallowed: a failure stops startup.
-    await backfillUploadOwners(client);
+    // The one-time owner backfill is migration 007.
+    await client.query('ALTER TABLE uploads ADD COLUMN IF NOT EXISTS family_code TEXT');
 
     // IMPL-5: Seed default behavior categories for existing families that don't have any
     await client.query(`
@@ -197,54 +198,14 @@ export async function initDb() {
       ON CONFLICT (family_code, name) DO NOTHING
     `).catch(() => {});
 
-    // Migrate existing families from old default categories to new ones
-    // Delete old defaults that aren't in the new set, then insert new ones
-    const OLD_DEFAULTS = ['Learning', 'Responsibility', 'Creativity', 'Physical Activity'];
-    const NEW_CATEGORIES = [
-      { name: 'Kindness', icon: '💛', sort_order: 0, points: 5, is_quick_action: true },
-      { name: 'Helpfulness', icon: '🤝', sort_order: 1, points: 5, is_quick_action: true },
-      { name: 'Bravery', icon: '🦁', sort_order: 2, points: 10, is_quick_action: true },
-      { name: 'Resilience', icon: '💪', sort_order: 3, points: 10, is_quick_action: false },
-      { name: 'Caring', icon: '🫶', sort_order: 4, points: 5, is_quick_action: true },
-      { name: 'Chores', icon: '🧹', sort_order: 5, points: 5, is_quick_action: false },
-      { name: 'Homework', icon: '📖', sort_order: 6, points: 5, is_quick_action: false },
-      { name: 'Adventurous', icon: '🌟', sort_order: 7, points: 10, is_quick_action: false },
-    ];
+    // A2 M1: boot never changes existing rows. The old-defaults DELETE, the
+    // default-category upsert (which re-enabled 4 quick actions on every boot)
+    // and the points_spent backfill ran on every start until now and are
+    // retired; their effect is already in every existing database. New
+    // families get their categories from /api/family/create.
 
-    // Remove old defaults that no longer exist
-    await client.query(
-      `DELETE FROM behavior_categories WHERE is_default = true AND name = ANY($1)`,
-      [OLD_DEFAULTS]
-    ).catch(() => {});
-
-    // Insert new defaults for all families (skip if already exists)
-    for (const cat of NEW_CATEGORIES) {
-      await client.query(
-        `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default, points, is_quick_action)
-         SELECT f.family_code, $1, $2, $3, true, $4, $5
-         FROM families f
-         ON CONFLICT (family_code, name) DO UPDATE
-           SET icon = EXCLUDED.icon, sort_order = EXCLUDED.sort_order,
-               points = EXCLUDED.points, is_quick_action = EXCLUDED.is_quick_action`,
-        [cat.name, cat.icon, cat.sort_order, cat.points, cat.is_quick_action]
-      ).catch(() => {});
-    }
-
-    // Backfill points_spent from existing redemptions for children that still show 0
-    await client.query(`
-      UPDATE children c
-      SET points_spent = sub.total_spent
-      FROM (
-        SELECT r.child_id, COALESCE(SUM(r.reward_cost), 0) AS total_spent
-        FROM redemptions r
-        JOIN children ch ON ch.id = r.child_id AND ch.family_code = r.family_code
-        WHERE r.status IN ('Completed', 'Approved')
-        GROUP BY r.child_id
-      ) sub
-      WHERE c.id = sub.child_id
-        AND COALESCE(c.points_spent, 0) = 0
-        AND sub.total_spent > 0
-    `).catch(() => {});
+    // One-time changes, each applied once and recorded. Throws on failure.
+    await runMigrations(pool);
 
     console.log('Database tables initialized');
   } finally {

@@ -8,7 +8,7 @@ export const BADGE_DEFINITIONS = [
   { id: 'legend', emoji: '👑', title: 'Legend', description: 'Earned 1000 total points', condition: (child) => child.total_points >= 1000 },
 
   // Weekly goal achievements
-  { id: 'goal_getter', emoji: '🎯', title: 'Goal Getter', description: 'Hit a weekly target', condition: (child) => child.weekly_points >= child.weekly_target },
+  { id: 'goal_getter', emoji: '🎯', title: 'Goal Getter', description: 'Hit a weekly target', condition: (child) => child.weekly_target > 0 && (child.week_points || 0) >= child.weekly_target },
 
   // Redemption milestones
   { id: 'first_reward', emoji: '🎁', title: 'First Treat', description: 'Redeemed your first reward', condition: (_, stats) => (stats?.redemptions || 0) >= 1 },

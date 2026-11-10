@@ -189,6 +189,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
               value={weeklyTarget}
               onChange={setWeeklyTarget}
               min="1"
+              max="10000"
               className="text-lg font-semibold"
             />
           </div>
