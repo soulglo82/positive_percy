@@ -30,6 +30,8 @@ export function createApp() {
         defaultSrc: ["'self'"],
         imgSrc: ["'self'", 'data:', 'blob:'],
         connectSrc: ["'self'"],
+        // Not meaningful in report-only mode and makes browsers log a warning.
+        upgradeInsecureRequests: null,
       },
     },
   }));

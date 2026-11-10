@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Upload, X, Trash2 } from "lucide-react";
+import { Pencil, X, Trash2 } from "lucide-react";
 import { UploadFile } from "@/api/integrations";
 import { toast } from "sonner";
 import { PERCY } from "@/constants/terminology";
@@ -27,6 +27,7 @@ import { PERCY } from "@/constants/terminology";
 export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDelete }) {
   const [name, setName] = useState("");
   const [weeklyTarget, setWeeklyTarget] = useState(50);
+  const [age, setAge] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -37,6 +38,9 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
     if (child) {
       setName(child.name || "");
       setWeeklyTarget(child.weekly_target || 50);
+      // An age stored before the 1 to 17 limit loads as empty, so it can't
+      // block saving an unrelated change.
+      setAge(child.age >= 1 && child.age <= 17 ? String(child.age) : "");
       setAvatarUrl(child.avatar_url || "");
       setAvatarPreview(child.avatar_url || "");
     }
@@ -64,13 +68,17 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
     }
   };
 
+  const ageInvalid = age !== "" && (Number(age) < 1 || Number(age) > 17);
+
   const handleSubmit = async () => {
     if (!name.trim() || saving) return;
+    if (ageInvalid) return;
     setSaving(true);
     try {
       await onSubmit({
         name: name.trim(),
         weekly_target: weeklyTarget,
+        age: age === "" ? null : Math.round(Number(age)),
         avatar_url: avatarUrl
       });
       onClose();
@@ -112,6 +120,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
                       setAvatarUrl("");
                       setAvatarPreview("");
                     }}
+                    aria-label="Remove photo"
                     className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                   >
                     <X className="w-3 h-3" />
@@ -151,6 +160,28 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
           </div>
 
           <div>
+            <Label htmlFor="edit-child-age" className="text-sm font-medium text-slate-700 mb-2 block">
+              Age (optional)
+            </Label>
+            <Input
+              id="edit-child-age"
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max="17"
+              value={age}
+              onChange={(e) => setAge(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+              placeholder="e.g., 7"
+              className="text-lg"
+              aria-invalid={ageInvalid}
+              aria-describedby={ageInvalid ? "edit-child-age-error" : undefined}
+            />
+            {ageInvalid && (
+              <p id="edit-child-age-error" role="alert" className="text-xs text-red-600 mt-1">Age must be between 1 and 17.</p>
+            )}
+          </div>
+
+          <div>
             <Label className="text-sm font-medium text-slate-700 mb-2 block">
               Weekly {PERCY.POINTS_COMPACT} Target
             </Label>
@@ -179,7 +210,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!name.trim() || uploading || saving}
+            disabled={!name.trim() || uploading || saving || ageInvalid}
             className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
           >
             {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Save Changes'}

@@ -12,7 +12,8 @@ export function buildChildCreatePayload(form = {}) {
   // children.age is an INTEGER column: truncate to a whole number so values
   // like 7.5 don't fail the insert or store an unintended coerced value.
   const ageNum = Number(form.age);
-  const age = Number.isFinite(ageNum) && ageNum > 0 ? Math.trunc(ageNum) : null;
+  // 1 to 17, matching the server; anything else is left empty.
+  const age = Number.isFinite(ageNum) && ageNum >= 1 && ageNum <= 17 ? Math.trunc(ageNum) : null;
 
   return {
     name: typeof form.name === 'string' ? form.name.trim() : form.name,

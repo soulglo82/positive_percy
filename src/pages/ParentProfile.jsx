@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Child } from "@/api/entities";
 import { buildChildCreatePayload } from "@/lib/childPayload";
 import { useAuth } from "@/lib/AuthContext";
@@ -85,6 +85,7 @@ export default function ParentProfile() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      aria-label={`Edit ${child.name}`}
                       onClick={() => {
                         setSelectedChild(child);
                         setShowEditChild(true);
@@ -139,6 +140,7 @@ export default function ParentProfile() {
                 <Button
                   variant="outline"
                   size="sm"
+                  aria-label={copied ? 'Family code copied' : 'Copy family code'}
                   onClick={() => {
                     navigator.clipboard.writeText(familyCode);
                     setCopied(true);
@@ -152,7 +154,9 @@ export default function ParentProfile() {
               <Button
                 className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                 onClick={async () => {
-                  const shareText = `Join our family on Positive Percy! Use code: ${familyCode}\n\nhttps://positivepercy.up.railway.app`;
+                  // The code goes after '#', which browsers never send to the server.
+                  const link = `${window.location.origin}/#${familyCode}`;
+                  const shareText = `Join our family on Positive Percy: ${link}`;
                   if (navigator.share) {
                     try {
                       await navigator.share({ title: 'Join our family on Positive Percy', text: shareText });

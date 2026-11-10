@@ -10,7 +10,7 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
     "test": "vitest run",
-    "test:a11y": "vitest run src/test/a11y",
+    "test:a11y": "vitest run src/test/a11y.test.jsx",
     "preview": "vite preview",
     "start": "node server/index.js"
   },

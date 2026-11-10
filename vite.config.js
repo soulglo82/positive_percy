@@ -19,5 +19,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
+    // Server test files each drop and rebuild the test database schema, so
+    // they must not run at the same time.
+    fileParallelism: false,
   },
 });

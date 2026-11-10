@@ -15,6 +15,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -99,6 +109,8 @@ export default function BehaviorCategoryManager() {
       toast.error('Failed to update category');
     }
   };
+
+  const [pendingDelete, setPendingDelete] = useState(null); // category awaiting confirm
 
   const handleDelete = async (id) => {
     try {
@@ -358,7 +370,7 @@ export default function BehaviorCategoryManager() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleDelete(cat.id)}
+                                  onClick={() => setPendingDelete(cat)}
                                   className="h-8 px-2 text-xs text-rose-600 border-rose-200 hover:bg-rose-50"
                                 >
                                   <Trash2 className="w-3 h-3 mr-1" /> Delete
@@ -381,6 +393,28 @@ export default function BehaviorCategoryManager() {
           </Button>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {pendingDelete?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>Points already given stay in history.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const id = pendingDelete?.id;
+                setPendingDelete(null);
+                if (id) handleDelete(id);
+              }}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AddCategoryModal
         isOpen={showAddModal}

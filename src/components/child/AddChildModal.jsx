@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -112,6 +112,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
                       setAvatarUrl("");
                       setAvatarPreview("");
                     }}
+                    aria-label="Remove photo"
                     className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                   >
                     <X className="w-3 h-3" />
@@ -151,22 +152,27 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="add-child-age" className="text-sm font-medium text-slate-700 mb-2 block">
               Age (optional)
             </Label>
             <Input
+              id="add-child-age"
               type="number"
               value={age}
               onChange={(e) => handleAgeChange(e.target.value)}
               placeholder="e.g., 7"
               min="1"
-              max="18"
+              max="17"
               step="1"
               className="text-lg"
             />
-            <p className="text-xs text-slate-500 mt-2">
-              Helps us suggest a good weekly target
-            </p>
+            {age !== "" && (Number(age) < 1 || Number(age) > 17) ? (
+              <p role="alert" className="text-xs text-red-600 mt-2">Age must be between 1 and 17, or leave it blank.</p>
+            ) : (
+              <p className="text-xs text-slate-500 mt-2">
+                Helps us suggest a good weekly target
+              </p>
+            )}
           </div>
 
           <div>
@@ -212,7 +218,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!name.trim() || uploading || saving}
+            disabled={!name.trim() || uploading || saving || (age !== "" && (Number(age) < 1 || Number(age) > 17))}
             className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
           >
             {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Add Child'}

@@ -172,18 +172,23 @@ export default function ParentDashboard() {
   const updateStreak = async () => {
     const token = getToken();
     try {
-      const res = await fetch('/api/family/check-streak', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      const res = await fetch('/api/family/streak', {
+        headers: { 'Authorization': `Bearer ${token}` },
       });
       const data = await res.json();
-      setStreak(data.streak);
-      if (data.updated && [7, 14, 30, 60, 100].includes(data.streak)) {
-        confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 },
-          colors: ['#f59e0b', '#ef4444', '#f97316'] });
-        toast.success(`${data.streak}-day streak! You're on fire!`);
-      }
+      setStreak(data.streak || 0);
     } catch {}
+  };
+
+  // The server records the streak inside the award; show what it returned.
+  const showStreak = (result) => {
+    if (!result) return;
+    setStreak(result.streak);
+    if (result.milestone) {
+      confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 },
+        colors: ['#f59e0b', '#ef4444', '#f97316'] });
+      toast.success(`${result.streak}-day streak! You're on fire!`);
+    }
   };
 
   useEffect(() => {
@@ -199,7 +204,7 @@ export default function ParentDashboard() {
     awarding.current.add(child.id);
     setAwardingIds([...awarding.current]);
     try {
-      const { child: updated, capped, event } = await awardPoints(child.id, { points, category, note });
+      const { child: updated, capped, event, streak: streakResult, duplicate } = await awardPoints(child.id, { points, category, note });
       if (capped) {
         toast.warning(`${child.name} only had ${Math.abs(event.points)} points, so ${Math.abs(event.points)} were taken away.`);
       } else {
@@ -216,7 +221,8 @@ export default function ParentDashboard() {
         });
         toast.success(`${child.name} hit their weekly goal!`);
       }
-      updateStreak();
+      // A replayed award (first reply lost) carries no streak; read it instead.
+      if (duplicate) updateStreak(); else showStreak(streakResult);
       refreshPoints(queryClient);
       if (points > 0) {
         // After the lock is released: a slow badge check must not block taps.
