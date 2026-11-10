@@ -204,7 +204,7 @@ export default function ParentDashboard() {
     awarding.current.add(child.id);
     setAwardingIds([...awarding.current]);
     try {
-      const { child: updated, capped, event, streak: streakResult } = await awardPoints(child.id, { points, category, note });
+      const { child: updated, capped, event, streak: streakResult, duplicate } = await awardPoints(child.id, { points, category, note });
       if (capped) {
         toast.warning(`${child.name} only had ${Math.abs(event.points)} points, so ${Math.abs(event.points)} were taken away.`);
       } else {
@@ -221,7 +221,8 @@ export default function ParentDashboard() {
         });
         toast.success(`${child.name} hit their weekly goal!`);
       }
-      showStreak(streakResult);
+      // A replayed award (first reply lost) carries no streak; read it instead.
+      if (duplicate) updateStreak(); else showStreak(streakResult);
       refreshPoints(queryClient);
       if (points > 0) {
         // After the lock is released: a slow badge check must not block taps.

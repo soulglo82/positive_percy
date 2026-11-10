@@ -383,15 +383,18 @@ const STREAK_MILESTONES = [7, 14, 30, 60, 100];
 const utcDay = (offsetDays = 0) => new Date(Date.now() - offsetDays * 86400000).toISOString().split('T')[0];
 
 export async function recordStreak(db, familyCode) {
-  const today = utcDay(0);
-  const yesterday = utcDay(1);
   const { rows } = await db.query(
     'SELECT current_streak, last_active_date, longest_streak FROM families WHERE family_code = $1 FOR UPDATE',
     [familyCode]
   );
   if (rows.length === 0) return { streak: 0, milestone: false };
+  // Dates are worked out after the lock: an award that waited on the lock
+  // across midnight must see the same day as the one that just committed.
+  const today = utcDay(0);
+  const yesterday = utcDay(1);
   const f = rows[0];
-  if (f.last_active_date === today) return { streak: f.current_streak || 0, milestone: false };
+  // Same day, or (clock skew) a later day already stored: never move back.
+  if (f.last_active_date && f.last_active_date >= today) return { streak: f.current_streak || 0, milestone: false };
   const streak = f.last_active_date === yesterday ? (f.current_streak || 0) + 1 : 1;
   await db.query(
     'UPDATE families SET current_streak = $1, last_active_date = $2, longest_streak = GREATEST(COALESCE(longest_streak, 0), $1) WHERE family_code = $3',

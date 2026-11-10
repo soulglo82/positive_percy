@@ -9,12 +9,17 @@ const rid = () => crypto.randomUUID();
 const day = (offset) => new Date(Date.now() - offset * 86400000).toISOString().split('T')[0];
 
 describe.skipIf(!runDb)('batch B: streak and age', () => {
-  let ctx;
-  beforeAll(async () => { ctx = await startApp(); });
+  let ctx, shared;
+  beforeAll(async () => {
+    ctx = await startApp();
+    // One family, reset before each case: family creation is rate limited.
+    shared = await makeFamily(ctx.base, 'Streak family');
+  });
   afterAll(async () => { if (ctx) await stopApp(ctx); });
 
-  const setup = async (name) => {
-    const F = await makeFamily(ctx.base, name);
+  const setup = async () => {
+    const F = shared;
+    await ctx.pool.query('UPDATE families SET current_streak = 0, last_active_date = NULL, longest_streak = 0 WHERE family_code = $1', [F.code]);
     const c = await api(ctx.base, 'POST', '/api/children', { token: F.token, body: { name: 'Kid' } });
     expect(c.status).toBe(200);
     return { F, childId: c.json.id };
@@ -81,6 +86,38 @@ describe.skipIf(!runDb)('batch B: streak and age', () => {
     expect(r.status).toBe(200);
     expect(r.json.streak).toBeNull();
     expect((await family(F.code)).last_active_date).toBe(day(1));
+  });
+
+  it('B7: the longest streak grows with the streak', async () => {
+    const { F, childId } = await setup('Longest');
+    await ctx.pool.query('UPDATE families SET current_streak = 3, last_active_date = $1, longest_streak = 3 WHERE family_code = $2', [day(1), F.code]);
+    await award(F, childId, 1);
+    expect((await family(F.code)).longest_streak).toBe(4);
+  });
+
+  it('B8: a streak last earned yesterday still reads as live before today\'s first award', async () => {
+    const { F } = await setup('Yesterday');
+    await ctx.pool.query('UPDATE families SET current_streak = 6, last_active_date = $1 WHERE family_code = $2', [day(1), F.code]);
+    expect((await api(ctx.base, 'GET', '/api/family/streak', { token: F.token })).json.streak).toBe(6);
+  });
+
+  it('B9: a replayed award records nothing and returns no streak', async () => {
+    const { F, childId } = await setup('Replay');
+    const body = { points: 5, category: 'Kindness', request_id: rid() };
+    await api(ctx.base, 'POST', `/api/children/${childId}/award`, { token: F.token, body });
+    await ctx.pool.query('UPDATE families SET current_streak = 1, last_active_date = $1 WHERE family_code = $2', [day(1), F.code]);
+    const again = await api(ctx.base, 'POST', `/api/children/${childId}/award`, { token: F.token, body });
+    expect(again.json.duplicate).toBe(true);
+    expect(again.json.streak).toBeUndefined();
+    expect((await family(F.code)).last_active_date).toBe(day(1));
+  });
+
+  it('B10: a stored date later than today is never moved back', async () => {
+    const { F, childId } = await setup('Ahead');
+    await ctx.pool.query('UPDATE families SET current_streak = 12, last_active_date = $1, longest_streak = 12 WHERE family_code = $2', [day(-1), F.code]);
+    expect((await award(F, childId, 1)).json.streak.streak).toBe(12);
+    const f = await family(F.code);
+    expect([f.current_streak, f.last_active_date]).toEqual([12, day(-1)]);
   });
 
   it('B6: age is stored only for 1 to 17; anything else is stored as empty', async () => {
