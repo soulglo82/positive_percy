@@ -148,10 +148,50 @@ describe.skipIf(!runDb)('P-1: photo clean-up', () => {
     expect(rows[0].avatar_url).toBe(a);
   });
 
+  it('N3: the photo release is rolled back if anything later in the update fails', async () => {
+    const a = await upload(X);
+    const b = await upload(X);
+    const c = (await child(X, { avatar_url: a })).json;
+    // The name cascade to point_events runs after the release; make it fail.
+    await ctx.pool.query(`CREATE OR REPLACE FUNCTION p1_fail() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'p1 test'; END $$ LANGUAGE plpgsql`);
+    await ctx.pool.query('CREATE TRIGGER p1_fail BEFORE UPDATE ON point_events FOR EACH STATEMENT EXECUTE FUNCTION p1_fail()');
+    try {
+      const r = await put(X, 'children', c.id, { name: 'Changed', avatar_url: b });
+      expect(r.status).not.toBe(200);
+    } finally {
+      await ctx.pool.query('DROP TRIGGER p1_fail ON point_events');
+    }
+    expect(await exists(a)).toBe(true);
+    const { rows } = await ctx.pool.query('SELECT avatar_url, name FROM children WHERE id = $1', [c.id]);
+    expect([rows[0].avatar_url, rows[0].name]).toEqual([a, 'Kid']);
+  });
+
+  it('a variant of an upload URL is refused when it changes', async () => {
+    const url = await upload(X);
+    for (const v of [`${url}?v=1`, `${url}/`, `${url}/x`]) {
+      expect((await child(X, { avatar_url: v })).status, v).toBe(404);
+    }
+    const c = (await child(X, {})).json;
+    expect((await put(X, 'children', c.id, { avatar_url: `${url}?v=1` })).status).toBe(404);
+    // A legacy data: photo still saves.
+    expect((await put(X, 'children', c.id, { avatar_url: 'data:image/png;base64,AAAA' })).status).toBe(200);
+  });
+
+  it('two rows sharing a photo deleted at the same time do not leave it behind', async () => {
+    for (let i = 0; i < 5; i++) {
+      const url = await upload(X);
+      const c = (await child(X, { avatar_url: url })).json;
+      const r = (await reward(X, { image_url: url })).json;
+      const [d1, d2] = await Promise.all([del(X, 'children', c.id), del(X, 'rewards', r.id)]);
+      expect([d1.status, d2.status]).toEqual([200, 200]);
+      expect(await exists(url), `round ${i}`).toBe(false);
+    }
+  });
+
   it('T7: backfill stamps uploads used by exactly one family and leaves shared or family-less ones; twice is the same', async () => {
     const mk = async () => (await ctx.pool.query(
       "INSERT INTO uploads (data, content_type) VALUES ($1, 'image/png') RETURNING id::text AS id", [PNG])).rows[0].id;
-    const solo = await mk(); const shared = await mk(); const orphan = await mk(); const legacyRow = await mk(); const absolute = await mk();
+    const solo = await mk(); const shared = await mk(); const orphan = await mk(); const legacyRow = await mk(); const absolute = await mk(); const mixed = await mk();
     const cx = (await child(X, {})).json; const cy = (await child(Y, {})).json; const cx2 = (await child(X, {})).json;
     const rx = (await reward(X, {})).json;
     await ctx.pool.query('UPDATE children SET avatar_url = $1 WHERE id = $2', [`/api/uploads/${solo}`, cx.id]);
@@ -160,8 +200,12 @@ describe.skipIf(!runDb)('P-1: photo clean-up', () => {
     await ctx.pool.query('UPDATE children SET avatar_url = $1 WHERE id = $2', [`https://h.example/api/uploads/${absolute.toUpperCase()}`, cx2.id]);
     const legacy = (await child(X, {})).json;
     await ctx.pool.query('UPDATE children SET avatar_url = $1, family_code = NULL WHERE id = $2', [`/api/uploads/${legacyRow}`, legacy.id]);
+    // Used by one family-X child and one family-less child: must stay unowned.
+    const mx = (await child(X, {})).json; const ml = (await child(X, {})).json;
+    await ctx.pool.query('UPDATE children SET avatar_url = $1 WHERE id = $2', [`/api/uploads/${mixed}`, mx.id]);
+    await ctx.pool.query('UPDATE children SET avatar_url = $1, family_code = NULL WHERE id = $2', [`/api/uploads/${mixed}`, ml.id]);
     const owners = async () => Object.fromEntries((await ctx.pool.query(
-      'SELECT id::text AS id, family_code FROM uploads WHERE id = ANY($1::uuid[])', [[solo, shared, orphan, legacyRow, absolute]])).rows.map((r) => [r.id, r.family_code]));
+      'SELECT id::text AS id, family_code FROM uploads WHERE id = ANY($1::uuid[])', [[solo, shared, orphan, legacyRow, absolute, mixed]])).rows.map((r) => [r.id, r.family_code]));
     for (let i = 0; i < 2; i++) {
       const client = await ctx.pool.connect();
       try { await backfillUploadOwners(client); } finally { client.release(); }
@@ -171,6 +215,7 @@ describe.skipIf(!runDb)('P-1: photo clean-up', () => {
       expect(o[shared]).toBeNull();
       expect(o[orphan]).toBeNull();
       expect(o[legacyRow]).toBeNull();
+      expect(o[mixed]).toBeNull();
     }
   });
 });

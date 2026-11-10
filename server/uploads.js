@@ -32,11 +32,19 @@ function referencedSql(idParam, patternParam) {
 export async function uploadsAreOwned(db, data, familyCode, stored = null) {
   for (const col of Object.values(UPLOAD_REF_COLUMNS)) {
     if (!(col in data)) continue;
+    if (stored && stored[col] === data[col]) continue;
     const id = uploadIdOf(data[col]);
-    if (!id) continue;
+    if (!id) {
+      // A variant of an upload URL (extra path, query string) would still
+      // load the image but would not count as a reference. Refuse it.
+      if (typeof data[col] === 'string' && /\/api\/uploads\//i.test(data[col])) return false;
+      continue;
+    }
     if (stored && uploadIdOf(stored[col]) === id) continue;
+    // FOR SHARE: a concurrent delete of the last other user of this photo
+    // waits for this write, then sees the new reference.
     const { rowCount } = await db.query(
-      'SELECT 1 FROM uploads WHERE id = $1::uuid AND family_code = $2',
+      'SELECT 1 FROM uploads WHERE id = $1::uuid AND family_code = $2 FOR SHARE',
       [id, familyCode]
     );
     if (rowCount === 0) return false;
@@ -49,6 +57,14 @@ export async function uploadsAreOwned(db, data, familyCode, stored = null) {
 // Only the caller's own uploads can go; a NULL-owner upload never does.
 export async function releaseUpload(db, uploadId, familyCode) {
   if (!uploadId) return false;
+  // Lock first, as its own statement: if two rows sharing this photo are
+  // deleted at once, the second waits here and its DELETE below then sees
+  // the first one gone, so the photo is not left behind.
+  const { rowCount: mine } = await db.query(
+    'SELECT 1 FROM uploads WHERE id = $1::uuid AND family_code = $2 FOR UPDATE',
+    [uploadId, familyCode]
+  );
+  if (mine === 0) return false;
   const { rowCount } = await db.query(
     `DELETE FROM uploads WHERE id = $1::uuid AND family_code = $2 AND NOT (${referencedSql('$1', '$3')})`,
     [uploadId, familyCode, UPLOAD_URL_PATTERN]
