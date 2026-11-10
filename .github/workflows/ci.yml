@@ -2,13 +2,25 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [claude/migrate-base64-percy-code-PNAym]
   pull_request:
-    branches: [master]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
+    # Throwaway database for the server security tests. Without it those
+    # tests skip, so CI must provide one.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: percy_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
 
     steps:
       - uses: actions/checkout@v4
@@ -30,3 +42,5 @@ jobs:
 
       - name: Run all tests
         run: npm test
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/percy_test

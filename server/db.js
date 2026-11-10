@@ -2,6 +2,11 @@ import pg from 'pg';
 
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
+  // rejectUnauthorized is false on purpose: Railway's Postgres uses a
+  // self-signed per-instance certificate with no CA to verify against, so
+  // true would refuse every connection. The database has no public endpoint
+  // and is reached over Railway's private network only. Revisit if a public
+  // endpoint is ever re-enabled.
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
@@ -138,8 +143,9 @@ export async function initDb() {
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS dad_phone TEXT",
       // Drop NOT NULL on parent_email - no longer used, replaced by family_code
       "ALTER TABLE children ALTER COLUMN parent_email DROP NOT NULL",
-      // Age / date of birth field (FEAT-007)
-      "ALTER TABLE children ADD COLUMN IF NOT EXISTS date_of_birth TEXT",
+      // Children's date of birth is no longer stored (approved by Nael 2026-11-10).
+      // Destructive: removes any stored values. Backup taken 2026-11-10 to R2.
+      "ALTER TABLE children DROP COLUMN IF EXISTS date_of_birth",
       // Age captured at Add Child time (nullable; existing rows stay NULL)
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS age INTEGER",
       // Streak tracking (FEAT-006)

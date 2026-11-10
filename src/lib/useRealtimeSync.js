@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { getToken } from '@/lib/AuthContext';
 
 export default function useRealtimeSync(familyCode) {
   const queryClient = useQueryClient();
@@ -15,7 +16,8 @@ export default function useRealtimeSync(familyCode) {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'join', family_code: familyCode }));
+        // The server picks the room from the token; family_code is not sent.
+        ws.send(JSON.stringify({ type: 'join', token: getToken() }));
       };
 
       ws.onmessage = (event) => {

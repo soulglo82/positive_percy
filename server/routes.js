@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import pool from './db.js';
 import { pickAllowedColumns, findMissingRequired } from './columns.js';
@@ -8,18 +9,40 @@ const router = Router();
 let broadcastFn = () => {};
 export function setBroadcast(fn) { broadcastFn = fn; }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'positive-percy-secret-change-in-prod';
 const JWT_EXPIRY = '30d';
+const MIN_SECRET_LENGTH = 32;
+
+// The signing secret has no fallback. A missing or short secret stops the
+// server at startup (see index.js) and fails every sign/verify here, whatever
+// NODE_ENV says.
+export function getJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < MIN_SECRET_LENGTH) {
+    throw new Error(`JWT_SECRET must be set and at least ${MIN_SECRET_LENGTH} characters`);
+  }
+  return secret;
+}
 
 function signToken(familyCode) {
-  return jwt.sign({ family_code: familyCode }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+  return jwt.sign({ family_code: familyCode }, getJwtSecret(), { expiresIn: JWT_EXPIRY });
+}
+
+// Returns the token's family_code, or null if the token is missing or invalid.
+export function familyCodeFromToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  try {
+    const decoded = jwt.verify(token, getJwtSecret());
+    return typeof decoded.family_code === 'string' ? decoded.family_code : null;
+  } catch {
+    return null;
+  }
 }
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
-      const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+      const decoded = jwt.verify(authHeader.split(' ')[1], getJwtSecret());
       req.familyCode = decoded.family_code;
       return next();
     } catch {
@@ -28,6 +51,15 @@ function authMiddleware(req, res, next) {
   }
   return res.status(401).json({ error: 'Authentication required' });
 }
+
+// Generic 500: detail goes to the server log only, never to the client.
+function serverError(res, label, err) {
+  console.error(`${label}:`, err);
+  return res.status(500).json({ error: 'Something went wrong. Please try again.' });
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (v) => typeof v === 'string' && UUID_RE.test(v);
 
 // ─── Input validation helpers ───────────────────────────────────────────────
 
@@ -114,23 +146,19 @@ const BLOCKED_CODE_PATTERNS = [
   'PUS', 'RAP', 'SEX', 'SHT', 'SLU', 'TIT', 'WTF', 'XXX',
 ];
 
-function generateFamilyCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  for (let attempt = 0; attempt < 20; attempt++) {
+// The family code is a bearer credential, so it comes from a cryptographic
+// RNG. 32 symbols divide 256 evenly, so byte % 32 has no bias.
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const CODE_LENGTH = 6;
+
+export function generateFamilyCode(randomBytes = crypto.randomBytes) {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const bytes = randomBytes(CODE_LENGTH);
     let code = '';
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    if (!BLOCKED_CODE_PATTERNS.some(p => code.includes(p))) {
-      return code;
-    }
+    for (let i = 0; i < CODE_LENGTH; i++) code += CODE_CHARS[bytes[i] % CODE_CHARS.length];
+    if (!BLOCKED_CODE_PATTERNS.some(p => code.includes(p))) return code;
   }
-  // Extremely unlikely fallback — 20 attempts all flagged
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
+  throw new Error('Could not generate a family code');
 }
 
 const TABLE_MAP = {
@@ -143,43 +171,64 @@ const TABLE_MAP = {
 
 // ─── File upload ────────────────────────────────────────────────────────────
 
+// Images only, checked by their actual bytes, not by what the client claims.
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+
+function sniffImageType(buf) {
+  if (buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  if (buf.length >= 6 && /^GIF8[79]a$/.test(buf.subarray(0, 6).toString('latin1'))) return 'image/gif';
+  if (buf.length >= 12 && buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
+  return null;
+}
+
+function decodeDataUrl(data) {
+  if (typeof data !== 'string') return null;
+  const m = data.match(/^data:[^;,]*;base64,([A-Za-z0-9+/=\s]+)$/);
+  if (!m) return null;
+  return Buffer.from(m[1], 'base64');
+}
+
 // Upload file (accepts base64 data URL in JSON body)
-router.post('/api/upload', async (req, res) => {
+router.post('/api/upload', authMiddleware, async (req, res) => {
   try {
-    const { data, content_type } = req.body;
-    if (!data) return res.status(400).json({ error: 'No data provided' });
+    const buffer = decodeDataUrl(req.body?.data);
+    if (!buffer || buffer.length === 0) return res.status(400).json({ error: 'Please upload an image file.' });
+    if (buffer.length > MAX_UPLOAD_BYTES) return res.status(400).json({ error: 'That image is too large.' });
+    const type = sniffImageType(buffer);
+    if (!type) return res.status(400).json({ error: 'Please upload a PNG, JPEG, GIF or WebP image.' });
 
     const { rows } = await pool.query(
       'INSERT INTO uploads (data, content_type) VALUES ($1, $2) RETURNING id',
-      [data, content_type || 'image/png']
+      [`data:${type};base64,${buffer.toString('base64')}`, type]
     );
     res.json({ file_url: `/api/uploads/${rows[0].id}` });
   } catch (err) {
-    console.error('Upload error:', err);
-    res.status(500).json({ error: err.message || 'Upload failed' });
+    return serverError(res, 'Upload error', err);
   }
 });
 
-// Serve uploaded file
+// Serve uploaded file. Public, because <img> tags cannot send a bearer token;
+// ids are random UUIDs. The type comes from the bytes, never from what was
+// stored, so rows saved before validation existed can never render as HTML.
 router.get('/api/uploads/:id', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT data, content_type FROM uploads WHERE id = $1', [req.params.id]);
+    if (!isUuid(req.params.id)) return res.status(404).send('Not found');
+    const { rows } = await pool.query('SELECT data FROM uploads WHERE id = $1', [req.params.id]);
     if (rows.length === 0) return res.status(404).send('Not found');
 
-    const { data, content_type } = rows[0];
-
-    if (data.startsWith('data:')) {
-      const matches = data.match(/^data:([^;]+);base64,(.+)$/);
-      if (matches) {
-        const buffer = Buffer.from(matches[2], 'base64');
-        res.set('Content-Type', matches[1]);
-        res.set('Cache-Control', 'public, max-age=31536000');
-        return res.send(buffer);
-      }
+    const buffer = decodeDataUrl(rows[0].data) || Buffer.from(String(rows[0].data));
+    const type = sniffImageType(buffer);
+    res.set('X-Content-Type-Options', 'nosniff');
+    if (!type) {
+      res.set('Content-Type', 'application/octet-stream');
+      res.set('Content-Disposition', 'attachment');
+      return res.send(buffer);
     }
-
-    res.set('Content-Type', content_type);
-    res.send(data);
+    res.set('Content-Type', type);
+    res.set('Content-Disposition', 'inline');
+    res.set('Cache-Control', 'public, max-age=31536000');
+    return res.send(buffer);
   } catch (err) {
     console.error('Upload serve error:', err);
     res.status(500).send('Error loading file');
@@ -190,7 +239,7 @@ router.get('/api/uploads/:id', async (req, res) => {
 
 // Create a new family
 router.post('/api/family/create', async (req, res) => {
-  const { family_name } = req.body;
+  const family_name = typeof req.body?.family_name === 'string' ? req.body.family_name.trim().slice(0, 100) : '';
   if (!family_name) return res.status(400).json({ error: 'Family name is required' });
 
   let family_code;
@@ -225,42 +274,53 @@ router.post('/api/family/create', async (req, res) => {
         attempts++;
         continue;
       }
-      throw err;
+      return serverError(res, 'Create family error', err);
     }
   }
-  res.status(500).json({ error: 'Could not generate unique family code' });
+  res.status(500).json({ error: 'Something went wrong. Please try again.' });
 });
 
 // Join an existing family
 router.post('/api/family/join', async (req, res) => {
-  const { family_code } = req.body;
-  if (!family_code) return res.status(400).json({ error: 'Family code is required' });
-
-  const { rows } = await pool.query(
-    'SELECT * FROM families WHERE family_code = $1',
-    [family_code.toUpperCase()]
-  );
-
-  if (rows.length === 0) {
-    return res.status(404).json({ error: 'Family not found. Check the code and try again.' });
+  const family_code = req.body?.family_code;
+  if (typeof family_code !== 'string' || !family_code.trim()) {
+    return res.status(400).json({ error: 'Family code is required' });
   }
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM families WHERE family_code = $1',
+      [family_code.trim().toUpperCase()]
+    );
 
-  const token = signToken(rows[0].family_code);
-  res.json({ ...rows[0], token });
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Family not found. Check the code and try again.' });
+    }
+
+    const token = signToken(rows[0].family_code);
+    res.json({ ...rows[0], token });
+  } catch (err) {
+    return serverError(res, 'Join family error', err);
+  }
 });
 
-// Get family info
-router.get('/api/family/:code', async (req, res) => {
-  const { rows } = await pool.query(
-    'SELECT * FROM families WHERE family_code = $1',
-    [req.params.code.toUpperCase()]
-  );
-
-  if (rows.length === 0) {
+// Get family info: your own family only. Not removed, because the SPA
+// catch-all would answer an unknown /api path with 200.
+router.get('/api/family/:code', authMiddleware, async (req, res) => {
+  if (req.params.code.toUpperCase() !== req.familyCode) {
     return res.status(404).json({ error: 'Family not found' });
   }
-
-  res.json(rows[0]);
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM families WHERE family_code = $1',
+      [req.familyCode]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Family not found' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    return serverError(res, 'Get family error', err);
+  }
 });
 
 // Check and update parent streak (FEAT-006)
@@ -295,8 +355,7 @@ router.post('/api/family/check-streak', authMiddleware, async (req, res) => {
 
     res.json({ streak: newStreak, longest: longestStreak, updated: true });
   } catch (err) {
-    console.error('Check streak error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Check streak error:', err);
   }
 });
 
@@ -330,8 +389,7 @@ router.get('/api/auth/me', authMiddleware, async (req, res) => {
 
     res.json({ ...rows[0], family: familyRows[0] });
   } catch (err) {
-    console.error('Auth GET error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Auth GET error:', err);
   }
 });
 
@@ -340,11 +398,14 @@ router.put('/api/auth/me', authMiddleware, async (req, res) => {
   try {
     const familyCode = req.familyCode;
 
-    const data = req.body;
+    // Unknown keys are dropped silently and never echoed back.
+    const data = {};
+    for (const [k, v] of Object.entries(req.body || {})) {
+      if (USER_COLUMN_WHITELIST.has(k)) data[k] = v;
+    }
     const keys = Object.keys(data);
-    const invalidKeys = keys.filter(k => !USER_COLUMN_WHITELIST.has(k));
-    if (invalidKeys.length > 0) {
-      return res.status(400).json({ error: `Invalid columns: ${invalidKeys.join(', ')}` });
+    if (keys.length === 0) {
+      return res.status(400).json({ error: 'No valid fields provided' });
     }
     const values = Object.values(data);
     const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
@@ -358,8 +419,7 @@ router.put('/api/auth/me', authMiddleware, async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
     res.json(rows[0]);
   } catch (err) {
-    console.error('Auth PUT error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Auth PUT error:', err);
   }
 });
 
@@ -383,8 +443,7 @@ router.post('/api/children/weekly-reset', authMiddleware, async (req, res) => {
     );
     res.json({ reset: true, children_reset: rowCount });
   } catch (err) {
-    console.error('Weekly reset error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Weekly reset error:', err);
   }
 });
 
@@ -409,8 +468,7 @@ router.post('/api/children/:id/adjust-points', authMiddleware, async (req, res) 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: req.params.id });
     res.json(rows[0]);
   } catch (err) {
-    console.error('Adjust points error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Adjust points error:', err);
   }
 });
 
@@ -433,8 +491,7 @@ router.post('/api/children/:id/track-spending', authMiddleware, async (req, res)
     if (rows.length === 0) return res.status(404).json({ error: 'Child not found' });
     res.json(rows[0]);
   } catch (err) {
-    console.error('Track spending error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Track spending error:', err);
   }
 });
 
@@ -496,8 +553,7 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     res.json({ child: updatedChild[0], redemption: redemptionRows[0] });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('Redeem error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Redeem error:', err);
   } finally {
     client.release();
   }
@@ -554,8 +610,7 @@ router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
     res.json({ reward_stack: stack });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('Stack add error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Stack add error:', err);
   } finally {
     client.release();
   }
@@ -589,8 +644,7 @@ router.delete('/api/children/:id/stack/:index', authMiddleware, async (req, res)
     broadcastFn(req.familyCode, { type: 'stack_updated', child_id: childId });
     res.json({ reward_stack: stack });
   } catch (err) {
-    console.error('Stack remove error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Stack remove error:', err);
   }
 });
 
@@ -660,8 +714,7 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     res.json({ child: updatedChild[0], confirmed_count: stack.length, points_deducted: stackTotal });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('Stack confirm error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Stack confirm error:', err);
   } finally {
     client.release();
   }
@@ -715,8 +768,7 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
 
     res.json({ childStats, topCategories, categoryBreakdowns, weekEvents });
   } catch (err) {
-    console.error('Summary error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Summary error:', err);
   }
 });
 
@@ -776,8 +828,7 @@ router.post('/api/children/:id/check-badges', authMiddleware, async (req, res) =
 
     res.json({ new_badges: [], all_badges: earned });
   } catch (err) {
-    console.error('Check badges error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Check badges error:', err);
   }
 });
 
@@ -792,8 +843,7 @@ router.get('/api/behavior-categories', authMiddleware, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('List categories error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'List categories error:', err);
   }
 });
 
@@ -824,8 +874,7 @@ router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
     if (err.code === '23505') {
       return res.status(422).json({ error: 'A category with this name already exists' });
     }
-    console.error('Create category error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Create category error:', err);
   }
 });
 
@@ -874,8 +923,7 @@ router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
     if (err.code === '23505') {
       return res.status(422).json({ error: 'A category with this name already exists' });
     }
-    console.error('Update category error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Update category error:', err);
   }
 });
 
@@ -915,8 +963,7 @@ router.delete('/api/behavior-categories/:id', authMiddleware, async (req, res) =
     );
     res.json({ success: true });
   } catch (err) {
-    console.error('Delete category error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Delete category error:', err);
   }
 });
 
@@ -949,8 +996,7 @@ router.post('/api/behavior-categories/reorder', authMiddleware, async (req, res)
     );
     res.json(rows);
   } catch (err) {
-    console.error('Reorder categories error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Reorder categories error:', err);
   }
 });
 
@@ -1036,8 +1082,7 @@ router.get('/api/children/:id/motivation', authMiddleware, async (req, res) => {
       next_unlock: nextUnlock,
     });
   } catch (err) {
-    console.error('Motivation metrics error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Motivation metrics error:', err);
   }
 });
 
@@ -1052,8 +1097,7 @@ router.get('/api/quick-actions', authMiddleware, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('List quick actions error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'List quick actions error:', err);
   }
 });
 
@@ -1076,8 +1120,7 @@ router.post('/api/quick-actions', authMiddleware, async (req, res) => {
     broadcastFn(req.familyCode, { type: 'quick_actions_updated' });
     res.json(rows[0]);
   } catch (err) {
-    console.error('Create quick action error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Create quick action error:', err);
   }
 });
 
@@ -1106,8 +1149,7 @@ router.put('/api/quick-actions/:id', authMiddleware, async (req, res) => {
     broadcastFn(req.familyCode, { type: 'quick_actions_updated' });
     res.json(rows[0]);
   } catch (err) {
-    console.error('Update quick action error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Update quick action error:', err);
   }
 });
 
@@ -1122,8 +1164,7 @@ router.delete('/api/quick-actions/:id', authMiddleware, async (req, res) => {
     broadcastFn(req.familyCode, { type: 'quick_actions_updated' });
     res.json({ success: true });
   } catch (err) {
-    console.error('Delete quick action error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Delete quick action error:', err);
   }
 });
 
@@ -1175,8 +1216,7 @@ router.get('/api/activity-feed', authMiddleware, async (req, res) => {
     const { rows } = await pool.query(query, [req.familyCode, limit, offset]);
     res.json(rows);
   } catch (err) {
-    console.error('Activity feed error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Activity feed error:', err);
   }
 });
 
@@ -1211,8 +1251,7 @@ router.post('/api/family-goals/:id/contribute', authMiddleware, async (req, res)
 
     res.json(goal);
   } catch (err) {
-    console.error('Contribute to goal error:', err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, 'Contribute to goal error:', err);
   }
 });
 
@@ -1237,8 +1276,7 @@ router.get('/api/:entity', authMiddleware, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error(`List ${req.params.entity} error:`, err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, `List ${req.params.entity} error:`, err);
   }
 });
 
@@ -1277,8 +1315,7 @@ router.post('/api/:entity/filter', authMiddleware, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error(`Filter ${req.params.entity} error:`, err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, `Filter ${req.params.entity} error:`, err);
   }
 });
 
@@ -1313,10 +1350,74 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     if (err.status === 400) return res.status(400).json({ error: err.message });
-    console.error(`Create ${req.params.entity} error:`, err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, `Create ${req.params.entity} error:`, err);
   }
 });
+
+// ─── Family-scoped writes ──────────────────────────────────────────────────
+// Every generic update and delete goes through these two helpers. Each one
+// puts the caller's family_code in the WHERE clause of every statement it
+// runs, including cascades, so no handler can forget the scope.
+
+export async function scopedUpdate(db, table, id, familyCode, data) {
+  const clean = { ...data };
+  delete clean.family_code; // never client-settable
+  delete clean.id;
+  const keys = Object.keys(clean);
+  if (keys.length === 0) return { status: 400 };
+  if (!isUuid(id)) return { status: 404 };
+  const values = Object.values(clean);
+  const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
+  values.push(id, familyCode);
+  const { rows } = await db.query(
+    `UPDATE ${table} SET ${setClause} WHERE id = $${values.length - 1} AND family_code = $${values.length} RETURNING *`,
+    values
+  );
+  if (rows.length === 0) return { status: 404 };
+
+  // ENH-006: cascade child name updates to the same family's history rows
+  if (table === 'children' && clean.name) {
+    await db.query('UPDATE point_events SET child_name = $1 WHERE child_id = $2 AND family_code = $3', [clean.name, id, familyCode]);
+    await db.query('UPDATE redemptions SET child_name = $1 WHERE child_id = $2 AND family_code = $3', [clean.name, id, familyCode]);
+  }
+  return { status: 200, row: rows[0] };
+}
+
+export async function scopedDelete(table, id, familyCode) {
+  if (!isUuid(id)) return { status: 404 };
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Ownership first. Nothing else runs unless the row is the caller's.
+    const owned = await client.query(
+      `SELECT id FROM ${table} WHERE id = $1 AND family_code = $2 FOR UPDATE`,
+      [id, familyCode]
+    );
+    if (owned.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return { status: 404 };
+    }
+    if (table === 'children') {
+      // Rows from before family_code was stamped have it NULL; they belong to
+      // this child, whose ownership was just checked.
+      await client.query('DELETE FROM point_events WHERE child_id = $1 AND (family_code = $2 OR family_code IS NULL)', [id, familyCode]);
+      await client.query('DELETE FROM redemptions WHERE child_id = $1 AND (family_code = $2 OR family_code IS NULL)', [id, familyCode]);
+    } else if (table === 'rewards') {
+      await client.query(
+        "UPDATE redemptions SET status = 'Denied' WHERE reward_id = $1 AND status = 'Pending' AND (family_code = $2 OR family_code IS NULL)",
+        [id, familyCode]
+      );
+    }
+    await client.query(`DELETE FROM ${table} WHERE id = $1 AND family_code = $2`, [id, familyCode]);
+    await client.query('COMMIT');
+    return { status: 200 };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
 
 // UPDATE – PUT /api/:entity/:id
 router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
@@ -1326,33 +1427,15 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
   try {
     let data = pickAllowedColumns(table, req.body);
     data = validateCreatePayload(table, data);
-    const keys = Object.keys(data);
-    // Nothing valid to update after stripping unknown keys — reject cleanly
-    // instead of building `UPDATE t SET  WHERE ...` and 500-ing.
-    if (keys.length === 0) {
-      return res.status(400).json({ error: 'No valid fields provided' });
-    }
-    const values = Object.values(data);
-    const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
-    values.push(req.params.id);
-
-    const { rows } = await pool.query(
-      `UPDATE ${table} SET ${setClause} WHERE id = $${values.length} RETURNING *`,
-      values
-    );
-    if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
-
-    // ENH-006: Cascade child name updates to related tables
-    if (table === 'children' && data.name) {
-      await pool.query('UPDATE point_events SET child_name = $1 WHERE child_id = $2', [data.name, req.params.id]);
-      await pool.query('UPDATE redemptions SET child_name = $1 WHERE child_id = $2', [data.name, req.params.id]);
-    }
+    const result = await scopedUpdate(pool, table, req.params.id, req.familyCode, data);
+    if (result.status === 400) return res.status(400).json({ error: 'No valid fields provided' });
+    if (result.status === 404) return res.status(404).json({ error: 'Not found' });
 
     broadcastFn(req.familyCode, { type: `${req.params.entity}_updated`, id: req.params.id });
-    res.json(rows[0]);
+    res.json(result.row);
   } catch (err) {
-    console.error(`Update ${req.params.entity} error:`, err);
-    res.status(500).json({ error: err.message });
+    if (err.status === 400) return res.status(400).json({ error: err.message });
+    return serverError(res, `Update ${req.params.entity} error`, err);
   }
 });
 
@@ -1362,20 +1445,12 @@ router.delete('/api/:entity/:id', authMiddleware, async (req, res) => {
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
 
   try {
-    // Cascade deletes for children and rewards
-    if (table === 'children') {
-      await pool.query('DELETE FROM point_events WHERE child_id = $1', [req.params.id]);
-      await pool.query('DELETE FROM redemptions WHERE child_id = $1', [req.params.id]);
-    } else if (table === 'rewards') {
-      await pool.query("UPDATE redemptions SET status = 'Denied' WHERE reward_id = $1 AND status = 'Pending'", [req.params.id]);
-    }
-
-    await pool.query(`DELETE FROM ${table} WHERE id = $1`, [req.params.id]);
+    const result = await scopedDelete(table, req.params.id, req.familyCode);
+    if (result.status === 404) return res.status(404).json({ error: 'Not found' });
     broadcastFn(req.familyCode, { type: `${req.params.entity}_deleted`, id: req.params.id });
     res.json({ success: true });
   } catch (err) {
-    console.error(`Delete ${req.params.entity} error:`, err);
-    res.status(500).json({ error: err.message });
+    return serverError(res, `Delete ${req.params.entity} error`, err);
   }
 });
 

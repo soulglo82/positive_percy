@@ -1,3 +1,4 @@
+import { getToken } from '@/lib/AuthContext';
 function resizeImage(file, maxSize = 800) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -44,7 +45,10 @@ export async function UploadFile({ file }) {
 
   const res = await fetch('/api/upload', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${getToken()}`,
+    },
     body: JSON.stringify({ data: dataUrl, content_type: 'image/jpeg' }),
   });
 
