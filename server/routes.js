@@ -62,6 +62,35 @@ function serverError(res, label, err) {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isUuid = (v) => typeof v === 'string' && UUID_RE.test(v);
 
+// Points per award, per category and as a starting balance.
+export const MAX_AWARD = 1000;
+const isWholeNumber = (v) => typeof v === 'number' && Number.isInteger(v);
+
+// Category points: whole number 1..MAX_AWARD, default 5.
+function categoryPoints(value, fallback = 5) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(MAX_AWARD, Math.max(1, Math.round(n)));
+}
+
+// Reads a reward the caller may spend on this child: it must belong to the
+// family and, if assigned to specific children, include this one. Cost and
+// title always come from here, never from the request.
+async function loadSpendableReward(db, rewardId, childId, familyCode) {
+  if (!isUuid(String(rewardId || ''))) return null;
+  const { rows } = await db.query(
+    'SELECT id, title, cost_points, assigned_child_ids FROM rewards WHERE id = $1 AND family_code = $2',
+    [rewardId, familyCode]
+  );
+  const r = rows[0];
+  if (!r) return null;
+  const assigned = r.assigned_child_ids || [];
+  if (assigned.length > 0 && !assigned.includes(childId)) return null;
+  return { id: r.id, title: r.title, cost: r.cost_points };
+}
+
+const stackTotalOf = (stack) => (stack || []).reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+
 // ─── Input validation helpers ───────────────────────────────────────────────
 
 const MAX_NAME_LENGTH = 100;
@@ -451,69 +480,93 @@ router.post('/api/children/weekly-reset', authMiddleware, async (req, res) => {
 });
 
 // Atomic point adjustment (prevents race conditions)
-router.post('/api/children/:id/adjust-points', authMiddleware, async (req, res) => {
+// Award or deduct points. The only way a balance changes outside spending:
+// one transaction locks the child, applies the amount (a deduction stops at
+// 0), and writes the history row for exactly what was applied. request_id
+// makes a retried request apply once.
+router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
+  const { points, category, note, request_id } = req.body || {};
+  if (!isWholeNumber(points) || points === 0 || Math.abs(points) > MAX_AWARD) {
+    return res.status(400).json({ error: `Points must be a whole number from 1 to ${MAX_AWARD}, or minus that.` });
+  }
+  if (typeof category !== 'string' || !category.trim() || category.length > 100) {
+    return res.status(400).json({ error: 'Please choose a category.' });
+  }
+  if (note !== undefined && note !== null && (typeof note !== 'string' || note.length > 500)) {
+    return res.status(400).json({ error: 'Note is too long.' });
+  }
+  if (!isUuid(String(request_id || ''))) {
+    return res.status(400).json({ error: 'Invalid request' });
+  }
+  if (!isUuid(req.params.id)) return res.status(404).json({ error: 'Child not found' });
+
+  const client = await pool.connect();
   try {
-    const { points } = req.body;
-    if (typeof points !== 'number') {
-      return res.status(400).json({ error: 'points must be a number' });
+    await client.query('BEGIN');
+    const { rows: childRows } = await client.query(
+      'SELECT * FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
+      [req.params.id, req.familyCode]
+    );
+    if (childRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Child not found' });
+    }
+    const child = childRows[0];
+
+    // Already applied: return the original result, do nothing again.
+    const { rows: prior } = await client.query(
+      'SELECT * FROM point_events WHERE family_code = $1 AND request_id = $2',
+      [req.familyCode, request_id]
+    );
+    if (prior.length > 0) {
+      await client.query('ROLLBACK');
+      if (prior[0].child_id !== child.id) return res.status(409).json({ error: 'Invalid request' });
+      return res.json({ event: prior[0], child, duplicate: true, capped: false });
     }
 
-    const { rows } = await pool.query(
+    const applied = points < 0 ? Math.max(points, -child.total_points) : points;
+    if (applied === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: `${child.name} has no points to take away.` });
+    }
+
+    const { rows: eventRows } = await client.query(
+      `INSERT INTO point_events (child_id, points, category, note, child_name, family_code, request_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [child.id, applied, category.trim(), note || null, child.name, req.familyCode, request_id]
+    );
+    const { rows: updated } = await client.query(
       `UPDATE children
-       SET total_points = GREATEST(0, total_points + $1),
+       SET total_points = total_points + $1,
            weekly_points = GREATEST(0, weekly_points + $1)
        WHERE id = $2 AND family_code = $3
        RETURNING *`,
-      [points, req.params.id, req.familyCode]
+      [applied, child.id, req.familyCode]
     );
+    await client.query('COMMIT');
 
-    if (rows.length === 0) return res.status(404).json({ error: 'Child not found' });
-    broadcastFn(req.familyCode, { type: 'points_updated', child_id: req.params.id });
-    res.json(rows[0]);
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
+    res.json({ event: eventRows[0], child: updated[0], duplicate: false, capped: applied !== points });
   } catch (err) {
-    return serverError(res, 'Adjust points error:', err);
+    await client.query('ROLLBACK').catch(() => {});
+    return serverError(res, 'Award points error', err);
+  } finally {
+    client.release();
   }
 });
 
-// Track points spent on rewards (atomic increment)
-router.post('/api/children/:id/track-spending', authMiddleware, async (req, res) => {
-  try {
-    const { points } = req.body;
-    if (typeof points !== 'number' || points <= 0) {
-      return res.status(400).json({ error: 'points must be a positive number' });
-    }
-
-    const { rows } = await pool.query(
-      `UPDATE children
-       SET points_spent = COALESCE(points_spent, 0) + $1
-       WHERE id = $2 AND family_code = $3
-       RETURNING *`,
-      [points, req.params.id, req.familyCode]
-    );
-
-    if (rows.length === 0) return res.status(404).json({ error: 'Child not found' });
-    res.json(rows[0]);
-  } catch (err) {
-    return serverError(res, 'Track spending error:', err);
-  }
-});
-
-// Atomic reward redemption (prevents double-spend via DB transaction)
 router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { reward_id, reward_title, reward_cost, child_name } = req.body;
+    const { reward_id } = req.body || {};
     const childId = req.params.id;
-
-    if (!reward_id || !reward_title || typeof reward_cost !== 'number' || reward_cost < 1) {
-      return res.status(400).json({ error: 'Invalid redemption data' });
-    }
+    if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
 
     await client.query('BEGIN');
 
     // Lock the child row and check balance
     const { rows: childRows } = await client.query(
-      'SELECT total_points, weekly_points FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
+      'SELECT name, total_points, weekly_points, reward_stack FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
       [childId, req.familyCode]
     );
 
@@ -522,7 +575,17 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Child not found' });
     }
 
-    if (childRows[0].total_points < reward_cost) {
+    const reward = await loadSpendableReward(client, reward_id, childId, req.familyCode);
+    if (!reward) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Reward not found' });
+    }
+    const reward_cost = reward.cost;
+    const reward_title = reward.title;
+    const child_name = childRows[0].name;
+
+    // Points already set aside in the reward stack are not spendable twice.
+    if (childRows[0].total_points - stackTotalOf(childRows[0].reward_stack) < reward_cost) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Not enough points' });
     }
@@ -541,7 +604,7 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     const { rows: redemptionRows } = await client.query(
       `INSERT INTO redemptions (child_id, child_name, reward_id, reward_title, reward_cost, status, family_code)
        VALUES ($1, $2, $3, $4, $5, 'Completed', $6) RETURNING *`,
-      [childId, child_name || '', reward_id, reward_title, reward_cost, req.familyCode]
+      [childId, child_name || '', reward.id, reward_title, reward_cost, req.familyCode]
     );
 
     await client.query('COMMIT');
@@ -568,14 +631,19 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
 router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { reward_id, reward_title, reward_cost } = req.body;
+    const { reward_id } = req.body || {};
     const childId = req.params.id;
-
-    if (!reward_id || !reward_title || typeof reward_cost !== 'number' || reward_cost < 1) {
-      return res.status(400).json({ error: 'Invalid reward data' });
-    }
+    if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
 
     await client.query('BEGIN');
+
+    const reward = await loadSpendableReward(client, reward_id, childId, req.familyCode);
+    if (!reward) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Reward not found' });
+    }
+    const reward_cost = reward.cost;
+    const reward_title = reward.title;
 
     const { rows: childRows } = await client.query(
       'SELECT total_points, reward_stack FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
@@ -600,7 +668,7 @@ router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
       });
     }
 
-    stack.push({ rewardId: reward_id, name: reward_title, cost: reward_cost });
+    stack.push({ rewardId: reward.id, name: reward_title, cost: reward_cost });
 
     await client.query(
       'UPDATE children SET reward_stack = $1 WHERE id = $2 AND family_code = $3',
@@ -869,7 +937,7 @@ router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
       `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default, points, is_quick_action, assigned_children)
        VALUES ($1, $2, $3, $4, false, $5, $6, $7) RETURNING *`,
       [req.familyCode, trimmedName, icon || '⭐', maxOrder[0].next_order,
-       Math.max(1, Number(points) || 5), Boolean(is_quick_action),
+       categoryPoints(points), Boolean(is_quick_action),
        Array.isArray(assigned_children) ? assigned_children : []]
     );
     res.json(rows[0]);
@@ -901,7 +969,7 @@ router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
     }
     if (points !== undefined) {
       updates.push(`points = $${idx++}`);
-      values.push(Math.max(1, Number(points)));
+      values.push(categoryPoints(points));
     }
     if (is_quick_action !== undefined) {
       updates.push(`is_quick_action = $${idx++}`);
@@ -1326,8 +1394,15 @@ router.post('/api/:entity/filter', authMiddleware, async (req, res) => {
 router.post('/api/:entity', authMiddleware, async (req, res) => {
   const table = TABLE_MAP[req.params.entity];
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
+  if (HISTORY_TABLES.has(table)) return res.status(405).json({ error: 'Not allowed' });
 
   try {
+    if (table === 'children') {
+      const data = validateCreatePayload(table, pickAllowedColumns(table, req.body), { isCreate: true });
+      const child = await createChild(data, req.familyCode);
+      broadcastFn(req.familyCode, { type: 'children_created', id: child.id });
+      return res.json(child);
+    }
     // Drop unexpected keys silently (mass-assignment protection), then enforce
     // required fields so a missing NOT NULL column is a clean 400, not a DB 500.
     let data = pickAllowedColumns(table, req.body);
@@ -1363,6 +1438,56 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
 
 // ─── Family-scoped writes ──────────────────────────────────────────────────
 
+// History tables are written only by the award, redeem and stack endpoints,
+// which change the balance in the same transaction. The generic routes may
+// read them but never create, edit or delete rows.
+const HISTORY_TABLES = new Set(['point_events', 'redemptions']);
+
+// Balance fields on a child change only through award and spending.
+const CHILD_BALANCE_FIELDS = ['total_points', 'weekly_points', 'points_spent', 'reward_stack', 'badges_earned', 'last_reset_date'];
+
+function stripChildBalance(data) {
+  const clean = { ...data };
+  for (const f of CHILD_BALANCE_FIELDS) delete clean[f];
+  return clean;
+}
+
+// Creates a child and, if it starts with points, the history row for them,
+// in one transaction so history adds up from the first day.
+async function createChild(data, familyCode) {
+  let starting = data.total_points ?? 0;
+  if (typeof starting === 'string' && starting.trim() !== '') starting = Number(starting);
+  if (!isWholeNumber(starting) || starting < 0 || starting > MAX_AWARD) {
+    const e = new Error(`Starting points must be a whole number from 0 to ${MAX_AWARD}.`);
+    e.status = 400;
+    throw e;
+  }
+  const row = { ...stripChildBalance(data), total_points: starting, weekly_points: starting, family_code: familyCode };
+  const keys = Object.keys(row);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      `INSERT INTO children (${keys.join(', ')}) VALUES (${keys.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`,
+      Object.values(row)
+    );
+    if (starting > 0) {
+      await client.query(
+        `INSERT INTO point_events (child_id, points, category, child_name, family_code)
+         VALUES ($1, $2, 'Starting points', $3, $4)`,
+        [rows[0].id, starting, rows[0].name, familyCode]
+      );
+    }
+    await client.query('COMMIT');
+    return rows[0];
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 const REFERENCES = { child_id: 'children', reward_id: 'rewards' };
 
 export async function referencesAreOwned(db, data, familyCode) {
@@ -1382,7 +1507,7 @@ export async function referencesAreOwned(db, data, familyCode) {
 // runs, including cascades, so no handler can forget the scope.
 
 export async function scopedUpdate(db, table, id, familyCode, data) {
-  const clean = { ...data };
+  const clean = table === 'children' ? stripChildBalance(data) : { ...data };
   delete clean.family_code; // never client-settable
   delete clean.id;
   const keys = Object.keys(clean);
@@ -1446,6 +1571,7 @@ export async function scopedDelete(table, id, familyCode) {
 router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
   const table = TABLE_MAP[req.params.entity];
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
+  if (HISTORY_TABLES.has(table)) return res.status(405).json({ error: 'Not allowed' });
 
   try {
     let data = pickAllowedColumns(table, req.body);
@@ -1466,6 +1592,7 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
 router.delete('/api/:entity/:id', authMiddleware, async (req, res) => {
   const table = TABLE_MAP[req.params.entity];
   if (!table) return res.status(404).json({ error: 'Unknown entity' });
+  if (HISTORY_TABLES.has(table)) return res.status(405).json({ error: 'Not allowed' });
 
   try {
     const result = await scopedDelete(table, req.params.id, req.familyCode);

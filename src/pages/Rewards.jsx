@@ -36,7 +36,7 @@ export default function Rewards() {
   const createRewardMutation = useMutation({
     mutationFn: (data) => Reward.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['rewards']);
+      queryClient.invalidateQueries({ queryKey: ['rewards'] });
       toast.success("Reward created!");
     },
   });
@@ -44,7 +44,7 @@ export default function Rewards() {
   const updateRewardMutation = useMutation({
     mutationFn: ({ id, data }) => Reward.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['rewards']);
+      queryClient.invalidateQueries({ queryKey: ['rewards'] });
     },
   });
 
@@ -72,7 +72,7 @@ export default function Rewards() {
   const deleteRewardMutation = useMutation({
     mutationFn: (id) => Reward.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['rewards']);
+      queryClient.invalidateQueries({ queryKey: ['rewards'] });
       toast.success("Reward deleted");
     },
   });

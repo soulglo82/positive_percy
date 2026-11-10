@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Child, Point_Event, Reward } from "@/api/entities";
+import { useState, useEffect, useRef } from 'react';
+import { Child, Reward } from "@/api/entities";
+import { awardPoints, refreshPoints } from "@/lib/points";
 import { buildChildCreatePayload } from "@/lib/childPayload";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
@@ -59,7 +60,7 @@ export default function ParentDashboard() {
       },
     }).then(res => res.json()).then(result => {
       if (result.reset && result.children_reset > 0) {
-        queryClient.invalidateQueries(['children']);
+        queryClient.invalidateQueries({ queryKey: ['children'] });
         toast.info("Weekly points have been reset!");
       }
     }).catch(() => {});
@@ -118,7 +119,7 @@ export default function ParentDashboard() {
   const createChildMutation = useMutation({
     mutationFn: (data) => Child.create(buildChildCreatePayload(data)),
     onSuccess: () => {
-      queryClient.invalidateQueries(['children']);
+      queryClient.invalidateQueries({ queryKey: ['children'] });
       toast.success("Child added successfully!");
     },
   });
@@ -126,19 +127,14 @@ export default function ParentDashboard() {
   const updateChildMutation = useMutation({
     mutationFn: ({ id, data }) => Child.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['children']);
+      queryClient.invalidateQueries({ queryKey: ['children'] });
     },
   });
 
-  const createPointEventMutation = useMutation({
-    mutationFn: (data) => Point_Event.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['children']);
-      queryClient.invalidateQueries(['recentActivity']);
-      queryClient.invalidateQueries(['activityFeed']);
-      toast.success("Points updated!");
-    },
-  });
+  // Children with an award in flight. A ref, not state, so a second tap in
+  // the same frame sees the first one and is ignored.
+  const awarding = useRef(new Set());
+  const [awardingIds, setAwardingIds] = useState([]);
 
   const handleAddPoints = (child) => {
     setSelectedChild(child);
@@ -166,7 +162,7 @@ export default function ParentDashboard() {
   const handleDeleteChild = async (child) => {
     try {
       await Child.delete(child.id);
-      queryClient.invalidateQueries(['children']);
+      queryClient.invalidateQueries({ queryKey: ['children'] });
       toast.success(`${child.name} has been removed`);
     } catch {
       toast.error("Failed to delete child");
@@ -194,86 +190,21 @@ export default function ParentDashboard() {
     if (user) updateStreak();
   }, [user]);
 
-  const handlePointsSubmit = async (data) => {
-    if (data.points < 0) {
-      const newTotal = selectedChild.total_points + data.points;
-      if (newTotal < 0) {
-        toast.warning(`This will reduce ${selectedChild.name}'s points to 0`);
-      }
-    }
-
-    await createPointEventMutation.mutateAsync({
-      child_id: selectedChild.id,
-      child_name: selectedChild.name,
-      points: data.points,
-      category: data.category,
-      note: data.note,
-    });
-
-    const token = getToken();
-    const res = await fetch(`/api/children/${selectedChild.id}/adjust-points`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ points: data.points }),
-    });
-
-    if (data.points > 0) {
-      const updated = await res.json();
-      const wasBelow = selectedChild.weekly_points < selectedChild.weekly_target;
-      const isNowAbove = updated.weekly_points >= updated.weekly_target;
-      if (wasBelow && isNowAbove) {
-        confetti({
-          particleCount: 150,
-          spread: 80,
-          origin: { y: 0.6 },
-          colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
-        });
-        toast.success(`${selectedChild.name} hit their weekly goal!`);
-      }
-    }
-
-    queryClient.invalidateQueries(['children']);
-    queryClient.invalidateQueries(['recentActivity']);
-    updateStreak();
-
-    if (data.points > 0) {
-      try {
-        const badgeToken = getToken();
-        await fetch(`/api/children/${selectedChild.id}/check-badges`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${badgeToken}` },
-        });
-      } catch {}
-    }
-  };
-
-  const handleQuickAction = async (child, action) => {
+  // Shared by quick actions and the points form. Returns true if applied.
+  const applyAward = async (child, { points, category, note }) => {
+    if (awarding.current.has(child.id)) return false;
+    awarding.current.add(child.id);
+    setAwardingIds([...awarding.current]);
     try {
-      await createPointEventMutation.mutateAsync({
-        child_id: child.id,
-        child_name: child.name,
-        points: action.points,
-        category: action.category || action.label,
-        note: '',
-      });
-
-      const token = getToken();
-      const res = await fetch(`/api/children/${child.id}/adjust-points`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ points: action.points }),
-      });
-
-      const updated = await res.json();
+      const { child: updated, capped, event } = await awardPoints(child.id, { points, category, note });
+      if (capped) {
+        toast.warning(`${child.name} only had ${Math.abs(event.points)} points, so ${Math.abs(event.points)} were taken away.`);
+      } else {
+        toast.success(points > 0 ? `+${points} ${category} for ${child.name}` : `${points} points for ${child.name}`);
+      }
       const wasBelow = child.weekly_points < child.weekly_target;
       const isNowAbove = updated.weekly_points >= updated.weekly_target;
-      if (wasBelow && isNowAbove) {
+      if (points > 0 && wasBelow && isNowAbove) {
         confetti({
           particleCount: 150,
           spread: 80,
@@ -282,21 +213,28 @@ export default function ParentDashboard() {
         });
         toast.success(`${child.name} hit their weekly goal!`);
       }
-
-      queryClient.invalidateQueries(['children']);
-      queryClient.invalidateQueries(['recentActivity']);
+      refreshPoints(queryClient);
       updateStreak();
-
-      try {
-        await fetch(`/api/children/${child.id}/check-badges`, {
+      if (points > 0) {
+        fetch(`/api/children/${child.id}/check-badges`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        });
-      } catch {}
-    } catch {
-      toast.error("Failed to award points");
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        }).catch(() => {});
+      }
+      return true;
+    } catch (err) {
+      toast.error(err.status === 400 && err.message ? err.message : "Couldn't update points. Please try again.");
+      return false;
+    } finally {
+      awarding.current.delete(child.id);
+      setAwardingIds([...awarding.current]);
     }
   };
+
+  const handlePointsSubmit = (data) => applyAward(selectedChild, data);
+
+  const handleQuickAction = (child, action) =>
+    applyAward(child, { points: action.points, category: action.category || action.label, note: '' });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
@@ -340,6 +278,7 @@ export default function ParentDashboard() {
                 onAddPoints={handleAddPoints}
                 onEdit={handleEditChild}
                 onQuickAction={handleQuickAction}
+                awarding={awardingIds.includes(child.id)}
                 onSpendRewards={handleSpendRewards}
                 quickActions={allQuickActions.filter(qa =>
                   !qa.assigned_children || qa.assigned_children.length === 0 || qa.assigned_children.includes(child.id)
@@ -362,8 +301,9 @@ export default function ParentDashboard() {
                   {recentActivity.map((event) => {
                     const isEarn = event.type === 'earn';
                     const isSpend = event.type === 'spend';
-                    const colorClass = isEarn ? 'text-green-600' : isSpend ? 'text-orange-600' : 'text-slate-500';
-                    const action = isEarn ? 'earned' : isSpend ? 'spent on' : 'adjusted';
+                    const isDeduct = !isEarn && !isSpend && event.points < 0;
+                    const colorClass = isEarn ? 'text-green-600' : isSpend ? 'text-orange-600' : isDeduct ? 'text-red-600' : 'text-slate-500';
+                    const action = isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost' : 'adjusted';
                     const eventChild = children.find(c => c.id === event.child_id);
 
                     return (
@@ -387,7 +327,7 @@ export default function ParentDashboard() {
                           </p>
                         </div>
                         <span className={`text-sm font-bold shrink-0 ${colorClass}`}>
-                          {isEarn ? '+' : isSpend ? '-' : ''}{Math.abs(event.points)}pts
+                          {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}pts
                         </span>
                       </div>
                     );

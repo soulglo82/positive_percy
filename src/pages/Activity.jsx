@@ -276,13 +276,16 @@ function NarrativeItem({ event }) {
   const isEarn = event.type === 'earn';
   const isSpend = event.type === 'spend';
 
+  const isDeduct = !isEarn && !isSpend && event.points < 0;
   const colorClass = isEarn
     ? 'text-green-600'
     : isSpend
       ? 'text-orange-600'
-      : 'text-slate-500';
+      : isDeduct
+        ? 'text-red-600'
+        : 'text-slate-500';
 
-  const action = isEarn ? 'earned' : isSpend ? 'spent on' : 'adjusted';
+  const action = isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost' : 'adjusted';
 
   // Use note as primary label when category is "Other"
   const displayLabel = event.label === 'Other' && event.note
@@ -316,7 +319,7 @@ function NarrativeItem({ event }) {
       </div>
 
       <span className={`text-sm font-bold shrink-0 ${colorClass}`}>
-        {isEarn ? '+' : isSpend ? '-' : ''}{Math.abs(event.points)}pts
+        {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}pts
       </span>
     </div>
   );

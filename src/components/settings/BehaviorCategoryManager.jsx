@@ -70,7 +70,7 @@ export default function BehaviorCategoryManager() {
         toast.error(err.error || 'Failed to create category');
         return;
       }
-      queryClient.invalidateQueries(['behaviorCategories']);
+      queryClient.invalidateQueries({ queryKey: ['behaviorCategories'] });
       toast.success('Category created');
     } catch {
       toast.error('Failed to create category');
@@ -90,7 +90,7 @@ export default function BehaviorCategoryManager() {
         toast.error(err.error || 'Failed to update category');
         return;
       }
-      queryClient.invalidateQueries(['behaviorCategories']);
+      queryClient.invalidateQueries({ queryKey: ['behaviorCategories'] });
       if (data.name !== undefined) {
         setEditingId(null);
         toast.success('Category updated');
@@ -112,7 +112,7 @@ export default function BehaviorCategoryManager() {
         toast.error(err.error || 'Failed to delete category');
         return;
       }
-      queryClient.invalidateQueries(['behaviorCategories']);
+      queryClient.invalidateQueries({ queryKey: ['behaviorCategories'] });
       setExpandedId(null);
       toast.success('Category deleted');
     } catch {
@@ -140,7 +140,7 @@ export default function BehaviorCategoryManager() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ order: newOrder }),
       });
-      queryClient.invalidateQueries(['behaviorCategories']);
+      queryClient.invalidateQueries({ queryKey: ['behaviorCategories'] });
     } catch {
       toast.error('Failed to reorder');
     }
@@ -272,12 +272,14 @@ export default function BehaviorCategoryManager() {
                                 maxLength={100}
                                 autoFocus
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleUpdate(cat.id, { name: editName, icon: editIcon, points: editPoints });
+                                  if (e.key === 'Enter') handleUpdate(cat.id, { name: editName, icon: editIcon, points: Math.min(1000, Math.max(1, Math.round(Number(editPoints) || 5))) });
                                   if (e.key === 'Escape') cancelEdit();
                                 }}
                               />
                               <NumberInput
                                 value={editPoints}
+                                min={1}
+                                max={1000}
                                 onChange={setEditPoints}
                                 className="w-20 h-9 text-sm"
                                 min="1"
@@ -286,7 +288,7 @@ export default function BehaviorCategoryManager() {
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                onClick={() => handleUpdate(cat.id, { name: editName, icon: editIcon, points: editPoints })}
+                                onClick={() => handleUpdate(cat.id, { name: editName, icon: editIcon, points: Math.min(1000, Math.max(1, Math.round(Number(editPoints) || 5))) })}
                                 className="bg-green-600 hover:bg-green-700 text-white"
                               >
                                 <Check className="w-4 h-4 mr-1" /> Save
@@ -403,7 +405,7 @@ function AddCategoryModal({ isOpen, onClose, onSubmit }) {
       toast.error('Category name is required');
       return;
     }
-    onSubmit(name.trim(), icon, points);
+    onSubmit(name.trim(), icon, Math.min(1000, Math.max(1, Math.round(Number(points) || 5))));
     setName('');
     setIcon('⭐');
     setPoints(5);
@@ -454,6 +456,8 @@ function AddCategoryModal({ isOpen, onClose, onSubmit }) {
               id="cat_points"
               value={points}
               onChange={setPoints}
+              min={1}
+              max={1000}
               min="1"
             />
           </div>
