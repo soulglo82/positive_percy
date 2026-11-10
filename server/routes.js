@@ -653,20 +653,28 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
     const weekBefore = (await weekPointsFor(client, req.familyCode, [child.id])).get(child.id);
     let eventRows;
     try {
+      // Claim the id in the table spends use too, so an award and a spend
+      // racing with the same id for different children can't both apply.
+      await client.query(
+        `INSERT INTO idempotency_keys (family_code, request_id, endpoint, args, result)
+         VALUES ($1, $2, 'award', $3, '{}')`,
+        [req.familyCode, request_id, JSON.stringify({ child_id: child.id, points, category: category.trim() })]
+      );
       ({ rows: eventRows } = await client.query(
         `INSERT INTO point_events (child_id, points, category, note, child_name, family_code, request_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
         [child.id, applied, category.trim(), note || null, child.name, req.familyCode, request_id]
       ));
     } catch (err) {
-      // Same request_id committed meanwhile (for another child's row lock).
+      // Same request_id committed meanwhile (for another child's row lock):
+      // the same award -> replay it; a spend took it -> 409.
       if (err.code !== '23505') throw err;
       await client.query('ROLLBACK');
       const { rows: won } = await pool.query(
         'SELECT * FROM point_events WHERE family_code = $1 AND request_id = $2',
         [req.familyCode, request_id]
       );
-      if (won.length === 0) throw err;
+      if (won.length === 0) return res.status(409).json({ error: 'Invalid request' });
       return replayAward(res, won[0], child, points, category);
     }
     const { rows: updated } = await client.query(

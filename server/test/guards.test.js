@@ -103,6 +103,21 @@ describe.skipIf(!runDb)('A2 step 3: guards', () => {
     expect((await balance(one.c.id)) + (await balance(two.c.id))).toBe(90);
   });
 
+  it('I0: an award and a spend racing with the same id for different children: only one applies', async () => {
+    for (let i = 0; i < 4; i++) {
+      const one = await setup();
+      const two = await setup();
+      const id = rid();
+      const [a, b] = await Promise.all([
+        api(ctx.base, 'POST', `/api/children/${one.c.id}/award`, { token: F.token, body: { points: 5, category: 'Kindness', request_id: id } }),
+        redeem(two.c.id, { reward_id: two.r1.id, request_id: id }),
+      ]);
+      expect([a.status, b.status].sort(), `round ${i}`).toEqual([200, 409]);
+      const total = (await balance(one.c.id)) + (await balance(two.c.id));
+      expect([105, 90]).toContain(total);
+    }
+  });
+
   it('I1: a spend with no request id still works this release', async () => {
     const { c, r1 } = await setup();
     expect((await redeem(c.id, { reward_id: r1.id })).status).toBe(200);
