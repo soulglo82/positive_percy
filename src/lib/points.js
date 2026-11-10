@@ -53,3 +53,32 @@ export async function awardPoints(childId, { points, category, note }, requestId
   }
   return result; // { event, child, duplicate, capped }
 }
+
+// One spend per tap. The server prices the reward. The request id is made
+// once and reused for one automatic retry, so a spend whose reply was lost
+// is not charged twice. Returns the parsed reply; throws with the server's
+// message when it refuses.
+export async function spendReward(childId, rewardId, requestId = newRequestId()) {
+  const send = () => fetch(`/api/children/${childId}/redeem`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body: JSON.stringify({ reward_id: rewardId, request_id: requestId }),
+  });
+  let res;
+  try {
+    res = await send();
+  } catch {
+    res = null;
+  }
+  if (!res || res.status >= 500) {
+    await new Promise((r) => setTimeout(r, 800));
+    res = await send();
+  }
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(result.error || 'Could not spend the points');
+    err.status = res.status;
+    throw err;
+  }
+  return result; // { child, redemption, duplicate }
+}

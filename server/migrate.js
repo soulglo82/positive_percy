@@ -4,6 +4,8 @@
 // never goes green. Boot itself never changes existing rows (C3).
 //
 // .sql files run as written. .js files export `default async (client) => {}`.
+// A migration must not run BEGIN, COMMIT or ROLLBACK itself: the runner's
+// transaction is what makes the change and its record atomic.
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';

@@ -370,8 +370,6 @@ router.post('/api/family/join', async (req, res) => {
   }
 });
 
-// Get family info: your own family only. Not removed, because the SPA
-// catch-all would answer an unknown /api path with 200.
 // The family's timezone (A2 W1). NULL means not set; readers use UTC then.
 router.get('/api/family/timezone', authMiddleware, async (req, res) => {
   try {
@@ -388,6 +386,20 @@ router.get('/api/family/timezone', authMiddleware, async (req, res) => {
 // the parent choosing in Settings. Any change recomputes the streak date.
 router.put('/api/family/timezone', authMiddleware, async (req, res) => {
   const auto = req.body?.auto === true;
+  // Validate before taking any lock; the app's on-load call for a family
+  // that already has a zone returns without locking anything.
+  let tz;
+  try {
+    tz = await validTimezone(pool, req.body?.timezone);
+    if (auto) {
+      const { rows } = await pool.query('SELECT timezone FROM families WHERE family_code = $1', [req.familyCode]);
+      if (rows.length && (rows[0].timezone !== null || !tz || isGenericZone(tz))) {
+        return res.json({ timezone: rows[0].timezone, changed: false });
+      }
+    }
+  } catch (err) {
+    return serverError(res, 'Set timezone error', err);
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -397,7 +409,6 @@ router.put('/api/family/timezone', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Family not found' });
     }
     const current = rows[0].timezone;
-    const tz = await validTimezone(client, req.body?.timezone);
     if (!tz) {
       await client.query('ROLLBACK');
       return auto ? res.json({ timezone: current, changed: false }) : res.status(400).json({ error: 'Please choose a timezone from the list.' });
@@ -422,6 +433,8 @@ router.put('/api/family/timezone', authMiddleware, async (req, res) => {
 // Must come before '/api/family/:code', which would otherwise match 'streak'.
 router.get('/api/family/streak', authMiddleware, readStreak);
 
+// Get family info: your own family only. Not removed, because the SPA
+// catch-all would answer an unknown /api path with 200.
 router.get('/api/family/:code', authMiddleware, async (req, res) => {
   if (req.params.code.toUpperCase() !== req.familyCode) {
     return res.status(404).json({ error: 'Family not found' });
@@ -788,14 +801,12 @@ function spendRequestId(body) {
 }
 
 async function priorRequest(db, familyCode, requestId, endpoint, args) {
+  // Compared as jsonb, so key order never matters.
   const { rows } = await db.query(
-    'SELECT endpoint, args, result FROM idempotency_keys WHERE family_code = $1 AND request_id = $2',
-    [familyCode, requestId]
+    'SELECT result, (endpoint = $3 AND args = $4::jsonb) AS same FROM idempotency_keys WHERE family_code = $1 AND request_id = $2',
+    [familyCode, requestId, endpoint, JSON.stringify(args)]
   );
-  if (rows.length > 0) {
-    const same = rows[0].endpoint === endpoint && JSON.stringify(rows[0].args) === JSON.stringify(args);
-    return same ? { replay: rows[0].result } : { conflict: true };
-  }
+  if (rows.length > 0) return rows[0].same ? { replay: rows[0].result } : { conflict: true };
   const { rowCount } = await db.query(
     'SELECT 1 FROM point_events WHERE family_code = $1 AND request_id = $2', [familyCode, requestId]);
   return rowCount > 0 ? { conflict: true } : {};
@@ -1230,9 +1241,11 @@ router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
       updates.push(`points = $${idx++}`);
       values.push(categoryPoints(points));
     }
-    if (is_quick_action !== undefined) {
+    // The value checked against the cap is the value stored.
+    const wantQuick = is_quick_action !== undefined ? Boolean(is_quick_action) : undefined;
+    if (wantQuick !== undefined) {
       updates.push(`is_quick_action = $${idx++}`);
-      values.push(Boolean(is_quick_action));
+      values.push(wantQuick);
     }
     if (assigned_children !== undefined) {
       updates.push(`assigned_children = $${idx++}`);
@@ -1245,7 +1258,7 @@ router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
 
     await client.query('BEGIN');
     // Turning quick on needs a free slot; this row's own flag doesn't count.
-    if (is_quick_action === true && !(await quickSlotFree(client, req.familyCode, req.params.id))) {
+    if (wantQuick === true && !(await quickSlotFree(client, req.familyCode, req.params.id))) {
       await client.query('ROLLBACK');
       return res.status(422).json({ error: QUICK_CAP_MESSAGE });
     }

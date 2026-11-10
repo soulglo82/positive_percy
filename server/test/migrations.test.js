@@ -115,8 +115,34 @@ describe.skipIf(!runDb)('A2 step 1: migrations, boot, reconciliation', () => {
     await expect(ctx.pool.query('UPDATE children SET total_points = -1 WHERE id = $1', [neg])).rejects.toThrow(/total_points_nonneg/);
   });
 
-  it('M2: starting points are tagged; a later award in a category with the same name is not', async () => {
-    const { rows } = await ctx.pool.query("SELECT DISTINCT kind FROM point_events WHERE lower(trim(category)) = 'starting points' AND request_id IS NOT NULL");
-    expect(rows.every((r) => r.kind === 'award')).toBe(true);
+  it('test sessions run with production\'s clock settings', async () => {
+    const { rows } = await ctx.pool.query("SELECT current_setting('TimeZone') AS tz, current_setting('DateStyle') AS ds");
+    expect(rows[0]).toEqual({ tz: 'Etc/UTC', ds: 'ISO, MDY' });
+  });
+
+  it('002 on existing rows: legacy starting points are tagged; an award with a request id is not', async () => {
+    const F = await makeFamily(ctx.base, 'Tag family');
+    const id = (await api(ctx.base, 'POST', '/api/children', { token: F.token, body: { name: 'Tag' } })).json.id;
+    const legacy = (await ctx.pool.query(
+      "INSERT INTO point_events (child_id, points, category, family_code, kind) VALUES ($1, 10, ' starting POINTS', $2, 'award') RETURNING id", [id, F.code])).rows[0].id;
+    const awarded = (await ctx.pool.query(
+      "INSERT INTO point_events (child_id, points, category, family_code, kind, request_id) VALUES ($1, 3, 'Starting points', $2, 'award', gen_random_uuid()) RETURNING id", [id, F.code])).rows[0].id;
+    // A row an older server wrote with the default kind still never counts as earned.
+    const inView = (await ctx.pool.query('SELECT count(*)::int n FROM effective_point_events WHERE id = ANY($1)', [[legacy, awarded]])).rows[0].n;
+    expect(inView).toBe(0);
+    await ctx.pool.query("DELETE FROM schema_migrations WHERE name = '002_point_kind_and_timezone.sql'");
+    await runMigrations(ctx.pool, { log: quiet });
+    const kinds = Object.fromEntries((await ctx.pool.query('SELECT id, kind FROM point_events WHERE id = ANY($1)', [[legacy, awarded]])).rows.map((r) => [r.id, r.kind]));
+    expect(kinds[legacy]).toBe('starting');
+    expect(kinds[awarded]).toBe('award');
+  });
+
+  it('006 on existing rows: a family with 6 quick points keeps its first 4 by sort order', async () => {
+    const F = await makeFamily(ctx.base, 'Cap family');
+    await ctx.pool.query('UPDATE behavior_categories SET is_quick_action = true WHERE family_code = $1 AND sort_order < 6', [F.code]);
+    await ctx.pool.query("DELETE FROM schema_migrations WHERE name = '006_quick_action_cap.sql'");
+    await runMigrations(ctx.pool, { log: quiet });
+    const { rows } = await ctx.pool.query('SELECT sort_order FROM behavior_categories WHERE family_code = $1 AND is_quick_action ORDER BY sort_order', [F.code]);
+    expect(rows.map((r) => r.sort_order)).toEqual([0, 1, 2, 3]);
   });
 });

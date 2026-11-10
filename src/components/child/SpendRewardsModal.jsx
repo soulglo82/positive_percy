@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { refreshPoints, newRequestId } from "@/lib/points";
+import { refreshPoints, spendReward } from "@/lib/points";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,6 @@ import { Coins, Gift } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { useQueryClient } from "@tanstack/react-query";
-import { getToken } from "@/lib/AuthContext";
 import { PERCY } from "@/constants/terminology";
 
 export default function SpendRewardsModal({ isOpen, onClose, child, rewards = [] }) {
@@ -33,25 +32,7 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
 
     setRedeeming(reward.id);
     try {
-      const token = getToken();
-      const res = await fetch(`/api/children/${child.id}/redeem`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        // The server prices the reward; request_id makes a retry charge once.
-        body: JSON.stringify({
-          reward_id: reward.id,
-          request_id: newRequestId(),
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        toast.error(err.error || 'Failed to redeem reward');
-        return;
-      }
+      await spendReward(child.id, reward.id);
 
       refreshPoints(queryClient);
 
@@ -62,8 +43,8 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
         origin: { y: 0.6 },
         colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
       });
-    } catch {
-      toast.error('Failed to redeem reward');
+    } catch (e) {
+      toast.error(e.message || 'Failed to redeem reward');
     } finally {
       setRedeeming(null);
     }

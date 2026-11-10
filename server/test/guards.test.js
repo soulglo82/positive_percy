@@ -40,6 +40,14 @@ describe.skipIf(!runDb)('A2 step 3: guards', () => {
     expect(r.json.error).toMatch(/up to 4/);
   });
 
+  it('C2: a truthy non-boolean (1, "yes") can\'t turn on a 5th quick point', async () => {
+    const off = (await cats()).find((c) => !c.is_quick_action);
+    for (const v of [1, 'yes']) {
+      expect((await putCat(off.id, { is_quick_action: v })).status, String(v)).toBe(422);
+    }
+    expect(await quickCount()).toBe(4);
+  });
+
   it('W5: reserved names are refused for categories, any case or spacing', async () => {
     for (const name of ['Starting points', ' UNDO ', 'balance correction']) {
       expect((await postCat({ name })).status, name).toBe(422);
@@ -83,6 +91,18 @@ describe.skipIf(!runDb)('A2 step 3: guards', () => {
     expect((await redeem(c.id, { reward_id: r1.id, request_id: 'not-a-uuid' })).status).toBe(400);
   });
 
+  it('I0: the same id sent for two different children at once: one spend, one 409, never 500', async () => {
+    const one = await setup();
+    const two = await setup();
+    const id = rid();
+    const [a, b] = await Promise.all([
+      redeem(one.c.id, { reward_id: one.r1.id, request_id: id }),
+      redeem(two.c.id, { reward_id: two.r1.id, request_id: id }),
+    ]);
+    expect([a.status, b.status].sort()).toEqual([200, 409]);
+    expect((await balance(one.c.id)) + (await balance(two.c.id))).toBe(90);
+  });
+
   it('I1: a spend with no request id still works this release', async () => {
     const { c, r1 } = await setup();
     expect((await redeem(c.id, { reward_id: r1.id })).status).toBe(200);
@@ -115,5 +135,12 @@ describe.skipIf(!runDb)('A2 step 3: guards', () => {
       expect((await api(ctx.base, 'PUT', `/api/children/${c.id}`, { token: F.token, body: { weekly_target: ok } })).status, String(ok)).toBe(200);
     }
     expect((await api(ctx.base, 'POST', '/api/children', { token: F.token, body: { name: 'Big', weekly_target: 99999 } })).status).toBe(400);
+    // 008: a target stored out of range before this release is brought inside it.
+    await ctx.pool.query('UPDATE children SET weekly_target = 50000 WHERE id = $1', [c.id]);
+    await ctx.pool.query("DELETE FROM schema_migrations WHERE name = '008_weekly_target_range.sql'");
+    const { runMigrations } = await import('../migrate.js');
+    await runMigrations(ctx.pool, { log: () => {} });
+    expect((await ctx.pool.query('SELECT weekly_target FROM children WHERE id = $1', [c.id])).rows[0].weekly_target).toBe(10000);
+    expect((await api(ctx.base, 'PUT', `/api/children/${c.id}`, { token: F.token, body: { name: 'Renamed', weekly_target: 10000 } })).status).toBe(200);
   });
 });

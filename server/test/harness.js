@@ -11,7 +11,11 @@ export function testEnv() {
 }
 
 export async function startApp() {
-  process.env.DATABASE_URL = testEnv();
+  // Same session clock settings as production (checked 2026-11-10), so a
+  // date bug that only shows in UTC can't hide behind the test machine's zone.
+  const url = testEnv();
+  const opts = 'options=' + encodeURIComponent('-c TimeZone=Etc/UTC -c DateStyle=ISO,MDY');
+  process.env.DATABASE_URL = url + (url.includes('?') ? '&' : '?') + opts;
   process.env.JWT_SECRET = process.env.JWT_SECRET || TEST_SECRET;
   const { default: pool, initDb } = await import('../db.js');
   await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');

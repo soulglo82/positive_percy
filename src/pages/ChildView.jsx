@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { refreshPoints, newRequestId } from "@/lib/points";
+import { refreshPoints, spendReward } from "@/lib/points";
 import { Child, Reward } from "@/api/entities";
-import { useAuth, getToken } from "@/lib/AuthContext";
+import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,25 +57,7 @@ export default function ChildView() {
 
     setRedeeming(reward.id);
     try {
-      const token = getToken();
-      const res = await fetch(`/api/children/${selectedChild.id}/redeem`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        // The server prices the reward; request_id makes a retry charge once.
-        body: JSON.stringify({
-          reward_id: reward.id,
-          request_id: newRequestId(),
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        toast.error(err.error || 'Failed to redeem reward');
-        return;
-      }
+      await spendReward(selectedChild.id, reward.id);
 
       refreshPoints(queryClient);
 
@@ -86,8 +68,8 @@ export default function ChildView() {
         origin: { y: 0.6 },
         colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
       });
-    } catch {
-      toast.error('Failed to redeem reward');
+    } catch (e) {
+      toast.error(e.message || 'Failed to redeem reward');
     } finally {
       setRedeeming(null);
     }
