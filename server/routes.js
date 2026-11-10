@@ -1499,9 +1499,6 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
     if (!(await referencesAreOwned(pool, data, req.familyCode))) {
       return res.status(404).json({ error: 'Not found' });
     }
-    if (!(await uploadsAreOwned(pool, data, req.familyCode))) {
-      return res.status(404).json({ error: 'Not found' });
-    }
     const keys = Object.keys(data);
     // Fallback: nothing valid to insert (only reachable for a table with no
     // required columns). Reject cleanly instead of building empty SQL.
@@ -1511,10 +1508,27 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
     const values = Object.values(data);
     const placeholders = keys.map((_, i) => `$${i + 1}`);
 
-    const { rows } = await pool.query(
-      `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
-      values
-    );
+    // Photo check and insert in one transaction, so the photo can't be
+    // deleted between the two.
+    const client = await pool.connect();
+    let rows;
+    try {
+      await client.query('BEGIN');
+      if (!(await uploadsAreOwned(client, data, req.familyCode))) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Not found' });
+      }
+      ({ rows } = await client.query(
+        `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
+        values
+      ));
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
     broadcastFn(req.familyCode, { type: `${req.params.entity}_created`, id: rows[0].id });
     res.json(rows[0]);
   } catch (err) {
@@ -1627,6 +1641,10 @@ export async function scopedUpdate(db, table, id, familyCode, data) {
     );
     if (cur.length === 0) return { status: 404 };
     stored = cur[0];
+    // Lock the old and new photo together, in id order, before anything else
+    // touches them, so two edits swapping photos can't deadlock.
+    const ids = [...new Set([uploadIdOf(stored[photoCol]), uploadIdOf(clean[photoCol])].filter(Boolean))].sort();
+    if (ids.length) await db.query('SELECT id FROM uploads WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
   }
   if (!(await uploadsAreOwned(db, clean, familyCode, stored))) return { status: 404 };
   const values = Object.values(clean);

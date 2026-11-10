@@ -188,6 +188,23 @@ describe.skipIf(!runDb)('P-1: photo clean-up', () => {
     }
   });
 
+  it('two edits swapping photos at the same time both succeed', async () => {
+    for (let i = 0; i < 5; i++) {
+      const a = await upload(X); const b = await upload(X);
+      const ca = (await child(X, { avatar_url: a })).json;
+      const cb = (await child(X, { avatar_url: b })).json;
+      // Rewards keep both photos in use, so neither is freed mid-swap.
+      await reward(X, { image_url: a }); await reward(X, { image_url: b });
+      const [r1, r2] = await Promise.all([
+        put(X, 'children', ca.id, { avatar_url: b }),
+        put(X, 'children', cb.id, { avatar_url: a }),
+      ]);
+      expect([r1.status, r2.status], `round ${i}`).toEqual([200, 200]);
+      expect(await exists(a)).toBe(true);
+      expect(await exists(b)).toBe(true);
+    }
+  });
+
   it('T7: backfill stamps uploads used by exactly one family and leaves shared or family-less ones; twice is the same', async () => {
     const mk = async () => (await ctx.pool.query(
       "INSERT INTO uploads (data, content_type) VALUES ($1, 'image/png') RETURNING id::text AS id", [PNG])).rows[0].id;
