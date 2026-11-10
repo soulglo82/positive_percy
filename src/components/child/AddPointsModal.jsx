@@ -13,6 +13,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { getToken } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { PERCY } from "@/constants/terminology";
+import { MAX_AWARD } from "@/lib/points";
 
 const POSITIVE_AMOUNTS = [1, 2, 3, 4, 5, 10];
 const NEGATIVE_AMOUNTS = [-1, -2, -3, -4, -5, -10];
@@ -50,17 +51,26 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
   }, [filteredCategories, category]);
 
   const isNegative = points < 0;
+  const [submitting, setSubmitting] = useState(false);
+  const outOfRange = !Number.isInteger(points) || points === 0 || Math.abs(points) > MAX_AWARD;
 
-  const handleSubmit = () => {
-    onSubmit({
-      points,
-      category: isNegative ? "Adjustment" : category,
-      note,
-    });
-    setPoints(1);
-    setCategory(filteredCategories.length > 0 ? filteredCategories[0].name : "");
-    setNote("");
-    onClose();
+  const handleSubmit = async () => {
+    if (submitting || outOfRange) return;
+    setSubmitting(true);
+    try {
+      const ok = await onSubmit({
+        points,
+        category: isNegative ? "Adjustment" : category,
+        note,
+      });
+      if (ok === false) return; // error already shown; keep the form open
+      setPoints(1);
+      setCategory(filteredCategories.length > 0 ? filteredCategories[0].name : "");
+      setNote("");
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -120,8 +130,17 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
             <NumberInput
               value={points}
               onChange={setPoints}
+              min={-MAX_AWARD}
+              max={MAX_AWARD}
+              aria-label="Points"
               className="text-lg font-semibold"
             />
+            {Math.abs(points) > MAX_AWARD && (
+              <p className="text-xs text-red-600 mt-1">Up to {MAX_AWARD} points at a time.</p>
+            )}
+            {!Number.isInteger(points) && (
+              <p className="text-xs text-red-600 mt-1">Whole numbers only.</p>
+            )}
           </div>
 
           {/* Category — tappable boxes */}
@@ -195,7 +214,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={points === 0}
+            disabled={outOfRange || submitting}
             className={`flex-1 ${
               isNegative
                 ? 'bg-rose-500 hover:bg-rose-600'

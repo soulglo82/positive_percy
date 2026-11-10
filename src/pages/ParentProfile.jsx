@@ -197,7 +197,7 @@ export default function ParentProfile() {
         onClose={() => setShowAddChild(false)}
         onSubmit={async (data) => {
           await Child.create(buildChildCreatePayload(data));
-          queryClient.invalidateQueries(['children']);
+          queryClient.invalidateQueries({ queryKey: ['children'] });
           setShowAddChild(false);
           toast.success("Child added!");
         }}
@@ -213,12 +213,12 @@ export default function ParentProfile() {
           child={selectedChild}
           onSubmit={async (data) => {
             await Child.update(selectedChild.id, data);
-            queryClient.invalidateQueries(['children']);
+            queryClient.invalidateQueries({ queryKey: ['children'] });
             toast.success(`${data.name}'s profile updated!`);
           }}
           onDelete={async (child) => {
             await Child.delete(child.id);
-            queryClient.invalidateQueries(['children']);
+            queryClient.invalidateQueries({ queryKey: ['children'] });
             setShowEditChild(false);
             setSelectedChild(null);
             toast.success(`${child.name} has been removed`);

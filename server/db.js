@@ -162,6 +162,11 @@ export async function initDb() {
       "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 5",
       "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS is_quick_action BOOLEAN DEFAULT false",
       "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS assigned_children TEXT[] DEFAULT '{}'",
+      // Batch A: one award per request_id per family (retry safety)
+      "ALTER TABLE point_events ADD COLUMN IF NOT EXISTS request_id UUID",
+      "CREATE UNIQUE INDEX IF NOT EXISTS point_events_family_request ON point_events (family_code, request_id) WHERE request_id IS NOT NULL",
+      // Batch A: category points are whole numbers from 1 to 1000
+      "UPDATE behavior_categories SET points = LEAST(1000, GREATEST(1, points)) WHERE points > 1000 OR points < 1",
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});

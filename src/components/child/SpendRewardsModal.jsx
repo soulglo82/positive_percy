@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { refreshPoints } from "@/lib/points";
 import {
   Dialog,
   DialogContent,
@@ -53,9 +54,7 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
         return;
       }
 
-      queryClient.invalidateQueries(['children']);
-      queryClient.invalidateQueries(['recentActivity']);
-      queryClient.invalidateQueries(['activityFeed']);
+      refreshPoints(queryClient);
 
       toast.success(`${child.name} redeemed ${reward.title}!`);
       confetti({

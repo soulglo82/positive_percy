@@ -1,6 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getToken } from '@/lib/AuthContext';
+import { POINTS_QUERY_KEYS } from '@/lib/points';
+
+// Server event type -> query keys to refresh.
+export function keysForEvent(type) {
+  if (!type) return [];
+  if (type === 'points_updated' || type === 'stack_updated' || type.startsWith('children_')) return POINTS_QUERY_KEYS;
+  if (type.startsWith('rewards_')) return [['rewards'], ['children']];
+  if (type.startsWith('behavior_categories_') || type.startsWith('quick_actions_')) return [['behaviorCategories']];
+  return [];
+}
 
 export default function useRealtimeSync(familyCode) {
   const queryClient = useQueryClient();
@@ -23,14 +33,10 @@ export default function useRealtimeSync(familyCode) {
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
-          const entity = msg.type?.split('_')[0]; // e.g. "children" from "children_updated"
-
-          // Invalidate relevant queries based on the event type
-          if (msg.type === 'points_updated') {
-            queryClient.invalidateQueries(['children']);
-          } else if (entity) {
-            queryClient.invalidateQueries([entity]);
-          }
+          // Each event names exactly the screens it affects. Anything about
+          // points refreshes every balance, history and weekly view.
+          const keys = keysForEvent(msg.type);
+          for (const queryKey of keys) queryClient.invalidateQueries({ queryKey });
         } catch {}
       };
 

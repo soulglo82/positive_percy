@@ -4,7 +4,7 @@ import { Plus, Pencil, Gift } from "lucide-react";
 import { motion } from "framer-motion";
 import { PERCY } from "@/constants/terminology";
 
-export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, onSpendRewards, quickActions = [], rewards = [] }) {
+export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, onSpendRewards, quickActions = [], rewards = [], awarding = false }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -63,7 +63,9 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, o
                   <button
                     key={action.id || action.label}
                     onClick={() => onQuickAction(child, action)}
-                    className="flex items-center gap-1.5 text-sm font-medium px-2.5 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:border-green-300 active:bg-green-200 transition-colors min-h-[38px]"
+                    disabled={awarding}
+                    aria-label={`Give ${child.name} ${action.points} points for ${action.label}`}
+                    className="disabled:opacity-60 flex items-center gap-1.5 text-sm font-medium px-2.5 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:border-green-300 active:bg-green-200 transition-colors min-h-[38px]"
                   >
                     <span className="shrink-0">{action.icon || '⭐'}</span>
                     <span className="truncate flex-1 text-left">{action.label}</span>

@@ -42,16 +42,14 @@ describe.skipIf(!runDb)('security tranche 1', () => {
     expect(r2[0]).toEqual({ name: 'A kid renamed', family_code: A.code });
   });
 
-  it('1b: rows cannot be pointed at another family child or reward', async () => {
+  it('1b: history rows cannot be written through the generic routes, and awards stay in the family', async () => {
     const bChild = await childOf(B, 'B kid ref');
-    const bReward = await api(ctx.base, 'POST', '/api/rewards', { token: B.token, body: { title: 'B ref', cost_points: 1 } });
     const ev = await api(ctx.base, 'POST', '/api/point_events', { token: A.token, body: { child_id: bChild.id, points: 5, category: 'x' } });
-    expect(ev.status).toBe(404);
-    const aChild = await childOf(A, 'A kid ref');
-    const rd = await api(ctx.base, 'POST', '/api/redemptions', { token: A.token, body: { child_id: aChild.id, child_name: 'x', reward_id: bReward.json.id, reward_title: 'x', reward_cost: 1, status: 'Completed' } });
-    expect(rd.status).toBe(404);
-    const okEv = await api(ctx.base, 'POST', '/api/point_events', { token: A.token, body: { child_id: aChild.id, points: 5, category: 'x' } });
-    expect(okEv.status).toBe(200);
+    expect(ev.status).toBe(405);
+    const rd = await api(ctx.base, 'POST', '/api/redemptions', { token: B.token, body: { child_id: bChild.id, child_name: 'x', reward_id: bChild.id, reward_title: 'x', reward_cost: 1, status: 'Completed' } });
+    expect(rd.status).toBe(405);
+    const aw = await api(ctx.base, 'POST', `/api/children/${bChild.id}/award`, { token: A.token, body: { points: 5, category: 'x', request_id: crypto.randomUUID() } });
+    expect(aw.status).toBe(404);
     const { rowCount } = await ctx.pool.query('SELECT 1 FROM point_events WHERE child_id = $1', [bChild.id]);
     expect(rowCount).toBe(0);
   });
@@ -259,8 +257,8 @@ describe.skipIf(!runDb)('security tranche 1', () => {
 
   // G1
   it('G1: database errors are not echoed to the client', async () => {
-    const r = await api(ctx.base, 'POST', '/api/children/not-a-uuid/adjust-points', { token: A.token, body: { points: 1 } });
-    expect(r.status).toBe(500);
+    const r = await api(ctx.base, 'POST', '/api/children/not-a-uuid/check-badges', { token: A.token });
+    expect(r.status).toBe(404);
     expect(r.text).not.toMatch(/uuid|syntax|relation|column|violates/i);
     const bad = await fetch(ctx.base + '/api/children', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${A.token}` }, body: '{bad json' });
     expect(bad.status).toBe(400);

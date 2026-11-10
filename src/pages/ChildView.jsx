@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { refreshPoints } from "@/lib/points";
 import { Child, Reward } from "@/api/entities";
 import { useAuth, getToken } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -42,6 +43,7 @@ export default function ChildView() {
 
   const rewards = allRewards
     .filter(reward => {
+      if (reward.visible_to_child === false) return false;
       if (!reward.assigned_child_ids || reward.assigned_child_ids.length === 0) return true;
       return selectedChildId && reward.assigned_child_ids.includes(selectedChildId);
     })
@@ -76,9 +78,7 @@ export default function ChildView() {
         return;
       }
 
-      queryClient.invalidateQueries(['children']);
-      queryClient.invalidateQueries(['recentActivity']);
-      queryClient.invalidateQueries(['activityFeed']);
+      refreshPoints(queryClient);
 
       toast.success(`${selectedChild.name} redeemed ${reward.title}!`);
       confetti({

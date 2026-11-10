@@ -27,8 +27,6 @@ import { PERCY } from "@/constants/terminology";
 export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDelete }) {
   const [name, setName] = useState("");
   const [weeklyTarget, setWeeklyTarget] = useState(50);
-  const [totalPoints, setTotalPoints] = useState(0);
-  const [weeklyPoints, setWeeklyPoints] = useState(0);
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -39,8 +37,6 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
     if (child) {
       setName(child.name || "");
       setWeeklyTarget(child.weekly_target || 50);
-      setTotalPoints(child.total_points || 0);
-      setWeeklyPoints(child.weekly_points || 0);
       setAvatarUrl(child.avatar_url || "");
       setAvatarPreview(child.avatar_url || "");
     }
@@ -75,8 +71,6 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
       await onSubmit({
         name: name.trim(),
         weekly_target: weeklyTarget,
-        total_points: totalPoints,
-        weekly_points: weeklyPoints,
         avatar_url: avatarUrl
       });
       onClose();
@@ -168,32 +162,10 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-sm font-medium text-slate-700 mb-2 block">
-                {PERCY.POINTS_COMPACT}
-              </Label>
-              <NumberInput
-                value={totalPoints}
-                onChange={setTotalPoints}
-                min="0"
-                placeholder="0"
-                className="text-lg font-semibold"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-slate-700 mb-2 block">
-                Weekly {PERCY.POINTS_COMPACT}
-              </Label>
-              <NumberInput
-                value={weeklyPoints}
-                onChange={setWeeklyPoints}
-                min="0"
-                placeholder="0"
-                className="text-lg font-semibold"
-              />
-            </div>
-          </div>
+          <p className="text-sm text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+            {child?.name || 'This child'} has <span className="font-semibold text-slate-700">{child?.total_points ?? 0}</span> {PERCY.POINTS_COMPACT}.
+            To change them, use Add Points so the change shows in the history.
+          </p>
         </div>
 
         <div className="flex gap-3">
