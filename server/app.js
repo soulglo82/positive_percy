@@ -6,6 +6,7 @@ import { WebSocketServer } from 'ws';
 import helmet from 'helmet';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import routes, { setBroadcast, verifyToken } from './routes.js';
+import pool from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -52,6 +53,17 @@ export function createApp() {
 
   // Uploads are capped at 2MB of image, which is about 2.7MB as base64.
   app.use(express.json({ limit: '3mb' }));
+
+  // Healthcheck for Railway: answers only once startup (schema and
+  // migrations) has finished and the database responds. No auth, no limit.
+  app.get('/api/health', async (req, res) => {
+    try {
+      await pool.query('SELECT 1');
+      res.json({ ok: true });
+    } catch {
+      res.status(503).json({ ok: false });
+    }
+  });
 
   // API routes
   app.use(routes);

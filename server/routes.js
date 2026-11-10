@@ -1589,8 +1589,8 @@ async function createChild(data, familyCode) {
     );
     if (starting > 0) {
       await client.query(
-        `INSERT INTO point_events (child_id, points, category, child_name, family_code)
-         VALUES ($1, $2, 'Starting points', $3, $4)`,
+        `INSERT INTO point_events (child_id, points, category, child_name, family_code, kind)
+         VALUES ($1, $2, 'Starting points', $3, $4, 'starting')`,
         [rows[0].id, starting, rows[0].name, familyCode]
       );
     }
