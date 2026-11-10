@@ -33,10 +33,15 @@ async function postAward(childId, body) {
 // returns that result instead of awarding again.
 export async function awardPoints(childId, { points, category, note }, requestId = newRequestId()) {
   const body = { points, category, note: note || undefined, request_id: requestId };
+  // Retry once, same id, if the first attempt may have landed without us
+  // hearing back: a network failure or a server/gateway error.
   let res;
   try {
     res = await postAward(childId, body);
   } catch {
+    res = null;
+  }
+  if (!res || res.status >= 500) {
     await new Promise((r) => setTimeout(r, 800));
     res = await postAward(childId, body);
   }

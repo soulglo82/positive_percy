@@ -138,6 +138,9 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
             {Math.abs(points) > MAX_AWARD && (
               <p className="text-xs text-red-600 mt-1">Up to {MAX_AWARD} points at a time.</p>
             )}
+            {!Number.isInteger(points) && (
+              <p className="text-xs text-red-600 mt-1">Whole numbers only.</p>
+            )}
           </div>
 
           {/* Category — tappable boxes */}

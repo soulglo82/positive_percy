@@ -217,14 +217,17 @@ export default function ParentDashboard() {
         toast.success(`${child.name} hit their weekly goal!`);
       }
       updateStreak();
-      if (points > 0) {
-        // Badges first, then one refresh, so this screen shows them too.
-        await fetch(`/api/children/${child.id}/check-badges`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
-        }).catch(() => {});
-      }
       refreshPoints(queryClient);
+      if (points > 0) {
+        // After the lock is released: a slow badge check must not block taps.
+        // Its own broadcast refreshes the screen when badges change.
+        setTimeout(() => {
+          fetch(`/api/children/${child.id}/check-badges`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+          }).then(() => refreshPoints(queryClient)).catch(() => {});
+        }, 0);
+      }
       return true;
     } catch (err) {
       toast.error(err.status === 400 && err.message ? err.message : "Couldn't update points. Please try again.");

@@ -98,6 +98,17 @@ async function loadSpendableReward(db, rewardId, childId, familyCode) {
 
 const stackTotalOf = (stack) => (stack || []).reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
 
+// The stack re-priced from the rewards table, dropping items whose reward is
+// gone or no longer for this child. Saved costs are never trusted.
+async function pricedStack(db, stack, childId, familyCode) {
+  const out = [];
+  for (const item of stack || []) {
+    const reward = await loadSpendableReward(db, item.rewardId, childId, familyCode);
+    if (reward) out.push({ rewardId: reward.id, name: reward.title, cost: reward.cost });
+  }
+  return out;
+}
+
 // ─── Input validation helpers ───────────────────────────────────────────────
 
 const MAX_NAME_LENGTH = 100;
@@ -618,7 +629,7 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     const child_name = childRows[0].name;
 
     // Points already set aside in the reward stack are not spendable twice.
-    const reserved = stackTotalOf(childRows[0].reward_stack);
+    const reserved = stackTotalOf(await pricedStack(client, childRows[0].reward_stack, childId, req.familyCode));
     if (childRows[0].total_points - reserved < reward_cost) {
       await client.query('ROLLBACK');
       return res.status(400).json({
@@ -693,8 +704,8 @@ router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Child not found' });
     }
 
-    const stack = childRows[0].reward_stack || [];
-    const stackTotal = stack.reduce((sum, item) => sum + item.cost, 0);
+    const stack = await pricedStack(client, childRows[0].reward_stack, childId, req.familyCode);
+    const stackTotal = stackTotalOf(stack);
 
     if (stackTotal + reward_cost > childRows[0].total_points) {
       await client.query('ROLLBACK');
@@ -792,11 +803,7 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
 
     // Price every item from the rewards table now. Items whose reward is gone
     // or no longer for this child are dropped, never charged.
-    const priced = [];
-    for (const item of stack) {
-      const reward = await loadSpendableReward(client, item.rewardId, childId, req.familyCode);
-      if (reward) priced.push({ rewardId: reward.id, name: reward.title, cost: reward.cost });
-    }
+    const priced = await pricedStack(client, stack, childId, req.familyCode);
     if (priced.length === 0) {
       await client.query("UPDATE children SET reward_stack = '[]' WHERE id = $1 AND family_code = $2", [childId, req.familyCode]);
       await client.query('COMMIT');
