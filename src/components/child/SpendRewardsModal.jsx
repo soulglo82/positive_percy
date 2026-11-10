@@ -133,6 +133,11 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
             </div>
           )}
         </div>
+        <div className="pt-3 border-t border-slate-100">
+          <Button variant="outline" onClick={onClose} className="w-full min-h-11">
+            Done
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

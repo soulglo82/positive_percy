@@ -68,7 +68,7 @@ export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Gift className="w-6 h-6 text-orange-500" />
@@ -210,11 +210,12 @@ export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [
           )}
         </div>
 
-        <div className="flex gap-3">
+        {/* Always on screen, however long the form is. */}
+        <div className="flex gap-3 sticky bottom-0 -mx-6 px-6 pt-3 pb-1 bg-background border-t border-slate-100">
           <Button
             variant="outline"
             onClick={onClose}
-            className="flex-1"
+            className="flex-1 min-h-11"
           >
             Cancel
           </Button>
