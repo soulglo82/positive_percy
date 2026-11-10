@@ -35,8 +35,9 @@ export default function useRealtimeSync(familyCode) {
       };
 
       ws.onclose = (event) => {
-        // Rejected for no valid session: nothing to retry with.
-        if (event.code === 4401 && !getToken()) return;
+        // Rejected for no valid session: retrying with the same token cannot
+        // succeed. The next API call returns 401 and the app signs out.
+        if (event.code === 4401) return;
         // Auto-reconnect after 3 seconds
         reconnectTimer.current = setTimeout(connect, 3000);
       };
