@@ -6,6 +6,13 @@ import { pickAllowedColumns, findMissingRequired } from './columns.js';
 
 const router = Router();
 
+// Every route with an :id expects a UUID. Anything else is not found, so a
+// malformed id never reaches the database.
+router.param('id', (req, res, next, id) => {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return res.status(404).json({ error: 'Not found' });
+  return next();
+});
+
 let broadcastFn = () => {};
 export function setBroadcast(fn) { broadcastFn = fn; }
 
@@ -473,6 +480,7 @@ router.post('/api/children/weekly-reset', authMiddleware, async (req, res) => {
          AND (last_reset_date IS NULL OR last_reset_date != $1)`,
       [todayStr, req.familyCode]
     );
+    if (rowCount > 0) broadcastFn(req.familyCode, { type: 'points_updated' });
     res.json({ reset: true, children_reset: rowCount });
   } catch (err) {
     return serverError(res, 'Weekly reset error:', err);
@@ -480,6 +488,19 @@ router.post('/api/children/weekly-reset', authMiddleware, async (req, res) => {
 });
 
 // Atomic point adjustment (prevents race conditions)
+// A request_id seen before: same award -> return what happened, unchanged.
+// Anything different under the same id -> 409, never a second award.
+function replayAward(res, prior, child, points, category) {
+  const sameChild = prior.child_id === child.id;
+  const sameCategory = prior.category === String(category).trim();
+  const sameDirection = Math.sign(prior.points) === Math.sign(points);
+  const fits = points > 0 ? prior.points === points : prior.points >= points;
+  if (!sameChild || !sameCategory || !sameDirection || !fits) {
+    return res.status(409).json({ error: 'Invalid request' });
+  }
+  return res.json({ event: prior, child, duplicate: true, capped: prior.points !== points });
+}
+
 // Award or deduct points. The only way a balance changes outside spending:
 // one transaction locks the child, applies the amount (a deduction stops at
 // 0), and writes the history row for exactly what was applied. request_id
@@ -520,8 +541,7 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
     );
     if (prior.length > 0) {
       await client.query('ROLLBACK');
-      if (prior[0].child_id !== child.id) return res.status(409).json({ error: 'Invalid request' });
-      return res.json({ event: prior[0], child, duplicate: true, capped: false });
+      return replayAward(res, prior[0], child, points, category);
     }
 
     const applied = points < 0 ? Math.max(points, -child.total_points) : points;
@@ -530,11 +550,24 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: `${child.name} has no points to take away.` });
     }
 
-    const { rows: eventRows } = await client.query(
-      `INSERT INTO point_events (child_id, points, category, note, child_name, family_code, request_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [child.id, applied, category.trim(), note || null, child.name, req.familyCode, request_id]
-    );
+    let eventRows;
+    try {
+      ({ rows: eventRows } = await client.query(
+        `INSERT INTO point_events (child_id, points, category, note, child_name, family_code, request_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [child.id, applied, category.trim(), note || null, child.name, req.familyCode, request_id]
+      ));
+    } catch (err) {
+      // Same request_id committed meanwhile (for another child's row lock).
+      if (err.code !== '23505') throw err;
+      await client.query('ROLLBACK');
+      const { rows: won } = await pool.query(
+        'SELECT * FROM point_events WHERE family_code = $1 AND request_id = $2',
+        [req.familyCode, request_id]
+      );
+      if (won.length === 0) throw err;
+      return replayAward(res, won[0], child, points, category);
+    }
     const { rows: updated } = await client.query(
       `UPDATE children
        SET total_points = total_points + $1,
@@ -585,9 +618,14 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     const child_name = childRows[0].name;
 
     // Points already set aside in the reward stack are not spendable twice.
-    if (childRows[0].total_points - stackTotalOf(childRows[0].reward_stack) < reward_cost) {
+    const reserved = stackTotalOf(childRows[0].reward_stack);
+    if (childRows[0].total_points - reserved < reward_cost) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Not enough points' });
+      return res.status(400).json({
+        error: reserved > 0
+          ? `Not enough points: ${reserved} are already set aside for stacked rewards.`
+          : 'Not enough points',
+      });
     }
 
     // Deduct points
@@ -689,33 +727,39 @@ router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
 
 // Remove reward from child's stack by index
 router.delete('/api/children/:id/stack/:index', authMiddleware, async (req, res) => {
+  if (!/^\d+$/.test(req.params.index)) return res.status(400).json({ error: 'Invalid stack index' });
+  const index = Number(req.params.index);
+  const childId = req.params.id;
+  const client = await pool.connect();
   try {
-    const childId = req.params.id;
-    const index = parseInt(req.params.index);
-
-    const { rows: childRows } = await pool.query(
-      'SELECT reward_stack FROM children WHERE id = $1 AND family_code = $2',
+    await client.query('BEGIN');
+    // Locked so a remove racing a confirm cannot put paid items back.
+    const { rows: childRows } = await client.query(
+      'SELECT reward_stack FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
       [childId, req.familyCode]
     );
-
-    if (childRows.length === 0) return res.status(404).json({ error: 'Child not found' });
-
+    if (childRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Child not found' });
+    }
     const stack = childRows[0].reward_stack || [];
-    if (index < 0 || index >= stack.length) {
+    if (index >= stack.length) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Invalid stack index' });
     }
-
     stack.splice(index, 1);
-
-    await pool.query(
+    await client.query(
       'UPDATE children SET reward_stack = $1 WHERE id = $2 AND family_code = $3',
       [JSON.stringify(stack), childId, req.familyCode]
     );
-
+    await client.query('COMMIT');
     broadcastFn(req.familyCode, { type: 'stack_updated', child_id: childId });
     res.json({ reward_stack: stack });
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     return serverError(res, 'Stack remove error:', err);
+  } finally {
+    client.release();
   }
 });
 
@@ -746,7 +790,21 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
       return res.status(400).json({ error: 'Stack is empty' });
     }
 
-    const stackTotal = stack.reduce((sum, item) => sum + item.cost, 0);
+    // Price every item from the rewards table now. Items whose reward is gone
+    // or no longer for this child are dropped, never charged.
+    const priced = [];
+    for (const item of stack) {
+      const reward = await loadSpendableReward(client, item.rewardId, childId, req.familyCode);
+      if (reward) priced.push({ rewardId: reward.id, name: reward.title, cost: reward.cost });
+    }
+    if (priced.length === 0) {
+      await client.query("UPDATE children SET reward_stack = '[]' WHERE id = $1 AND family_code = $2", [childId, req.familyCode]);
+      await client.query('COMMIT');
+      broadcastFn(req.familyCode, { type: 'stack_updated', child_id: childId });
+      return res.status(400).json({ error: 'Those rewards are no longer available.' });
+    }
+    stack.splice(0, stack.length, ...priced);
+    const stackTotal = stackTotalOf(stack);
 
     if (stackTotal > child.total_points) {
       await client.query('ROLLBACK');
@@ -894,6 +952,7 @@ router.post('/api/children/:id/check-badges', authMiddleware, async (req, res) =
         'UPDATE children SET badges_earned = $1 WHERE id = $2 AND family_code = $3',
         [allBadges, childId, req.familyCode]
       );
+      broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
       return res.json({ new_badges: newBadges, all_badges: allBadges });
     }
 
@@ -940,6 +999,7 @@ router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
        categoryPoints(points), Boolean(is_quick_action),
        Array.isArray(assigned_children) ? assigned_children : []]
     );
+    broadcastFn(req.familyCode, { type: 'behavior_categories_updated' });
     res.json(rows[0]);
   } catch (err) {
     if (err.code === '23505') {
@@ -989,6 +1049,7 @@ router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
       values
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Category not found' });
+    broadcastFn(req.familyCode, { type: 'behavior_categories_updated' });
     res.json(rows[0]);
   } catch (err) {
     if (err.code === '23505') {
@@ -1032,6 +1093,7 @@ router.delete('/api/behavior-categories/:id', authMiddleware, async (req, res) =
       'DELETE FROM behavior_categories WHERE id = $1 AND family_code = $2',
       [req.params.id, req.familyCode]
     );
+    broadcastFn(req.familyCode, { type: 'behavior_categories_updated' });
     res.json({ success: true });
   } catch (err) {
     return serverError(res, 'Delete category error:', err);
@@ -1065,6 +1127,7 @@ router.post('/api/behavior-categories/reorder', authMiddleware, async (req, res)
       'SELECT * FROM behavior_categories WHERE family_code = $1 ORDER BY sort_order ASC',
       [req.familyCode]
     );
+    broadcastFn(req.familyCode, { type: 'behavior_categories_updated' });
     res.json(rows);
   } catch (err) {
     return serverError(res, 'Reorder categories error:', err);
@@ -1462,7 +1525,15 @@ async function createChild(data, familyCode) {
     e.status = 400;
     throw e;
   }
-  const row = { ...stripChildBalance(data), total_points: starting, weekly_points: starting, family_code: familyCode };
+  // last_reset_date = today (UTC, as weekly-reset uses) so a child added on a
+  // Monday does not have its starting points wiped by that day's reset.
+  const row = {
+    ...stripChildBalance(data),
+    total_points: starting,
+    weekly_points: starting,
+    last_reset_date: new Date().toISOString().split('T')[0],
+    family_code: familyCode,
+  };
   const keys = Object.keys(row);
   const client = await pool.connect();
   try {

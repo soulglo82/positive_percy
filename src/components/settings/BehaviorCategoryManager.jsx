@@ -282,7 +282,6 @@ export default function BehaviorCategoryManager() {
                                 max={1000}
                                 onChange={setEditPoints}
                                 className="w-20 h-9 text-sm"
-                                min="1"
                               />
                             </div>
                             <div className="flex gap-2">
@@ -458,7 +457,6 @@ function AddCategoryModal({ isOpen, onClose, onSubmit }) {
               onChange={setPoints}
               min={1}
               max={1000}
-              min="1"
             />
           </div>
         </div>

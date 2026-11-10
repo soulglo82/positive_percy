@@ -12,26 +12,39 @@ export function refreshPoints(queryClient) {
   }
 }
 
-const newRequestId = () =>
+export const newRequestId = () =>
   (globalThis.crypto?.randomUUID?.() ??
     'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       const r = (Math.random() * 16) | 0;
       return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
     }));
 
-// One request per award: the server writes the balance and the history row
-// together. The request id is made once per tap so a retry cannot apply twice.
-export async function awardPoints(childId, { points, category, note }) {
-  const res = await fetch(`/api/children/${childId}/award`, {
+async function postAward(childId, body) {
+  return fetch(`/api/children/${childId}/award`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-    body: JSON.stringify({ points, category, note: note || undefined, request_id: newRequestId() }),
+    body: JSON.stringify(body),
   });
-  const body = await res.json().catch(() => ({}));
+}
+
+// One request per award: the server writes the balance and the history row
+// together. The request id is made once per tap and reused for the automatic
+// retry, so if the first attempt landed but its reply was lost, the retry
+// returns that result instead of awarding again.
+export async function awardPoints(childId, { points, category, note }, requestId = newRequestId()) {
+  const body = { points, category, note: note || undefined, request_id: requestId };
+  let res;
+  try {
+    res = await postAward(childId, body);
+  } catch {
+    await new Promise((r) => setTimeout(r, 800));
+    res = await postAward(childId, body);
+  }
+  const result = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(body.error || 'Could not update points');
+    const err = new Error(result.error || 'Could not update points');
     err.status = res.status;
     throw err;
   }
-  return body; // { event, child, duplicate, capped }
+  return result; // { event, child, duplicate, capped }
 }

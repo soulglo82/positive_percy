@@ -192,7 +192,10 @@ export default function ParentDashboard() {
 
   // Shared by quick actions and the points form. Returns true if applied.
   const applyAward = async (child, { points, category, note }) => {
-    if (awarding.current.has(child.id)) return false;
+    if (awarding.current.has(child.id)) {
+      toast.info(`Still saving ${child.name}'s last change…`);
+      return false;
+    }
     awarding.current.add(child.id);
     setAwardingIds([...awarding.current]);
     try {
@@ -213,14 +216,15 @@ export default function ParentDashboard() {
         });
         toast.success(`${child.name} hit their weekly goal!`);
       }
-      refreshPoints(queryClient);
       updateStreak();
       if (points > 0) {
-        fetch(`/api/children/${child.id}/check-badges`, {
+        // Badges first, then one refresh, so this screen shows them too.
+        await fetch(`/api/children/${child.id}/check-badges`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
         }).catch(() => {});
       }
+      refreshPoints(queryClient);
       return true;
     } catch (err) {
       toast.error(err.status === 400 && err.message ? err.message : "Couldn't update points. Please try again.");

@@ -258,7 +258,7 @@ describe.skipIf(!runDb)('security tranche 1', () => {
   // G1
   it('G1: database errors are not echoed to the client', async () => {
     const r = await api(ctx.base, 'POST', '/api/children/not-a-uuid/check-badges', { token: A.token });
-    expect(r.status).toBe(500);
+    expect(r.status).toBe(404);
     expect(r.text).not.toMatch(/uuid|syntax|relation|column|violates/i);
     const bad = await fetch(ctx.base + '/api/children', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${A.token}` }, body: '{bad json' });
     expect(bad.status).toBe(400);

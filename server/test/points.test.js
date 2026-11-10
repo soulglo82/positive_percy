@@ -97,6 +97,8 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
     const r = await api(ctx.base, 'PUT', `/api/children/${c.id}`, { token: F.token, body: { name: 'Fay', total_points: 500, weekly_points: 500, points_spent: 3, reward_stack: [] } });
     expect(r.status).toBe(200);
     expect(await balance(c.id)).toEqual({ total_points: 10, weekly_points: 10 });
+    const { rows } = await ctx.pool.query('SELECT reward_stack, points_spent FROM children WHERE id = $1', [c.id]);
+    expect(rows[0]).toEqual({ reward_stack: [], points_spent: 0 });
   });
 
   it('A7: starting points appear in history; out-of-range starting points are refused', async () => {
@@ -159,5 +161,80 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
     const r = await api(ctx.base, 'POST', '/api/behavior-categories', { token: F.token, body: { name: 'Huge category', icon: '⭐', points: 5000 } });
     expect(r.status).toBe(200);
     expect(r.json.points).toBe(1000);
+    const up = await api(ctx.base, 'PUT', `/api/behavior-categories/${r.json.id}`, { token: F.token, body: { points: 0 } });
+    expect(up.json.points).toBe(1);
+    const up2 = await api(ctx.base, 'PUT', `/api/behavior-categories/${r.json.id}`, { token: F.token, body: { points: 99999 } });
+    expect(up2.json.points).toBe(1000);
+  });
+
+  it('A12: a replayed request returns what happened; a changed one under the same id is refused', async () => {
+    const c = await child('Lou');
+    await award(c.id, 4);
+    const id = rid();
+    const first = await award(c.id, -10, { category: 'Adjustment', request_id: id });
+    expect(first.json.capped).toBe(true);
+    const again = await award(c.id, -10, { category: 'Adjustment', request_id: id });
+    expect(again.json).toMatchObject({ duplicate: true, capped: true });
+    expect((await award(c.id, 999, { category: 'Adjustment', request_id: id })).status).toBe(409);
+    expect((await award(c.id, -10, { category: 'Other', request_id: id })).status).toBe(409);
+    expect((await balance(c.id)).total_points).toBe(0);
+  });
+
+  it('A13: one request id raced across two children awards once and never errors', async () => {
+    for (let i = 0; i < 5; i++) {
+      const a = await child(`Race a${i}`);
+      const b = await child(`Race b${i}`);
+      const id = rid();
+      const [r1, r2] = await Promise.all([award(a.id, 5, { request_id: id }), award(b.id, 5, { request_id: id })]);
+      expect([r1.status, r2.status].sort()).toEqual([200, 409]);
+      const total = (await balance(a.id)).total_points + (await balance(b.id)).total_points;
+      expect(total).toBe(5);
+    }
+  });
+
+  it('A14: weekly progress never goes below 0', async () => {
+    const c = await child('Max');
+    await award(c.id, 10);
+    await ctx.pool.query('UPDATE children SET weekly_points = 3 WHERE id = $1', [c.id]);
+    await award(c.id, -8, { category: 'Adjustment' });
+    expect(await balance(c.id)).toEqual({ total_points: 2, weekly_points: 0 });
+  });
+
+  it('A15: confirming a stack charges today\'s prices, even for items saved before', async () => {
+    const c = await child('Ned');
+    await award(c.id, 100);
+    const big = await api(ctx.base, 'POST', '/api/rewards', { token: F.token, body: { title: 'Big', cost_points: 80 } });
+    await ctx.pool.query('UPDATE children SET reward_stack = $1 WHERE id = $2',
+      [JSON.stringify([{ rewardId: big.json.id, name: 'Big', cost: 1 }, { rewardId: rid(), name: 'Gone', cost: 1 }]), c.id]);
+    const r = await api(ctx.base, 'POST', `/api/children/${c.id}/stack/confirm`, { token: F.token });
+    expect(r.status).toBe(200);
+    expect((await balance(c.id)).total_points).toBe(20);
+    expect(await historyTotal(c.id)).toBe(20);
+  });
+
+  it('A16: stack remove validates its input and cannot undo a confirm', async () => {
+    const c = await child('Oli');
+    await award(c.id, 100);
+    const t = await api(ctx.base, 'POST', '/api/rewards', { token: F.token, body: { title: 'T', cost_points: 10 } });
+    expect((await api(ctx.base, 'DELETE', `/api/children/${c.id}/stack/abc`, { token: F.token })).status).toBe(400);
+    expect((await api(ctx.base, 'DELETE', '/api/children/not-a-uuid/stack/0', { token: F.token })).status).toBe(404);
+    for (let i = 0; i < 8; i++) {
+      await api(ctx.base, 'POST', `/api/children/${c.id}/stack/add`, { token: F.token, body: { reward_id: t.json.id } });
+      await api(ctx.base, 'POST', `/api/children/${c.id}/stack/add`, { token: F.token, body: { reward_id: t.json.id } });
+      await Promise.all([
+        api(ctx.base, 'POST', `/api/children/${c.id}/stack/confirm`, { token: F.token }),
+        api(ctx.base, 'DELETE', `/api/children/${c.id}/stack/0`, { token: F.token }),
+      ]);
+      const { rows } = await ctx.pool.query('SELECT reward_stack FROM children WHERE id = $1', [c.id]);
+      // Either the confirm took both, or the remove ran first and confirm took the one left.
+      expect(rows[0].reward_stack).toEqual([]);
+    }
+    expect(await historyTotal(c.id)).toBe((await balance(c.id)).total_points);
+  });
+
+  it('A17: a new child is not caught by that day\'s weekly reset', async () => {
+    const c = await child('Pip', { total_points: 15 });
+    const { rows } = await ctx.pool.query('SELECT last_reset_date FROM children WHERE id = $1', [c.id]);
+    expect(rows[0].last_reset_date).toBe(new Date().toISOString().split('T')[0]);
   });
 });
