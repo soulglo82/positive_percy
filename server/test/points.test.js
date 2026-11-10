@@ -96,7 +96,9 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
     await award(c.id, 10);
     const r = await api(ctx.base, 'PUT', `/api/children/${c.id}`, { token: F.token, body: { name: 'Fay', total_points: 500, weekly_points: 500, points_spent: 3, reward_stack: [] } });
     expect(r.status).toBe(200);
-    expect(await balance(c.id)).toEqual({ total_points: 10, weekly_points: 10 });
+    expect((await balance(c.id)).total_points).toBe(10);
+    // This week comes from history, whatever the request said.
+    expect(r.json.week_points).toBe(10);
     const { rows } = await ctx.pool.query('SELECT reward_stack, points_spent FROM children WHERE id = $1', [c.id]);
     expect(rows[0]).toEqual({ reward_stack: [], points_spent: 0 });
   });
@@ -192,12 +194,16 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
     }
   });
 
-  it('A14: weekly progress never goes below 0', async () => {
+  it('A14: this week is shown floored at 0 when deductions outweigh this week\'s awards', async () => {
     const c = await child('Max');
-    await award(c.id, 10);
-    await ctx.pool.query('UPDATE children SET weekly_points = 3 WHERE id = $1', [c.id]);
-    await award(c.id, -8, { category: 'Adjustment' });
-    expect(await balance(c.id)).toEqual({ total_points: 2, weekly_points: 0 });
+    const first = await award(c.id, 10);
+    // That award was last week; a deduction this week leaves the week at -8.
+    await ctx.pool.query("UPDATE point_events SET created_date = now() - interval '8 days' WHERE id = $1", [first.json.event.id]);
+    const r = await award(c.id, -8, { category: 'Adjustment' });
+    expect(r.json.child.total_points).toBe(2);
+    expect(r.json.week_points_after).toBe(0);
+    const list = await api(ctx.base, 'GET', '/api/children', { token: F.token });
+    expect(list.json.find((x) => x.id === c.id).week_points).toBe(0);
   });
 
   it('A15: confirming a stack charges today\'s prices, even for items saved before', async () => {
@@ -232,9 +238,14 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
     expect(await historyTotal(c.id)).toBe((await balance(c.id)).total_points);
   });
 
-  it('A17: a new child is not caught by that day\'s weekly reset', async () => {
+  it('A17: weekly-reset is a harmless stub; nothing is ever reset', async () => {
     const c = await child('Pip', { total_points: 15 });
-    const { rows } = await ctx.pool.query('SELECT last_reset_date FROM children WHERE id = $1', [c.id]);
-    expect(rows[0].last_reset_date).toBe(new Date().toISOString().split('T')[0]);
+    await award(c.id, 4);
+    const r = await api(ctx.base, 'POST', '/api/children/weekly-reset', { token: F.token });
+    expect(r.json).toEqual({ reset: false });
+    const list = await api(ctx.base, 'GET', '/api/children', { token: F.token });
+    const row = list.json.find((x) => x.id === c.id);
+    // Starting points are history but not this week's effort.
+    expect([row.total_points, row.week_points]).toEqual([19, 4]);
   });
 });

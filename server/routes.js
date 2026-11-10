@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import pool from './db.js';
 import { pickAllowedColumns, findMissingRequired } from './columns.js';
 import { uploadIdOf, uploadsAreOwned, releaseUpload, UPLOAD_REF_COLUMNS } from './uploads.js';
+import { weekPointsFor, withWeekPoints, weekStartSql, localDays, validTimezone, isGenericZone, recomputeLastActive } from './week.js';
 
 const router = Router();
 
@@ -293,14 +294,21 @@ router.post('/api/family/create', async (req, res) => {
   const family_name = typeof req.body?.family_name === 'string' ? req.body.family_name.trim().slice(0, 100) : '';
   if (!family_name) return res.status(400).json({ error: 'Family name is required' });
 
+  // The browser's timezone; an unknown or generic one is stored as not set.
+  let timezone = null;
+  try {
+    const tz = await validTimezone(pool, req.body?.timezone);
+    timezone = tz && !isGenericZone(tz) ? tz : null;
+  } catch { timezone = null; }
+
   let family_code;
   let attempts = 0;
   while (attempts < 10) {
     family_code = generateFamilyCode();
     try {
       const { rows } = await pool.query(
-        'INSERT INTO families (family_code, family_name) VALUES ($1, $2) RETURNING *',
-        [family_code, family_name]
+        'INSERT INTO families (family_code, family_name, timezone) VALUES ($1, $2, $3) RETURNING *',
+        [family_code, family_name, timezone]
       );
 
       // IMPL-5.5: Seed default behavior categories atomically
@@ -356,6 +364,53 @@ router.post('/api/family/join', async (req, res) => {
 
 // Get family info: your own family only. Not removed, because the SPA
 // catch-all would answer an unknown /api path with 200.
+// The family's timezone (A2 W1). NULL means not set; readers use UTC then.
+router.get('/api/family/timezone', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT timezone FROM families WHERE family_code = $1', [req.familyCode]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Family not found' });
+    res.json({ timezone: rows[0].timezone });
+  } catch (err) {
+    return serverError(res, 'Read timezone error', err);
+  }
+});
+
+// { timezone, auto }: auto (sent by the app on load) only fills a family
+// that has none and never from a generic zone like UTC; without auto it is
+// the parent choosing in Settings. Any change recomputes the streak date.
+router.put('/api/family/timezone', authMiddleware, async (req, res) => {
+  const auto = req.body?.auto === true;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query('SELECT timezone FROM families WHERE family_code = $1 FOR UPDATE', [req.familyCode]);
+    if (rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Family not found' });
+    }
+    const current = rows[0].timezone;
+    const tz = await validTimezone(client, req.body?.timezone);
+    if (!tz) {
+      await client.query('ROLLBACK');
+      return auto ? res.json({ timezone: current, changed: false }) : res.status(400).json({ error: 'Please choose a timezone from the list.' });
+    }
+    if ((auto && (current !== null || isGenericZone(tz))) || tz === current) {
+      await client.query('ROLLBACK');
+      return res.json({ timezone: current, changed: false });
+    }
+    await client.query('UPDATE families SET timezone = $1 WHERE family_code = $2', [tz, req.familyCode]);
+    await recomputeLastActive(client, req.familyCode);
+    await client.query('COMMIT');
+    broadcastFn(req.familyCode, { type: 'family_updated' });
+    res.json({ timezone: tz, changed: true });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    return serverError(res, 'Set timezone error', err);
+  } finally {
+    client.release();
+  }
+});
+
 // Must come before '/api/family/:code', which would otherwise match 'streak'.
 router.get('/api/family/streak', authMiddleware, readStreak);
 
@@ -377,23 +432,21 @@ router.get('/api/family/:code', authMiddleware, async (req, res) => {
   }
 });
 
-// Parent streak (FEAT-006): consecutive days (UTC) with at least one award.
+// Parent streak (FEAT-006): consecutive days (in the family's timezone) with at least one award.
 // Recorded by the server inside the award transaction, never by a page
 // load or a client flag, so visiting the app does not count.
 const STREAK_MILESTONES = [7, 14, 30, 60, 100];
-const utcDay = (offsetDays = 0) => new Date(Date.now() - offsetDays * 86400000).toISOString().split('T')[0];
-
 export async function recordStreak(db, familyCode) {
   const { rows } = await db.query(
-    'SELECT current_streak, last_active_date, longest_streak FROM families WHERE family_code = $1 FOR UPDATE',
+    'SELECT current_streak, last_active_date, longest_streak, timezone FROM families WHERE family_code = $1 FOR UPDATE',
     [familyCode]
   );
   if (rows.length === 0) return { streak: 0, milestone: false };
-  // Dates are worked out after the lock: an award that waited on the lock
-  // across midnight must see the same day as the one that just committed.
-  const today = utcDay(0);
-  const yesterday = utcDay(1);
+  // Dates are worked out after the lock, from a clock read now: an award
+  // that waited on the lock across midnight sees the same day as the one
+  // that just committed. Local to the family's timezone.
   const f = rows[0];
+  const { today, yesterday } = await localDays(db, f.timezone, new Date());
   // Same day, or (clock skew) a later day already stored: never move back.
   if (f.last_active_date && f.last_active_date >= today) return { streak: f.current_streak || 0, milestone: false };
   const streak = f.last_active_date === yesterday ? (f.current_streak || 0) + 1 : 1;
@@ -408,12 +461,13 @@ export async function recordStreak(db, familyCode) {
 async function readStreak(req, res) {
   try {
     const { rows } = await pool.query(
-      'SELECT current_streak, last_active_date, longest_streak FROM families WHERE family_code = $1',
+      'SELECT current_streak, last_active_date, longest_streak, timezone FROM families WHERE family_code = $1',
       [req.familyCode]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Family not found' });
     const f = rows[0];
-    const live = f.last_active_date === utcDay(0) || f.last_active_date === utcDay(1);
+    const { today, yesterday } = await localDays(pool, f.timezone, new Date());
+    const live = f.last_active_date === today || f.last_active_date === yesterday;
     res.json({ streak: live ? (f.current_streak || 0) : 0, longest: f.longest_streak || 0, updated: false });
   } catch (err) {
     return serverError(res, 'Read streak error', err);
@@ -489,27 +543,15 @@ router.put('/api/auth/me', authMiddleware, async (req, res) => {
 // ─── Children-specific endpoints ─────────────────────────────────────────────
 
 // Weekly reset (server-side, idempotent)
-router.post('/api/children/weekly-reset', authMiddleware, async (req, res) => {
-  try {
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-    if (dayOfWeek !== 1) return res.json({ reset: false, reason: 'Not Monday' });
+// "This week" is computed from history since A2, so nothing is ever reset.
+// Kept so a page from an older release still open in a browser gets a
+// harmless answer.
+router.post('/api/children/weekly-reset', authMiddleware, (req, res) => res.json({ reset: false }));
 
-    const todayStr = today.toISOString().split('T')[0];
-    const { rowCount } = await pool.query(
-      `UPDATE children
-       SET weekly_points = 0, last_reset_date = $1
-       WHERE family_code = $2
-         AND weekly_points > 0
-         AND (last_reset_date IS NULL OR last_reset_date != $1)`,
-      [todayStr, req.familyCode]
-    );
-    if (rowCount > 0) broadcastFn(req.familyCode, { type: 'points_updated' });
-    res.json({ reset: true, children_reset: rowCount });
-  } catch (err) {
-    return serverError(res, 'Weekly reset error:', err);
-  }
-});
+// History labels the app writes itself (A2 W5). Parents can't name a
+// category this, so these rows are never mistaken for earned points.
+const RESERVED_CATEGORY_NAMES = ['starting points', 'balance correction', 'undo'];
+export const isReservedCategory = (name) => RESERVED_CATEGORY_NAMES.includes(String(name || '').trim().toLowerCase());
 
 // Atomic point adjustment (prevents race conditions)
 // A request_id seen before: same award -> return what happened, unchanged.
@@ -535,6 +577,9 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
     return res.status(400).json({ error: `Points must be a whole number from 1 to ${MAX_AWARD}, or minus that.` });
   }
   if (typeof category !== 'string' || !category.trim() || category.length > 100) {
+    return res.status(400).json({ error: 'Please choose a category.' });
+  }
+  if (isReservedCategory(category)) {
     return res.status(400).json({ error: 'Please choose a category.' });
   }
   if (note !== undefined && note !== null && (typeof note !== 'string' || note.length > 500)) {
@@ -568,12 +613,23 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
       return replayAward(res, prior[0], child, points, category);
     }
 
+    // The same id already used by a spend: never also an award.
+    const { rowCount: usedElsewhere } = await client.query(
+      'SELECT 1 FROM idempotency_keys WHERE family_code = $1 AND request_id = $2',
+      [req.familyCode, request_id]
+    );
+    if (usedElsewhere > 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
+    }
+
     const applied = points < 0 ? Math.max(points, -child.total_points) : points;
     if (applied === 0) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: `${child.name} has no points to take away.` });
     }
 
+    const weekBefore = (await weekPointsFor(client, req.familyCode, [child.id])).get(child.id);
     let eventRows;
     try {
       ({ rows: eventRows } = await client.query(
@@ -594,17 +650,22 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
     }
     const { rows: updated } = await client.query(
       `UPDATE children
-       SET total_points = total_points + $1,
-           weekly_points = GREATEST(0, weekly_points + $1)
+       SET total_points = total_points + $1
        WHERE id = $2 AND family_code = $3
        RETURNING *`,
       [applied, child.id, req.familyCode]
     );
     const streak = applied > 0 ? await recordStreak(client, req.familyCode) : null;
+    // This week, from history (A2 C1). The event just written counts.
+    const weekAfter = (await weekPointsFor(client, req.familyCode, [child.id])).get(child.id);
     await client.query('COMMIT');
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
-    res.json({ event: eventRows[0], child: updated[0], duplicate: false, capped: applied !== points, streak });
+    res.json({
+      event: eventRows[0], child: { ...updated[0], week_points: weekAfter },
+      week_points_before: weekBefore, week_points_after: weekAfter,
+      duplicate: false, capped: applied !== points, streak,
+    });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     return serverError(res, 'Award points error', err);
@@ -624,7 +685,7 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
 
     // Lock the child row and check balance
     const { rows: childRows } = await client.query(
-      'SELECT name, total_points, weekly_points, reward_stack FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
+      'SELECT name, total_points, reward_stack FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
       [childId, req.familyCode]
     );
 
@@ -657,7 +718,6 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     await client.query(
       `UPDATE children
        SET total_points = GREATEST(0, total_points - $1),
-           weekly_points = GREATEST(0, weekly_points - $1),
            points_spent = COALESCE(points_spent, 0) + $1
        WHERE id = $2 AND family_code = $3`,
       [reward_cost, childId, req.familyCode]
@@ -798,7 +858,7 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
 
     // Lock child row
     const { rows: childRows } = await client.query(
-      'SELECT total_points, weekly_points, reward_stack, name FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
+      'SELECT total_points, reward_stack, name FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE',
       [childId, req.familyCode]
     );
 
@@ -836,7 +896,6 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     await client.query(
       `UPDATE children
        SET total_points = GREATEST(0, total_points - $1),
-           weekly_points = GREATEST(0, weekly_points - $1),
            points_spent = COALESCE(points_spent, 0) + $1,
            reward_stack = '[]'
        WHERE id = $2 AND family_code = $3`,
@@ -871,21 +930,24 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
 });
 
 // Server-side summary aggregation (ENH-004)
+// Weekly summary. The week starts Monday 00:00 in the family's timezone and
+// is worked out here, never taken from the client (A2 W2). Earned points
+// only: starting points and corrections are history, not this week's effort.
 router.get('/api/summary', authMiddleware, async (req, res) => {
   try {
-    const weekStart = req.query.week_start;
     const familyCode = req.familyCode;
-
-    if (!weekStart) return res.status(400).json({ error: 'week_start is required' });
+    const tz = `COALESCE((SELECT timezone FROM families WHERE family_code = $1), 'UTC')`;
+    const { rows: [{ week_start: weekStart }] } = await pool.query(`SELECT ${weekStartSql(tz)} AS week_start`, [familyCode]);
 
     const { rows: childStats } = await pool.query(`
       SELECT
-        c.id, c.name, c.avatar_url, c.weekly_points, c.weekly_target, c.total_points,
+        c.id, c.name, c.avatar_url, c.weekly_target, c.total_points,
+        GREATEST(0, COALESCE(SUM(pe.points), 0))::int as week_points,
         COALESCE(SUM(CASE WHEN pe.points > 0 THEN pe.points ELSE 0 END), 0)::int as positive_points,
         COALESCE(SUM(CASE WHEN pe.points < 0 THEN ABS(pe.points) ELSE 0 END), 0)::int as negative_points,
         COUNT(pe.id)::int as total_events
       FROM children c
-      LEFT JOIN point_events pe ON pe.child_id = c.id
+      LEFT JOIN effective_point_events pe ON pe.child_id = c.id
         AND pe.created_date >= $1
         AND pe.family_code = $2
       WHERE c.family_code = $2
@@ -894,7 +956,7 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
 
     const { rows: topCategories } = await pool.query(`
       SELECT category, SUM(points)::int as total_points, COUNT(*)::int as count
-      FROM point_events
+      FROM effective_point_events
       WHERE family_code = $1 AND created_date >= $2 AND points > 0
       GROUP BY category
       ORDER BY total_points DESC
@@ -903,7 +965,7 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
 
     const { rows: categoryBreakdowns } = await pool.query(`
       SELECT child_id, category, COUNT(*)::int as count, SUM(points)::int as points
-      FROM point_events
+      FROM effective_point_events
       WHERE family_code = $1 AND created_date >= $2
       GROUP BY child_id, category
       ORDER BY count DESC
@@ -911,12 +973,12 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
 
     const { rows: weekEvents } = await pool.query(`
       SELECT id, child_id, points, category, note, created_date
-      FROM point_events
+      FROM effective_point_events
       WHERE family_code = $1 AND created_date >= $2
       ORDER BY created_date DESC
     `, [familyCode, weekStart]);
 
-    res.json({ childStats, topCategories, categoryBreakdowns, weekEvents });
+    res.json({ weekStart, childStats, topCategories, categoryBreakdowns, weekEvents });
   } catch (err) {
     return serverError(res, 'Summary error:', err);
   }
@@ -936,6 +998,7 @@ router.post('/api/children/:id/check-badges', authMiddleware, async (req, res) =
     if (childRows.length === 0) return res.status(404).json({ error: 'Child not found' });
 
     const child = childRows[0];
+    const weekPoints = (await weekPointsFor(pool, req.familyCode, [child.id])).get(child.id);
 
     // Get redemption count for this child
     const { rows: redemptionCount } = await pool.query(
@@ -952,7 +1015,7 @@ router.post('/api/children/:id/check-badges', authMiddleware, async (req, res) =
       { id: 'star_250', check: () => child.total_points >= 250 },
       { id: 'star_500', check: () => child.total_points >= 500 },
       { id: 'legend', check: () => child.total_points >= 1000 },
-      { id: 'goal_getter', check: () => child.weekly_points >= child.weekly_target },
+      { id: 'goal_getter', check: () => child.weekly_target > 0 && weekPoints >= child.weekly_target },
       { id: 'first_reward', check: () => stats.redemptions >= 1 },
       { id: 'reward_fan', check: () => stats.redemptions >= 5 },
       { id: 'reward_master', check: () => stats.redemptions >= 10 },
@@ -1164,21 +1227,23 @@ router.get('/api/children/:id/motivation', authMiddleware, async (req, res) => {
 
     // Verify child belongs to this family
     const { rows: childRows } = await pool.query(
-      'SELECT id, total_points, weekly_points, weekly_target FROM children WHERE id = $1 AND family_code = $2',
+      'SELECT id, total_points, weekly_target FROM children WHERE id = $1 AND family_code = $2',
       [childId, req.familyCode]
     );
     if (childRows.length === 0) return res.status(404).json({ error: 'Child not found' });
 
     // Rewards earned count (scoped to family)
     const { rows: redemptionCount } = await pool.query(
-      "SELECT COUNT(*)::int as count FROM redemptions WHERE child_id = $1 AND family_code = $2 AND status IN ('Completed', 'Approved')",
+      "SELECT COUNT(*)::int as count FROM redemptions WHERE child_id = $1 AND family_code = $2 AND status = 'Completed'",
       [childId, req.familyCode]
     );
 
     // Best streak: consecutive days with at least one positive point event (scoped to family)
     const { rows: eventDays } = await pool.query(
-      `SELECT DISTINCT DATE(created_date) as day
-       FROM point_events
+      // Days in the family's timezone, as text (never DateStyle-dependent).
+      `SELECT DISTINCT to_char(created_date AT TIME ZONE
+                 COALESCE((SELECT timezone FROM families WHERE family_code = $2), 'UTC'), 'YYYY-MM-DD') as day
+       FROM effective_point_events
        WHERE child_id = $1 AND family_code = $2 AND points > 0
        ORDER BY day DESC`,
       [childId, req.familyCode]
@@ -1190,8 +1255,8 @@ router.get('/api/children/:id/motivation', authMiddleware, async (req, res) => {
       if (i === 0) {
         currentRun = 1;
       } else {
-        const prev = new Date(eventDays[i - 1].day);
-        const curr = new Date(eventDays[i].day);
+        const prev = new Date(`${eventDays[i - 1].day}T00:00:00Z`);
+        const curr = new Date(`${eventDays[i].day}T00:00:00Z`);
         const diffDays = (prev - curr) / (1000 * 60 * 60 * 24);
         if (diffDays === 1) {
           currentRun++;
@@ -1214,7 +1279,7 @@ router.get('/api/children/:id/motivation', authMiddleware, async (req, res) => {
     // Average daily earning rate over last 7 days (scoped to family)
     const { rows: avgRate } = await pool.query(
       `SELECT COALESCE(SUM(points), 0)::int as total
-       FROM point_events
+       FROM effective_point_events
        WHERE child_id = $1 AND family_code = $2 AND points > 0
          AND created_date >= NOW() - INTERVAL '7 days'`,
       [childId, req.familyCode]
@@ -1336,7 +1401,7 @@ router.get('/api/activity-feed', authMiddleware, async (req, res) => {
     if (filter === 'earned') {
       query = `
         SELECT id, child_id, child_name, points, category as label, note, 'earn' as type, created_date
-        FROM point_events
+        FROM effective_point_events
         WHERE family_code = $1 AND points > 0
         ORDER BY created_date DESC
         LIMIT $2 OFFSET $3
@@ -1348,15 +1413,19 @@ router.get('/api/activity-feed', authMiddleware, async (req, res) => {
          WHERE family_code = $1 AND status = 'Completed')
         UNION ALL
         (SELECT id, child_id, child_name, points, category as label, note, 'adjust' as type, created_date
-         FROM point_events
+         FROM effective_point_events
          WHERE family_code = $1 AND points < 0)
         ORDER BY created_date DESC
         LIMIT $2 OFFSET $3
       `;
     } else {
       query = `
+        -- Every history row, so the feed adds up to the balance. Starting
+        -- points and one-off corrections are labelled as what they are.
         (SELECT id, child_id, child_name, points, category as label, note,
-          CASE WHEN points > 0 THEN 'earn' ELSE 'adjust' END as type, created_date
+          CASE WHEN kind = 'starting' THEN 'starting'
+               WHEN kind = 'correction' THEN 'correction'
+               WHEN points > 0 THEN 'earn' ELSE 'adjust' END as type, created_date
          FROM point_events
          WHERE family_code = $1)
         UNION ALL
@@ -1429,7 +1498,7 @@ router.get('/api/:entity', authMiddleware, async (req, res) => {
       `SELECT * FROM ${table} ${where} ORDER BY ${sort} ${limit} ${offset}`,
       values
     );
-    res.json(rows);
+    res.json(table === 'children' ? await withWeekPoints(pool, req.familyCode, rows) : rows);
   } catch (err) {
     return serverError(res, `List ${req.params.entity} error:`, err);
   }
@@ -1468,7 +1537,7 @@ router.post('/api/:entity/filter', authMiddleware, async (req, res) => {
       `SELECT * FROM ${table} ${where} ORDER BY ${orderBy}`,
       values
     );
-    res.json(rows);
+    res.json(table === 'children' ? await withWeekPoints(pool, req.familyCode, rows) : rows);
   } catch (err) {
     return serverError(res, `Filter ${req.params.entity} error:`, err);
   }
@@ -1485,7 +1554,7 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
       const data = validateCreatePayload(table, pickAllowedColumns(table, req.body), { isCreate: true });
       const child = await createChild(data, req.familyCode);
       broadcastFn(req.familyCode, { type: 'children_created', id: child.id });
-      return res.json(child);
+      return res.json({ ...child, week_points: 0 });
     }
     // Drop unexpected keys silently (mass-assignment protection), then enforce
     // required fields so a missing NOT NULL column is a clean 400, not a DB 500.
@@ -1569,7 +1638,6 @@ async function createChild(data, familyCode) {
   const row = {
     ...stripChildBalance(data),
     total_points: starting,
-    weekly_points: starting,
     last_reset_date: new Date().toISOString().split('T')[0],
     family_code: familyCode,
   };
@@ -1735,7 +1803,7 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
     if (result.status === 404) return res.status(404).json({ error: 'Not found' });
 
     broadcastFn(req.familyCode, { type: `${req.params.entity}_updated`, id: req.params.id });
-    res.json(result.row);
+    res.json(table === 'children' ? (await withWeekPoints(pool, req.familyCode, [result.row]))[0] : result.row);
   } catch (err) {
     if (err.status === 400) return res.status(400).json({ error: err.message });
     return serverError(res, `Update ${req.params.entity} error`, err);

@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Activity as ActivityIcon, ChevronDown, ChevronUp } from "lucide-react";
-import { format, isToday, isYesterday, isSameWeek, startOfWeek } from "date-fns";
+import { format, isToday, isYesterday, isSameWeek } from "date-fns";
 import { PERCY } from "@/constants/terminology";
 import SectionHeader from "../components/SectionHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -45,13 +45,13 @@ export default function Activity() {
     enabled: !!user,
   });
 
-  // Weekly summary from existing /api/summary endpoint
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString();
+  // Weekly summary. The server works out the week in the family's timezone.
   const { data: summary } = useQuery({
-    queryKey: ['weeklySummary', weekStart],
+    queryKey: ['weeklySummary'],
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch(`/api/summary?week_start=${encodeURIComponent(weekStart)}`, {
+      const res = await fetch('/api/summary', {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (!res.ok) return null;
@@ -276,7 +276,9 @@ function NarrativeItem({ event }) {
   const isEarn = event.type === 'earn';
   const isSpend = event.type === 'spend';
 
-  const isDeduct = !isEarn && !isSpend && event.points < 0;
+  const isStarting = event.type === 'starting';
+  const isCorrection = event.type === 'correction';
+  const isDeduct = !isEarn && !isSpend && !isStarting && !isCorrection && event.points < 0;
   const colorClass = isEarn
     ? 'text-green-600'
     : isSpend
@@ -285,7 +287,8 @@ function NarrativeItem({ event }) {
         ? 'text-red-600'
         : 'text-slate-500';
 
-  const action = isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost' : 'adjusted';
+  const action = isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost'
+    : isStarting ? 'started with' : isCorrection ? 'had a one-off' : 'adjusted';
 
   // Use note as primary label when category is "Other"
   const displayLabel = event.label === 'Other' && event.note

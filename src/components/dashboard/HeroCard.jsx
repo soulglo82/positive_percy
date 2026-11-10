@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 export default function HeroCard({ children = [], streak = 0, onAddFirstChild }) {
   const hasChildren = children.length > 0;
 
-  const weeklyTotal = children.reduce((sum, c) => sum + (c.weekly_points || 0), 0);
+  const weeklyTotal = children.reduce((sum, c) => sum + (c.week_points || 0), 0);
 
   return (
     <motion.div
