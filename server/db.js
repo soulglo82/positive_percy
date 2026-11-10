@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { backfillUploadOwners } from './uploads.js';
 
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
@@ -171,6 +172,9 @@ export async function initDb() {
     for (const sql of migrations) {
       await client.query(sql).catch(() => {});
     }
+
+    // P-1: uploads carry their family. Not swallowed: a failure stops startup.
+    await backfillUploadOwners(client);
 
     // IMPL-5: Seed default behavior categories for existing families that don't have any
     await client.query(`
