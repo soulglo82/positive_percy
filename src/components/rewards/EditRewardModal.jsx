@@ -66,15 +66,16 @@ export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, onD
 
   return (<>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
-        <DialogHeader>
+      {/* Three parts: title, a scrolling middle, buttons. Fits the visible screen (svh). */}
+      <DialogContent className="sm:max-w-md flex flex-col max-h-[85svh] p-0 gap-0 overflow-hidden">
+        <DialogHeader className="shrink-0 px-6 pt-6 pb-2 pr-12">
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Pencil className="w-6 h-6 text-orange-500" />
             Edit Reward
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-4 space-y-5">
           {/* Emoji Picker */}
           <div>
             <Label className="text-sm font-medium text-slate-700 mb-2 block">
@@ -169,8 +170,7 @@ export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, onD
           )}
         </div>
 
-        {/* Always on screen, however long the form is. */}
-        <div className="flex gap-3 sticky bottom-0 -mx-6 px-6 pt-3 pb-1 bg-background border-t border-slate-100">
+        <div className="shrink-0 flex gap-3 px-6 py-3 border-t border-slate-100 bg-background">
           <Button
             variant="outline"
             onClick={onClose}
