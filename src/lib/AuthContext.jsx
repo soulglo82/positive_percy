@@ -62,11 +62,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const browserTimezone = () => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { return null; }
+  };
+
   const createFamily = async (familyName) => {
     const res = await fetch('/api/family/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ family_name: familyName }),
+      // The browser's timezone, so "this week" and streak days are local.
+      body: JSON.stringify({ family_name: familyName, timezone: browserTimezone() }),
     });
     if (!res.ok) throw new Error('Failed to create family');
     const family = await res.json();

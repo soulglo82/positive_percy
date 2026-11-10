@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { refreshPoints } from "@/lib/points";
+import { refreshPoints, newRequestId } from "@/lib/points";
 import { Child, Reward } from "@/api/entities";
 import { useAuth, getToken } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -64,11 +64,10 @@ export default function ChildView() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
+        // The server prices the reward; request_id makes a retry charge once.
         body: JSON.stringify({
           reward_id: reward.id,
-          reward_title: reward.title,
-          reward_cost: reward.cost_points,
-          child_name: selectedChild.name,
+          request_id: newRequestId(),
         }),
       });
 

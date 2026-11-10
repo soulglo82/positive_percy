@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { refreshPoints } from "@/lib/points";
+import { refreshPoints, newRequestId } from "@/lib/points";
 import {
   Dialog,
   DialogContent,
@@ -40,11 +40,10 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
+        // The server prices the reward; request_id makes a retry charge once.
         body: JSON.stringify({
           reward_id: reward.id,
-          reward_title: reward.title,
-          reward_cost: reward.cost_points,
-          child_name: child.name,
+          request_id: newRequestId(),
         }),
       });
 

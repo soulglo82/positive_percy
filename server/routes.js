@@ -138,6 +138,14 @@ function validateCreatePayload(table, data, { isCreate = false } = {}) {
       const n = Number(data.age);
       data.age = Number.isFinite(n) && n >= 1 && n <= 17 ? Math.trunc(n) : null;
     }
+    if (data.weekly_target !== undefined) {
+      // A2 E3: a whole number from 1 to 10,000 (it was stored unchecked).
+      const t = typeof data.weekly_target === 'string' && data.weekly_target.trim() !== '' ? Number(data.weekly_target) : data.weekly_target;
+      if (!Number.isInteger(t) || t < 1 || t > 10000) {
+        throw Object.assign(new Error('Weekly target must be a whole number from 1 to 10,000.'), { status: 400 });
+      }
+      data.weekly_target = t;
+    }
   }
   if (table === 'rewards') {
     if (data.title !== undefined) {
@@ -680,6 +688,10 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     const { reward_id } = req.body || {};
     const childId = req.params.id;
     if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
+    const rq = spendRequestId(req.body);
+    if (rq.error) return res.status(400).json({ error: 'Invalid request' });
+    const args = { child_id: childId, reward_id: String(reward_id) };
+    req.spend = { rq, args };
 
     await client.query('BEGIN');
 
@@ -692,6 +704,17 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     if (childRows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Child not found' });
+    }
+
+    const prior = await priorRequest(client, req.familyCode, rq.id, 'redeem', args);
+    if (prior.conflict) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
+    }
+    if (prior.replay) {
+      await client.query('ROLLBACK');
+      const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, req.familyCode]);
+      return res.json({ ...prior.replay, child: rows[0], duplicate: true });
     }
 
     const reward = await loadSpendableReward(client, reward_id, childId, req.familyCode);
@@ -729,6 +752,7 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, 'Completed', $6) RETURNING *`,
       [childId, child_name || '', reward.id, reward_title, reward_cost, req.familyCode]
     );
+    await rememberRequest(client, req.familyCode, rq.id, 'redeem', args, { redemption: redemptionRows[0] });
 
     await client.query('COMMIT');
 
@@ -739,14 +763,58 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     );
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
-    res.json({ child: updatedChild[0], redemption: redemptionRows[0] });
+    res.json({ child: updatedChild[0], redemption: redemptionRows[0], duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23505' && req.spend) {
+      return replayAfterRace(res, req.familyCode, req.spend.rq.id, 'redeem', req.spend.args, req.params.id);
+    }
     return serverError(res, 'Redeem error:', err);
   } finally {
     client.release();
   }
 });
+
+// ─── Request ids for spending (A2 I0, I1) ─────────────────────────────────────
+// A spend carries a request_id. Seen before for the same action and
+// arguments: the stored result is returned and nothing is charged again.
+// Seen for anything else (another endpoint, other arguments, an award): 409.
+// Old pages that send no id still work this release (a fresh id is used,
+// so they get no retry safety).
+function spendRequestId(body) {
+  const id = body?.request_id;
+  if (id === undefined || id === null) return { id: crypto.randomUUID(), sent: false };
+  return isUuid(String(id)) ? { id: String(id), sent: true } : { error: true };
+}
+
+async function priorRequest(db, familyCode, requestId, endpoint, args) {
+  const { rows } = await db.query(
+    'SELECT endpoint, args, result FROM idempotency_keys WHERE family_code = $1 AND request_id = $2',
+    [familyCode, requestId]
+  );
+  if (rows.length > 0) {
+    const same = rows[0].endpoint === endpoint && JSON.stringify(rows[0].args) === JSON.stringify(args);
+    return same ? { replay: rows[0].result } : { conflict: true };
+  }
+  const { rowCount } = await db.query(
+    'SELECT 1 FROM point_events WHERE family_code = $1 AND request_id = $2', [familyCode, requestId]);
+  return rowCount > 0 ? { conflict: true } : {};
+}
+
+async function rememberRequest(db, familyCode, requestId, endpoint, args, result) {
+  await db.query(
+    'INSERT INTO idempotency_keys (family_code, request_id, endpoint, args, result) VALUES ($1, $2, $3, $4, $5)',
+    [familyCode, requestId, endpoint, JSON.stringify(args), JSON.stringify(result)]
+  );
+}
+
+// The same request committed by another call while this one waited.
+async function replayAfterRace(res, familyCode, requestId, endpoint, args, childId) {
+  const prior = await priorRequest(pool, familyCode, requestId, endpoint, args);
+  if (!prior.replay) return res.status(409).json({ error: 'Invalid request' });
+  const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, familyCode]);
+  return res.json({ ...prior.replay, child: rows[0], duplicate: true });
+}
 
 // ─── Reward Stack endpoints ──────────────────────────────────────────────────
 
@@ -853,6 +921,10 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
   const client = await pool.connect();
   try {
     const childId = req.params.id;
+    const rq = spendRequestId(req.body);
+    if (rq.error) return res.status(400).json({ error: 'Invalid request' });
+    const args = { child_id: childId };
+    req.spend = { rq, args };
 
     await client.query('BEGIN');
 
@@ -865,6 +937,17 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     if (childRows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Child not found' });
+    }
+
+    const prior = await priorRequest(client, req.familyCode, rq.id, 'stack_confirm', args);
+    if (prior.conflict) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
+    }
+    if (prior.replay) {
+      await client.query('ROLLBACK');
+      const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, req.familyCode]);
+      return res.json({ ...prior.replay, child: rows[0], duplicate: true });
     }
 
     const child = childRows[0];
@@ -910,6 +993,8 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
         [childId, child.name, item.rewardId, item.name, item.cost, req.familyCode]
       );
     }
+    await rememberRequest(client, req.familyCode, rq.id, 'stack_confirm', args,
+      { confirmed_count: stack.length, points_deducted: stackTotal });
 
     await client.query('COMMIT');
 
@@ -920,9 +1005,12 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     );
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
-    res.json({ child: updatedChild[0], confirmed_count: stack.length, points_deducted: stackTotal });
+    res.json({ child: updatedChild[0], confirmed_count: stack.length, points_deducted: stackTotal, duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23505' && req.spend) {
+      return replayAfterRace(res, req.familyCode, req.spend.rq.id, 'stack_confirm', req.spend.args, req.params.id);
+    }
     return serverError(res, 'Stack confirm error:', err);
   } finally {
     client.release();
@@ -1062,39 +1150,65 @@ router.get('/api/behavior-categories', authMiddleware, async (req, res) => {
 });
 
 // Create new category
+// At most 4 quick-action categories per family (A2 C2). Callers hold a
+// per-family advisory lock, so two requests can't both take the 4th slot.
+const MAX_QUICK_ACTIONS = 4;
+const QUICK_CAP_MESSAGE = `You can have up to ${MAX_QUICK_ACTIONS} quick points.`;
+const RESERVED_NAME_MESSAGE = 'That name is used by the app. Please choose another.';
+async function quickSlotFree(db, familyCode, exceptId = null) {
+  await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`quick:${familyCode}`]);
+  const { rows } = await db.query(
+    'SELECT count(*)::int AS n FROM behavior_categories WHERE family_code = $1 AND is_quick_action AND ($2::uuid IS NULL OR id <> $2::uuid)',
+    [familyCode, exceptId]
+  );
+  return rows[0].n < MAX_QUICK_ACTIONS;
+}
+
 router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
+  const client = await pool.connect();
   try {
     const { name, icon, points, is_quick_action, assigned_children } = req.body;
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(422).json({ error: 'Category name is required' });
     }
     const trimmedName = name.trim().slice(0, 100);
+    if (isReservedCategory(trimmedName)) return res.status(422).json({ error: RESERVED_NAME_MESSAGE });
 
+    await client.query('BEGIN');
+    if (is_quick_action && !(await quickSlotFree(client, req.familyCode))) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({ error: QUICK_CAP_MESSAGE });
+    }
     // Get max sort_order
-    const { rows: maxOrder } = await pool.query(
+    const { rows: maxOrder } = await client.query(
       'SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM behavior_categories WHERE family_code = $1',
       [req.familyCode]
     );
 
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default, points, is_quick_action, assigned_children)
        VALUES ($1, $2, $3, $4, false, $5, $6, $7) RETURNING *`,
       [req.familyCode, trimmedName, icon || '⭐', maxOrder[0].next_order,
        categoryPoints(points), Boolean(is_quick_action),
        Array.isArray(assigned_children) ? assigned_children : []]
     );
+    await client.query('COMMIT');
     broadcastFn(req.familyCode, { type: 'behavior_categories_updated' });
     res.json(rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') {
       return res.status(422).json({ error: 'A category with this name already exists' });
     }
     return serverError(res, 'Create category error:', err);
+  } finally {
+    client.release();
   }
 });
 
 // Update category
 router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
+  const client = await pool.connect();
   try {
     const { name, icon, points, is_quick_action, assigned_children } = req.body;
     const updates = [];
@@ -1104,6 +1218,7 @@ router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
     if (name !== undefined) {
       const trimmedName = String(name).trim().slice(0, 100);
       if (!trimmedName) return res.status(422).json({ error: 'Category name cannot be empty' });
+      if (isReservedCategory(trimmedName)) return res.status(422).json({ error: RESERVED_NAME_MESSAGE });
       updates.push(`name = $${idx++}`);
       values.push(trimmedName);
     }
@@ -1128,18 +1243,31 @@ router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
     updates.push(`updated_date = NOW()`);
     values.push(req.params.id, req.familyCode);
 
-    const { rows } = await pool.query(
+    await client.query('BEGIN');
+    // Turning quick on needs a free slot; this row's own flag doesn't count.
+    if (is_quick_action === true && !(await quickSlotFree(client, req.familyCode, req.params.id))) {
+      await client.query('ROLLBACK');
+      return res.status(422).json({ error: QUICK_CAP_MESSAGE });
+    }
+    const { rows } = await client.query(
       `UPDATE behavior_categories SET ${updates.join(', ')} WHERE id = $${idx++} AND family_code = $${idx} RETURNING *`,
       values
     );
-    if (rows.length === 0) return res.status(404).json({ error: 'Category not found' });
+    if (rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    await client.query('COMMIT');
     broadcastFn(req.familyCode, { type: 'behavior_categories_updated' });
     res.json(rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') {
       return res.status(422).json({ error: 'A category with this name already exists' });
     }
     return serverError(res, 'Update category error:', err);
+  } finally {
+    client.release();
   }
 });
 
