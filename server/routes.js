@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import pool from './db.js';
 import { pickAllowedColumns, findMissingRequired } from './columns.js';
+import { uploadIdOf, uploadsAreOwned, releaseUpload, UPLOAD_REF_COLUMNS } from './uploads.js';
 
 const router = Router();
 
@@ -249,8 +250,8 @@ router.post('/api/upload', authMiddleware, async (req, res) => {
     if (!type) return res.status(400).json({ error: 'Please upload a PNG, JPEG, GIF or WebP image.' });
 
     const { rows } = await pool.query(
-      'INSERT INTO uploads (data, content_type) VALUES ($1, $2) RETURNING id',
-      [`data:${type};base64,${buffer.toString('base64')}`, type]
+      'INSERT INTO uploads (data, content_type, family_code) VALUES ($1, $2, $3) RETURNING id',
+      [`data:${type};base64,${buffer.toString('base64')}`, type, req.familyCode]
     );
     res.json({ file_url: `/api/uploads/${rows[0].id}` });
   } catch (err) {
@@ -1507,14 +1508,32 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
     const values = Object.values(data);
     const placeholders = keys.map((_, i) => `$${i + 1}`);
 
-    const { rows } = await pool.query(
-      `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
-      values
-    );
+    // Photo check and insert in one transaction, so the photo can't be
+    // deleted between the two.
+    const client = await pool.connect();
+    let rows;
+    try {
+      await client.query('BEGIN');
+      if (!(await uploadsAreOwned(client, data, req.familyCode))) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Not found' });
+      }
+      ({ rows } = await client.query(
+        `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
+        values
+      ));
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
     broadcastFn(req.familyCode, { type: `${req.params.entity}_created`, id: rows[0].id });
     res.json(rows[0]);
   } catch (err) {
     if (err.status === 400) return res.status(400).json({ error: err.message });
+    if (err.status === 404) return res.status(404).json({ error: 'Not found' });
     return serverError(res, `Create ${req.params.entity} error:`, err);
   }
 });
@@ -1558,6 +1577,12 @@ async function createChild(data, familyCode) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    // A new child may only use one of its own family's photos.
+    if (!(await uploadsAreOwned(client, row, familyCode))) {
+      const e = new Error('Not found');
+      e.status = 404;
+      throw e;
+    }
     const { rows } = await client.query(
       `INSERT INTO children (${keys.join(', ')}) VALUES (${keys.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`,
       Object.values(row)
@@ -1605,6 +1630,23 @@ export async function scopedUpdate(db, table, id, familyCode, data) {
   if (keys.length === 0) return { status: 400 };
   if (!isUuid(id)) return { status: 404 };
   if (!(await referencesAreOwned(db, clean, familyCode))) return { status: 404 };
+  // Photo change: read the stored value under a lock so two edits can't both
+  // replace the same photo and leave one behind.
+  const photoCol = UPLOAD_REF_COLUMNS[table];
+  let stored = null;
+  if (photoCol && photoCol in clean) {
+    const { rows: cur } = await db.query(
+      `SELECT ${photoCol} FROM ${table} WHERE id = $1 AND family_code = $2 FOR UPDATE`,
+      [id, familyCode]
+    );
+    if (cur.length === 0) return { status: 404 };
+    stored = cur[0];
+    // Lock the old and new photo together, in id order, before anything else
+    // touches them, so two edits swapping photos can't deadlock.
+    const ids = [...new Set([uploadIdOf(stored[photoCol]), uploadIdOf(clean[photoCol])].filter(Boolean))].sort();
+    if (ids.length) await db.query('SELECT id FROM uploads WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
+  }
+  if (!(await uploadsAreOwned(db, clean, familyCode, stored))) return { status: 404 };
   const values = Object.values(clean);
   const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
   values.push(id, familyCode);
@@ -1613,6 +1655,12 @@ export async function scopedUpdate(db, table, id, familyCode, data) {
     values
   );
   if (rows.length === 0) return { status: 404 };
+
+  // Replaced or cleared photo: delete the old upload if nothing else uses it.
+  if (stored) {
+    const oldId = uploadIdOf(stored[photoCol]);
+    if (oldId && oldId !== uploadIdOf(clean[photoCol])) await releaseUpload(db, oldId, familyCode);
+  }
 
   // ENH-006: cascade child name updates to the same family's history rows
   if (table === 'children' && clean.name) {
@@ -1629,7 +1677,7 @@ export async function scopedDelete(table, id, familyCode) {
     await client.query('BEGIN');
     // Ownership first. Nothing else runs unless the row is the caller's.
     const owned = await client.query(
-      `SELECT id FROM ${table} WHERE id = $1 AND family_code = $2 FOR UPDATE`,
+      `SELECT * FROM ${table} WHERE id = $1 AND family_code = $2 FOR UPDATE`,
       [id, familyCode]
     );
     if (owned.rowCount === 0) {
@@ -1648,6 +1696,9 @@ export async function scopedDelete(table, id, familyCode) {
       );
     }
     await client.query(`DELETE FROM ${table} WHERE id = $1 AND family_code = $2`, [id, familyCode]);
+    // The row's photo goes with it, unless something else still uses it.
+    const photoCol = UPLOAD_REF_COLUMNS[table];
+    if (photoCol) await releaseUpload(client, uploadIdOf(owned.rows[0][photoCol]), familyCode);
     await client.query('COMMIT');
     return { status: 200 };
   } catch (err) {
@@ -1667,7 +1718,19 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
   try {
     let data = pickAllowedColumns(table, req.body);
     data = validateCreatePayload(table, data);
-    const result = await scopedUpdate(pool, table, req.params.id, req.familyCode, data);
+    // One transaction: the update, its name cascade and any photo clean-up.
+    const client = await pool.connect();
+    let result;
+    try {
+      await client.query('BEGIN');
+      result = await scopedUpdate(client, table, req.params.id, req.familyCode, data);
+      await client.query(result.status === 200 ? 'COMMIT' : 'ROLLBACK');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
     if (result.status === 400) return res.status(400).json({ error: 'No valid fields provided' });
     if (result.status === 404) return res.status(404).json({ error: 'Not found' });
 
