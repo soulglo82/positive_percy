@@ -27,12 +27,13 @@ function signToken(familyCode) {
   return jwt.sign({ family_code: familyCode }, getJwtSecret(), { expiresIn: JWT_EXPIRY });
 }
 
-// Returns the token's family_code, or null if the token is missing or invalid.
-export function familyCodeFromToken(token) {
+// Returns { familyCode, expiresAt } for a valid token, or null.
+export function verifyToken(token) {
   if (!token || typeof token !== 'string') return null;
   try {
     const decoded = jwt.verify(token, getJwtSecret());
-    return typeof decoded.family_code === 'string' ? decoded.family_code : null;
+    if (typeof decoded.family_code !== 'string') return null;
+    return { familyCode: decoded.family_code, expiresAt: decoded.exp ? decoded.exp * 1000 : null };
   } catch {
     return null;
   }
@@ -128,7 +129,9 @@ function validateCreatePayload(table, data, { isCreate = false } = {}) {
 const SORT_WHITELIST = new Set(['created_date', 'name', 'title', 'points',
   'total_points', 'weekly_points', 'cost_points', 'status']);
 
-const USER_COLUMN_WHITELIST = new Set(['email', 'full_name', 'family_code',
+// family_code and email are not client-settable: family_code is the tenant
+// key, and email is UNIQUE so it could be squatted.
+const USER_COLUMN_WHITELIST = new Set(['full_name',
   'mum_name', 'mum_phone', 'dad_name', 'dad_phone']);
 
 function buildSort(sortField) {
@@ -530,8 +533,8 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
        SET total_points = GREATEST(0, total_points - $1),
            weekly_points = GREATEST(0, weekly_points - $1),
            points_spent = COALESCE(points_spent, 0) + $1
-       WHERE id = $2`,
-      [reward_cost, childId]
+       WHERE id = $2 AND family_code = $3`,
+      [reward_cost, childId, req.familyCode]
     );
 
     // Create redemption record
@@ -545,8 +548,8 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
 
     // Fetch updated child
     const { rows: updatedChild } = await pool.query(
-      'SELECT * FROM children WHERE id = $1',
-      [childId]
+      'SELECT * FROM children WHERE id = $1 AND family_code = $2',
+      [childId, req.familyCode]
     );
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
@@ -600,8 +603,8 @@ router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
     stack.push({ rewardId: reward_id, name: reward_title, cost: reward_cost });
 
     await client.query(
-      'UPDATE children SET reward_stack = $1 WHERE id = $2',
-      [JSON.stringify(stack), childId]
+      'UPDATE children SET reward_stack = $1 WHERE id = $2 AND family_code = $3',
+      [JSON.stringify(stack), childId, req.familyCode]
     );
 
     await client.query('COMMIT');
@@ -689,8 +692,8 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
            weekly_points = GREATEST(0, weekly_points - $1),
            points_spent = COALESCE(points_spent, 0) + $1,
            reward_stack = '[]'
-       WHERE id = $2`,
-      [stackTotal, childId]
+       WHERE id = $2 AND family_code = $3`,
+      [stackTotal, childId, req.familyCode]
     );
 
     // 2. Log each reward as a redemption
@@ -706,8 +709,8 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
 
     // Fetch updated child
     const { rows: updatedChild } = await pool.query(
-      'SELECT * FROM children WHERE id = $1',
-      [childId]
+      'SELECT * FROM children WHERE id = $1 AND family_code = $2',
+      [childId, req.familyCode]
     );
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
@@ -789,8 +792,8 @@ router.post('/api/children/:id/check-badges', authMiddleware, async (req, res) =
 
     // Get redemption count for this child
     const { rows: redemptionCount } = await pool.query(
-      "SELECT COUNT(*)::int as count FROM redemptions WHERE child_id = $1 AND status = 'Completed'",
-      [childId]
+      "SELECT COUNT(*)::int as count FROM redemptions WHERE child_id = $1 AND family_code = $2 AND status = 'Completed'",
+      [childId, req.familyCode]
     );
     const stats = { redemptions: redemptionCount[0]?.count || 0 };
 
@@ -820,8 +823,8 @@ router.post('/api/children/:id/check-badges', authMiddleware, async (req, res) =
     if (newBadges.length > 0) {
       const allBadges = [...earned, ...newBadges];
       await pool.query(
-        'UPDATE children SET badges_earned = $1 WHERE id = $2',
-        [allBadges, childId]
+        'UPDATE children SET badges_earned = $1 WHERE id = $2 AND family_code = $3',
+        [allBadges, childId, req.familyCode]
       );
       return res.json({ new_badges: newBadges, all_badges: allBadges });
     }
@@ -1243,8 +1246,8 @@ router.post('/api/family-goals/:id/contribute', authMiddleware, async (req, res)
     const goal = rows[0];
     if (goal.current_points >= goal.target_points) {
       await pool.query(
-        "UPDATE family_goals SET status = 'completed' WHERE id = $1",
-        [goal.id]
+        "UPDATE family_goals SET status = 'completed' WHERE id = $1 AND family_code = $2",
+        [goal.id, req.familyCode]
       );
       goal.status = 'completed';
     }
@@ -1333,6 +1336,10 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
     // family_code (it comes from user-editable localStorage). This prevents
     // cross-tenant writes and orphaned (NULL family_code) rows.
     data.family_code = req.familyCode;
+    // A row that points at a child or reward must point at one of the caller's.
+    if (!(await referencesAreOwned(pool, data, req.familyCode))) {
+      return res.status(404).json({ error: 'Not found' });
+    }
     const keys = Object.keys(data);
     // Fallback: nothing valid to insert (only reachable for a table with no
     // required columns). Reject cleanly instead of building empty SQL.
@@ -1355,6 +1362,21 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
 });
 
 // ─── Family-scoped writes ──────────────────────────────────────────────────
+
+const REFERENCES = { child_id: 'children', reward_id: 'rewards' };
+
+export async function referencesAreOwned(db, data, familyCode) {
+  for (const [col, table] of Object.entries(REFERENCES)) {
+    if (data[col] === undefined || data[col] === null) continue;
+    if (!isUuid(String(data[col]))) return false;
+    const { rowCount } = await db.query(
+      `SELECT 1 FROM ${table} WHERE id = $1 AND family_code = $2`,
+      [data[col], familyCode]
+    );
+    if (rowCount === 0) return false;
+  }
+  return true;
+}
 // Every generic update and delete goes through these two helpers. Each one
 // puts the caller's family_code in the WHERE clause of every statement it
 // runs, including cascades, so no handler can forget the scope.
@@ -1366,6 +1388,7 @@ export async function scopedUpdate(db, table, id, familyCode, data) {
   const keys = Object.keys(clean);
   if (keys.length === 0) return { status: 400 };
   if (!isUuid(id)) return { status: 404 };
+  if (!(await referencesAreOwned(db, clean, familyCode))) return { status: 404 };
   const values = Object.values(clean);
   const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
   values.push(id, familyCode);

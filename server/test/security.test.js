@@ -36,9 +36,35 @@ describe.skipIf(!runDb)('security tranche 1', () => {
     expect(rows[0].name).toBe('B kid');
 
     const aChild = await childOf(A, 'A kid');
-    await api(ctx.base, 'PUT', `/api/children/${aChild.id}`, { token: A.token, body: { name: 'A kid', family_code: B.code } });
-    const { rows: r2 } = await ctx.pool.query('SELECT family_code FROM children WHERE id = $1', [aChild.id]);
-    expect(r2[0].family_code).toBe(A.code);
+    const own = await api(ctx.base, 'PUT', `/api/children/${aChild.id}`, { token: A.token, body: { name: 'A kid renamed', family_code: B.code } });
+    expect(own.status).toBe(200);
+    const { rows: r2 } = await ctx.pool.query('SELECT name, family_code FROM children WHERE id = $1', [aChild.id]);
+    expect(r2[0]).toEqual({ name: 'A kid renamed', family_code: A.code });
+  });
+
+  it('1b: rows cannot be pointed at another family child or reward', async () => {
+    const bChild = await childOf(B, 'B kid ref');
+    const bReward = await api(ctx.base, 'POST', '/api/rewards', { token: B.token, body: { title: 'B ref', cost_points: 1 } });
+    const ev = await api(ctx.base, 'POST', '/api/point_events', { token: A.token, body: { child_id: bChild.id, points: 5, category: 'x' } });
+    expect(ev.status).toBe(404);
+    const aChild = await childOf(A, 'A kid ref');
+    const rd = await api(ctx.base, 'POST', '/api/redemptions', { token: A.token, body: { child_id: aChild.id, child_name: 'x', reward_id: bReward.json.id, reward_title: 'x', reward_cost: 1, status: 'Completed' } });
+    expect(rd.status).toBe(404);
+    const okEv = await api(ctx.base, 'POST', '/api/point_events', { token: A.token, body: { child_id: aChild.id, points: 5, category: 'x' } });
+    expect(okEv.status).toBe(200);
+    const { rowCount } = await ctx.pool.query('SELECT 1 FROM point_events WHERE child_id = $1', [bChild.id]);
+    expect(rowCount).toBe(0);
+  });
+
+  it('1c: badge counts only use the family own redemptions', async () => {
+    const bChild = await childOf(B, 'B kid badge');
+    // A row planted directly (as the old unchecked create allowed) must not count for B.
+    await ctx.pool.query(
+      "INSERT INTO redemptions (child_id, child_name, reward_id, reward_title, reward_cost, status, family_code) VALUES ($1, 'x', gen_random_uuid(), 'x', 1, 'Completed', $2)",
+      [bChild.id, A.code]);
+    const r = await api(ctx.base, 'POST', `/api/children/${bChild.id}/check-badges`, { token: B.token });
+    expect(r.status).toBe(200);
+    expect(r.json.new_badges).not.toContain('first_reward');
   });
 
   // 2. F2
@@ -86,6 +112,11 @@ describe.skipIf(!runDb)('security tranche 1', () => {
     expect(rows[0].status).toBe('Pending');
     const rw = await ctx.pool.query('SELECT 1 FROM rewards WHERE id = $1', [reward.json.id]);
     expect(rw.rowCount).toBe(1);
+
+    const own = await api(ctx.base, 'DELETE', `/api/rewards/${reward.json.id}`, { token: B.token });
+    expect(own.status).toBe(200);
+    const { rows: after } = await ctx.pool.query('SELECT status FROM redemptions WHERE reward_id = $1', [reward.json.id]);
+    expect(after[0].status).toBe('Denied');
   });
 
   // 3. F3
@@ -128,8 +159,15 @@ describe.skipIf(!runDb)('security tranche 1', () => {
     const bad = await api(ctx.base, 'POST', '/api/upload', { token: A.token, body: { data: html, content_type: 'text/html' } });
     expect(bad.status).toBe(400);
 
-    const good = await api(ctx.base, 'POST', '/api/upload', { token: A.token, body: { data: png, content_type: 'image/png' } });
+    const svg = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>').toString('base64');
+    const svgUp = await api(ctx.base, 'POST', '/api/upload', { token: A.token, body: { data: svg, content_type: 'image/svg+xml' } });
+    expect(svgUp.status).toBe(400);
+
+    const good = await api(ctx.base, 'POST', '/api/upload', { token: A.token, body: { data: png, content_type: 'text/html' } });
     expect(good.status).toBe(200);
+    const served = await fetch(ctx.base + good.json.file_url);
+    expect(served.headers.get('content-type')).toBe('image/png');
+    expect(Buffer.from(await served.arrayBuffer()).subarray(1, 4).toString()).toBe('PNG');
 
     // Rows stored before the fix can still hold HTML. Neither serve path may emit it as HTML.
     const legacy1 = await ctx.pool.query("INSERT INTO uploads (data, content_type) VALUES ($1, 'image/png') RETURNING id", [html]);
@@ -150,6 +188,13 @@ describe.skipIf(!runDb)('security tranche 1', () => {
     const mixed = await api(ctx.base, 'PUT', '/api/auth/me', { token: A.token, body: { mum_name: 'Mum', secret_col: 1 } });
     expect(mixed.status).toBe(200);
     expect(mixed.text).not.toContain('secret_col');
+
+    const move = await api(ctx.base, 'PUT', '/api/auth/me', { token: A.token, body: { full_name: 'A parent', family_code: B.code, email: 'squat@example.com' } });
+    expect(move.status).toBe(200);
+    const { rows } = await ctx.pool.query('SELECT family_code, email FROM users WHERE family_code = $1 OR email = $2', [B.code, 'squat@example.com']);
+    expect(rows.every((r) => r.family_code === B.code && r.email !== 'squat@example.com')).toBe(true);
+    const { rows: aRows } = await ctx.pool.query('SELECT family_code FROM users WHERE full_name = $1', ['A parent']);
+    expect(aRows.map((r) => r.family_code)).toEqual([A.code]);
   });
 
   // 8. F8
@@ -180,6 +225,19 @@ describe.skipIf(!runDb)('security tranche 1', () => {
     anon.close(); spoof.close();
   });
 
+  it('8b: a bad or expired token gets the socket closed', async () => {
+    const jwt = (await import('jsonwebtoken')).default;
+    const expired = jwt.sign({ family_code: A.code, exp: Math.floor(Date.now() / 1000) - 60 }, process.env.JWT_SECRET);
+    const wsUrl = ctx.base.replace('http', 'ws') + '/ws';
+    for (const token of ['garbage', expired]) {
+      const w = new WebSocket(wsUrl);
+      await new Promise((r) => w.on('open', r));
+      const closed = new Promise((r) => w.on('close', (code) => r(code)));
+      w.send(JSON.stringify({ type: 'join', token }));
+      expect(await closed).toBe(4401);
+    }
+  });
+
   // 9. F9
   it('9: date_of_birth is not accepted and the column is gone', async () => {
     const r = await api(ctx.base, 'POST', '/api/children', { token: A.token, body: { name: 'Dob kid', date_of_birth: '2019-01-01' } });
@@ -201,8 +259,12 @@ describe.skipIf(!runDb)('security tranche 1', () => {
 
   // G1
   it('G1: database errors are not echoed to the client', async () => {
-    const r = await api(ctx.base, 'PUT', '/api/children/not-a-uuid', { token: A.token, body: { name: 'x' } });
+    const r = await api(ctx.base, 'POST', '/api/children/not-a-uuid/adjust-points', { token: A.token, body: { points: 1 } });
+    expect(r.status).toBe(500);
     expect(r.text).not.toMatch(/uuid|syntax|relation|column|violates/i);
+    const bad = await fetch(ctx.base + '/api/children', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${A.token}` }, body: '{bad json' });
+    expect(bad.status).toBe(400);
+    expect(await bad.text()).not.toMatch(/<html|Unexpected token|SyntaxError/i);
   });
 });
 
@@ -216,6 +278,16 @@ describe.skipIf(!runDb)('security tranche 1: rate limits', () => {
     const statuses = [];
     for (let i = 0; i < 25; i++) {
       const r = await api(ctx.base, 'POST', '/api/family/join', { body: { family_code: `ZZZZ${String(i).padStart(2, '0')}` } });
+      statuses.push(r.status);
+    }
+    expect(statuses).toContain(429);
+  });
+
+  it('10c: a forged X-Forwarded-For entry does not reset the limit', async () => {
+    const statuses = [];
+    for (let i = 0; i < 25; i++) {
+      // The proxy appends the real client (here a fixed address) after any forged entries.
+      const r = await api(ctx.base, 'POST', '/api/family/join', { body: { family_code: 'QQQQQQ' }, headers: { 'X-Forwarded-For': `9.9.9.${i}, 203.0.113.7` } });
       statuses.push(r.status);
     }
     expect(statuses).toContain(429);

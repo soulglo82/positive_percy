@@ -34,7 +34,9 @@ export default function useRealtimeSync(familyCode) {
         } catch {}
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
+        // Rejected for no valid session: nothing to retry with.
+        if (event.code === 4401 && !getToken()) return;
         // Auto-reconnect after 3 seconds
         reconnectTimer.current = setTimeout(connect, 3000);
       };

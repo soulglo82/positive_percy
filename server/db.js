@@ -226,10 +226,11 @@ export async function initDb() {
       UPDATE children c
       SET points_spent = sub.total_spent
       FROM (
-        SELECT child_id, COALESCE(SUM(reward_cost), 0) AS total_spent
-        FROM redemptions
-        WHERE status IN ('Completed', 'Approved')
-        GROUP BY child_id
+        SELECT r.child_id, COALESCE(SUM(r.reward_cost), 0) AS total_spent
+        FROM redemptions r
+        JOIN children ch ON ch.id = r.child_id AND ch.family_code = r.family_code
+        WHERE r.status IN ('Completed', 'Approved')
+        GROUP BY r.child_id
       ) sub
       WHERE c.id = sub.child_id
         AND COALESCE(c.points_spent, 0) = 0
