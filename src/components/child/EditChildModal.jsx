@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Upload, X, Trash2 } from "lucide-react";
+import { Pencil, X, Trash2 } from "lucide-react";
 import { UploadFile } from "@/api/integrations";
 import { toast } from "sonner";
 import { PERCY } from "@/constants/terminology";
@@ -27,6 +27,7 @@ import { PERCY } from "@/constants/terminology";
 export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDelete }) {
   const [name, setName] = useState("");
   const [weeklyTarget, setWeeklyTarget] = useState(50);
+  const [age, setAge] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -37,6 +38,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
     if (child) {
       setName(child.name || "");
       setWeeklyTarget(child.weekly_target || 50);
+      setAge(child.age ? String(child.age) : "");
       setAvatarUrl(child.avatar_url || "");
       setAvatarPreview(child.avatar_url || "");
     }
@@ -66,11 +68,13 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
 
   const handleSubmit = async () => {
     if (!name.trim() || saving) return;
+    if (age !== "" && (Number(age) < 1 || Number(age) > 17)) return;
     setSaving(true);
     try {
       await onSubmit({
         name: name.trim(),
         weekly_target: weeklyTarget,
+        age: age === "" ? null : Math.round(Number(age)),
         avatar_url: avatarUrl
       });
       onClose();
@@ -148,6 +152,26 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
               className="text-lg"
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             />
+          </div>
+
+          <div>
+            <Label htmlFor="edit-child-age" className="text-sm font-medium text-slate-700 mb-2 block">
+              Age (optional)
+            </Label>
+            <Input
+              id="edit-child-age"
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max="17"
+              value={age}
+              onChange={(e) => setAge(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+              placeholder="e.g., 7"
+              className="text-lg"
+            />
+            {age !== "" && (Number(age) < 1 || Number(age) > 17) && (
+              <p className="text-xs text-red-600 mt-1">Age must be between 1 and 17.</p>
+            )}
           </div>
 
           <div>

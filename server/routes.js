@@ -134,7 +134,7 @@ function validateCreatePayload(table, data, { isCreate = false } = {}) {
       // age is an INTEGER column — normalize whatever the client sent to a
       // whole positive number, or null. Server is authoritative here.
       const n = Number(data.age);
-      data.age = Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
+      data.age = Number.isFinite(n) && n >= 1 && n <= 17 ? Math.trunc(n) : null;
     }
   }
   if (table === 'rewards') {
@@ -355,6 +355,9 @@ router.post('/api/family/join', async (req, res) => {
 
 // Get family info: your own family only. Not removed, because the SPA
 // catch-all would answer an unknown /api path with 200.
+// Must come before '/api/family/:code', which would otherwise match 'streak'.
+router.get('/api/family/streak', authMiddleware, readStreak);
+
 router.get('/api/family/:code', authMiddleware, async (req, res) => {
   if (req.params.code.toUpperCase() !== req.familyCode) {
     return res.status(404).json({ error: 'Family not found' });
@@ -373,41 +376,47 @@ router.get('/api/family/:code', authMiddleware, async (req, res) => {
   }
 });
 
-// Check and update parent streak (FEAT-006)
-router.post('/api/family/check-streak', authMiddleware, async (req, res) => {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+// Parent streak (FEAT-006): consecutive days (UTC) with at least one award.
+// Recorded by the server inside the award transaction, never by a page
+// load or a client flag, so visiting the app does not count.
+const STREAK_MILESTONES = [7, 14, 30, 60, 100];
+const utcDay = (offsetDays = 0) => new Date(Date.now() - offsetDays * 86400000).toISOString().split('T')[0];
 
+export async function recordStreak(db, familyCode) {
+  const today = utcDay(0);
+  const yesterday = utcDay(1);
+  const { rows } = await db.query(
+    'SELECT current_streak, last_active_date, longest_streak FROM families WHERE family_code = $1 FOR UPDATE',
+    [familyCode]
+  );
+  if (rows.length === 0) return { streak: 0, milestone: false };
+  const f = rows[0];
+  if (f.last_active_date === today) return { streak: f.current_streak || 0, milestone: false };
+  const streak = f.last_active_date === yesterday ? (f.current_streak || 0) + 1 : 1;
+  await db.query(
+    'UPDATE families SET current_streak = $1, last_active_date = $2, longest_streak = GREATEST(COALESCE(longest_streak, 0), $1) WHERE family_code = $3',
+    [streak, today, familyCode]
+  );
+  return { streak, milestone: STREAK_MILESTONES.includes(streak) };
+}
+
+// Read-only. A streak whose last award was before yesterday shows as 0.
+async function readStreak(req, res) {
+  try {
     const { rows } = await pool.query(
       'SELECT current_streak, last_active_date, longest_streak FROM families WHERE family_code = $1',
       [req.familyCode]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Family not found' });
-
-    const family = rows[0];
-    let newStreak = family.current_streak || 0;
-
-    if (family.last_active_date === today) {
-      return res.json({ streak: newStreak, longest: family.longest_streak || 0, updated: false });
-    } else if (family.last_active_date === yesterday) {
-      newStreak += 1;
-    } else {
-      newStreak = 1;
-    }
-
-    const longestStreak = Math.max(newStreak, family.longest_streak || 0);
-
-    await pool.query(
-      'UPDATE families SET current_streak = $1, last_active_date = $2, longest_streak = $3 WHERE family_code = $4',
-      [newStreak, today, longestStreak, req.familyCode]
-    );
-
-    res.json({ streak: newStreak, longest: longestStreak, updated: true });
+    const f = rows[0];
+    const live = f.last_active_date === utcDay(0) || f.last_active_date === utcDay(1);
+    res.json({ streak: live ? (f.current_streak || 0) : 0, longest: f.longest_streak || 0, updated: false });
   } catch (err) {
-    return serverError(res, 'Check streak error:', err);
+    return serverError(res, 'Read streak error', err);
   }
-});
+}
+// Kept for older app versions still open in a browser: now read-only.
+router.post('/api/family/check-streak', authMiddleware, readStreak);
 
 // ─── User / Profile routes (MUST be before generic :entity routes) ──────────
 
@@ -587,10 +596,11 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
        RETURNING *`,
       [applied, child.id, req.familyCode]
     );
+    const streak = applied > 0 ? await recordStreak(client, req.familyCode) : null;
     await client.query('COMMIT');
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
-    res.json({ event: eventRows[0], child: updated[0], duplicate: false, capped: applied !== points });
+    res.json({ event: eventRows[0], child: updated[0], duplicate: false, capped: applied !== points, streak });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     return serverError(res, 'Award points error', err);

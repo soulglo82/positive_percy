@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Users, Plus, LogIn, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { PERCY } from "@/constants/terminology";
+import { takeInviteCode } from "@/lib/invite";
 
 export default function FamilyLogin() {
   const { createFamily, joinFamily } = useAuth();
@@ -16,6 +17,15 @@ export default function FamilyLogin() {
   const [loading, setLoading] = useState(false);
   const [createdCode, setCreatedCode] = useState(null);
   const [copied, setCopied] = useState(false);
+
+  // Opened from an invite link: go straight to join with the code filled in.
+  useEffect(() => {
+    const code = takeInviteCode();
+    if (code) {
+      setJoinCode(code);
+      setMode('join');
+    }
+  }, []);
 
   const handleCreate = async () => {
     if (!familyName.trim()) return;
@@ -114,8 +124,9 @@ export default function FamilyLogin() {
                 className="w-full h-16 text-lg"
               >
                 <LogIn className="w-5 h-5 mr-3" />
-                Join with Code
+                Enter Family Code
               </Button>
+              <p className="text-sm text-slate-500 text-center -mt-2">Got a code from the other parent? Enter it here.</p>
             </CardContent>
           </Card>
         )}
@@ -177,7 +188,7 @@ export default function FamilyLogin() {
                   onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
                 />
                 <p className="text-xs text-slate-500 mt-2">
-                  Ask the other parent for the 6-character family code
+                  Enter the 6-character code the other parent shared with you.
                 </p>
               </div>
               <Button
