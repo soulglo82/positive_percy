@@ -151,6 +151,11 @@ test('child view', async ({ page }, testInfo) => {
 test('activity, with the log open and the child filter open', async ({ page }, testInfo) => {
   await go(page, '/activity');
   await checkScreen(page, 'activity', testInfo);
+  // The two "This week" boxes: number and label centred in each (Nael, 16:04).
+  const offsets = await page.evaluate(() => [...document.querySelectorAll('.bg-earn-soft > div, .bg-star-soft > div')]
+    .map((d) => { const r = d.getBoundingClientRect(), p = d.parentElement.getBoundingClientRect(); return Math.abs((r.left + r.width / 2) - (p.left + p.width / 2)); }));
+  expect(offsets.length).toBe(4);
+  for (const o of offsets) expect(o).toBeLessThan(1.5);
   await page.getByRole('button', { name: /Activity log/ }).click();
   await checkScreen(page, 'activity log', testInfo);
   await page.getByRole('combobox', { name: 'Child' }).click();

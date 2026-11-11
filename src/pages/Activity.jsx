@@ -147,12 +147,13 @@ export default function Activity() {
         <Card>
           <CardContent className="p-5">
             <h2 className="text-base font-semibold text-foreground mb-3">This Week</h2>
-            <div className="flex flex-wrap gap-4 mb-4">
-              <div className="bg-earn-soft rounded-md px-4 py-3 min-w-32">
+            {/* Two equal boxes, number and label centred in each. */}
+            <div className="grid grid-cols-2 gap-4 mb-4 max-w-sm">
+              <div className="bg-earn-soft rounded-md px-4 py-3 flex flex-col items-center justify-center text-center">
                 <div className="text-title font-semibold text-earn tabular-nums">+{totalWeeklyPoints}</div>
                 <div className="text-xs text-muted-foreground">{PERCY.POINTS} earned</div>
               </div>
-              <div className="bg-star-soft rounded-md px-4 py-3 min-w-32">
+              <div className="bg-star-soft rounded-md px-4 py-3 flex flex-col items-center justify-center text-center">
                 <div className="text-title font-semibold text-foreground tabular-nums">{activeDays}</div>
                 <div className="text-xs text-muted-foreground">active day{activeDays !== 1 ? 's' : ''}</div>
               </div>
