@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import Logo from "@/components/brand/Logo";
 import { sortRewardsForParent } from "@/lib/rewardOrder";
+import { REWARD_TEMPLATES } from "@/data/reward-templates";
 import SectionHeader from "../components/SectionHeader";
 import RewardCard from "../components/rewards/RewardCard";
 import AddRewardModal from "../components/rewards/AddRewardModal";
@@ -16,9 +17,12 @@ import EditRewardModal from "../components/rewards/EditRewardModal";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
+const FIRST_REWARD = REWARD_TEMPLATES.find((template) => template.title === 'Extra Screen Time');
+
 export default function Rewards() {
   const { user } = useAuth();
   const [showAddReward, setShowAddReward] = useState(false);
+  const [starterTemplate, setStarterTemplate] = useState(null);
   const [showEditReward, setShowEditReward] = useState(false);
   const [selectedReward, setSelectedReward] = useState(null);
 
@@ -49,6 +53,11 @@ export default function Rewards() {
       queryClient.invalidateQueries({ queryKey: ['rewards'] });
     },
   });
+
+  const openRewardForm = (template = null) => {
+    setStarterTemplate(template);
+    setShowAddReward(true);
+  };
 
   const handleToggleVisibility = async (reward) => {
     await updateRewardMutation.mutateAsync({
@@ -103,7 +112,7 @@ export default function Rewards() {
             </h1>
             <p className="text-muted-foreground mt-1">Create rewards your kids can earn 🎁</p>
           </div>
-          <Button onClick={() => setShowAddReward(true)}>
+          <Button onClick={() => openRewardForm()}>
             <Plus className="w-4 h-4" />
             New Reward
           </Button>
@@ -124,10 +133,18 @@ export default function Rewards() {
               <p className="text-muted-foreground mb-4">
                 Create rewards your children can work towards
               </p>
-              <Button onClick={() => setShowAddReward(true)}>
-                <Gift className="w-4 h-4" />
-                Create First Reward
-              </Button>
+              <p className="text-sm text-muted-foreground mb-4 text-center">
+                Extra screen time is a suggested first reward. You choose its point cost and can edit or replace it.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={() => openRewardForm(FIRST_REWARD)}>
+                  <Gift className="w-4 h-4" />
+                  Start with screen time
+                </Button>
+                <Button variant="outline" onClick={() => openRewardForm()}>
+                  Create another reward
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -150,8 +167,9 @@ export default function Rewards() {
       {/* Modals */}
       <AddRewardModal
         isOpen={showAddReward}
-        onClose={() => setShowAddReward(false)}
+        onClose={() => { setShowAddReward(false); setStarterTemplate(null); }}
         onSubmit={(data) => createRewardMutation.mutate(data)}
+        initialTemplate={starterTemplate}
         children={children}
       />
 
