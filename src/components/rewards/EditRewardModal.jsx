@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import NumberInput from "@/components/ui/NumberInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { EmojiPicker, ChildAssignList } from "./RewardFormParts";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,44 +70,30 @@ export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, onD
   return (<>
     <Dialog open={isOpen} onOpenChange={onClose}>
       {/* Three parts: title, a scrolling middle, buttons. Fits the visible screen (svh). */}
-      <DialogContent className="sm:max-w-md flex flex-col max-h-[85svh] p-0 gap-0 overflow-hidden">
-        <DialogHeader className="shrink-0 px-6 pt-6 pb-2 pr-12">
-          <DialogTitle className="flex items-center gap-2 text-2xl">
-            <Pencil className="w-6 h-6 text-orange-500" />
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Pencil className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
             Edit Reward
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-4 space-y-5">
+        <DialogBody className="space-y-5">
           {/* Emoji Picker */}
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <p className="text-sm font-medium text-foreground mb-2">
               Choose Icon
-            </Label>
-            <div className="grid grid-cols-6 gap-2">
-              {EMOJI_OPTIONS.map((e) => (
-                <button
-                  key={e}
-                  type="button"
-                  onClick={() => setEmoji(e)}
-                  className={`text-3xl p-2 rounded-lg border-2 transition-all ${
-                    emoji === e 
-                      ? 'border-orange-400 bg-orange-50 scale-110' 
-                      : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
+            </p>
+            <EmojiPicker options={EMOJI_OPTIONS} value={emoji} onChange={setEmoji} />
           </div>
 
           {/* Title */}
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="edit-reward-title" className="mb-2 block">
               Reward Title
             </Label>
             <Input
+              id="edit-reward-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Extra Screen Time"
@@ -114,10 +103,11 @@ export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, onD
 
           {/* Description */}
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="edit-reward-description" className="mb-2 block">
               Description (optional)
             </Label>
             <Textarea
+              id="edit-reward-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g., 30 minutes of extra tablet time"
@@ -127,10 +117,11 @@ export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, onD
 
           {/* Cost */}
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="edit-reward-cost" className="mb-2 block">
               Point Cost
             </Label>
             <NumberInput
+              id="edit-reward-cost"
               value={costPoints}
               onChange={setCostPoints}
               min="1"
@@ -141,64 +132,46 @@ export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, onD
           {/* Assign to Children */}
           {children.length > 0 && (
             <div>
-              <Label className="text-sm font-medium text-slate-700 mb-2 block">
+              <p className="text-sm font-medium text-foreground mb-2">
                 Assign to Children
-              </Label>
-              <p className="text-xs text-slate-500 mb-3">
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
                 Leave unchecked to make available to all children
               </p>
-              <div className="space-y-2">
-                {children.map((child) => (
-                  <div key={child.id} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id={`child-${child.id}`}
-                      checked={assignedChildIds.includes(child.id)}
-                      onChange={() => toggleChildAssignment(child.id)}
-                      className="w-4 h-4 rounded border-slate-300 text-purple-600 cursor-pointer"
-                    />
-                    <label
-                      htmlFor={`child-${child.id}`}
-                      className="text-sm font-medium cursor-pointer"
-                    >
-                      {child.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
+              <ChildAssignList children={children} selectedIds={assignedChildIds} onToggle={toggleChildAssignment} />
             </div>
           )}
-        </div>
 
-        <div className="shrink-0 flex gap-3 px-6 py-3 border-t border-slate-100 bg-background">
+          {onDelete && (
+            <div className="pt-4 border-t border-border">
+              <Button
+                variant="ghost"
+                className="w-full text-destructive hover:text-destructive"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Reward
+              </Button>
+            </div>
+          )}
+        </DialogBody>
+
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={onClose}
-            className="flex-1 min-h-11"
+            className="flex-1"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={!title.trim() || costPoints <= 0}
-            className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+            className="flex-1"
           >
             Save Changes
           </Button>
-        </div>
-
-        {onDelete && (
-          <div className="pt-4 border-t">
-            <Button
-              variant="ghost"
-              className="w-full text-red-500 hover:text-red-700 hover:bg-red-50"
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Reward
-            </Button>
-          </div>
-        )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
 
@@ -218,7 +191,7 @@ export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, onD
               setShowDeleteConfirm(false);
               onClose();
             }}
-            className="bg-red-500 hover:bg-red-600"
+            variant="destructive"
           >
             Delete
           </AlertDialogAction>

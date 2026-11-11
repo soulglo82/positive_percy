@@ -4,13 +4,16 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Coins, Gift } from "lucide-react";
+import { Gift } from "lucide-react";
+import { Points } from "@/components/brand/PointsStar";
+import EmojiTile from "@/components/rewards/EmojiTile";
+import Logo from "@/components/brand/Logo";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
 import { useQueryClient } from "@tanstack/react-query";
 import { PERCY } from "@/constants/terminology";
 
@@ -39,15 +42,9 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
       // toast's Undo button.
       onClose();
 
-      toast.success(`${child.name} redeemed ${reward.title}!`, {
+      toast.success(`${child.name} redeemed ${reward.title}.`, {
         duration: UNDO_TOAST_MS,
         action: { label: 'Undo', onClick: undoAction('spend', redemption.id, queryClient) },
-      });
-      confetti({
-        particleCount: 120,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
       });
     } catch (e) {
       toast.error(e.message || 'Failed to redeem reward');
@@ -58,23 +55,23 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Gift className="w-5 h-5 text-pink-500" />
+            <Gift className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
             Spend {child.name}'s Points
           </DialogTitle>
-          <p className="text-sm text-slate-500 mt-1">
-            <span className="font-bold text-purple-600">{child.total_points}</span> {PERCY.POINTS} available
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            <Points value={child.total_points} className="font-semibold text-foreground" /> {PERCY.POINTS} available
           </p>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto -mx-6 px-6 py-2">
+        <DialogBody>
           {availableRewards.length === 0 ? (
             <div className="text-center py-8">
-              <div className="text-5xl mb-3">🎁</div>
-              <p className="text-slate-500 text-sm">No rewards created yet.</p>
-              <p className="text-slate-400 text-xs mt-1">Add rewards in the Rewards tab.</p>
+              <Logo size={48} decorative className="mb-3" />
+              <p className="text-muted-foreground text-sm">No rewards created yet.</p>
+              <p className="text-muted-foreground text-xs mt-1">Add rewards in the Rewards tab.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -85,31 +82,23 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
                 return (
                   <div
                     key={reward.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                    className={`flex items-center gap-3 p-3 rounded-md border transition-colors ${
                       canAfford
-                        ? 'bg-white border-slate-200 hover:border-green-300 hover:bg-green-50/50'
-                        : 'bg-slate-50 border-slate-100 opacity-60'
+                        ? 'bg-card border-border'
+                        : 'bg-muted border-border'
                     }`}
                   >
-                    <span className="text-2xl shrink-0">
-                      {reward.emoji || '🎁'}
-                    </span>
+                    <EmojiTile emoji={reward.emoji} className={canAfford ? "" : "bg-card"} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-800 text-sm truncate">{reward.title}</p>
-                      <Badge variant="outline" className="text-xs mt-0.5 bg-amber-50 text-amber-700 border-amber-200">
-                        <Coins className="w-3 h-3 mr-1" />
-                        {reward.cost_points} pts
-                      </Badge>
+                      <p className="font-medium text-foreground text-sm truncate">{reward.title}</p>
+                      <Points value={reward.cost_points} className="text-sm text-muted-foreground mt-0.5" />
                     </div>
                     <Button
                       size="sm"
+                      variant={canAfford ? "default" : "outline"}
                       disabled={!canAfford || isRedeeming}
                       onClick={() => handleRedeem(reward)}
-                      className={`shrink-0 min-h-[40px] px-4 ${
-                        canAfford
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
-                          : ''
-                      }`}
+                      className="shrink-0 px-4"
                     >
                       {isRedeeming ? 'Spending...' : canAfford ? 'Spend' : `Need ${reward.cost_points - child.total_points} more`}
                     </Button>
@@ -118,12 +107,12 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
               })}
             </div>
           )}
-        </div>
-        <div className="pt-3 border-t border-slate-100">
-          <Button variant="outline" onClick={onClose} className="w-full min-h-11">
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} className="w-full">
             Done
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

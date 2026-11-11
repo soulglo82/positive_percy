@@ -44,3 +44,50 @@ jobs:
         run: npm test
         env:
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/percy_test
+
+  # Batch D: every screen, dialog and select at four sizes in Chromium.
+  # axe (serious/critical), 44px touch targets, 12px text floor, no
+  # horizontal scroll, every control named.
+  ui:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: percy_e2e
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Run UI checks
+        run: npm run test:ui
+        env:
+          E2E_DATABASE_URL: postgres://postgres:postgres@localhost:5432/percy_e2e
+
+      - name: Keep screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: test-results/
+          retention-days: 14

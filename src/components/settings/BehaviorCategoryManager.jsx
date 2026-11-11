@@ -12,6 +12,8 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
@@ -31,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, ChevronDown, ChevronUp, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import SectionHeader from "../SectionHeader";
 import { formatPointsBadge } from "@/constants/terminology";
@@ -208,46 +210,46 @@ export default function BehaviorCategoryManager() {
 
   return (
     <div>
-      <SectionHeader icon="📋">Behavior Categories</SectionHeader>
+      <SectionHeader icon={ListChecks}>Behaviours</SectionHeader>
       <Card>
         <CardContent className="pt-4 pb-3 px-3 sm:px-6">
           {/* Quick action counter */}
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs text-slate-500">Tap a row to edit details</span>
-            <span className="text-xs font-medium text-slate-500">
-              Quick actions: <span className={quickActionCount >= MAX_QUICK_ACTIONS ? 'text-amber-600 font-bold' : 'text-green-600 font-bold'}>{quickActionCount}/{MAX_QUICK_ACTIONS}</span>
+            <span className="text-xs text-muted-foreground">Tap a row to edit details</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              Quick actions: <span className={`font-semibold tabular-nums ${quickActionCount >= MAX_QUICK_ACTIONS ? 'px-1.5 rounded-sm bg-warning border border-warning-border text-warning-foreground' : 'text-foreground'}`}>{quickActionCount}/{MAX_QUICK_ACTIONS}</span>
             </span>
           </div>
 
           {categories.length === 0 ? (
-            <p className="text-sm text-slate-400 italic py-4 text-center">
+            <p className="text-sm text-muted-foreground py-4 text-center">
               No categories yet. Add your first one below.
             </p>
           ) : (
-            <div className="border border-slate-200 rounded-lg overflow-hidden">
+            <div className="border border-border rounded-md overflow-hidden">
               {categories.map((cat, idx) => {
                 const isExpanded = expandedId === cat.id;
                 const isEditing = editingId === cat.id;
 
                 return (
-                  <div key={cat.id} className={`${idx > 0 ? 'border-t border-slate-200' : ''}`}>
+                  <div key={cat.id} className={`${idx > 0 ? 'border-t border-border' : ''}`}>
                     {/* Main row — always visible */}
                     {/* Two sibling controls, nothing nested (A2 E2): the row
                         opens with a real button, the quick-action box is its
                         own labelled checkbox. Both work by keyboard. */}
-                    <div className={`flex items-center gap-1 pr-2 transition-colors ${isExpanded ? 'bg-slate-50' : ''}`}>
+                    <div className={`flex items-center gap-1 pr-2 transition-colors ${isExpanded ? 'bg-muted' : ''}`}>
                       <button
                         type="button"
                         aria-expanded={isExpanded}
                         aria-controls={`category-panel-${cat.id}`}
                         disabled={isEditing}
                         onClick={() => setExpandedId(isExpanded ? null : cat.id)}
-                        className="flex flex-1 min-w-0 min-h-11 items-center gap-3 px-3 py-2.5 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                        className="flex flex-1 min-w-0 min-h-11 items-center gap-3 px-3 py-2.5 text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                       >
                         <span className="text-lg shrink-0 w-7 text-center" aria-hidden="true">{cat.icon}</span>
-                        <span className="font-medium text-slate-700 flex-1 min-w-0 truncate text-sm">{cat.name}</span>
-                        <span className="text-xs text-green-600 font-bold shrink-0 w-14 text-right">{formatPointsBadge(cat.points || 5)}</span>
-                        <span className="shrink-0 text-slate-400" aria-hidden="true">
+                        <span className="font-medium text-foreground flex-1 min-w-0 truncate text-sm">{cat.name}</span>
+                        <span className="text-sm text-earn font-semibold tabular-nums shrink-0 w-14 text-right">{formatPointsBadge(cat.points || 5)}</span>
+                        <span className="shrink-0 text-muted-foreground" aria-hidden="true">
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </span>
                       </button>
@@ -258,13 +260,13 @@ export default function BehaviorCategoryManager() {
                           aria-label={`${cat.name} quick action`}
                           onCheckedChange={() => toggleQuickAction(cat)}
                         />
-                        <span className="text-[10px] text-slate-400 w-8" aria-hidden="true">Quick</span>
+                        <span className="text-xs text-muted-foreground w-10" aria-hidden="true">Quick</span>
                       </label>
                     </div>
 
                     {/* Expanded detail panel */}
                     {isExpanded && (
-                      <div id={`category-panel-${cat.id}`} className="px-3 pb-3 pt-1 bg-slate-50 border-t border-slate-100">
+                      <div id={`category-panel-${cat.id}`} className="px-3 pb-3 pt-1 bg-muted border-t border-border">
                         {isEditing ? (
                           <div className="space-y-3">
                             <div className="flex items-center gap-2">
@@ -273,7 +275,7 @@ export default function BehaviorCategoryManager() {
                                   const nextIdx = EMOJI_OPTIONS.indexOf(editIcon);
                                   setEditIcon(EMOJI_OPTIONS[(nextIdx + 1) % EMOJI_OPTIONS.length]);
                                 }}
-                                className="text-lg p-1.5 rounded border border-slate-200 hover:border-purple-300 min-w-[40px] min-h-[40px] flex items-center justify-center"
+                                className="text-lg rounded-md border border-input bg-card hover:bg-accent min-w-11 min-h-11 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 aria-label="Change icon"
                               >
                                 {editIcon}
@@ -281,7 +283,8 @@ export default function BehaviorCategoryManager() {
                               <Input
                                 value={editName}
                                 onChange={(e) => setEditName(e.target.value)}
-                                className="flex-1 h-9 text-sm"
+                                aria-label="Behaviour name"
+                                className="flex-1 text-sm"
                                 maxLength={100}
                                 autoFocus
                                 onKeyDown={(e) => {
@@ -294,16 +297,16 @@ export default function BehaviorCategoryManager() {
                                 min={1}
                                 max={1000}
                                 onChange={setEditPoints}
-                                className="w-20 h-9 text-sm"
+                                aria-label="Points"
+                                className="w-20 text-sm"
                               />
                             </div>
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 onClick={() => handleUpdate(cat.id, { name: editName, icon: editIcon, points: Math.min(1000, Math.max(1, Math.round(Number(editPoints) || 5))) })}
-                                className="bg-green-600 hover:bg-green-700 text-white"
                               >
-                                <Check className="w-4 h-4 mr-1" /> Save
+                                <Check className="w-4 h-4" /> Save
                               </Button>
                               <Button
                                 variant="outline"
@@ -319,12 +322,12 @@ export default function BehaviorCategoryManager() {
                             {/* Assigned children */}
                             {children.length > 0 && (
                               <div className="flex items-center gap-2">
-                                <Label className="text-xs text-slate-500 shrink-0">Assigned to:</Label>
+                                <span className="text-sm text-muted-foreground shrink-0" id={`assign-${cat.id}`}>Assigned to:</span>
                                 <Select
                                   value={getAssignmentValue(cat)}
                                   onValueChange={(v) => handleChildAssignment(cat, v)}
                                 >
-                                  <SelectTrigger className="h-8 text-xs flex-1 max-w-[200px] border-slate-200">
+                                  <SelectTrigger aria-labelledby={`assign-${cat.id}`} className="flex-1 max-w-52">
                                     <SelectValue>{getAssignmentLabel(cat)}</SelectValue>
                                   </SelectTrigger>
                                   <SelectContent>
@@ -340,13 +343,12 @@ export default function BehaviorCategoryManager() {
                             )}
 
                             {/* Action buttons */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleReorder(cat.id, 'up')}
                                 disabled={idx === 0}
-                                className="h-8 px-2 text-xs"
                               >
                                 Move Up
                               </Button>
@@ -355,7 +357,6 @@ export default function BehaviorCategoryManager() {
                                 size="sm"
                                 onClick={() => handleReorder(cat.id, 'down')}
                                 disabled={idx === categories.length - 1}
-                                className="h-8 px-2 text-xs"
                               >
                                 Move Down
                               </Button>
@@ -363,18 +364,17 @@ export default function BehaviorCategoryManager() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => startEdit(cat)}
-                                className="h-8 px-2 text-xs"
                               >
-                                <Pencil className="w-3 h-3 mr-1" /> Edit
+                                <Pencil className="w-4 h-4" /> Edit
                               </Button>
                               {!cat.is_default && (
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => setPendingDelete(cat)}
-                                  className="h-8 px-2 text-xs text-rose-600 border-rose-200 hover:bg-rose-50"
+                                  className="text-destructive"
                                 >
-                                  <Trash2 className="w-3 h-3 mr-1" /> Delete
+                                  <Trash2 className="w-4 h-4" /> Delete
                                 </Button>
                               )}
                             </div>
@@ -389,7 +389,7 @@ export default function BehaviorCategoryManager() {
           )}
 
           <Button variant="outline" className="w-full mt-3" onClick={() => setShowAddModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             Add Category
           </Button>
         </CardContent>
@@ -409,7 +409,7 @@ export default function BehaviorCategoryManager() {
                 setPendingDelete(null);
                 if (id) handleDelete(id);
               }}
-              className="bg-red-500 hover:bg-red-600"
+              variant="destructive"
             >
               Delete
             </AlertDialogAction>
@@ -449,21 +449,23 @@ function AddCategoryModal({ isOpen, onClose, onSubmit }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New Behavior Category</DialogTitle>
+          <DialogTitle>New Behaviour</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <DialogBody className="space-y-4">
           <div>
-            <Label className="text-sm font-medium mb-2 block">Icon</Label>
-            <div className="flex flex-wrap gap-2">
+            <p className="text-sm font-medium text-foreground mb-2" id="cat_icon">Icon</p>
+            <div className="flex flex-wrap gap-2" role="group" aria-labelledby="cat_icon">
               {EMOJI_OPTIONS.map((emoji) => (
                 <button
                   key={emoji}
+                  type="button"
+                  aria-pressed={icon === emoji}
                   onClick={() => setIcon(emoji)}
-                  className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center text-lg transition-all ${
+                  className={`w-11 h-11 rounded-md border flex items-center justify-center text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     icon === emoji
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-2 border-selected-border bg-selected'
+                      : 'border-border bg-card hover:bg-accent'
                   }`}
                 >
                   {emoji}
@@ -473,7 +475,7 @@ function AddCategoryModal({ isOpen, onClose, onSubmit }) {
           </div>
 
           <div>
-            <Label htmlFor="cat_name" className="text-sm font-medium mb-2 block">Name</Label>
+            <Label htmlFor="cat_name" className="mb-2 block">Name</Label>
             <Input
               id="cat_name"
               value={name}
@@ -485,7 +487,7 @@ function AddCategoryModal({ isOpen, onClose, onSubmit }) {
           </div>
 
           <div>
-            <Label htmlFor="cat_points" className="text-sm font-medium mb-2 block">Percy Points</Label>
+            <Label htmlFor="cat_points" className="mb-2 block">Percy Points</Label>
             <NumberInput
               id="cat_points"
               value={points}
@@ -494,18 +496,18 @@ function AddCategoryModal({ isOpen, onClose, onSubmit }) {
               max={1000}
             />
           </div>
-        </div>
+        </DialogBody>
 
-        <div className="flex gap-3">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
           <Button
             onClick={handleSubmit}
             disabled={!name.trim()}
-            className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            className="flex-1"
           >
             Create
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

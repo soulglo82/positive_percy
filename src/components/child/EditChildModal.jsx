@@ -3,6 +3,8 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -23,6 +25,8 @@ import { Pencil, X, Trash2 } from "lucide-react";
 import { UploadFile } from "@/api/integrations";
 import { toast } from "sonner";
 import { PERCY } from "@/constants/terminology";
+import { childColour } from "@/lib/childColour";
+import { cn } from "@/lib/utils";
 
 export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDelete }) {
   const [name, setName] = useState("");
@@ -60,7 +64,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
       const { file_url } = await UploadFile({ file });
       setAvatarUrl(file_url);
       setAvatarPreview(URL.createObjectURL(file));
-      toast.success('Photo uploaded!');
+      toast.success('Photo uploaded.');
     } catch (error) {
       toast.error('Failed to upload photo');
     } finally {
@@ -94,16 +98,16 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-2xl">
-            <Pencil className="w-6 h-6 text-purple-500" />
+          <DialogTitle className="flex items-center gap-2">
+            <Pencil className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
             Edit Child
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
+        <DialogBody className="space-y-5">
           {/* Avatar Upload */}
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="edit-child-photo" className="mb-2 block">
               Photo
             </Label>
             <div className="flex items-center gap-4">
@@ -112,7 +116,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
                   <img 
                     src={avatarPreview} 
                     alt="Avatar preview" 
-                    className="w-20 h-20 rounded-full object-cover border-4 border-purple-200"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-border"
                   />
                   <button
                     type="button"
@@ -121,25 +125,28 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
                       setAvatarPreview("");
                     }}
                     aria-label="Remove photo"
-                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    className="absolute -top-3 -right-3 w-11 h-11 flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <X className="w-3 h-3" />
+                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-card border border-input text-foreground shadow">
+                      <X className="w-3 h-3" aria-hidden="true" />
+                    </span>
                   </button>
                 </div>
               ) : (
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-200 to-pink-200 flex items-center justify-center text-3xl font-bold text-purple-600">
+                <div className={cn("w-20 h-20 rounded-full flex items-center justify-center font-display text-title font-semibold text-foreground ring-2 ring-offset-2 ring-offset-card", childColour(child).soft, childColour(child).ring)} aria-hidden="true">
                   {name.charAt(0) || '?'}
                 </div>
               )}
               <div className="flex-1">
                 <Input
+                  id="edit-child-photo"
                   type="file"
                   accept="image/*"
                   onChange={handleFileUpload}
                   disabled={uploading}
                   className="cursor-pointer"
                 />
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {uploading ? 'Uploading...' : 'Upload a new photo'}
                 </p>
               </div>
@@ -147,10 +154,11 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="edit-child-name" className="mb-2 block">
               Child's Name
             </Label>
             <Input
+              id="edit-child-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Emma"
@@ -160,7 +168,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
           </div>
 
           <div>
-            <Label htmlFor="edit-child-age" className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="edit-child-age" className="mb-2 block">
               Age (optional)
             </Label>
             <Input
@@ -177,15 +185,16 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
               aria-describedby={ageInvalid ? "edit-child-age-error" : undefined}
             />
             {ageInvalid && (
-              <p id="edit-child-age-error" role="alert" className="text-xs text-red-600 mt-1">Age must be between 1 and 17.</p>
+              <p id="edit-child-age-error" role="alert" className="text-xs text-destructive mt-1">Age must be between 1 and 17.</p>
             )}
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="edit-child-target" className="mb-2 block">
               Weekly {PERCY.POINTS_COMPACT} Target
             </Label>
             <NumberInput
+              id="edit-child-target"
               value={weeklyTarget}
               onChange={setWeeklyTarget}
               min="1"
@@ -194,13 +203,26 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
             />
           </div>
 
-          <p className="text-sm text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
-            {child?.name || 'This child'} has <span className="font-semibold text-slate-700">{child?.total_points ?? 0}</span> {PERCY.POINTS_COMPACT}.
+          <p className="text-sm text-muted-foreground bg-muted rounded-lg px-3 py-2">
+            {child?.name || 'This child'} has <span className="font-semibold text-foreground">{child?.total_points ?? 0}</span> {PERCY.POINTS_COMPACT}.
             To change them, use Add Points so the change shows in the history.
           </p>
-        </div>
 
-        <div className="flex gap-3">
+          {onDelete && (
+            <div className="pt-4 border-t border-border">
+              <Button
+                variant="ghost"
+                className="w-full text-destructive hover:text-destructive"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Child
+              </Button>
+            </div>
+          )}
+        </DialogBody>
+
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={onClose}
@@ -212,24 +234,11 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
           <Button
             onClick={handleSubmit}
             disabled={!name.trim() || uploading || saving || ageInvalid}
-            className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            className="flex-1"
           >
             {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Save Changes'}
           </Button>
-        </div>
-
-        {onDelete && (
-          <div className="pt-4 border-t">
-            <Button
-              variant="ghost"
-              className="w-full text-red-500 hover:text-red-700 hover:bg-red-50"
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Child
-            </Button>
-          </div>
-        )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
 
@@ -249,7 +258,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
               setShowDeleteConfirm(false);
               onClose();
             }}
-            className="bg-red-500 hover:bg-red-600"
+            variant="destructive"
           >
             Delete
           </AlertDialogAction>

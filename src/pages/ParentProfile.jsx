@@ -6,9 +6,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, Save, Copy, Check, Share2, Lightbulb, UserPlus } from "lucide-react";
+import { Settings, Save, Copy, Check, Share2, Lightbulb, UserPlus, Users, Home, KeyRound } from "lucide-react";
 import { toast } from "sonner";
-import { formatPoints } from "@/constants/terminology";
+import { Points } from "@/components/brand/PointsStar";
+import ChildAvatar from "../components/child/ChildAvatar";
+import { childColour } from "@/lib/childColour";
 import SectionHeader from "../components/SectionHeader";
 import OnboardingTips from "../components/OnboardingTips";
 import AddChildModal from "../components/child/AddChildModal";
@@ -39,7 +41,7 @@ export default function ParentProfile() {
     setLoading(true);
     try {
       await updateUser({ full_name: familyName });
-      toast.success("Family name updated!");
+      toast.success("Family name updated.");
     } catch (error) {
       toast.error(error.message || "Failed to update");
     } finally {
@@ -48,12 +50,12 @@ export default function ParentProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="min-h-screen">
       <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-2">
-          <Settings className="w-8 h-8 text-purple-500" />
-          <h1 className="text-3xl font-bold text-slate-800">Family Settings</h1>
+          <Settings className="w-6 h-6 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
+          <h1 className="font-display text-title font-semibold text-foreground">Family Settings</h1>
         </div>
 
         {/* Behavior Categories (includes Quick Action toggle + per-child assignment) */}
@@ -63,68 +65,59 @@ export default function ParentProfile() {
         <FamilyTimezone />
 
         {/* Children */}
-        <SectionHeader icon="👨‍👩‍👧‍👦">Children</SectionHeader>
+        <SectionHeader icon={Users}>Children</SectionHeader>
         <Card>
           <CardContent className="space-y-2 pt-4">
             {children.length === 0 ? (
-              <p className="text-sm text-slate-400 italic py-2 text-center">No children added yet.</p>
+              <p className="text-sm text-muted-foreground py-2 text-center">No children added yet.</p>
             ) : (
               <div className="space-y-1.5">
                 {children.map((child) => (
                   <div
                     key={child.id}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100"
+                    className="flex items-center justify-between gap-2 pl-3 pr-1 py-1 rounded-md bg-muted border border-border"
                   >
-                    <div className="flex items-center gap-3">
-                      {child.avatar_url ? (
-                        <img src={child.avatar_url} alt={child.name} className="w-8 h-8 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold">
-                          {child.name.charAt(0)}
-                        </div>
-                      )}
-                      <span className="font-medium text-slate-700">{child.name}</span>
-                      <span className="text-sm text-purple-600 font-bold">{formatPoints(child.total_points, { compact: true })}</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <ChildAvatar name={child.name} url={child.avatar_url} size="sm" colour={childColour(child, children)} />
+                      <span className="font-medium text-foreground truncate">{child.name}</span>
+                      <Points value={child.total_points} className="text-sm text-muted-foreground font-semibold" />
                     </div>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       aria-label={`Edit ${child.name}`}
                       onClick={() => {
                         setSelectedChild(child);
                         setShowEditChild(true);
                       }}
                     >
-                      <Pencil className="w-4 h-4 text-slate-400" />
+                      <Pencil className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                     </Button>
                   </div>
                 ))}
               </div>
             )}
             <Button variant="outline" className="w-full" onClick={() => setShowAddChild(true)}>
-              <UserPlus className="w-4 h-4 mr-2" />
+              <UserPlus className="w-4 h-4" />
               Add Child
             </Button>
           </CardContent>
         </Card>
 
         {/* Family Name */}
-        <SectionHeader icon="👪">Family Name</SectionHeader>
+        <SectionHeader icon={Home}>Family name</SectionHeader>
         <Card>
           <CardContent className="pt-4">
             <form onSubmit={handleSubmit} className="flex gap-2">
               <Input
+                aria-label="Family name"
                 value={familyName}
                 onChange={(e) => setFamilyName(e.target.value)}
                 placeholder="e.g., The Smiths"
                 className="flex-1"
               />
-              <Button
-                type="submit"
-                disabled={loading}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-              >
-                <Save className="w-4 h-4 mr-1" />
+              <Button type="submit" disabled={loading}>
+                <Save className="w-4 h-4" />
                 {loading ? 'Saving...' : 'Save'}
               </Button>
             </form>
@@ -134,16 +127,16 @@ export default function ParentProfile() {
         {/* Invite Parent */}
         {familyCode && (
           <>
-          <SectionHeader icon="🔑">Invite Parent</SectionHeader>
-          <Card className="border-2 border-purple-200 bg-purple-50/50">
+          <SectionHeader icon={KeyRound}>Invite parent</SectionHeader>
+          <Card>
             <CardContent className="space-y-3 pt-4">
               <div className="flex items-center gap-3">
-                <div className="text-3xl font-mono font-bold tracking-widest text-purple-700 bg-white rounded-lg px-4 py-2 border">
+                <div className="text-title font-mono font-semibold text-foreground bg-muted rounded-md px-4 py-2 border border-border">
                   {familyCode}
                 </div>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   aria-label={copied ? 'Family code copied' : 'Copy family code'}
                   onClick={() => {
                     navigator.clipboard.writeText(familyCode);
@@ -154,9 +147,9 @@ export default function ParentProfile() {
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
-              <p className="text-xs text-slate-500">Both parents can add points and manage rewards.</p>
+              <p className="text-xs text-muted-foreground">Both parents can add points and manage rewards.</p>
               <Button
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                className="w-full"
                 onClick={async () => {
                   // The code goes after '#', which browsers never send to the server.
                   const link = `${window.location.origin}/#${familyCode}`;
@@ -176,7 +169,7 @@ export default function ParentProfile() {
                   }
                 }}
               >
-                <Share2 className="w-4 h-4 mr-2" />
+                <Share2 className="w-4 h-4" />
                 Share Invite Link
               </Button>
             </CardContent>
@@ -187,9 +180,9 @@ export default function ParentProfile() {
         {/* Parenting Tips - bottom link */}
         <button
           onClick={() => setShowTips(true)}
-          className="w-full text-center text-sm text-slate-400 hover:text-purple-500 transition-colors py-2"
+          className="w-full flex items-center justify-center gap-1 text-center text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Lightbulb className="w-4 h-4 inline mr-1" />
+          <Lightbulb className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
           Need help rewarding behaviour? View Parenting Tips
         </button>
       </div>
@@ -207,7 +200,7 @@ export default function ParentProfile() {
           await Child.create(buildChildCreatePayload(data));
           queryClient.invalidateQueries({ queryKey: ['children'] });
           setShowAddChild(false);
-          toast.success("Child added!");
+          toast.success("Child added.");
         }}
       />
 
@@ -222,7 +215,7 @@ export default function ParentProfile() {
           onSubmit={async (data) => {
             await Child.update(selectedChild.id, data);
             queryClient.invalidateQueries({ queryKey: ['children'] });
-            toast.success(`${data.name}'s profile updated!`);
+            toast.success(`${data.name}'s profile updated.`);
           }}
           onDelete={async (child) => {
             await Child.delete(child.id);

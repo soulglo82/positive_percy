@@ -1949,9 +1949,32 @@ async function createChild(data, familyCode) {
       e.status = 404;
       throw e;
     }
+    // Batch D v0.5: the smallest colour no current child uses; with all six
+    // taken, the next in turn. Two children added at the same moment may share
+    // one (cosmetic only; names are always shown).
+    // A child with no colour yet (added by an older server during a deploy)
+    // gets one first, oldest first, so no two children share by accident.
+    const { rows: existing } = await client.query(
+      'SELECT id, colour_index FROM children WHERE family_code = $1 ORDER BY created_date, id FOR UPDATE',
+      [familyCode]
+    );
+    const taken = new Set(existing.filter((r) => r.colour_index !== null).map((r) => r.colour_index));
+    const nextColour = (count) => {
+      const free = [0, 1, 2, 3, 4, 5].find((i) => !taken.has(i));
+      return free === undefined ? count % 6 : free;
+    };
+    let assigned = existing.filter((r) => r.colour_index !== null).length;
+    for (const r of existing.filter((x) => x.colour_index === null)) {
+      const c = nextColour(assigned);
+      await client.query('UPDATE children SET colour_index = $1 WHERE id = $2', [c, r.id]);
+      taken.add(c); assigned++;
+    }
+    const colour = nextColour(assigned);
+    keys.push('colour_index');
+    const values = [...Object.values(row), colour];
     const { rows } = await client.query(
       `INSERT INTO children (${keys.join(', ')}) VALUES (${keys.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`,
-      Object.values(row)
+      values
     );
     if (starting > 0) {
       await client.query(

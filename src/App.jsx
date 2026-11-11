@@ -1,4 +1,3 @@
-import './App.css'
 import { Toaster } from "@/components/ui/sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -40,7 +39,7 @@ const AuthenticatedApp = () => {
   if (isLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
       </div>
     );
   }

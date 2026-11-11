@@ -14,6 +14,8 @@
     "typecheck": "tsc -p ./jsconfig.json",
     "test": "vitest run",
     "test:a11y": "vitest run src/test/a11y.test.jsx",
+    "test:ui": "playwright test",
+    "check:tokens": "node scripts/check-tokens.mjs",
     "preview": "vite preview",
     "start": "node server/index.js"
   },
@@ -56,7 +58,6 @@
     "embla-carousel-react": "^8.5.2",
     "express": "^4.22.1",
     "express-rate-limit": "^8.7.4",
-    "framer-motion": "^11.16.4",
     "helmet": "^8.3.0",
     "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
@@ -77,8 +78,10 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@axe-core/react": "^4.11.1",
     "@eslint/js": "^9.19.0",
+    "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^22.13.5",
