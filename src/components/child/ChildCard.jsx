@@ -16,7 +16,7 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, o
         <CardContent className="p-4 sm:p-5">
           {/* Child header */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="relative group shrink-0">
+            <div className="shrink-0">
               {child.avatar_url ? (
                 <img
                   src={child.avatar_url}
@@ -28,18 +28,22 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, o
                   {child.name.charAt(0)}
                 </div>
               )}
-              {onEdit && (
-                <button
-                  onClick={() => onEdit(child)}
-                  aria-label={`Edit ${child.name}`}
-                  className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Pencil className="w-4 h-4 text-white" />
-                </button>
-              )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-xl font-bold text-slate-800 truncate">{child.name}</h3>
+              <div className="flex items-center gap-1 min-w-0">
+                <h3 className="text-xl font-bold text-slate-800 truncate">{child.name}</h3>
+                {/* Always visible, 44px (A2 E1): hover-only never worked on phones or keyboards. */}
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={() => onEdit(child)}
+                    aria-label={`Edit ${child.name}`}
+                    className="shrink-0 w-11 h-11 -my-2 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Pencil className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
               {(child.week_points || 0) > 0 ? (
                 <p className="text-sm text-slate-500">
                   <span className="font-semibold text-purple-600">{child.week_points}</span> Percy Points this week — <span className="text-green-600 font-medium">Keep it up!</span>

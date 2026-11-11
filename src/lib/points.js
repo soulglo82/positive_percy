@@ -1,4 +1,5 @@
 import { getToken } from '@/lib/AuthContext';
+import { toast } from 'sonner';
 
 export const MAX_AWARD = 1000;
 
@@ -52,6 +53,60 @@ export async function awardPoints(childId, { points, category, note }, requestId
     throw err;
   }
   return result; // { event, child, duplicate, capped }
+}
+
+// Undo an award or a spend (within 10 minutes). Same pattern: one request id
+// per tap, reused for one automatic retry, so a lost reply never undoes twice.
+async function postUndo(path, requestId) {
+  const send = () => fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body: JSON.stringify({ request_id: requestId }),
+  });
+  let res;
+  try {
+    res = await send();
+  } catch {
+    res = null;
+  }
+  if (!res || res.status >= 500) {
+    await new Promise((r) => setTimeout(r, 800));
+    res = await send();
+  }
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(result.error || "Couldn't undo that");
+    err.status = res.status;
+    throw err;
+  }
+  return result; // { child, event | redemption, duplicate }
+}
+
+export const undoAward = (eventId, requestId = newRequestId()) =>
+  postUndo(`/api/point-events/${eventId}/undo`, requestId);
+
+export const undoSpend = (redemptionId, requestId = newRequestId()) =>
+  postUndo(`/api/redemptions/${redemptionId}/undo`, requestId);
+
+export const UNDO_TOAST_MS = 10000;
+
+// The toast's Undo button. Runs once: a second tap does nothing. The request
+// id is fixed per toast, so even a repeat call could only replay.
+export function undoAction(kind, id, queryClient) {
+  const requestId = newRequestId();
+  let started = false;
+  return async () => {
+    if (started) return;
+    started = true;
+    try {
+      const r = await (kind === 'spend' ? undoSpend(id, requestId) : undoAward(id, requestId));
+      toast.success(`Undone. ${r.child.name} has ${r.child.total_points} points.`);
+    } catch (err) {
+      toast.error(err.status === 409 || err.status === 404 ? err.message : "Couldn't undo that. Check your connection and look in Activity.");
+    } finally {
+      refreshPoints(queryClient);
+    }
+  };
 }
 
 // One spend per tap. The server prices the reward. The request id is made

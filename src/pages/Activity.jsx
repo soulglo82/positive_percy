@@ -278,7 +278,8 @@ function NarrativeItem({ event }) {
 
   const isStarting = event.type === 'starting';
   const isCorrection = event.type === 'correction';
-  const isDeduct = !isEarn && !isSpend && !isStarting && !isCorrection && event.points < 0;
+  const isUndo = event.type === 'undo';
+  const isDeduct = !isEarn && !isSpend && !isStarting && !isCorrection && !isUndo && event.points < 0;
   const colorClass = isEarn
     ? 'text-green-600'
     : isSpend
@@ -287,8 +288,11 @@ function NarrativeItem({ event }) {
         ? 'text-red-600'
         : 'text-slate-500';
 
-  const action = isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost'
+  const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost'
     : isStarting ? 'started with' : isCorrection ? 'had a one-off' : 'adjusted';
+  // An undone award or spend and its undo row are both shown, struck through,
+  // so the list still adds up to the balance.
+  const undone = !!event.undone;
 
   // Use note as primary label when category is "Other"
   const displayLabel = event.label === 'Other' && event.note
@@ -318,10 +322,11 @@ function NarrativeItem({ event }) {
         )}
         <p className="text-xs text-slate-400 mt-0.5">
           {format(new Date(event.created_date), "MMM d, h:mm a")}
+          {undone && !isUndo && ' · undone'}
         </p>
       </div>
 
-      <span className={`text-sm font-bold shrink-0 ${colorClass}`}>
+      <span className={`text-sm font-bold shrink-0 ${colorClass} ${undone ? 'line-through' : ''}`}>
         {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}pts
       </span>
     </div>

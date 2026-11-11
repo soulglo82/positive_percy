@@ -578,6 +578,8 @@ export const isReservedCategory = (name) => RESERVED_CATEGORY_NAMES.includes(Str
 // A request_id seen before: same award -> return what happened, unchanged.
 // Anything different under the same id -> 409, never a second award.
 function replayAward(res, prior, child, points, category) {
+  // Only an award replays as an award (an undo row carries a request id too).
+  if (prior.kind !== 'award') return res.status(409).json({ error: 'Invalid request' });
   const sameChild = prior.child_id === child.id;
   const sameCategory = prior.category === String(category).trim();
   const sameDirection = Math.sign(prior.points) === Math.sign(points);
@@ -791,6 +793,134 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
       return replayAfterRace(res, req.familyCode, req.spend.rq.id, 'redeem', req.spend.args, req.params.id);
     }
     return serverError(res, 'Redeem error:', err);
+  } finally {
+    client.release();
+  }
+});
+
+// ─── Undo (A2 PR2 U1, U2) ────────────────────────────────────────────────────
+// A parent can undo an award or a spend for 10 minutes. Nothing is deleted:
+// an undone award gets a matching 'undo' row, an undone spend is marked
+// 'Reversed', so the balance still equals history (C4) and undone awards
+// never count as earned (C7, via the view). Each undo applies once per
+// request id (C5).
+const UNDO_WINDOW = "interval '10 minutes'";
+const SPENT_ALREADY = "Those points have already been used, so this can't be undone.";
+
+async function lockChildOf(client, table, id, familyCode) {
+  const { rows } = await client.query(`SELECT child_id FROM ${table} WHERE id = $1 AND family_code = $2`, [id, familyCode]);
+  if (rows.length === 0) return null;
+  const { rows: child } = await client.query(
+    'SELECT * FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE', [rows[0].child_id, familyCode]);
+  return child[0] || null;
+}
+
+async function undoReplay(res, client, familyCode, requestId, endpoint, args) {
+  const prior = await priorRequest(client, familyCode, requestId, endpoint, args);
+  if (prior.conflict) return res.status(409).json({ error: 'Invalid request' });
+  if (!prior.replay) return null;
+  const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [prior.replay.child_id, familyCode]);
+  return res.json({ ...prior.replay, child: rows[0], duplicate: true });
+}
+
+router.post('/api/point-events/:id/undo', authMiddleware, async (req, res) => {
+  const requestId = req.body?.request_id;
+  if (!isUuid(String(requestId || ''))) return res.status(400).json({ error: 'Invalid request' });
+  if (!isUuid(req.params.id)) return res.status(404).json({ error: 'Not found' });
+  const args = { event_id: req.params.id };
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const child = await lockChildOf(client, 'point_events', req.params.id, req.familyCode);
+    if (!child) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Not found' });
+    }
+    const replayed = await undoReplay(res, client, req.familyCode, requestId, 'undo_award', args);
+    if (replayed) { await client.query('ROLLBACK'); return replayed; }
+
+    const { rows: evRows } = await client.query(
+      `SELECT * FROM point_events
+       WHERE id = $1 AND family_code = $2 AND kind = 'award' AND created_date > now() - ${UNDO_WINDOW}`,
+      [req.params.id, req.familyCode]);
+    if (evRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'This can no longer be undone.' });
+    }
+    const ev = evRows[0];
+    const { rowCount: done } = await client.query('SELECT 1 FROM point_events WHERE reverses_id = $1', [ev.id]);
+    if (done > 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Already undone.' });
+    }
+    const after = child.total_points - ev.points;
+    const reserved = stackTotalOf(await pricedStack(client, child.reward_stack, child.id, req.familyCode));
+    if (after < 0 || after < reserved) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: SPENT_ALREADY });
+    }
+    const { rows: undoRows } = await client.query(
+      `INSERT INTO point_events (child_id, points, category, child_name, family_code, request_id, kind, reverses_id)
+       VALUES ($1, $2, $3, $4, $5, $6, 'undo', $7) RETURNING *`,
+      [child.id, -ev.points, ev.category, child.name, req.familyCode, requestId, ev.id]);
+    const { rows: updated } = await client.query(
+      'UPDATE children SET total_points = total_points - $1 WHERE id = $2 AND family_code = $3 RETURNING *',
+      [ev.points, child.id, req.familyCode]);
+    const week = (await weekPointsFor(client, req.familyCode, [child.id])).get(child.id);
+    await rememberRequest(client, req.familyCode, requestId, 'undo_award', args, { event: undoRows[0], child_id: child.id });
+    await client.query('COMMIT');
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
+    res.json({ event: undoRows[0], child: { ...updated[0], week_points: week }, duplicate: false });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23505') return res.status(409).json({ error: 'Already undone.' });
+    return serverError(res, 'Undo award error', err);
+  } finally {
+    client.release();
+  }
+});
+
+router.post('/api/redemptions/:id/undo', authMiddleware, async (req, res) => {
+  const requestId = req.body?.request_id;
+  if (!isUuid(String(requestId || ''))) return res.status(400).json({ error: 'Invalid request' });
+  if (!isUuid(req.params.id)) return res.status(404).json({ error: 'Not found' });
+  const args = { redemption_id: req.params.id };
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const child = await lockChildOf(client, 'redemptions', req.params.id, req.familyCode);
+    if (!child) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Not found' });
+    }
+    const replayed = await undoReplay(res, client, req.familyCode, requestId, 'undo_spend', args);
+    if (replayed) { await client.query('ROLLBACK'); return replayed; }
+
+    const { rows: red } = await client.query(
+      `UPDATE redemptions SET status = 'Reversed', reversed_at = now()
+       WHERE id = $1 AND family_code = $2 AND status = 'Completed' AND created_date > now() - ${UNDO_WINDOW}
+       RETURNING *`,
+      [req.params.id, req.familyCode]);
+    if (red.length === 0) {
+      const { rows: cur } = await client.query('SELECT status FROM redemptions WHERE id = $1', [req.params.id]);
+      await client.query('ROLLBACK');
+      if (cur[0]?.status === 'Reversed') return res.status(409).json({ error: 'Already undone.' });
+      return res.status(404).json({ error: 'This can no longer be undone.' });
+    }
+    const cost = red[0].reward_cost;
+    const { rows: updated } = await client.query(
+      `UPDATE children SET total_points = total_points + $1,
+         points_spent = GREATEST(0, COALESCE(points_spent, 0) - $1)
+       WHERE id = $2 AND family_code = $3 RETURNING *`,
+      [cost, child.id, req.familyCode]);
+    await rememberRequest(client, req.familyCode, requestId, 'undo_spend', args, { redemption: red[0], child_id: child.id });
+    await client.query('COMMIT');
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
+    res.json({ redemption: red[0], child: updated[0], duplicate: false });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23505') return res.status(409).json({ error: 'Invalid request' });
+    return serverError(res, 'Undo spend error', err);
   } finally {
     client.release();
   }
@@ -1571,16 +1701,26 @@ router.get('/api/activity-feed', authMiddleware, async (req, res) => {
       query = `
         -- Every history row, so the feed adds up to the balance. Starting
         -- points and one-off corrections are labelled as what they are.
-        (SELECT id, child_id, child_name, points, category as label, note,
-          CASE WHEN kind = 'starting' THEN 'starting'
-               WHEN kind = 'correction' THEN 'correction'
-               WHEN points > 0 THEN 'earn' ELSE 'adjust' END as type, created_date
-         FROM point_events
-         WHERE family_code = $1)
+        -- An undone award and its undo row are both shown, marked undone;
+        -- an undone spend shows as the spend and its refund, both marked.
+        (SELECT p.id, p.child_id, p.child_name, p.points, p.category as label, p.note,
+          CASE WHEN p.kind = 'starting' THEN 'starting'
+               WHEN p.kind = 'correction' THEN 'correction'
+               WHEN p.kind = 'undo' THEN 'undo'
+               WHEN p.points > 0 THEN 'earn' ELSE 'adjust' END as type, p.created_date,
+          (p.kind = 'undo' OR EXISTS (SELECT 1 FROM point_events u WHERE u.reverses_id = p.id)) as undone
+         FROM point_events p
+         WHERE p.family_code = $1)
         UNION ALL
-        (SELECT id, child_id, child_name, -reward_cost as points, reward_title as label, NULL as note, 'spend' as type, created_date
+        (SELECT id, child_id, child_name, -reward_cost as points, reward_title as label, NULL as note, 'spend' as type, created_date,
+          (status = 'Reversed') as undone
          FROM redemptions
-         WHERE family_code = $1 AND status = 'Completed')
+         WHERE family_code = $1 AND status IN ('Completed', 'Reversed'))
+        UNION ALL
+        (SELECT id, child_id, child_name, reward_cost as points, reward_title as label, NULL as note, 'undo' as type,
+          COALESCE(reversed_at, created_date) as created_date, true as undone
+         FROM redemptions
+         WHERE family_code = $1 AND status = 'Reversed')
         ORDER BY created_date DESC
         LIMIT $2 OFFSET $3
       `;

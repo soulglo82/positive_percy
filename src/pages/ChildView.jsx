@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { refreshPoints, spendReward } from "@/lib/points";
+import { refreshPoints, spendReward, undoAction, UNDO_TOAST_MS } from "@/lib/points";
 import { Child, Reward } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -57,11 +57,14 @@ export default function ChildView() {
 
     setRedeeming(reward.id);
     try {
-      await spendReward(selectedChild.id, reward.id);
+      const { redemption } = await spendReward(selectedChild.id, reward.id);
 
       refreshPoints(queryClient);
 
-      toast.success(`${selectedChild.name} redeemed ${reward.title}!`);
+      toast.success(`${selectedChild.name} redeemed ${reward.title}!`, {
+        duration: UNDO_TOAST_MS,
+        action: { label: 'Undo', onClick: undoAction('spend', redemption.id, queryClient) },
+      });
       confetti({
         particleCount: 120,
         spread: 70,
