@@ -334,7 +334,7 @@ function NarrativeItem({ event, colour, canCorrect, onCorrect }) {
       ? 'text-spend'
       : 'text-negative';
 
-  const action = isUndo ? 'correction:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'had an earlier adjustment for'
+  const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'had an earlier adjustment for'
     : isStarting ? 'started with' : isCorrection ? 'had a one-off' : 'adjusted';
   // An undone award or spend and its undo row are both shown, struck through,
   // so the list still adds up to the balance.
@@ -365,7 +365,7 @@ function NarrativeItem({ event, colour, canCorrect, onCorrect }) {
         )}
         <p className="text-xs text-subtle-foreground mt-0.5">
           {format(new Date(event.created_date), "MMM d, h:mm a")}
-          {undone && !isUndo && ' · corrected'}
+          {undone && !isUndo && ' · undone'}
         </p>
       </div>
 
