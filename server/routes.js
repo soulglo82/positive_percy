@@ -1949,9 +1949,21 @@ async function createChild(data, familyCode) {
       e.status = 404;
       throw e;
     }
+    // Batch D v0.5: the smallest colour no current child uses; with all six
+    // taken, the next in turn. Two children added at the same moment may share
+    // one (cosmetic only; names are always shown).
+    const { rows: used } = await client.query(
+      'SELECT colour_index FROM children WHERE family_code = $1 AND colour_index IS NOT NULL',
+      [familyCode]
+    );
+    const taken = new Set(used.map((r) => r.colour_index));
+    let colour = [0, 1, 2, 3, 4, 5].find((i) => !taken.has(i));
+    if (colour === undefined) colour = used.length % 6;
+    keys.push('colour_index');
+    const values = [...Object.values(row), colour];
     const { rows } = await client.query(
       `INSERT INTO children (${keys.join(', ')}) VALUES (${keys.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`,
-      Object.values(row)
+      values
     );
     if (starting > 0) {
       await client.query(

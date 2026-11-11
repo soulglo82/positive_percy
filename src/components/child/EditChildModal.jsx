@@ -25,6 +25,8 @@ import { Pencil, X, Trash2 } from "lucide-react";
 import { UploadFile } from "@/api/integrations";
 import { toast } from "sonner";
 import { PERCY } from "@/constants/terminology";
+import { childColour } from "@/lib/childColour";
+import { cn } from "@/lib/utils";
 
 export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDelete }) {
   const [name, setName] = useState("");
@@ -131,7 +133,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
                   </button>
                 </div>
               ) : (
-                <div className="w-20 h-20 rounded-full bg-selected flex items-center justify-center text-title font-semibold text-foreground" aria-hidden="true">
+                <div className={cn("w-20 h-20 rounded-full flex items-center justify-center font-display text-title font-semibold text-foreground ring-2 ring-offset-2 ring-offset-card", childColour(child).soft, childColour(child).ring)} aria-hidden="true">
                   {name.charAt(0) || '?'}
                 </div>
               )}

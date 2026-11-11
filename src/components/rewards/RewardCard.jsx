@@ -26,7 +26,7 @@ export default function RewardCard({ reward, onToggleStack, isParentView, onTogg
         <div className="flex items-start gap-3 mb-2">
           {!reward.image_url && <EmojiTile emoji={reward.emoji} />}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-foreground text-lg line-clamp-2">
+            <h3 className="font-display font-semibold text-foreground text-lg line-clamp-2">
               {reward.title}
             </h3>
             {hidden && (
@@ -84,7 +84,7 @@ export default function RewardCard({ reward, onToggleStack, isParentView, onTogg
         )}
 
         <div className="flex items-center justify-between gap-2">
-          <Points value={reward.cost_points} className="text-lg font-semibold text-foreground" starClassName="h-5 w-5" />
+          <Points value={reward.cost_points} className="text-lg font-semibold text-foreground bg-star-soft rounded-full px-3 py-0.5" starClassName="h-5 w-5" />
           {!isParentView && onToggleStack && (
             <>
               {isInStack ? (

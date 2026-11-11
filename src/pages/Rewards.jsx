@@ -97,7 +97,7 @@ export default function Rewards() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-title font-semibold text-foreground">
+            <h1 className="font-display text-title font-semibold text-foreground">
               Rewards
             </h1>
             <p className="text-muted-foreground mt-1">Create rewards your kids can earn 🎁</p>

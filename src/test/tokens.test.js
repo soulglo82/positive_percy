@@ -139,6 +139,46 @@ describe('contrast of declared pairs', () => {
     }
   }
 
+  // Batch D v0.5: child colours, warm surfaces, the orange header.
+  const kids = [1, 2, 3, 4, 5, 6].map((n) => `kid-${n}`);
+  for (const k of kids) {
+    it(`${k}: text-safe on card, muted and background`, () => {
+      for (const bg of ['card', 'muted', 'background']) expect(ratio(k, bg)).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`${k}: ink on its soft fill, and the ring shows on the soft fill`, () => {
+      expect(ratio('foreground', `${k}-soft`)).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(k, `${k}-soft`)).toBeGreaterThanOrEqual(3);
+    });
+  }
+  for (const [fg, bg] of [['earn', 'earn-soft'], ['foreground', 'earn-soft'], ['foreground', 'star-soft'], ['muted-foreground', 'star-soft'],
+    ['primary-foreground', 'primary'], ['primary-foreground', 'primary-hover'], ['foreground', 'selected'], ['primary-hover', 'selected']]) {
+    it(`${fg} on ${bg} >= 4.5`, () => expect(ratio(fg, bg)).toBeGreaterThanOrEqual(4.5));
+  }
+  it('the active nav label is not orange on the selected tint (4.24 fails)', () => {
+    expect(ratio('primary', 'selected')).toBeLessThan(4.5);
+    const layout = fs.readFileSync(path.join(ROOT, 'src/Layout.jsx'), 'utf8');
+    expect(layout).not.toMatch(/'bg-selected text-primary/);
+  });
+
+  // Children must be told apart from each other and from the brand orange and
+  // the "earned" green (CIE76 colour difference).
+  const lab = (hex) => {
+    const c = hexToRgb(hex).map((v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+    const X = (c[0] * 0.4124 + c[1] * 0.3576 + c[2] * 0.1805) / 0.95047, Y = c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722, Z = (c[0] * 0.0193 + c[1] * 0.1192 + c[2] * 0.9505) / 1.08883;
+    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+  };
+  const dE = (a, b) => { const x = lab(TOKENS[a]), y = lab(TOKENS[b]); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
+  it('child colours differ from each other', () => {
+    for (let i = 0; i < kids.length; i++) for (let j = i + 1; j < kids.length; j++) expect(dE(kids[i], kids[j]), `${kids[i]} vs ${kids[j]}`).toBeGreaterThan(20);
+  });
+  it('child colours differ from the brand orange and the earned green', () => {
+    for (const k of kids) {
+      expect(dE(k, 'primary'), `${k} vs primary`).toBeGreaterThan(35);
+      expect(dE(k, 'earn'), `${k} vs earn`).toBeGreaterThan(35);
+    }
+  });
+
   it('star is decoration only: it never meets text contrast, so it must never be text', () => {
     // Documented, not a pass: chart-3 and --star sit at about 2.2:1 on white.
     // Every chart series carries a direct label, and points always show the number.

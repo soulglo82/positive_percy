@@ -26,8 +26,9 @@ module.exports = {
       destructive: { DEFAULT: c('destructive'), foreground: c('destructive-foreground') },
       negative: c('negative'),
       spend: c('spend'),
-      earn: c('earn'),
-      star: c('star'),
+      earn: { DEFAULT: c('earn'), soft: c('earn-soft') },
+      star: { DEFAULT: c('star'), soft: c('star-soft') },
+      kid: Object.fromEntries([1, 2, 3, 4, 5, 6].flatMap((n) => [[String(n), c(`kid-${n}`)], [`${n}-soft`, c(`kid-${n}-soft`)]])),
       selected: { DEFAULT: c('selected'), border: c('selected-border') },
       warning: { DEFAULT: c('warning'), border: c('warning-border'), foreground: c('warning-foreground') },
       'brand-ink': c('brand-ink'),
@@ -41,6 +42,7 @@ module.exports = {
     },
     fontFamily: {
       sans: ['Figtree', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      display: ['Fredoka', 'Figtree', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
     },
     fontSize: {

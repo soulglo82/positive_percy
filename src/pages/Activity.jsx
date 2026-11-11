@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Activity as ActivityIcon, ChevronDown, ChevronUp, ClipboardList } from "lucide-react";
 import ChildAvatar from "../components/child/ChildAvatar";
+import { childColour } from "@/lib/childColour";
 import Logo from "@/components/brand/Logo";
 import { format, isToday, isYesterday, isSameWeek } from "date-fns";
 import { PERCY } from "@/constants/terminology";
@@ -136,7 +137,7 @@ export default function Activity() {
     <div className="min-h-screen">
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
         <div>
-          <h1 className="text-title font-semibold text-foreground flex items-center gap-3">
+          <h1 className="font-display text-title font-semibold text-foreground flex items-center gap-3">
             <ActivityIcon className="w-6 h-6 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
             Activity
           </h1>
@@ -147,11 +148,11 @@ export default function Activity() {
           <CardContent className="p-5">
             <h2 className="text-base font-semibold text-foreground mb-3">This Week</h2>
             <div className="flex flex-wrap gap-4 mb-4">
-              <div className="bg-muted rounded-md border border-border px-4 py-3 min-w-32">
+              <div className="bg-earn-soft rounded-md px-4 py-3 min-w-32">
                 <div className="text-title font-semibold text-earn tabular-nums">+{totalWeeklyPoints}</div>
                 <div className="text-xs text-muted-foreground">{PERCY.POINTS} earned</div>
               </div>
-              <div className="bg-muted rounded-md border border-border px-4 py-3 min-w-32">
+              <div className="bg-star-soft rounded-md px-4 py-3 min-w-32">
                 <div className="text-title font-semibold text-foreground tabular-nums">{activeDays}</div>
                 <div className="text-xs text-muted-foreground">active day{activeDays !== 1 ? 's' : ''}</div>
               </div>
@@ -250,7 +251,7 @@ export default function Activity() {
                             </div>
                           );
                         }
-                        return <NarrativeItem key={`${item.event.type}-${item.event.id}`} event={item.event} />;
+                        return <NarrativeItem key={`${item.event.type}-${item.event.id}`} event={item.event} colour={childColour(item.event.child_id, children)} />;
                       })}
                     </div>
                   )}
@@ -275,7 +276,7 @@ export default function Activity() {
   );
 }
 
-function NarrativeItem({ event }) {
+function NarrativeItem({ event, colour }) {
   const isEarn = event.type === 'earn';
   const isSpend = event.type === 'spend';
 
@@ -307,7 +308,7 @@ function NarrativeItem({ event }) {
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-b-0">
-      <ChildAvatar name={event.child_name} size="sm" />
+      <ChildAvatar name={event.child_name} size="sm" colour={colour} />
 
       <div className="flex-1 min-w-0">
         <p className="text-sm leading-snug">

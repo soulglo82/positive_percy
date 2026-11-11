@@ -133,7 +133,8 @@ export default function Layout({ children, currentPageName }) {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Icon className="w-[18px] h-[18px]" strokeWidth={1.5} aria-hidden="true" />
+                {/* Icon in brand orange (3:1 is enough for an icon); the label stays ink (4.24 in orange). */}
+                <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-primary' : ''}`} strokeWidth={1.5} aria-hidden="true" />
                 <span className="text-xs">
                   {item.label}
                 </span>

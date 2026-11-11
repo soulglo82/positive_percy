@@ -10,6 +10,7 @@ import { Settings, Save, Copy, Check, Share2, Lightbulb, UserPlus, Users, Home, 
 import { toast } from "sonner";
 import { Points } from "@/components/brand/PointsStar";
 import ChildAvatar from "../components/child/ChildAvatar";
+import { childColour } from "@/lib/childColour";
 import SectionHeader from "../components/SectionHeader";
 import OnboardingTips from "../components/OnboardingTips";
 import AddChildModal from "../components/child/AddChildModal";
@@ -54,7 +55,7 @@ export default function ParentProfile() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-2">
           <Settings className="w-6 h-6 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
-          <h1 className="text-title font-semibold text-foreground">Family Settings</h1>
+          <h1 className="font-display text-title font-semibold text-foreground">Family Settings</h1>
         </div>
 
         {/* Behavior Categories (includes Quick Action toggle + per-child assignment) */}
@@ -77,7 +78,7 @@ export default function ParentProfile() {
                     className="flex items-center justify-between gap-2 pl-3 pr-1 py-1 rounded-md bg-muted border border-border"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <ChildAvatar name={child.name} url={child.avatar_url} size="sm" />
+                      <ChildAvatar name={child.name} url={child.avatar_url} size="sm" colour={childColour(child, children)} />
                       <span className="font-medium text-foreground truncate">{child.name}</span>
                       <Points value={child.total_points} className="text-sm text-muted-foreground font-semibold" />
                     </div>

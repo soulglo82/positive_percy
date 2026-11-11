@@ -14,6 +14,7 @@ import confetti from "canvas-confetti";
 import { format } from "date-fns";
 import { CONFETTI_COLORS } from "@/lib/tokens";
 import ChildAvatar from "../components/child/ChildAvatar";
+import { childColour } from "@/lib/childColour";
 
 import SectionHeader from "../components/SectionHeader";
 import ChildCard from "../components/child/ChildCard";
@@ -135,6 +136,8 @@ export default function ParentDashboard() {
   // Children with an award in flight. A ref, not state, so a second tap in
   // the same frame sees the first one and is ignored.
   const awarding = useRef(new Set());
+  // Which child's star pops: set only by an award from this device.
+  const [pop, setPop] = useState({ childId: null, n: 0 });
   const [awardingIds, setAwardingIds] = useState([]);
 
   const handleAddPoints = (child) => {
@@ -227,6 +230,7 @@ export default function ParentDashboard() {
       }
       // A replayed award (first reply lost) carries no streak; read it instead.
       if (duplicate) updateStreak(); else { const s = showStreak(streakResult); if (s) lines.push(s); }
+      if (points > 0) setPop((p) => ({ childId: child.id, n: p.n + 1 }));
       const show = capped ? toast.warning : toast.success;
       show(lines.join(' '), {
         duration: UNDO_TOAST_MS,
@@ -294,6 +298,8 @@ export default function ParentDashboard() {
               <ChildCard
                 key={child.id}
                 child={child}
+                colour={childColour(child, children)}
+                popKey={pop.childId === child.id ? pop.n : 0}
                 onAddPoints={handleAddPoints}
                 onEdit={handleEditChild}
                 onQuickAction={handleQuickAction}
@@ -329,7 +335,7 @@ export default function ParentDashboard() {
                     return (
                       <div key={`${event.type}-${event.id}`} className="flex items-center gap-3 px-4 py-3">
                         {/* Child avatar */}
-                        <ChildAvatar name={event.child_name} url={eventChild?.avatar_url} size="sm" />
+                        <ChildAvatar name={event.child_name} url={eventChild?.avatar_url} size="sm" colour={childColour(event.child_id, children)} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm leading-snug">
                             <span className="font-semibold text-foreground">{event.child_name}</span>

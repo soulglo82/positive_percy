@@ -25,6 +25,15 @@
   src: url('/fonts/figtree-600.woff2') format('woff2');
 }
 
+/* Fredoka 600 for titles and point totals (SIL OFL, see public/fonts/OFL-fredoka.txt). */
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/fredoka-600.woff2') format('woff2');
+}
+
 /* Safe area for iPhone home indicator */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -35,7 +44,7 @@
      a test checks both match. This is the only place colour values live.
      There is no dark theme: tailwind keeps darkMode "class" but nothing sets it. */
   :root {
-    --background: 45 28.6% 97.3%; /* #faf9f6 */
+    --background: 36.9 61.9% 95.9%; /* #fbf6ee */
     --card: 0 0% 100%; /* #ffffff */
     --popover: 0 0% 100%; /* #ffffff */
     --muted: 42.9 22.6% 93.9%; /* #f3f1ec */
@@ -67,6 +76,20 @@
     --input: 33.9 9.1% 49.6%; /* #8a8073 */
     --ring: 17.5 88.3% 40.4%; /* #c2410c */
     --overlay: 33.3 17% 10.4%; /* #1f1b16 */
+    --earn-soft: 128 36.6% 92%; /* #e3f2e5 */
+    --star-soft: 42.7 91.8% 90.4%; /* #fdf0d0 */
+    --kid-1: 207.3 70.3% 41%; /* #1f6fb2 */
+    --kid-1-soft: 207.9 66.7% 91.8%; /* #dcebf8 */
+    --kid-2: 338.2 67% 45.1%; /* #c0265e */
+    --kid-2-soft: 339.2 76.5% 93.3%; /* #fbe1ea */
+    --kid-3: 182.1 80% 27.5%; /* #0e7a7e */
+    --kid-3-soft: 180 46.7% 88.2%; /* #d3efef */
+    --kid-4: 287 40.9% 39.8%; /* #7d3c8f */
+    --kid-4-soft: 287.4 48.7% 92.4%; /* #f1e2f5 */
+    --kid-5: 24.8 48.8% 32.2%; /* #7a4b2a */
+    --kid-5-soft: 28.8 47.2% 89.6%; /* #f1e4d8 */
+    --kid-6: 210 17.8% 35.3%; /* #4a5a6a */
+    --kid-6-soft: 210 20.8% 90.6%; /* #e2e7ec */
     --chart-1: 127.9 44.7% 29.8%; /* #2a6e33 */
     --chart-2: 214.2 52% 24.5%; /* #1e3a5f */
     --chart-3: 40.2 82% 50%; /* #e8a317 */
@@ -92,6 +115,20 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* The points star pops when a child's total goes up (once per change). */
+@keyframes star-pop {
+  0% { transform: scale(1) rotate(0deg); }
+  40% { transform: scale(1.35) rotate(-12deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes total-rise {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-4px); }
+  100% { transform: translateY(0); }
+}
+.star-pop { animation: star-pop 450ms cubic-bezier(0.22, 1, 0.36, 1); }
+.total-rise { animation: total-rise 450ms cubic-bezier(0.22, 1, 0.36, 1); }
 
 /* Page content: one fade and rise. */
 @keyframes page-in {

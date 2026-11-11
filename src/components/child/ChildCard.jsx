@@ -4,9 +4,10 @@ import { Plus, Pencil, Gift } from "lucide-react";
 import { PERCY } from "@/constants/terminology";
 import ChildAvatar from "./ChildAvatar";
 import PointsStar from "@/components/brand/PointsStar";
+import { cn } from "@/lib/utils";
 
 // This week against the weekly target. Hidden when there is no target.
-function GoalBar({ week, target }) {
+function GoalBar({ week, target, colour }) {
   if (!target || target <= 0) return null;
   const pct = Math.min(100, Math.round((Math.max(0, week) / target) * 100));
   return (
@@ -19,7 +20,7 @@ function GoalBar({ week, target }) {
         aria-valuemax={target}
         aria-valuenow={Math.min(Math.max(0, week), target)}
       >
-        <div className="h-full rounded-full bg-earn" style={{ width: `${pct}%` }} />
+        <div className={cn("h-full rounded-full", colour ? colour.band : "bg-earn")} style={{ width: `${pct}%` }} />
       </div>
       <span className="text-xs text-muted-foreground tabular-nums shrink-0">{Math.max(0, week)} / {target}</span>
       <PointsStar className="h-4 w-4 text-foreground" />
@@ -27,17 +28,21 @@ function GoalBar({ week, target }) {
   );
 }
 
-export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, onSpendRewards, quickActions = [], rewards = [], awarding = false }) {
+export default function ChildCard({ child, colour, popKey = 0, onAddPoints, onEdit, onQuickAction, onSpendRewards, quickActions = [], rewards = [], awarding = false }) {
   const week = child.week_points || 0;
+  // popKey goes up when an award made on this device lands (not on refetches
+  // or changes from another device); each new key replays the pop once.
+  const pops = popKey;
   return (
     <Card className="overflow-hidden">
+      <div className={cn("h-1.5", colour ? colour.band : "bg-border")} aria-hidden="true" />
       <CardContent className="p-4 sm:p-5">
         {/* Child header */}
         <div className="flex items-center gap-3 mb-3">
-          <ChildAvatar name={child.name} url={child.avatar_url} />
+          <ChildAvatar name={child.name} url={child.avatar_url} colour={colour} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1 min-w-0">
-              <h3 className="text-lg font-semibold text-foreground truncate">{child.name}</h3>
+              <h3 className="font-display text-lg font-semibold text-foreground truncate">{child.name}</h3>
               {/* Always visible, 44px (A2 E1): hover-only never worked on phones or keyboards. */}
               {onEdit && (
                 <button
@@ -59,15 +64,15 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, o
             )}
           </div>
           <div className="text-right shrink-0">
-            <div className="flex items-center justify-end gap-1 text-total font-semibold text-foreground tabular-nums">
-              <PointsStar className="h-5 w-5" />
-              {child.total_points}
+            <div className="flex items-center justify-end gap-1.5 text-total font-semibold text-foreground tabular-nums">
+              <PointsStar key={`star-${pops}`} className={cn("h-6 w-6", pops > 0 && "star-pop")} />
+              <span key={`total-${pops}`} className={cn("inline-block", pops > 0 && "total-rise")}>{child.total_points}</span>
             </div>
             <div className="text-xs text-muted-foreground">{PERCY.POINTS_COMPACT}</div>
           </div>
         </div>
 
-        <GoalBar week={week} target={child.weekly_target} />
+        <GoalBar week={week} target={child.weekly_target} colour={colour} />
 
         {/* Quick Actions, labelled */}
         {onQuickAction && quickActions.length > 0 && (
@@ -80,7 +85,7 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, o
                   onClick={() => onQuickAction(child, action)}
                   disabled={awarding}
                   aria-label={`${action.label} +${action.points} for ${child.name}`}
-                  className="disabled:opacity-60 flex items-center gap-1.5 text-sm font-medium px-2.5 rounded-md bg-card text-foreground border border-border hover:bg-accent active:bg-accent transition-colors min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="disabled:opacity-60 flex items-center gap-1.5 text-sm font-medium px-2.5 rounded-md bg-earn-soft text-foreground border border-transparent hover:border-earn active:border-earn transition-colors min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <span className="shrink-0" aria-hidden="true">{action.icon || '⭐'}</span>
                   <span className="truncate flex-1 text-left">{action.label}</span>

@@ -11,6 +11,8 @@ import { Points } from "@/components/brand/PointsStar";
 import Logo from "@/components/brand/Logo";
 import EmojiTile from "../components/rewards/EmojiTile";
 import ChildAvatar from "../components/child/ChildAvatar";
+import { childColour } from "@/lib/childColour";
+import { cn } from "@/lib/utils";
 
 import { PERCY } from "@/constants/terminology";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -99,13 +101,14 @@ export default function ChildView() {
                 key={child.id}
                 aria-pressed={selectedChildId === child.id}
                 onClick={() => setSelectedChildId(child.id)}
-                className={`flex flex-col items-center gap-1 px-3 py-2 min-w-16 rounded-md border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                className={cn(
+                  'flex flex-col items-center gap-1 px-3 py-2 min-w-16 rounded-md border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                   selectedChildId === child.id
-                    ? 'bg-selected border-selected-border'
+                    ? cn(childColour(child, children).soft, childColour(child, children).border)
                     : 'bg-card border-border hover:bg-accent'
-                }`}
+                )}
               >
-                <ChildAvatar name={child.name} url={child.avatar_url} />
+                <ChildAvatar name={child.name} url={child.avatar_url} colour={childColour(child, children)} />
                 <span className={`text-xs ${selectedChildId === child.id ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground'}`}>
                   {child.name}
                 </span>
@@ -117,8 +120,8 @@ export default function ChildView() {
         {selectedChild && (
           <>
             {/* Points summary */}
-            <div className="text-center">
-              <h1 className="text-title font-semibold text-foreground">{selectedChild.name}'s Rewards</h1>
+            <div className={cn("text-center rounded-lg px-4 py-5 border-t-4", childColour(selectedChild, children).soft, childColour(selectedChild, children).border)}>
+              <h1 className="font-display text-title font-semibold text-foreground">{selectedChild.name}'s Rewards</h1>
               <p className="text-lg text-muted-foreground mt-1 flex items-center justify-center gap-2">
                 <Points value={selectedChild.total_points} className="font-semibold text-foreground text-title" starClassName="h-6 w-6" /> {PERCY.POINTS} available
               </p>

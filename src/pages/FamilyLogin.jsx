@@ -98,7 +98,7 @@ export default function FamilyLogin() {
         {/* Logo / Header */}
         <div className="text-center space-y-3">
           <Logo size={96} decorative className="justify-center" />
-          <h1 className="text-title font-semibold text-brand-ink">
+          <h1 className="font-display text-total font-semibold text-brand-ink">
             Positive Percy
           </h1>
           <p className="text-muted-foreground">{PERCY.TAGLINE}</p>

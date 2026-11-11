@@ -4,7 +4,7 @@
 // theme-color meta (written by the Vite plugin in vite.config.js).
 
 export const TOKENS = {
-  background: '#faf9f6',
+  background: '#fbf6ee',
   card: '#ffffff',
   popover: '#ffffff',
   muted: '#f3f1ec',
@@ -36,6 +36,17 @@ export const TOKENS = {
   input: '#8a8073',
   ring: '#c2410c',
   overlay: '#1f1b16',
+  'earn-soft': '#e3f2e5',
+  'star-soft': '#fdf0d0',
+  // One colour per child (identity): sky, berry, teal, plum, cocoa, slate.
+  // Strong: band, bar, ring, selected edge. Soft: avatar fill, selected fill.
+  // No green (it means "earned") and nothing near the brand orange.
+  'kid-1': '#1f6fb2', 'kid-1-soft': '#dcebf8',
+  'kid-2': '#c0265e', 'kid-2-soft': '#fbe1ea',
+  'kid-3': '#0e7a7e', 'kid-3-soft': '#d3efef',
+  'kid-4': '#7d3c8f', 'kid-4-soft': '#f1e2f5',
+  'kid-5': '#7a4b2a', 'kid-5-soft': '#f1e4d8',
+  'kid-6': '#4a5a6a', 'kid-6-soft': '#e2e7ec',
   'chart-1': '#2a6e33',
   'chart-2': '#1e3a5f',
   'chart-3': '#e8a317',

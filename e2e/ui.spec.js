@@ -133,6 +133,8 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
 
   await page.getByRole('button', { name: / for Sam$/ }).first().click();
   await page.getByRole('button', { name: 'Undo' }).first().waitFor();
+  // The award made here pops that child's star (and only that one).
+  await expect(page.locator('.star-pop')).toHaveCount(1);
   await checkScreen(page, 'undo toast', testInfo);
   await page.getByRole('button', { name: 'Undo' }).first().click();
 
