@@ -206,7 +206,7 @@ export async function initDb() {
         SELECT 1 FROM behavior_categories bc WHERE bc.family_code = f.family_code
       )
       ON CONFLICT (family_code, name) DO NOTHING
-    `).catch(() => {});
+    `).catch((err) => console.error('Default category seed failed:', err.message));
 
     console.log('Database tables initialized');
   } finally {
