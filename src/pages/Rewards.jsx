@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Child, Reward } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Gift } from "lucide-react";
 import { toast } from "sonner";
 
+import EmojiTile from "../components/rewards/EmojiTile";
 import SectionHeader from "../components/SectionHeader";
 import RewardCard from "../components/rewards/RewardCard";
 import AddRewardModal from "../components/rewards/AddRewardModal";
@@ -37,7 +38,7 @@ export default function Rewards() {
     mutationFn: (data) => Reward.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rewards'] });
-      toast.success("Reward created!");
+      toast.success("Reward created.");
     },
   });
 
@@ -66,7 +67,7 @@ export default function Rewards() {
       id: selectedReward.id,
       data: data,
     });
-    toast.success("Reward updated!");
+    toast.success("Reward updated.");
   };
 
   const deleteRewardMutation = useMutation({
@@ -91,45 +92,39 @@ export default function Rewards() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-              Rewards Store
+            <h1 className="text-title font-semibold text-foreground">
+              Rewards
             </h1>
-            <p className="text-slate-600 mt-1">Create rewards your kids can earn 🎁</p>
+            <p className="text-muted-foreground mt-1">Create rewards your kids can earn 🎁</p>
           </div>
-          <Button
-            onClick={() => setShowAddReward(true)}
-            className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
-          >
-            <Plus className="w-4 h-4 mr-2" />
+          <Button onClick={() => setShowAddReward(true)}>
+            <Plus className="w-4 h-4" />
             New Reward
           </Button>
         </div>
 
-        <SectionHeader icon="🎁">Available Rewards</SectionHeader>
+        <SectionHeader icon={Gift}>Available rewards</SectionHeader>
         {isLoading ? (
           <LoadingSpinner message="Loading rewards..." />
         ) : isError ? (
           <ErrorCard message="Couldn't load rewards" onRetry={refetch} />
         ) : rewards.length === 0 ? (
-          <Card className="border-2 border-dashed border-slate-300">
+          <Card className="border-2 border-dashed border-input shadow-none">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="text-6xl mb-4">🎁</div>
-              <h3 className="text-xl font-semibold text-slate-700 mb-2">
+              <EmojiTile emoji="🎁" className="mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 No rewards yet
               </h3>
-              <p className="text-slate-500 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Create rewards your children can work towards
               </p>
-              <Button
-                onClick={() => setShowAddReward(true)}
-                className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
-              >
-                <Gift className="w-4 h-4 mr-2" />
+              <Button onClick={() => setShowAddReward(true)}>
+                <Gift className="w-4 h-4" />
                 Create First Reward
               </Button>
             </CardContent>

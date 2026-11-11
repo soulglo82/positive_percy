@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -48,37 +50,37 @@ export default function OnboardingTips({ isOpen, onClose, forceShow = false }) {
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-center text-xl">
+          <DialogTitle>
             Tips for Success
           </DialogTitle>
         </DialogHeader>
 
-        <div className="py-6 text-center">
-          <div className="text-6xl mb-4">{TIPS[step].emoji}</div>
-          <h3 className="text-xl font-bold text-slate-800 mb-3">{TIPS[step].title}</h3>
-          <p className="text-slate-600 leading-relaxed">{TIPS[step].body}</p>
-        </div>
+        <DialogBody className="text-center">
+          <div className="text-total mb-4" aria-hidden="true">{TIPS[step].emoji}</div>
+          <h3 className="text-lg font-semibold text-foreground mb-3">{TIPS[step].title}</h3>
+          <p className="text-muted-foreground leading-relaxed">{TIPS[step].body}</p>
 
-        {/* Step indicators */}
-        <div className="flex justify-center gap-2 mb-4">
+          {/* Step indicators */}
+          <div className="flex justify-center gap-2 mt-6" aria-label={`Tip ${step + 1} of ${TIPS.length}`} role="img">
           {TIPS.map((_, i) => (
             <div
               key={i}
               className={`w-2 h-2 rounded-full transition-colors ${
-                i === step ? 'bg-purple-500' : 'bg-slate-200'
+                i === step ? 'bg-primary' : 'bg-input'
               }`}
             />
           ))}
-        </div>
+          </div>
+        </DialogBody>
 
-        <div className="flex gap-3">
+        <DialogFooter>
           {step > 0 ? (
             <Button
               variant="outline"
               onClick={() => setStep(s => s - 1)}
               className="flex-1"
             >
-              <ChevronLeft className="w-4 h-4 mr-1" />
+              <ChevronLeft className="w-4 h-4" />
               Back
             </Button>
           ) : (
@@ -93,20 +95,20 @@ export default function OnboardingTips({ isOpen, onClose, forceShow = false }) {
           {isLastStep ? (
             <Button
               onClick={handleClose}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              className="flex-1"
             >
               Got it!
             </Button>
           ) : (
             <Button
               onClick={() => setStep(s => s + 1)}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              className="flex-1"
             >
               Next
-              <ChevronRight className="w-4 h-4 ml-1" />
+              <ChevronRight className="w-4 h-4" />
             </Button>
           )}
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

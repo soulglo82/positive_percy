@@ -3,6 +3,8 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -54,7 +56,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
       const { file_url } = await UploadFile({ file });
       setAvatarUrl(file_url);
       setAvatarPreview(URL.createObjectURL(file));
-      toast.success('Photo uploaded!');
+      toast.success('Photo uploaded.');
     } catch (error) {
       toast.error('Failed to upload photo');
     } finally {
@@ -86,16 +88,16 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-2xl">
-            <UserPlus className="w-6 h-6 text-purple-500" />
+          <DialogTitle className="flex items-center gap-2">
+            <UserPlus className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
             Add Child
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
+        <DialogBody className="space-y-5">
           {/* Avatar Upload */}
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="add-child-photo" className="mb-2 block">
               Photo (optional)
             </Label>
             <div className="flex items-center gap-4">
@@ -104,7 +106,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
                   <img 
                     src={avatarPreview} 
                     alt="Avatar preview" 
-                    className="w-20 h-20 rounded-full object-cover border-4 border-purple-200"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-border"
                   />
                   <button
                     type="button"
@@ -113,25 +115,28 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
                       setAvatarPreview("");
                     }}
                     aria-label="Remove photo"
-                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    className="absolute -top-3 -right-3 w-11 h-11 flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <X className="w-3 h-3" />
+                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-card border border-input text-foreground shadow">
+                      <X className="w-3 h-3" aria-hidden="true" />
+                    </span>
                   </button>
                 </div>
               ) : (
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-200 to-pink-200 flex items-center justify-center">
-                  <Upload className="w-8 h-8 text-purple-500" />
+                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+                  <Upload className="w-6 h-6 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
                 </div>
               )}
               <div className="flex-1">
                 <Input
+                  id="add-child-photo"
                   type="file"
                   accept="image/*"
                   onChange={handleFileUpload}
                   disabled={uploading}
                   className="cursor-pointer"
                 />
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {uploading ? 'Uploading...' : 'Upload a photo'}
                 </p>
               </div>
@@ -139,10 +144,11 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="add-child-name" className="mb-2 block">
               Child's Name
             </Label>
             <Input
+              id="add-child-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Emma"
@@ -152,7 +158,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
           </div>
 
           <div>
-            <Label htmlFor="add-child-age" className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="add-child-age" className="mb-2 block">
               Age (optional)
             </Label>
             <Input
@@ -167,48 +173,50 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
               className="text-lg"
             />
             {age !== "" && (Number(age) < 1 || Number(age) > 17) ? (
-              <p role="alert" className="text-xs text-red-600 mt-2">Age must be between 1 and 17, or leave it blank.</p>
+              <p role="alert" className="text-xs text-destructive mt-2">Age must be between 1 and 17, or leave it blank.</p>
             ) : (
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-muted-foreground mt-2">
                 Helps us suggest a good weekly target
               </p>
             )}
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="add-child-target" className="mb-2 block">
               Weekly {PERCY.POINTS_COMPACT} Target
             </Label>
             <NumberInput
+              id="add-child-target"
               value={weeklyTarget}
               onChange={setWeeklyTarget}
               min="1"
               max="10000"
               className="text-lg font-semibold"
             />
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Goal they'll work towards each week
             </p>
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="add-child-start" className="mb-2 block">
               Starting Points (optional)
             </Label>
             <NumberInput
+              id="add-child-start"
               value={startingPoints}
               onChange={setStartingPoints}
               min="0"
               placeholder="0"
               className="text-lg font-semibold"
             />
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Give them bonus points to start with
             </p>
           </div>
-        </div>
+        </DialogBody>
 
-        <div className="flex gap-3">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={onClose}
@@ -220,11 +228,11 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
           <Button
             onClick={handleSubmit}
             disabled={!name.trim() || uploading || saving || (age !== "" && (Number(age) < 1 || Number(age) > 17))}
-            className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            className="flex-1"
           >
             {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Add Child'}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

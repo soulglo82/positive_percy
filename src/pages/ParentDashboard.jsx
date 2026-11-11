@@ -7,10 +7,12 @@ import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus } from "lucide-react";
+import { UserPlus, ClipboardList, Users } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
+import { CONFETTI_COLORS } from "@/lib/tokens";
+import ChildAvatar from "../components/child/ChildAvatar";
 
 import SectionHeader from "../components/SectionHeader";
 import ChildCard from "../components/child/ChildCard";
@@ -118,7 +120,7 @@ export default function ParentDashboard() {
     mutationFn: (data) => Child.create(buildChildCreatePayload(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['children'] });
-      toast.success("Child added successfully!");
+      toast.success("Child added.");
     },
   });
 
@@ -154,7 +156,7 @@ export default function ParentDashboard() {
       id: selectedChild.id,
       data: data,
     });
-    toast.success(`${data.name}'s profile updated!`);
+    toast.success(`${data.name}'s profile updated.`);
   };
 
   const handleDeleteChild = async (child) => {
@@ -185,7 +187,7 @@ export default function ParentDashboard() {
     setStreak(result.streak);
     if (result.milestone) {
       confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 },
-        colors: ['#f59e0b', '#ef4444', '#f97316'] });
+        colors: CONFETTI_COLORS });
       return `${result.streak}-day streak.`;
     }
     return null;
@@ -218,7 +220,7 @@ export default function ParentDashboard() {
           particleCount: 150,
           spread: 80,
           origin: { y: 0.6 },
-          colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
+          colors: CONFETTI_COLORS,
         });
         lines.push(`${child.name} hit their weekly goal.`);
       }
@@ -256,7 +258,7 @@ export default function ParentDashboard() {
     applyAward(child, { points: action.points, category: action.category || action.label, note: '' });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         <HeroCard
           children={children}
@@ -270,20 +272,17 @@ export default function ParentDashboard() {
         ) : isError ? (
           <ErrorCard message="Couldn't load children" onRetry={refetch} />
         ) : children.length === 0 ? (
-          <Card className="border-2 border-dashed border-slate-300">
+          <Card className="border-2 border-dashed border-input shadow-none">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="text-6xl mb-4">👨‍👩‍👧‍👦</div>
-              <h3 className="text-xl font-semibold text-slate-700 mb-2">
+              <Users className="w-10 h-10 text-muted-foreground mb-4" strokeWidth={1.5} aria-hidden="true" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 No children added yet
               </h3>
-              <p className="text-slate-500 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Add your first child to start tracking their progress
               </p>
-              <Button
-                onClick={() => setShowAddChild(true)}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
+              <Button onClick={() => setShowAddChild(true)}>
+                <UserPlus className="w-4 h-4" />
                 Add Your First Child
               </Button>
             </CardContent>
@@ -313,41 +312,35 @@ export default function ParentDashboard() {
         {/* Recent Activity Preview */}
         {recentActivity.length > 0 && (
           <div>
-            <SectionHeader icon="📋">Recent Activity</SectionHeader>
+            <SectionHeader icon={ClipboardList}>Recent activity</SectionHeader>
             <Card>
               <CardContent className="p-0">
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-border">
                   {recentActivity.map((event) => {
                     const isEarn = event.type === 'earn';
                     const isSpend = event.type === 'spend';
                     const isUndo = event.type === 'undo';
                     const isDeduct = !isEarn && !isSpend && !isUndo && event.points < 0;
-                    const colorClass = isEarn ? 'text-green-600' : isSpend ? 'text-orange-600' : isDeduct ? 'text-red-600' : 'text-slate-500';
+                    const colorClass = isEarn ? 'text-earn' : isSpend ? 'text-spend' : 'text-negative';
                     const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost' : 'adjusted';
                     const eventChild = children.find(c => c.id === event.child_id);
 
                     return (
                       <div key={`${event.type}-${event.id}`} className="flex items-center gap-3 px-4 py-3">
                         {/* Child avatar */}
-                        {eventChild?.avatar_url ? (
-                          <img src={eventChild.avatar_url} alt={event.child_name} className="w-8 h-8 rounded-full object-cover shrink-0" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                            {(event.child_name || '?').charAt(0)}
-                          </div>
-                        )}
+                        <ChildAvatar name={event.child_name} url={eventChild?.avatar_url} size="sm" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm leading-snug">
-                            <span className="font-semibold text-slate-800">{event.child_name}</span>
-                            {' '}<span className="text-slate-500">{action}</span>{' '}
-                            <span className="font-medium text-slate-700">{event.label}</span>
+                            <span className="font-semibold text-foreground">{event.child_name}</span>
+                            {' '}<span className="text-muted-foreground">{action}</span>{' '}
+                            <span className="font-medium text-foreground">{event.label}</span>
                           </p>
-                          <p className="text-xs text-slate-400 mt-0.5">
+                          <p className="text-xs text-subtle-foreground mt-0.5">
                             {format(new Date(event.created_date), "MMM d, h:mm a")}
                           </p>
                         </div>
-                        <span className={`text-sm font-bold shrink-0 ${colorClass} ${event.undone ? 'line-through' : ''}`}>
-                          {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}pts
+                        <span className={`text-sm font-semibold tabular-nums shrink-0 ${colorClass} ${event.undone ? 'line-through' : ''}`}>
+                          {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}
                         </span>
                       </div>
                     );

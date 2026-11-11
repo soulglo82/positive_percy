@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Users, Plus, LogIn, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import Logo from "@/components/brand/Logo";
 import { PERCY } from "@/constants/terminology";
 import { takeInviteCode } from "@/lib/invite";
 
@@ -55,22 +56,22 @@ export default function FamilyLogin() {
   const handleCopy = () => {
     navigator.clipboard.writeText(createdCode);
     setCopied(true);
-    toast.success('Code copied!');
+    toast.success('Code copied.');
     setTimeout(() => setCopied(false), 2000);
   };
 
   if (createdCode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 flex items-center justify-center p-6">
-        <Card className="max-w-md w-full border-4 border-white shadow-2xl">
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="max-w-md w-full">
           <CardContent className="p-8 text-center space-y-6">
-            <div className="text-6xl">🎉</div>
-            <h2 className="text-2xl font-bold text-slate-800">Family Created!</h2>
-            <p className="text-slate-600">
+            <Logo size={64} decorative className="justify-center" />
+            <h2 className="text-title font-semibold text-foreground">Family Created!</h2>
+            <p className="text-muted-foreground">
               Share this code with the other parent so they can join:
             </p>
-            <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-6">
-              <div className="text-4xl font-mono font-bold tracking-widest text-purple-700">
+            <div className="rounded-md bg-muted border border-border p-6">
+              <div className="text-total font-mono font-semibold text-foreground">
                 {createdCode}
               </div>
             </div>
@@ -79,10 +80,10 @@ export default function FamilyLogin() {
               variant="outline"
               className="w-full"
             >
-              {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copied ? 'Copied!' : 'Copy Code'}
             </Button>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               You're all set! The dashboard is loading...
             </p>
           </CardContent>
@@ -92,57 +93,60 @@ export default function FamilyLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100 flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6">
       <div className="max-w-md w-full space-y-6">
         {/* Logo / Header */}
         <div className="text-center space-y-3">
-          <div className="text-6xl">⭐</div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <Logo size={96} decorative className="justify-center" />
+          <h1 className="text-title font-semibold text-brand-ink">
             Positive Percy
           </h1>
-          <p className="text-slate-600">{PERCY.TAGLINE}</p>
+          <p className="text-muted-foreground">{PERCY.TAGLINE}</p>
         </div>
 
         {!mode && (
-          <Card className="border-4 border-white shadow-2xl">
+          <Card>
             <CardContent className="p-8 space-y-4">
               <Button
                 onClick={() => setMode('create')}
-                className="w-full h-16 text-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                size="lg"
+                className="w-full text-base"
               >
-                <Plus className="w-5 h-5 mr-3" />
+                <Plus className="w-5 h-5" />
                 Create a Family
               </Button>
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-slate-200" />
-                <span className="text-sm text-slate-400">or</span>
-                <div className="flex-1 h-px bg-slate-200" />
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-sm text-subtle-foreground">or</span>
+                <div className="flex-1 h-px bg-border" />
               </div>
               <Button
                 onClick={() => setMode('join')}
                 variant="outline"
-                className="w-full h-16 text-lg"
+                size="lg"
+                className="w-full text-base"
               >
-                <LogIn className="w-5 h-5 mr-3" />
+                <LogIn className="w-5 h-5" />
                 Enter Family Code
               </Button>
-              <p className="text-sm text-slate-500 text-center -mt-2">Got a code from the other parent? Enter it here.</p>
+              <p className="text-sm text-muted-foreground text-center -mt-2">Got a code from the other parent? Enter it here.</p>
             </CardContent>
           </Card>
         )}
 
         {mode === 'create' && (
-          <Card className="border-4 border-white shadow-2xl">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-purple-500" />
+                <Users className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
                 Create Your Family
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Family Name</Label>
+                <Label htmlFor="family-name">Family Name</Label>
                 <Input
+                  id="family-name"
                   value={familyName}
                   onChange={(e) => setFamilyName(e.target.value)}
                   placeholder="e.g., The Smiths"
@@ -153,7 +157,7 @@ export default function FamilyLogin() {
               <Button
                 onClick={handleCreate}
                 disabled={!familyName.trim() || loading}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                className="w-full"
               >
                 {loading ? 'Creating...' : 'Create Family'}
               </Button>
@@ -169,32 +173,33 @@ export default function FamilyLogin() {
         )}
 
         {mode === 'join' && (
-          <Card className="border-4 border-white shadow-2xl">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <LogIn className="w-5 h-5 text-purple-500" />
+                <LogIn className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
                 Join Your Family
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Family Code</Label>
+                <Label htmlFor="family-code">Family Code</Label>
                 <Input
+                  id="family-code"
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                   placeholder="e.g., ABC123"
-                  className="text-lg mt-1 font-mono tracking-widest text-center"
+                  className="text-lg mt-1 font-mono text-center"
                   maxLength={6}
                   onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
                 />
-                <p className="text-xs text-slate-500 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Enter the 6-character code the other parent shared with you.
                 </p>
               </div>
               <Button
                 onClick={handleJoin}
                 disabled={joinCode.length < 6 || loading}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                className="w-full"
               >
                 {loading ? 'Joining...' : 'Join Family'}
               </Button>

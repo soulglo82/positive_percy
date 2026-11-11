@@ -2,164 +2,100 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Figtree, self-hosted (SIL OFL, see public/fonts/OFL-figtree.txt). Latin only. */
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/figtree-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/figtree-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/figtree-600.woff2') format('woff2');
+}
+
 /* Safe area for iPhone home indicator */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-
-/* :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-} */
-
-
-
 @layer base {
+  /* Design tokens (Batch D). HSL channels; the hex is in src/lib/tokens.js and
+     a test checks both match. This is the only place colour values live.
+     There is no dark theme: tailwind keeps darkMode "class" but nothing sets it. */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 45 28.6% 97.3%; /* #faf9f6 */
+    --card: 0 0% 100%; /* #ffffff */
+    --popover: 0 0% 100%; /* #ffffff */
+    --muted: 42.9 22.6% 93.9%; /* #f3f1ec */
+    --secondary: 42.9 22.6% 93.9%; /* #f3f1ec */
+    --accent: 41.5 22.8% 88.8%; /* #e9e5dc */
+    --foreground: 33.3 17% 10.4%; /* #1f1b16 */
+    --card-foreground: 33.3 17% 10.4%; /* #1f1b16 */
+    --popover-foreground: 33.3 17% 10.4%; /* #1f1b16 */
+    --secondary-foreground: 33.3 17% 10.4%; /* #1f1b16 */
+    --accent-foreground: 33.3 17% 10.4%; /* #1f1b16 */
+    --muted-foreground: 33 11.9% 32.9%; /* #5e554a */
+    --subtle-foreground: 33 10.3% 38%; /* #6b6257 */
+    --primary: 17.5 88.3% 40.4%; /* #c2410c */
+    --primary-hover: 15 79.1% 33.7%; /* #9a3412 */
+    --primary-foreground: 0 0% 100%; /* #ffffff */
+    --destructive: 4.2 76.5% 40%; /* #b42318 */
+    --destructive-foreground: 0 0% 100%; /* #ffffff */
+    --negative: 33.3 17% 10.4%; /* #1f1b16 */
+    --spend: 33 11.9% 32.9%; /* #5e554a */
+    --earn: 127.9 44.7% 29.8%; /* #2a6e33 */
+    --star: 40.2 82% 50%; /* #e8a317 */
+    --selected: 24.3 91.3% 91%; /* #fde4d3 */
+    --selected-border: 17.5 88.3% 40.4%; /* #c2410c */
+    --warning: 34.6 100% 94.9%; /* #fff4e5 */
+    --warning-border: 35.5 71% 42%; /* #b7791f */
+    --warning-foreground: 33.3 17% 10.4%; /* #1f1b16 */
+    --brand-ink: 214.2 52% 24.5%; /* #1e3a5f */
+    --border: 38.6 21.9% 87.5%; /* #e6e1d8 */
+    --input: 33.9 9.1% 49.6%; /* #8a8073 */
+    --ring: 17.5 88.3% 40.4%; /* #c2410c */
+    --overlay: 33.3 17% 10.4%; /* #1f1b16 */
+    --chart-1: 127.9 44.7% 29.8%; /* #2a6e33 */
+    --chart-2: 214.2 52% 24.5%; /* #1e3a5f */
+    --chart-3: 40.2 82% 50%; /* #e8a317 */
+    --chart-4: 33 11.9% 32.9%; /* #5e554a */
+    --chart-5: 17.5 88.3% 40.4%; /* #c2410c */
+    --radius: 0.75rem;
   }
 }
-
-
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
+  }
+  html {
+    font-synthesis: none;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-variant-numeric: tabular-nums;
   }
+}
+
+/* Page content: one fade and rise. */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.page-in {
+  animation: page-in 300ms ease-out both;
 }
 
 /* IMPL-3: Reduce motion for users who prefer it */

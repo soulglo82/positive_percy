@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { Home, Gift, Activity, Settings, LogOut, User } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import Logo from '@/components/brand/Logo';
 import useRealtimeSync from '@/lib/useRealtimeSync';
 import {
   AlertDialog,
@@ -40,26 +41,19 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen flex flex-col pb-16 sm:pb-0">
-      {/* Desktop top nav — hidden on mobile */}
-      <nav className="hidden sm:block bg-white border-b border-slate-200 sticky top-0 z-50">
+      {/* Desktop top nav, hidden on mobile */}
+      <nav className="hidden sm:block bg-card border-b border-border sticky top-0 z-50" aria-label="Main">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <Link
                 to={createPageUrl('ParentDashboard')}
-                className="flex items-center gap-2.5 shrink-0"
+                className="flex items-center min-h-11 rounded-md shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                <img
-                  src="/logo.png"
-                  alt="Positive Percy"
-                  className="h-12 w-auto object-contain"
-                />
-                <span className="text-xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent whitespace-nowrap">
-                  Positive Percy
-                </span>
+                <Logo size={32} wordmark />
               </Link>
               {pageTitle && (
-                <span className="text-sm font-medium text-slate-400">
+                <span className="text-sm font-medium text-muted-foreground">
                   / {pageTitle}
                 </span>
               )}
@@ -74,57 +68,56 @@ export default function Layout({ children, currentPageName }) {
                   <Link
                     key={item.name}
                     to={createPageUrl(item.name)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`flex items-center gap-2 px-3 min-h-10 touch:min-h-11 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                       isActive
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                        : 'text-slate-600 hover:bg-slate-100'
+                        ? 'bg-selected text-foreground font-semibold'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                     }`}
-                    title={item.label}
                   >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm">{item.label}</span>
+                    <Icon className="w-[18px] h-[18px]" strokeWidth={1.5} aria-hidden="true" />
+                    <span>{item.label}</span>
                   </Link>
                 );
               })}
               <button
                 onClick={() => setShowLogoutConfirm(true)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all ml-1"
-                title="Logout"
+                className="flex items-center justify-center h-10 w-10 touch:h-11 touch:w-11 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors ml-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Sign out"
+                title="Sign out"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-[18px] h-[18px]" strokeWidth={1.5} aria-hidden="true" />
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Mobile top header — visible on mobile only */}
-      <header className="sm:hidden bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="flex items-center justify-between px-4 h-12">
-          <Link to={createPageUrl('ParentDashboard')} className="flex items-center gap-2">
-            <img src="/logo.png" alt="Positive Percy" className="h-8 w-auto object-contain" />
-            <span className="text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
-              Positive Percy
-            </span>
+      {/* Mobile top header, visible on mobile only */}
+      <header className="sm:hidden bg-card border-b border-border sticky top-0 z-50">
+        <div className="flex items-center justify-between pl-4 pr-1 h-12">
+          <Link to={createPageUrl('ParentDashboard')} className="flex items-center min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Logo size={32} wordmark />
           </Link>
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
-            title="Logout"
+            className="flex items-center justify-center h-11 w-11 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Sign out"
+            title="Sign out"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-[18px] h-[18px]" strokeWidth={1.5} aria-hidden="true" />
           </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 page-in">
         {children}
       </main>
 
       {/* Mobile bottom tab bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom">
-        <div className="flex justify-around items-center h-16 px-2">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 safe-area-bottom" aria-label="Main">
+        <div className="flex justify-around items-center h-16 px-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPageName === item.name;
@@ -133,14 +126,15 @@ export default function Layout({ children, currentPageName }) {
               <Link
                 key={item.name}
                 to={createPageUrl(item.name)}
-                className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1 rounded-lg transition-all min-h-[48px] ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 rounded-md transition-colors min-h-12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   isActive
-                    ? 'text-purple-600'
-                    : 'text-slate-400 hover:text-slate-600'
+                    ? 'text-primary font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : ''}`} />
-                <span className={`text-[10px] font-medium ${isActive ? 'text-purple-600' : ''}`}>
+                <Icon className="w-[18px] h-[18px]" strokeWidth={1.5} aria-hidden="true" />
+                <span className="text-xs">
                   {item.label}
                 </span>
               </Link>
@@ -162,7 +156,7 @@ export default function Layout({ children, currentPageName }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={logout}
-              className="bg-red-500 hover:bg-red-600"
+              variant="destructive"
             >
               Yes, log out
             </AlertDialogAction>

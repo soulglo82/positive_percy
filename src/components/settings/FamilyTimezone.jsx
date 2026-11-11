@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getToken } from "@/lib/AuthContext";
 import { refreshPoints } from "@/lib/points";
@@ -48,20 +49,22 @@ export default function FamilyTimezone() {
   };
 
   return (
-    <Card className="bg-white/80">
+    <Card>
       <CardContent className="p-4 space-y-2">
-        <Label htmlFor="family-timezone" className="text-sm font-medium text-slate-700">Timezone</Label>
-        <select
-          id="family-timezone"
-          className="w-full h-11 rounded-md border border-slate-200 bg-white px-3 text-sm"
-          value={timezone ?? ''}
+        <Label htmlFor="family-timezone">Timezone</Label>
+        <Select
+          value={timezone || undefined}
           disabled={timezone === null || saving}
-          onChange={(e) => e.target.value && save(e.target.value)}
+          onValueChange={(v) => v && v !== timezone && save(v)}
         >
-          <option value="" disabled>{timezone === null ? 'Loading…' : 'Choose your timezone'}</option>
-          {zones.map((z) => <option key={z} value={z}>{z.replace(/_/g, ' ')}</option>)}
-        </select>
-        <p className="text-xs text-slate-500">Weeks start on Monday at midnight in this timezone.</p>
+          <SelectTrigger id="family-timezone">
+            <SelectValue placeholder={timezone === null ? 'Loading…' : 'Choose your timezone'} />
+          </SelectTrigger>
+          <SelectContent>
+            {zones.map((z) => <SelectItem key={z} value={z}>{z.replace(/_/g, ' ')}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">Weeks start on Monday at midnight in this timezone.</p>
       </CardContent>
     </Card>
   );

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import NumberInput from "@/components/ui/NumberInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { EmojiPicker, ChildAssignList } from "./RewardFormParts";
+import { Points } from "@/components/brand/PointsStar";
 import { Gift, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 import { REWARD_TEMPLATES } from "@/data/reward-templates";
 import { PERCY } from "@/constants/terminology";
@@ -69,45 +72,44 @@ export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       {/* Three parts: title, a scrolling middle, buttons. Fits the visible screen (svh). */}
-      <DialogContent className="sm:max-w-md flex flex-col max-h-[85svh] p-0 gap-0 overflow-hidden">
-        <DialogHeader className="shrink-0 px-6 pt-6 pb-2 pr-12">
-          <DialogTitle className="flex items-center gap-2 text-2xl">
-            <Gift className="w-6 h-6 text-orange-500" />
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Gift className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
             Create Reward
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-4 space-y-5">
+        <DialogBody className="space-y-5">
           {/* Browse Ideas */}
           <div>
             <Button
               variant="outline"
               size="sm"
-              className="w-full text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-100"
+              className="w-full justify-start"
+              aria-expanded={showIdeas}
               onClick={() => setShowIdeas(!showIdeas)}
             >
-              <Lightbulb className="w-4 h-4 mr-2" />
+              <Lightbulb className="w-4 h-4" strokeWidth={1.5} />
               Browse Reward Ideas
               {showIdeas ? <ChevronUp className="w-4 h-4 ml-auto" /> : <ChevronDown className="w-4 h-4 ml-auto" />}
             </Button>
             {showIdeas && (
-              <div className="mt-3 border rounded-lg p-3 space-y-3">
+              <div className="mt-3 border border-border rounded-md p-3 space-y-3">
                 {Object.entries(CATEGORY_LABELS).map(([cat, label]) => (
                   <div key={cat}>
-                    <p className="text-xs font-semibold text-slate-500 mb-1">{label}</p>
-                    <div className="flex flex-wrap gap-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">{label}</p>
+                    <div className="flex flex-wrap gap-2">
                       {REWARD_TEMPLATES.filter(t => t.category === cat).map((t) => (
                         <button
                           key={t.title}
                           type="button"
                           onClick={() => selectTemplate(t)}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 hover:bg-purple-100 text-xs font-medium text-slate-700 hover:text-purple-700 transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 min-h-11 rounded-full bg-muted hover:bg-accent text-sm font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         >
-                          <span>{t.emoji}</span>
+                          <span aria-hidden="true">{t.emoji}</span>
                           <span>{t.title}</span>
-                          <Badge className="bg-amber-100 text-amber-700 border-0 text-[10px] px-1 py-0 h-4">
-                            {t.cost_points}
-                          </Badge>
+                          <Points value={t.cost_points} className="text-xs text-muted-foreground" starClassName="h-3 w-3" />
                         </button>
                       ))}
                     </div>
@@ -119,33 +121,19 @@ export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [
 
           {/* Emoji Picker */}
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <p className="text-sm font-medium text-foreground mb-2">
               Choose Icon
-            </Label>
-            <div className="grid grid-cols-6 gap-2">
-              {EMOJI_OPTIONS.map((e) => (
-                <button
-                  key={e}
-                  type="button"
-                  onClick={() => setEmoji(e)}
-                  className={`text-3xl p-2 rounded-lg border-2 transition-all ${
-                    emoji === e 
-                      ? 'border-orange-400 bg-orange-50 scale-110' 
-                      : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
+            </p>
+            <EmojiPicker options={EMOJI_OPTIONS} value={emoji} onChange={setEmoji} />
           </div>
 
           {/* Title */}
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="add-reward-title" className="mb-2 block">
               Reward Title
             </Label>
             <Input
+              id="add-reward-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Extra Screen Time"
@@ -155,10 +143,11 @@ export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [
 
           {/* Description */}
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="add-reward-description" className="mb-2 block">
               Description (optional)
             </Label>
             <Textarea
+              id="add-reward-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g., 30 minutes of extra tablet time"
@@ -168,10 +157,11 @@ export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [
 
           {/* Cost */}
           <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label htmlFor="add-reward-cost" className="mb-2 block">
               Point Cost
             </Label>
             <NumberInput
+              id="add-reward-cost"
               value={costPoints}
               onChange={setCostPoints}
               min="1"
@@ -182,51 +172,33 @@ export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [
           {/* Assign to Children */}
           {children.length > 0 && (
             <div>
-              <Label className="text-sm font-medium text-slate-700 mb-2 block">
+              <p className="text-sm font-medium text-foreground mb-2">
                 Assign to Children
-              </Label>
-              <p className="text-xs text-slate-500 mb-3">
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
                 Leave unchecked to make available to all children
               </p>
-              <div className="space-y-2">
-                {children.map((child) => (
-                  <div key={child.id} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id={`child-${child.id}`}
-                      checked={assignedChildIds.includes(child.id)}
-                      onChange={() => toggleChildAssignment(child.id)}
-                      className="w-4 h-4 rounded border-slate-300 text-purple-600 cursor-pointer"
-                    />
-                    <label
-                      htmlFor={`child-${child.id}`}
-                      className="text-sm font-medium cursor-pointer"
-                    >
-                      {child.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
+              <ChildAssignList children={children} selectedIds={assignedChildIds} onToggle={toggleChildAssignment} />
             </div>
           )}
-        </div>
+        </DialogBody>
 
-        <div className="shrink-0 flex gap-3 px-6 py-3 border-t border-slate-100 bg-background">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={onClose}
-            className="flex-1 min-h-11"
+            className="flex-1"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={!title.trim() || costPoints <= 0}
-            className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+            className="flex-1"
           >
             Create Reward
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

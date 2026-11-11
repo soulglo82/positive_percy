@@ -12,10 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Activity as ActivityIcon, ChevronDown, ChevronUp } from "lucide-react";
+import { Activity as ActivityIcon, ChevronDown, ChevronUp, ClipboardList } from "lucide-react";
+import ChildAvatar from "../components/child/ChildAvatar";
 import { format, isToday, isYesterday, isSameWeek } from "date-fns";
 import { PERCY } from "@/constants/terminology";
-import SectionHeader from "../components/SectionHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
@@ -105,8 +105,8 @@ export default function Activity() {
     setAllEvents([]);
   };
 
-  if (isLoading) return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6"><LoadingSpinner message="Loading activity..." /></div>;
-  if (isError) return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6"><ErrorCard message="Couldn't load activity" onRetry={refetch} /></div>;
+  if (isLoading) return <div className="min-h-screen p-6"><LoadingSpinner message="Loading activity..." /></div>;
+  if (isError) return <div className="min-h-screen p-6"><ErrorCard message="Couldn't load activity" onRetry={refetch} /></div>;
 
   const filteredEvents = selectedChildId === "all"
     ? allEvents
@@ -132,59 +132,63 @@ export default function Activity() {
   const topCategories = summary?.topCategories?.slice(0, 3) || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen">
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
-            <ActivityIcon className="w-10 h-10 text-blue-600" />
+          <h1 className="text-title font-semibold text-foreground flex items-center gap-3">
+            <ActivityIcon className="w-6 h-6 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
             Activity
           </h1>
         </div>
 
         {/* Weekly Summary — primary view */}
-        <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 via-white to-purple-50">
+        <Card>
           <CardContent className="p-5">
-            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">This Week</h2>
+            <h2 className="text-base font-semibold text-foreground mb-3">This Week</h2>
             <div className="flex flex-wrap gap-4 mb-4">
-              <div className="bg-white rounded-lg border border-slate-200 px-4 py-3 min-w-[120px]">
-                <div className="text-2xl font-bold text-green-600">+{totalWeeklyPoints}</div>
-                <div className="text-xs text-slate-500">{PERCY.POINTS} earned</div>
+              <div className="bg-muted rounded-md border border-border px-4 py-3 min-w-32">
+                <div className="text-title font-semibold text-earn tabular-nums">+{totalWeeklyPoints}</div>
+                <div className="text-xs text-muted-foreground">{PERCY.POINTS} earned</div>
               </div>
-              <div className="bg-white rounded-lg border border-slate-200 px-4 py-3 min-w-[120px]">
-                <div className="text-2xl font-bold text-purple-600">{activeDays}</div>
-                <div className="text-xs text-slate-500">active day{activeDays !== 1 ? 's' : ''}</div>
+              <div className="bg-muted rounded-md border border-border px-4 py-3 min-w-32">
+                <div className="text-title font-semibold text-foreground tabular-nums">{activeDays}</div>
+                <div className="text-xs text-muted-foreground">active day{activeDays !== 1 ? 's' : ''}</div>
               </div>
             </div>
             {topCategories.length > 0 && (
               <div>
-                <h3 className="text-xs font-semibold text-slate-500 mb-2">Top categories</h3>
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Top categories</h3>
                 <div className="space-y-1">
                   {topCategories.map((cat) => (
                     <div key={cat.category} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-700">{cat.category}</span>
-                      <span className="font-semibold text-slate-600">+{cat.total_points}</span>
+                      <span className="text-foreground">{cat.category}</span>
+                      <span className="font-semibold text-earn tabular-nums">+{cat.total_points}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
             {totalWeeklyPoints === 0 && topCategories.length === 0 && (
-              <p className="text-sm text-slate-400">No activity yet this week. Award some points to get started!</p>
+              <p className="text-sm text-muted-foreground">No activity yet this week. Award some points to get started!</p>
             )}
           </CardContent>
         </Card>
 
         {/* Raw Feed — collapsed by default */}
         <div>
-          <button
-            onClick={() => setFeedExpanded(!feedExpanded)}
-            className="flex items-center gap-2 w-full text-left mb-3"
-          >
-            <SectionHeader icon="📋">Activity Log</SectionHeader>
-            <span className="text-slate-400 mt-1">
-              {feedExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </span>
-          </button>
+          <h2 className="mb-3">
+            <button
+              onClick={() => setFeedExpanded(!feedExpanded)}
+              aria-expanded={feedExpanded}
+              className="flex items-center gap-2 w-full min-h-11 text-left text-base font-semibold text-foreground rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <ClipboardList className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
+              Activity log
+              <span className="text-muted-foreground ml-auto">
+                {feedExpanded ? <ChevronUp className="w-5 h-5" aria-hidden="true" /> : <ChevronDown className="w-5 h-5" aria-hidden="true" />}
+              </span>
+            </button>
+          </h2>
 
           {feedExpanded && (
             <>
@@ -199,11 +203,8 @@ export default function Activity() {
                       key={key}
                       variant={activeFilter === key ? 'default' : 'outline'}
                       size="sm"
+                      aria-pressed={activeFilter === key}
                       onClick={() => handleFilterChange(key)}
-                      className={activeFilter === key
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                        : ''
-                      }
                     >
                       {label}
                     </Button>
@@ -211,9 +212,9 @@ export default function Activity() {
                 </div>
 
                 {children.length > 1 && (
-                  <div className="max-w-[180px]">
+                  <div className="w-44">
                     <Select value={selectedChildId} onValueChange={setSelectedChildId}>
-                      <SelectTrigger className="h-9">
+                      <SelectTrigger aria-label="Child">
                         <SelectValue placeholder="All Children" />
                       </SelectTrigger>
                       <SelectContent>
@@ -232,7 +233,7 @@ export default function Activity() {
               <Card>
                 <CardContent className="p-0">
                   {groupedEvents.length === 0 ? (
-                    <div className="py-12 text-center text-slate-500">
+                    <div className="py-12 text-center text-muted-foreground">
                       No activity found
                     </div>
                   ) : (
@@ -240,8 +241,8 @@ export default function Activity() {
                       {groupedEvents.map((item) => {
                         if (item.type === 'header') {
                           return (
-                            <div key={`header-${item.label}`} className="px-4 py-2 bg-slate-50 border-b border-slate-100">
-                              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                            <div key={`header-${item.label}`} className="px-4 py-2 bg-muted border-b border-border">
+                              <span className="text-xs font-semibold text-muted-foreground">
                                 {item.label}
                               </span>
                             </div>
@@ -253,7 +254,7 @@ export default function Activity() {
                   )}
                 </CardContent>
                 {hasMore && (
-                  <div className="p-4 border-t flex justify-center">
+                  <div className="p-4 border-t border-border flex justify-center">
                     <Button
                       variant="outline"
                       onClick={loadMore}
@@ -280,13 +281,13 @@ function NarrativeItem({ event }) {
   const isCorrection = event.type === 'correction';
   const isUndo = event.type === 'undo';
   const isDeduct = !isEarn && !isSpend && !isStarting && !isCorrection && !isUndo && event.points < 0;
+  // Earned in green; spends in muted ink; deductions, undo and corrections in
+  // ink. Each number also carries its sign, so colour is never the only cue.
   const colorClass = isEarn
-    ? 'text-green-600'
+    ? 'text-earn'
     : isSpend
-      ? 'text-orange-600'
-      : isDeduct
-        ? 'text-red-600'
-        : 'text-slate-500';
+      ? 'text-spend'
+      : 'text-negative';
 
   const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost'
     : isStarting ? 'started with' : isCorrection ? 'had a one-off' : 'adjusted';
@@ -303,31 +304,28 @@ function NarrativeItem({ event }) {
     : event.note;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-b-0">
-      {/* Child avatar */}
-      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold shrink-0">
-        {(event.child_name || '?').charAt(0)}
-      </div>
+    <div className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-b-0">
+      <ChildAvatar name={event.child_name} size="sm" />
 
       <div className="flex-1 min-w-0">
         <p className="text-sm leading-snug">
-          <span className="font-semibold text-slate-800">{event.child_name}</span>
-          {' '}<span className="text-slate-500">{action}</span>{' '}
-          <span className="font-medium text-slate-700">
+          <span className="font-semibold text-foreground">{event.child_name}</span>
+          {' '}<span className="text-muted-foreground">{action}</span>{' '}
+          <span className="font-medium text-foreground">
             {isSpend ? displayLabel : displayLabel}
           </span>
         </p>
         {displayNote && !isSpend && (
-          <p className="text-xs text-slate-400 mt-0.5 truncate">{displayNote}</p>
+          <p className="text-xs text-subtle-foreground mt-0.5 truncate">{displayNote}</p>
         )}
-        <p className="text-xs text-slate-400 mt-0.5">
+        <p className="text-xs text-subtle-foreground mt-0.5">
           {format(new Date(event.created_date), "MMM d, h:mm a")}
           {undone && !isUndo && ' · undone'}
         </p>
       </div>
 
-      <span className={`text-sm font-bold shrink-0 ${colorClass} ${undone ? 'line-through' : ''}`}>
-        {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}pts
+      <span className={`text-sm font-semibold tabular-nums shrink-0 ${colorClass} ${undone ? 'line-through' : ''}`}>
+        {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}
       </span>
     </div>
   );

@@ -1,107 +1,110 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Gift } from "lucide-react";
-import { motion } from "framer-motion";
 import { PERCY } from "@/constants/terminology";
+import ChildAvatar from "./ChildAvatar";
+import PointsStar from "@/components/brand/PointsStar";
+
+// This week against the weekly target. Hidden when there is no target.
+function GoalBar({ week, target }) {
+  if (!target || target <= 0) return null;
+  const pct = Math.min(100, Math.round((Math.max(0, week) / target) * 100));
+  return (
+    <div className="flex items-center gap-2 mb-4">
+      <div
+        className="relative flex-1 h-2 rounded-full bg-muted overflow-hidden"
+        role="progressbar"
+        aria-label="This week's points towards the weekly target"
+        aria-valuemin={0}
+        aria-valuemax={target}
+        aria-valuenow={Math.min(Math.max(0, week), target)}
+      >
+        <div className="h-full rounded-full bg-earn" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs text-muted-foreground tabular-nums shrink-0">{Math.max(0, week)} / {target}</span>
+      <PointsStar className="h-4 w-4 text-foreground" />
+    </div>
+  );
+}
 
 export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, onSpendRewards, quickActions = [], rewards = [], awarding = false }) {
+  const week = child.week_points || 0;
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-    >
-      <Card className="overflow-hidden border-2 hover:shadow-xl transition-all duration-300">
-        <div className="h-2 bg-gradient-to-r from-purple-200 via-pink-200 to-blue-200" />
-        <CardContent className="p-4 sm:p-5">
-          {/* Child header */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="shrink-0">
-              {child.avatar_url ? (
-                <img
-                  src={child.avatar_url}
-                  alt={child.name}
-                  className="w-14 h-14 rounded-full object-cover border-3 border-purple-100"
-                />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-xl font-bold border-3 border-purple-100">
-                  {child.name.charAt(0)}
-                </div>
+    <Card className="overflow-hidden">
+      <CardContent className="p-4 sm:p-5">
+        {/* Child header */}
+        <div className="flex items-center gap-3 mb-3">
+          <ChildAvatar name={child.name} url={child.avatar_url} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1 min-w-0">
+              <h3 className="text-lg font-semibold text-foreground truncate">{child.name}</h3>
+              {/* Always visible, 44px (A2 E1): hover-only never worked on phones or keyboards. */}
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(child)}
+                  aria-label={`Edit ${child.name}`}
+                  className="shrink-0 w-11 h-11 -my-2 rounded-full flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <Pencil className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
+                </button>
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1 min-w-0">
-                <h3 className="text-xl font-bold text-slate-800 truncate">{child.name}</h3>
-                {/* Always visible, 44px (A2 E1): hover-only never worked on phones or keyboards. */}
-                {onEdit && (
-                  <button
-                    type="button"
-                    onClick={() => onEdit(child)}
-                    aria-label={`Edit ${child.name}`}
-                    className="shrink-0 w-11 h-11 -my-2 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <Pencil className="w-4 h-4" aria-hidden="true" />
-                  </button>
-                )}
-              </div>
-              {(child.week_points || 0) > 0 ? (
-                <p className="text-sm text-slate-500">
-                  <span className="font-semibold text-purple-600">{child.week_points}</span> Percy Points this week — <span className="text-green-600 font-medium">Keep it up!</span>
-                </p>
-              ) : (
-                <p className="text-sm text-slate-400 italic">Ready to earn some points!</p>
-              )}
-            </div>
-            <div className="text-right shrink-0">
-              <div className="text-3xl font-bold text-purple-600">{child.total_points}</div>
-              <div className="text-[11px] text-slate-400 font-medium">{PERCY.POINTS_COMPACT}</div>
-            </div>
-          </div>
-
-          {/* Quick Actions — labeled */}
-          {onQuickAction && quickActions.length > 0 && (
-            <div className="mb-3">
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Quick Points</p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {quickActions.map((action) => (
-                  <button
-                    key={action.id || action.label}
-                    onClick={() => onQuickAction(child, action)}
-                    disabled={awarding}
-                    aria-label={`Give ${child.name} ${action.points} points for ${action.label}`}
-                    className="disabled:opacity-60 flex items-center gap-1.5 text-sm font-medium px-2.5 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:border-green-300 active:bg-green-200 transition-colors min-h-[38px]"
-                  >
-                    <span className="shrink-0">{action.icon || '⭐'}</span>
-                    <span className="truncate flex-1 text-left">{action.label}</span>
-                    <span className="font-bold text-green-600 shrink-0 text-xs">+{action.points}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <Button
-              onClick={() => onAddPoints(child)}
-              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 min-h-[44px]"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Points
-            </Button>
-            {onSpendRewards && rewards.length > 0 && (
-              <Button
-                onClick={() => onSpendRewards(child)}
-                variant="outline"
-                className="flex-1 border-orange-200 text-orange-700 hover:bg-orange-50 hover:border-orange-300 min-h-[44px]"
-              >
-                <Gift className="w-4 h-4 mr-1" />
-                Spend
-              </Button>
+            {week > 0 ? (
+              <p className="text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground tabular-nums">{week}</span> Percy Points this week — <span className="text-earn font-medium">Keep it up!</span>
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Ready to earn some points!</p>
             )}
           </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+          <div className="text-right shrink-0">
+            <div className="flex items-center justify-end gap-1 text-total font-semibold text-foreground tabular-nums">
+              <PointsStar className="h-5 w-5" />
+              {child.total_points}
+            </div>
+            <div className="text-xs text-muted-foreground">{PERCY.POINTS_COMPACT}</div>
+          </div>
+        </div>
+
+        <GoalBar week={week} target={child.weekly_target} />
+
+        {/* Quick Actions, labelled */}
+        {onQuickAction && quickActions.length > 0 && (
+          <div className="mb-3">
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Quick points</p>
+            <div className="grid grid-cols-2 gap-2">
+              {quickActions.map((action) => (
+                <button
+                  key={action.id || action.label}
+                  onClick={() => onQuickAction(child, action)}
+                  disabled={awarding}
+                  aria-label={`${action.label} +${action.points} for ${child.name}`}
+                  className="disabled:opacity-60 flex items-center gap-2 text-sm font-medium px-3 rounded-md bg-card text-foreground border border-border hover:bg-accent active:bg-accent transition-colors min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <span className="shrink-0" aria-hidden="true">{action.icon || '⭐'}</span>
+                  <span className="truncate flex-1 text-left">{action.label}</span>
+                  <span className="font-semibold text-earn shrink-0 text-sm tabular-nums">+{action.points}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button onClick={() => onAddPoints(child)} className="flex-1">
+            <Plus className="w-4 h-4" />
+            Add Points
+          </Button>
+          {onSpendRewards && rewards.length > 0 && (
+            <Button onClick={() => onSpendRewards(child)} variant="secondary" className="flex-1">
+              <Gift className="w-4 h-4" />
+              Spend
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
