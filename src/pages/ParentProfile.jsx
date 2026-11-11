@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Child } from "@/api/entities";
 import { buildChildCreatePayload } from "@/lib/childPayload";
-import { useAuth } from "@/lib/AuthContext";
+import { useAuth, getToken } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, Save, Copy, Check, Share2, Lightbulb, UserPlus, Users, Home, KeyRound } from "lucide-react";
+import { Settings, Save, Copy, Check, Share2, Lightbulb, UserPlus, Users, Home, KeyRound, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Points } from "@/components/brand/PointsStar";
 import ChildAvatar from "../components/child/ChildAvatar";
@@ -23,6 +23,7 @@ export default function ParentProfile() {
   const { user, familyCode, updateUser } = useAuth();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [familyName, setFamilyName] = useState(user?.full_name || '');
   const [showTips, setShowTips] = useState(false);
@@ -46,6 +47,44 @@ export default function ParentProfile() {
       toast.error(error.message || "Failed to update");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadData = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const headers = { Authorization: `Bearer ${getToken()}` };
+      let res = await fetch('/api/family/export', { headers, cache: 'no-store' });
+      let excludedPhotos = false;
+      // An exceptionally large export is still available without photo bytes.
+      if (res.status === 413) {
+        res = await fetch('/api/family/export?photos=exclude', { headers, cache: 'no-store' });
+        excludedPhotos = true;
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Could not download family data');
+      }
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = 'positive-percy-family-data.json';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      // The browser may need a moment to finish processing the download.
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      if (excludedPhotos) {
+        toast.warning('Data downloaded without embedded photos because the export was too large.');
+      } else {
+        toast.success('Family data download started.');
+      }
+    } catch (err) {
+      toast.error(err.message || 'Could not download family data');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -121,6 +160,23 @@ export default function ParentProfile() {
                 {loading ? 'Saving...' : 'Save'}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Parent-controlled family data portability */}
+        <SectionHeader icon={Download}>Download family data</SectionHeader>
+        <Card>
+          <CardContent className="space-y-3 pt-4">
+            <p className="text-sm text-muted-foreground">
+              Save a copy of your family's children, behaviours, point history, rewards and
+              family settings as a JSON file. Photos stored in Percy are included when
+              available. Your family access code is not included.
+            </p>
+            <Button variant="outline" onClick={handleDownloadData} disabled={downloading}
+              className="w-full sm:w-auto">
+              <Download className="w-4 h-4" aria-hidden="true" />
+              {downloading ? 'Preparing download…' : 'Download family data'}
+            </Button>
           </CardContent>
         </Card>
 
