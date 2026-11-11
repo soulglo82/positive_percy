@@ -80,7 +80,7 @@ export default function ChildCard({ child, onAddPoints, onEdit, onQuickAction, o
                   onClick={() => onQuickAction(child, action)}
                   disabled={awarding}
                   aria-label={`${action.label} +${action.points} for ${child.name}`}
-                  className="disabled:opacity-60 flex items-center gap-2 text-sm font-medium px-3 rounded-md bg-card text-foreground border border-border hover:bg-accent active:bg-accent transition-colors min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="disabled:opacity-60 flex items-center gap-1.5 text-sm font-medium px-2.5 rounded-md bg-card text-foreground border border-border hover:bg-accent active:bg-accent transition-colors min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <span className="shrink-0" aria-hidden="true">{action.icon || '⭐'}</span>
                   <span className="truncate flex-1 text-left">{action.label}</span>
