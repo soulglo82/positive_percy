@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: Build
         run: npm run build
 
@@ -73,8 +76,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # GitHub hosted Ubuntu runners already carry Chromium runtime libraries.
+      # Do not apt-install the entire dependency set: a transient Azure Ubuntu
+      # mirror DNS failure can block browser validation for ten minutes.
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
+        timeout-minutes: 6
 
       - name: Build
         run: npm run build

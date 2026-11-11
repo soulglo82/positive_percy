@@ -24,6 +24,8 @@ describe.skipIf(!runDb)('A2 PR2: undo', () => {
     api(ctx.base, 'POST', `/api/children/${c.id}/award`, { token: fam.token, body: { points, category: 'Kindness', request_id } });
   const undoAward = (eventId, fam = F, request_id = rid()) =>
     api(ctx.base, 'POST', `/api/point-events/${eventId}/undo`, { token: fam.token, body: { request_id } });
+  const correctAward = (eventId, fam = F, request_id = rid()) =>
+    api(ctx.base, 'POST', `/api/point-events/${eventId}/correct`, { token: fam.token, body: { request_id } });
   const undoSpend = (redemptionId, fam = F, request_id = rid()) =>
     api(ctx.base, 'POST', `/api/redemptions/${redemptionId}/undo`, { token: fam.token, body: { request_id } });
   const reward = async (cost, fam = F) =>
@@ -95,12 +97,15 @@ describe.skipIf(!runDb)('A2 PR2: undo', () => {
     expect(await balance(c.id)).toBe(10);
   });
 
-  it('U1: undo of a deduction gives back exactly what was taken', async () => {
+  it('U1: prior legacy deductions can still be undone, but new negative awards are rejected', async () => {
     const c = await newChild();
     await award(c, 3);
-    const d = (await award(c, -10)).json; // capped at -3
-    expect(d.event.points).toBe(-3);
-    expect((await undoAward(d.event.id)).status).toBe(200);
+    const { rows: [d] } = await ctx.pool.query(
+      `INSERT INTO point_events (child_id, points, category, child_name, family_code, kind)
+       VALUES ($1, -2, 'Adjustment', $2, $3, 'award') RETURNING *`, [c.id, c.name, F.code]);
+    await ctx.pool.query('UPDATE children SET total_points = total_points - 2 WHERE id = $1', [c.id]);
+    expect((await award(c, -2)).status).toBe(400);
+    expect((await undoAward(d.id)).status).toBe(200);
     expect(await balance(c.id)).toBe(3);
     expect(await history(c.id)).toBe(3);
   });
@@ -188,17 +193,17 @@ describe.skipIf(!runDb)('A2 PR2: undo', () => {
     expect(await balance(c.id)).toBe(25);
   });
 
-  it('U1: undoing a deduction is never refused by the stack reserve (it gives points back)', async () => {
-    const c = await newChild(F, 'Stackdeduct');
+  it('U1: legacy deduction reversal still restores points', async () => {
+    const c = await newChild(F, 'LegacyDeduct');
     await award(c, 10);
-    const r10 = await reward(10);
-    expect((await api(ctx.base, 'POST', `/api/children/${c.id}/stack/add`, { token: F.token, body: { reward_id: r10.id } })).status).toBe(200);
-    await award(c, -5);
-    const d = (await award(c, -3)).json;
-    expect(await balance(c.id)).toBe(2);
-    expect((await undoAward(d.event.id)).status).toBe(200);
-    expect(await balance(c.id)).toBe(5);
-    expect(await history(c.id)).toBe(5);
+    const { rows: [d] } = await ctx.pool.query(
+      `INSERT INTO point_events (child_id, points, category, child_name, family_code, kind)
+       VALUES ($1, -3, 'Adjustment', $2, $3, 'award') RETURNING *`, [c.id, c.name, F.code]);
+    await ctx.pool.query('UPDATE children SET total_points = total_points - 3 WHERE id = $1', [c.id]);
+    expect(await balance(c.id)).toBe(7);
+    expect((await undoAward(d.id)).status).toBe(200);
+    expect(await balance(c.id)).toBe(10);
+    expect(await history(c.id)).toBe(10);
   });
 
   it('U1: an undo racing a spend on the same child: balance never below 0 and equals history', async () => {
@@ -268,7 +273,60 @@ describe.skipIf(!runDb)('A2 PR2: undo', () => {
     expect((await api(ctx.base, 'DELETE', `/api/behavior-categories/${cat.id}`, { token: F.token })).status).toBe(200);
   });
 
-  it('Sequence: random awards, deductions, spends and undos keep balance = history and >= 0', async () => {
+  it('Item 4: same-week correction succeeds after 10 minutes and stays idempotent', async () => {
+    const c = await newChild(F, 'Corrected');
+    const a = (await award(c, 9)).json;
+    await q("UPDATE point_events SET created_date = now() - interval '11 minutes' WHERE id = $1", [a.event.id]);
+    const id = rid();
+    const one = await correctAward(a.event.id, F, id);
+    expect(one.status).toBe(200);
+    expect(one.json.child.total_points).toBe(0);
+    const again = await correctAward(a.event.id, F, id);
+    expect(again.status).toBe(200);
+    expect(again.json.duplicate).toBe(true);
+    expect((await correctAward(a.event.id)).status).toBe(409);
+    expect(await history(c.id)).toBe(0);
+    expect(await weekOf(F, c.id)).toBe(0);
+  });
+
+  it('Item 4: correction rejects awards from an earlier family week and from other families', async () => {
+    const c = await newChild(F, 'OldAward');
+    const a = (await award(c, 9)).json;
+    await q(`UPDATE point_events SET created_date =
+      (date_trunc('week', now() AT TIME ZONE COALESCE((SELECT timezone FROM families WHERE family_code = $2), 'UTC'))
+       AT TIME ZONE COALESCE((SELECT timezone FROM families WHERE family_code = $2), 'UTC')) - interval '1 second'
+      WHERE id = $1`, [a.event.id, F.code]);
+    expect((await correctAward(a.event.id)).status).toBe(404);
+    const recent = (await award(c, 4)).json;
+    expect((await correctAward(recent.event.id, G)).status).toBe(404);
+    expect(await balance(c.id)).toBe(13);
+  });
+
+  it('Item 4: correction refuses awards already spent or reserved, without changing history', async () => {
+    const c = await newChild(F, 'SpentAward');
+    const a = (await award(c, 10)).json;
+    await redeem(c, await reward(8));
+    expect((await correctAward(a.event.id)).status).toBe(409);
+    expect(await balance(c.id)).toBe(2);
+    expect(await history(c.id)).toBe(2);
+    const d = await newChild(F, 'SavedAward');
+    const b = (await award(d, 10)).json;
+    const r6 = await reward(6);
+    await api(ctx.base, 'POST', `/api/children/${d.id}/stack/add`, { token: F.token, body: { reward_id: r6.id } });
+    expect((await correctAward(b.event.id)).status).toBe(409);
+    expect(await balance(d.id)).toBe(10);
+  });
+
+  it('Item 4: correction and spend race; only one can apply', async () => {
+    const c = await newChild(F, 'CorrectionRace');
+    const a = (await award(c, 10)).json;
+    const [r1, r2] = await Promise.all([correctAward(a.event.id), redeem(c, await reward(10))]);
+    expect([r1.status, r2.status].filter(v => v === 200)).toHaveLength(1);
+    expect(await balance(c.id)).toBeGreaterThanOrEqual(0);
+    expect(await balance(c.id)).toBe(await history(c.id));
+  });
+
+  it('Sequence: random awards, corrections, spends and undos keep balance = history and >= 0', async () => {
     const c = await newChild(F, 'Seq');
     const rs = [await reward(3), await reward(9)];
     const events = [];
@@ -278,7 +336,7 @@ describe.skipIf(!runDb)('A2 PR2: undo', () => {
     for (let i = 0; i < 40; i += 1) {
       const op = rnd(5);
       if (op === 0) { const r = (await award(c, 1 + rnd(12))).json; if (r.event) events.push(r.event.id); }
-      if (op === 1) { const r = (await award(c, -(1 + rnd(6)))).json; if (r.event) events.push(r.event.id); }
+      if (op === 1 && events.length) await correctAward(events[rnd(events.length)]);
       if (op === 2) { const r = await redeem(c, rs[rnd(2)]); if (r.status === 200) reds.push(r.json.redemption.id); }
       if (op === 3 && events.length) await undoAward(events[rnd(events.length)]);
       if (op === 4 && reds.length) await undoSpend(reds[rnd(reds.length)]);

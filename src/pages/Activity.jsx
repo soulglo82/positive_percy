@@ -2,8 +2,15 @@ import { useState } from 'react';
 import { Child } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { correctAward, refreshPoints } from "@/lib/points";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -33,6 +40,9 @@ function getDateGroup(dateStr) {
 
 export default function Activity() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [correctionTarget, setCorrectionTarget] = useState(null);
+  const [correcting, setCorrecting] = useState(false);
   const [selectedChildId, setSelectedChildId] = useState("all");
   const [activeFilter, setActiveFilter] = useState("all");
   const [allEvents, setAllEvents] = useState([]);
@@ -127,11 +137,27 @@ export default function Activity() {
   }
 
   // Compute weekly summary stats
-  const totalWeeklyPoints = summary?.childStats?.reduce((sum, c) => sum + c.positive_points, 0) || 0;
-  const activeDays = summary?.weekEvents
-    ? new Set(summary.weekEvents.filter(e => e.points > 0).map(e => format(new Date(e.created_date), 'yyyy-MM-dd'))).size
-    : 0;
+  const totalWeeklyPoints = summary?.childStats?.reduce((sum, c) => sum + c.week_points, 0) || 0;
+  const activeDays = summary?.activeDays ?? 0;
   const topCategories = summary?.topCategories?.slice(0, 3) || [];
+
+  const canCorrect = (event) => event.type === 'earn' && !event.undone &&
+    !!summary?.weekStart && new Date(event.created_date) >= new Date(summary.weekStart);
+
+  const confirmCorrection = async () => {
+    if (!correctionTarget || correcting) return;
+    setCorrecting(true);
+    try {
+      await correctAward(correctionTarget.id);
+      toast.success(`Corrected ${correctionTarget.child_name}'s mistaken award.`);
+      setCorrectionTarget(null);
+      refreshPoints(queryClient);
+    } catch (err) {
+      toast.error(err.message || "Couldn't correct this award.");
+    } finally {
+      setCorrecting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -252,7 +278,7 @@ export default function Activity() {
                             </div>
                           );
                         }
-                        return <NarrativeItem key={`${item.event.type}-${item.event.id}`} event={item.event} colour={childColour(item.event.child_id, children)} />;
+                        return <NarrativeItem key={`${item.event.type}-${item.event.id}`} event={item.event} colour={childColour(item.event.child_id, children)} canCorrect={canCorrect(item.event)} onCorrect={() => setCorrectionTarget(item.event)} />;
                       })}
                     </div>
                   )}
@@ -273,11 +299,26 @@ export default function Activity() {
           )}
         </div>
       </div>
+      <AlertDialog open={!!correctionTarget} onOpenChange={(open) => { if (!open && !correcting) setCorrectionTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Correct mistaken award?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove {correctionTarget?.points} mistakenly awarded points from {correctionTarget?.child_name}?
+              This corrects only the selected award, keeps an Activity record, and cannot be done if those points have been spent or reserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={correcting}>Keep award</AlertDialogCancel>
+            <AlertDialogAction disabled={correcting} onClick={(e) => { e.preventDefault(); confirmCorrection(); }}>Correct award</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function NarrativeItem({ event, colour }) {
+function NarrativeItem({ event, colour, canCorrect, onCorrect }) {
   const isEarn = event.type === 'earn';
   const isSpend = event.type === 'spend';
 
@@ -293,7 +334,7 @@ function NarrativeItem({ event, colour }) {
       ? 'text-spend'
       : 'text-negative';
 
-  const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost'
+  const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'had an earlier adjustment for'
     : isStarting ? 'started with' : isCorrection ? 'had a one-off' : 'adjusted';
   // An undone award or spend and its undo row are both shown, struck through,
   // so the list still adds up to the balance.
@@ -328,9 +369,16 @@ function NarrativeItem({ event, colour }) {
         </p>
       </div>
 
-      <span className={`text-sm font-semibold tabular-nums shrink-0 ${colorClass} ${undone ? 'line-through' : ''}`}>
-        {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}
-      </span>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <span className={`text-sm font-semibold tabular-nums ${colorClass} ${undone ? 'line-through' : ''}`}>
+          {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}
+        </span>
+        {canCorrect && (
+          <button type="button" onClick={onCorrect} className="min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Correct ${event.child_name} award of ${event.points} points`}>
+            Correct
+          </button>
+        )}
+      </div>
     </div>
   );
 }

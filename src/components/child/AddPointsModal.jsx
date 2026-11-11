@@ -20,7 +20,6 @@ import { PERCY } from "@/constants/terminology";
 import { MAX_AWARD } from "@/lib/points";
 
 const POSITIVE_AMOUNTS = [1, 2, 3, 4, 5, 10];
-const NEGATIVE_AMOUNTS = [-1, -2, -3, -4, -5, -10];
 
 export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
   const [points, setPoints] = useState(1);
@@ -54,9 +53,8 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
     }
   }, [filteredCategories, category]);
 
-  const isNegative = points < 0;
   const [submitting, setSubmitting] = useState(false);
-  const outOfRange = !Number.isInteger(points) || points === 0 || Math.abs(points) > MAX_AWARD;
+  const outOfRange = !Number.isInteger(points) || points < 1 || points > MAX_AWARD;
 
   const handleSubmit = async () => {
     if (submitting || outOfRange) return;
@@ -64,7 +62,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
     try {
       const ok = await onSubmit({
         points,
-        category: isNegative ? "Adjustment" : category,
+        category,
         note,
       });
       if (ok === false) return; // error already shown; keep the form open
@@ -90,7 +88,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <PointsStar className="h-5 w-5" />
-            {isNegative ? `Adjust ${PERCY.POINTS_COMPACT}` : `Award ${PERCY.POINTS_COMPACT}`}
+            {`Award ${PERCY.POINTS_COMPACT}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -118,30 +116,15 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
                 </Button>
               ))}
             </div>
-            {/* Deduction row: minimal tokens only; the whole row goes in plan item 4 (no negative scoring). */}
-            <div className="grid grid-cols-3 xs:grid-cols-6 gap-2 mb-3">
-              {NEGATIVE_AMOUNTS.map((amount) => (
-                <Button
-                  key={amount}
-                  variant={points === amount ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setPoints(amount)}
-                  aria-pressed={points === amount}
-                  className={points === amount ? "" : "text-destructive"}
-                >
-                  {amount}
-                </Button>
-              ))}
-            </div>
             <NumberInput
               id="award-points"
               value={points}
               onChange={setPoints}
-              min={-MAX_AWARD}
+              min={1}
               max={MAX_AWARD}
               className="text-lg font-semibold tabular-nums"
             />
-            {Math.abs(points) > MAX_AWARD && (
+            {points > MAX_AWARD && (
               <p className="text-xs text-destructive mt-1">Up to {MAX_AWARD} points at a time.</p>
             )}
             {!Number.isInteger(points) && (
@@ -150,8 +133,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
           </div>
 
           {/* Category: tappable boxes */}
-          {!isNegative && (
-            <div>
+          <div>
               <p className="text-sm font-medium text-foreground mb-2" id="award-category">
                 Category
               </p>
@@ -184,8 +166,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
                   </button>
                 </div>
               )}
-            </div>
-          )}
+          </div>
 
           {/* Note */}
           <div>
@@ -196,10 +177,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
               id="award-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder={isNegative
-                ? "Why are you adjusting points?"
-                : "What did they do well?"
-              }
+              placeholder="What did they do well?"
               rows={3}
             />
           </div>
@@ -218,7 +196,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
             disabled={outOfRange || submitting}
             className="flex-1"
           >
-            {isNegative ? 'Adjust' : 'Award'} {PERCY.POINTS_COMPACT}
+            Award {PERCY.POINTS_COMPACT}
           </Button>
         </DialogFooter>
       </DialogContent>

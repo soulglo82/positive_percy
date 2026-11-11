@@ -85,6 +85,11 @@ async function postUndo(path, requestId) {
 export const undoAward = (eventId, requestId = newRequestId()) =>
   postUndo(`/api/point-events/${eventId}/undo`, requestId);
 
+// Activity allows correction of an accidental positive award until the end
+// of the family's current week. The server checks eligibility and reserves.
+export const correctAward = (eventId, requestId = newRequestId()) =>
+  postUndo(`/api/point-events/${eventId}/correct`, requestId);
+
 export const undoSpend = (redemptionId, requestId = newRequestId()) =>
   postUndo(`/api/redemptions/${redemptionId}/undo`, requestId);
 

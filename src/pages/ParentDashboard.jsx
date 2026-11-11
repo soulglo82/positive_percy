@@ -202,12 +202,10 @@ export default function ParentDashboard() {
     awarding.current.add(child.id);
     setAwardingIds([...awarding.current]);
     try {
-      const { child: updated, capped, event, streak: streakResult, duplicate, week_points_before: weekBefore, week_points_after: weekAfter } = await awardPoints(child.id, { points, category, note });
+      const { child: updated, event, streak: streakResult, duplicate, week_points_before: weekBefore, week_points_after: weekAfter } = await awardPoints(child.id, { points, category, note });
       // One toast per award, with Undo for 10 seconds (A2 U3). The weekly
       // goal and a streak milestone are added to it, not shown separately.
-      const lines = [capped
-        ? `${child.name} only had ${Math.abs(event.points)} points, so ${Math.abs(event.points)} were taken away.`
-        : points > 0 ? `+${points} ${category} for ${child.name}` : `${points} points for ${child.name}`];
+      const lines = [`+${points} ${category} for ${child.name}`];
       // This week from history; a replay carries no figures, so no confetti.
       const wasBelow = typeof weekBefore === 'number' && weekBefore < updated.weekly_target;
       const isNowAbove = typeof weekAfter === 'number' && updated.weekly_target > 0 && weekAfter >= updated.weekly_target;
@@ -228,8 +226,7 @@ export default function ParentDashboard() {
         ? old.map((c) => (c.id === updated.id ? { ...c, ...updated, week_points: typeof weekAfter === 'number' ? weekAfter : c.week_points } : c))
         : old);
       if (points > 0) setTimeout(() => setPop((p) => ({ childId: child.id, n: p.n + 1 })), 220);
-      const show = capped ? toast.warning : toast.success;
-      show(lines.join(' '), {
+      toast.success(lines.join(' '), {
         duration: UNDO_TOAST_MS,
         action: { label: 'Undo', onClick: undoAction('award', event.id, queryClient) },
       });
@@ -330,7 +327,7 @@ export default function ParentDashboard() {
                     const isUndo = event.type === 'undo';
                     const isDeduct = !isEarn && !isSpend && !isUndo && event.points < 0;
                     const colorClass = isEarn ? 'text-earn' : isSpend ? 'text-spend' : 'text-negative';
-                    const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost' : 'adjusted';
+                    const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'had an earlier adjustment for' : 'adjusted';
                     const eventChild = children.find(c => c.id === event.child_id);
 
                     return (
