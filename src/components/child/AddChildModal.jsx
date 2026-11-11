@@ -90,7 +90,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
-            Add Child
+            Add child
           </DialogTitle>
         </DialogHeader>
 
@@ -230,7 +230,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
             disabled={!name.trim() || uploading || saving || (age !== "" && (Number(age) < 1 || Number(age) > 17))}
             className="flex-1"
           >
-            {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Add Child'}
+            {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Add child'}
           </Button>
         </DialogFooter>
       </DialogContent>

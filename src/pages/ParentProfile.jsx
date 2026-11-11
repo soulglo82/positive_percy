@@ -99,7 +99,7 @@ export default function ParentProfile() {
             )}
             <Button variant="outline" className="w-full" onClick={() => setShowAddChild(true)}>
               <UserPlus className="w-4 h-4" />
-              Add Child
+              Add child
             </Button>
           </CardContent>
         </Card>
@@ -170,7 +170,7 @@ export default function ParentProfile() {
                 }}
               >
                 <Share2 className="w-4 h-4" />
-                Share Invite Link
+                Share invite link
               </Button>
             </CardContent>
           </Card>
@@ -183,7 +183,7 @@ export default function ParentProfile() {
           className="w-full flex items-center justify-center gap-1 text-center text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Lightbulb className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
-          Need help rewarding behaviour? View Parenting Tips
+          Need help rewarding behaviour? View parenting tips
         </button>
       </div>
 

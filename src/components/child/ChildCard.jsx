@@ -60,10 +60,10 @@ export default function ChildCard({ child, colour, popKey = 0, onAddPoints, onEd
             </div>
             {week > 0 ? (
               <p className="text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground tabular-nums">{week}</span> points this week
+                <span className="font-semibold text-foreground tabular-nums">{week}</span> points this week. Keep it up
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground">No points yet this week</p>
+              <p className="text-sm text-muted-foreground">Ready to earn some points</p>
             )}
           </div>
           <div className="text-right shrink-0">
@@ -113,7 +113,7 @@ export default function ChildCard({ child, colour, popKey = 0, onAddPoints, onEd
         <div className="flex gap-2">
           <Button onClick={() => onAddPoints(child)} className="flex-1">
             <Plus className="w-4 h-4" />
-            Add Points
+            Add points
           </Button>
           {onSpendRewards && rewards.length > 0 && (
             <Button onClick={() => onSpendRewards(child)} variant="secondary" className="flex-1">

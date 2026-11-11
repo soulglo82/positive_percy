@@ -205,7 +205,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
 
           <p className="text-sm text-muted-foreground bg-muted rounded-lg px-3 py-2">
             {child?.name || 'This child'} has <span className="font-semibold text-foreground">{child?.total_points ?? 0}</span> {PERCY.POINTS_COMPACT}.
-            To change them, use Add Points so the change shows in the history.
+            To change them, use Add points so the change shows in the history.
           </p>
 
           {onDelete && (
