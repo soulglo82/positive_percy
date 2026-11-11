@@ -155,7 +155,7 @@ export default function Layout({ children, currentPageName }) {
             {familyCode && (
               <div className="rounded-md border border-border bg-muted p-3">
                 <p className="text-xs text-muted-foreground mb-1">Your family code</p>
-                <p className="font-mono text-lg font-semibold tracking-wider text-foreground select-all">{familyCode}</p>
+                <p className="font-mono text-lg font-semibold text-foreground select-all">{familyCode}</p>
               </div>
             )}
           </AlertDialogHeader>
