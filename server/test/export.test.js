@@ -98,6 +98,24 @@ describe.skipIf(!runDb)('Batch C PR2: download family data', () => {
     expect(r.json.photoInformation).toMatchObject({ included: false, unavailableCount: 1 });
   });
 
+  it('includes legacy family-less history for owned children, never for someone else', async () => {
+    const { rows: [other] } = await ctx.pool.query(
+      "SELECT id FROM children WHERE family_code = $1 LIMIT 1", [B.code]
+    );
+    await ctx.pool.query(
+      "INSERT INTO point_events (child_id, points, category, family_code, kind) VALUES ($1, 2, 'Old family history', NULL, 'award')",
+      [childA.id]
+    );
+    await ctx.pool.query(
+      "INSERT INTO point_events (child_id, points, category, family_code, kind) VALUES ($1, 2, 'Other family history', NULL, 'award')",
+      [other.id]
+    );
+    const r = await download(A);
+    expect(r.status).toBe(200);
+    expect(r.json.pointEvents.some(x => x.category === 'Old family history')).toBe(true);
+    expect(r.json.pointEvents.some(x => x.category === 'Other family history')).toBe(false);
+  });
+
   it('does not include another family\'s photo even if a legacy row references its URL', async () => {
     // The current write guard refuses this; simulate a corrupted legacy row
     // to prove the export never follows cross-family image pointers.
