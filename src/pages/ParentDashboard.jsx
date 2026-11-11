@@ -327,7 +327,7 @@ export default function ParentDashboard() {
                     const isUndo = event.type === 'undo';
                     const isDeduct = !isEarn && !isSpend && !isUndo && event.points < 0;
                     const colorClass = isEarn ? 'text-earn' : isSpend ? 'text-spend' : 'text-negative';
-                    const action = isUndo ? 'correction:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'had an earlier adjustment for' : 'adjusted';
+                    const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'had an earlier adjustment for' : 'adjusted';
                     const eventChild = children.find(c => c.id === event.child_id);
 
                     return (
