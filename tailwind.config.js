@@ -8,6 +8,9 @@ module.exports = {
   // No dark theme. Kept as "class" so nothing follows the OS setting; no
   // .dark rule exists (a test checks).
   darkMode: ["class"],
+  // hover: styles only where a real pointer can hover, so a tapped button
+  // doesn't keep its hover look on a phone.
+  future: { hoverOnlyWhenSupported: true },
   content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}", "!./src/test/**"],
   theme: {
     colors: {

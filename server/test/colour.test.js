@@ -37,6 +37,18 @@ describe.skipIf(!runDb)('child colours', () => {
     expect(got[6]).toBeLessThanOrEqual(5);
   });
 
+  it('a child left with no colour (older server during a deploy) gets one before the next child', async () => {
+    const F = await makeFamily(ctx.base, 'Colours F');
+    const a = await add(F, 'A'); const b = await add(F, 'B');
+    await ctx.pool.query('UPDATE children SET colour_index = NULL WHERE id = $1', [b.id]);
+    const c = await add(F, 'C');
+    const { rows } = await ctx.pool.query('SELECT id, colour_index FROM children WHERE family_code = $1', [F.code]);
+    const got = Object.fromEntries(rows.map((r) => [r.id, r.colour_index]));
+    expect(got[a.id]).toBe(0);
+    expect(got[b.id]).toBe(1);
+    expect(c.colour_index).toBe(2);
+  });
+
   it('the app cannot set or change a colour', async () => {
     const F = await makeFamily(ctx.base, 'Colours D');
     const a = await add(F, 'A', { colour_index: 4 });

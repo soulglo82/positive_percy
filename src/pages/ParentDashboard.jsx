@@ -230,7 +230,12 @@ export default function ParentDashboard() {
       }
       // A replayed award (first reply lost) carries no streak; read it instead.
       if (duplicate) updateStreak(); else { const s = showStreak(streakResult); if (s) lines.push(s); }
-      if (points > 0) setPop((p) => ({ childId: child.id, n: p.n + 1 }));
+      // Show the new total now (not one refetch later), then pop it. The short
+      // wait lets the Add Points dialog close first so the pop is seen.
+      queryClient.setQueryData(['children'], (old) => Array.isArray(old)
+        ? old.map((c) => (c.id === updated.id ? { ...c, ...updated, week_points: typeof weekAfter === 'number' ? weekAfter : c.week_points } : c))
+        : old);
+      if (points > 0) setTimeout(() => setPop((p) => ({ childId: child.id, n: p.n + 1 })), 220);
       const show = capped ? toast.warning : toast.success;
       show(lines.join(' '), {
         duration: UNDO_TOAST_MS,
