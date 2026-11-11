@@ -96,12 +96,12 @@ export default function Layout({ children, currentPageName }) {
       {/* Mobile top header, visible on mobile only */}
       <header className="sm:hidden bg-card border-b border-border sticky top-0 z-50">
         <div className="flex items-center justify-between pl-4 pr-1 h-12">
-          <Link to={createPageUrl('ParentDashboard')} className="flex items-center min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <Link to={createPageUrl('ParentDashboard')} className="flex items-center min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
             <Logo size={32} wordmark />
           </Link>
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className="flex items-center justify-center h-11 w-11 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex items-center justify-center h-11 w-11 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             aria-label="Sign out"
             title="Sign out"
           >
@@ -127,9 +127,9 @@ export default function Layout({ children, currentPageName }) {
                 key={item.name}
                 to={createPageUrl(item.name)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 rounded-md transition-colors min-h-12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 rounded-md transition-colors min-h-12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                   isActive
-                    ? 'text-primary font-semibold'
+                    ? 'bg-selected text-foreground font-semibold'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >

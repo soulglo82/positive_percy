@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Gift } from "lucide-react";
 import { toast } from "sonner";
 
-import EmojiTile from "../components/rewards/EmojiTile";
+import Logo from "@/components/brand/Logo";
 import SectionHeader from "../components/SectionHeader";
 import RewardCard from "../components/rewards/RewardCard";
 import AddRewardModal from "../components/rewards/AddRewardModal";
@@ -116,7 +116,7 @@ export default function Rewards() {
         ) : rewards.length === 0 ? (
           <Card className="border-2 border-dashed border-input shadow-none">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <EmojiTile emoji="🎁" className="mb-4" />
+              <Logo size={48} decorative className="mb-4" />
               <h3 className="text-lg font-semibold text-foreground mb-2">
                 No rewards yet
               </h3>

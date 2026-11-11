@@ -18,10 +18,40 @@ describe('token check', () => {
     expect(r.status).toBe(0);
   }, 60000);
 
+  // Each fixture must fail for its own reason, not just fail.
+  const EXPECT = {
+    'palette.jsx': /raw palette/, 'white.jsx': /raw palette/, 'gradient.jsx': /gradient/, 'clip.jsx': /gradient/,
+    'offscale.jsx': /not in the token scale/, 'offscale-radius.jsx': /not in the token scale/,
+    'offscale-shadow.jsx': /not in the token scale/, 'offscale-weight.jsx': /not in the token scale/,
+    'bad-variant.jsx': /not in the token scale/, 'arbitrary.jsx': /arbitrary value/,
+    'arbitrary-template.jsx': /template literal/, 'hex.jsx': /hex colour/, 'hex4.jsx': /hex colour/,
+    'rgb.jsx': /colour function/, 'hsl-raw.jsx': /colour function/, 'oklch.jsx': /colour function/,
+    'lab.jsx': /colour function/, 'hwb.jsx': /colour function/, 'color-mix.jsx': /colour function/,
+    'style-font.jsx': /style key fontSize/, 'style-custom-prop.jsx': /custom property/,
+    'style-named.jsx': /style key fill/, 'style-hotpink.jsx': /style key fill/,
+    'style-font-shorthand.jsx': /style key font/, 'style-outline.jsx': /style key outline/,
+    'style-by-name.jsx': /fontSize in an object|passed by name/,
+    'uppercase.jsx': /sentence case/, 'tracking.jsx': /sentence case/, 'italic.jsx': /sentence case/,
+    'opacity-text.jsx': /opacity modifier/, 'opacity-util.jsx': /no opacity/, 'opacity-arbitrary.jsx': /no opacity/,
+    'text-opacity.jsx': /no opacity/, 'bg-opacity.jsx': /no opacity/,
+    'arbitrary-property.jsx': /arbitrary property/,
+    'button-height.jsx': /own height/, 'button-height-arrow.jsx': /own height/, 'button-size.jsx': /own height/,
+    'toast-bang.jsx': /ends in "!"/, 'multiline.jsx': /text-2xl is not in the token scale/,
+    'allow-in-text.jsx': /text-2xl is not in the token scale/,
+    'svg-fill.jsx': /fill="hotpink"/, 'icon-color.jsx': /color="hotpink"/, 'icon-size.jsx': /size prop/,
+    'dynamic-class.jsx': /built from a variable/, 'plus-variant.jsx': /not in the token scale/,
+    'colour-outside-root.css': /colour value/, 'dark.css': /\.dark rule/,
+    'css-font-size.css': /css font-size/, 'css-named-colour.css': /css color/, 'css-uppercase.css': /css text-transform/,
+  };
   const bad = fs.readdirSync(FIXTURES).filter((f) => f !== 'clean.jsx');
-  it.each(bad)('flags the fixture %s', async (file) => {
+
+  it('every fixture has an expected rule', () => {
+    expect(bad.filter((f) => !EXPECT[f])).toEqual([]);
+  });
+
+  it.each(bad)('flags the fixture %s for its own reason', async (file) => {
     const problems = await check([path.join(FIXTURES, file)]);
-    expect(problems.length).toBeGreaterThan(0);
+    expect(problems.join('\n')).toMatch(EXPECT[file]);
   }, 60000);
 
   it('passes the clean fixture, including a tokens-allow exception', async () => {
@@ -82,7 +112,7 @@ describe('contrast of declared pairs', () => {
     ['primary', ['card', 'background']],
     ['primary-foreground', ['primary', 'primary-hover']],
     ['destructive-foreground', ['destructive']],
-    ['destructive', ['card', 'background', 'muted', 'warning']],
+    ['destructive', ['card', 'background', 'muted', 'accent', 'warning']],
     ['earn', ['card', 'background', 'muted', 'accent', 'warning']],
     ['brand-ink', ['card', 'background']],
     ['warning-foreground', ['warning']],

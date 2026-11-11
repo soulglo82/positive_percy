@@ -15,8 +15,8 @@ const buttonVariants = cva("inline-flex items-center justify-center gap-2 whites
       link: "text-primary underline-offset-4 hover:underline",
     },
     size: {
-      default: "h-10 px-4 py-2 touch:h-11",
-      sm: "h-9 px-3 touch:h-11",
+      default: "h-10 px-4 py-2 touch:h-11 touch:min-w-11",
+      sm: "h-9 px-3 touch:h-11 touch:min-w-11",
       lg: "h-11 px-8",
       icon: "h-10 w-10 shrink-0 touch:h-11 touch:w-11",
     },

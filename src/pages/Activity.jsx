@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Activity as ActivityIcon, ChevronDown, ChevronUp, ClipboardList } from "lucide-react";
 import ChildAvatar from "../components/child/ChildAvatar";
+import Logo from "@/components/brand/Logo";
 import { format, isToday, isYesterday, isSameWeek } from "date-fns";
 import { PERCY } from "@/constants/terminology";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -233,7 +234,8 @@ export default function Activity() {
               <Card>
                 <CardContent className="p-0">
                   {groupedEvents.length === 0 ? (
-                    <div className="py-12 text-center text-muted-foreground">
+                    <div className="py-12 flex flex-col items-center gap-3 text-center text-muted-foreground">
+                      <Logo size={48} decorative />
                       No activity found
                     </div>
                   ) : (

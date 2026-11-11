@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Logo from "@/components/brand/Logo";
 
 const TIPS = [
   {
@@ -50,7 +51,8 @@ export default function OnboardingTips({ isOpen, onClose, forceShow = false }) {
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Logo size={32} decorative />
             Tips for Success
           </DialogTitle>
         </DialogHeader>

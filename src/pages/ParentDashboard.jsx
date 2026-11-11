@@ -7,7 +7,8 @@ import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus, ClipboardList, Users } from "lucide-react";
+import { UserPlus, ClipboardList } from "lucide-react";
+import Logo from "@/components/brand/Logo";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
@@ -274,7 +275,7 @@ export default function ParentDashboard() {
         ) : children.length === 0 ? (
           <Card className="border-2 border-dashed border-input shadow-none">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <Users className="w-10 h-10 text-muted-foreground mb-4" strokeWidth={1.5} aria-hidden="true" />
+              <Logo size={48} decorative className="mb-4" />
               <h3 className="text-lg font-semibold text-foreground mb-2">
                 No children added yet
               </h3>

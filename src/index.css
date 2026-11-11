@@ -83,6 +83,10 @@
   html {
     font-synthesis: none;
   }
+  /* Chrome icons: lucide at stroke 1.5 everywhere. */
+  svg.lucide {
+    stroke-width: 1.5;
+  }
   body {
     @apply bg-background text-foreground font-sans;
     font-variant-numeric: tabular-nums;

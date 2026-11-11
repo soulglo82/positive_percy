@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Gift } from "lucide-react";
 import { Points } from "@/components/brand/PointsStar";
 import EmojiTile from "@/components/rewards/EmojiTile";
+import Logo from "@/components/brand/Logo";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { PERCY } from "@/constants/terminology";
@@ -60,7 +61,7 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
             <Gift className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
             Spend {child.name}'s Points
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
             <Points value={child.total_points} className="font-semibold text-foreground" /> {PERCY.POINTS} available
           </p>
         </DialogHeader>
@@ -68,7 +69,7 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
         <DialogBody>
           {availableRewards.length === 0 ? (
             <div className="text-center py-8">
-              <EmojiTile emoji="🎁" className="mx-auto mb-3" />
+              <Logo size={48} decorative className="mb-3" />
               <p className="text-muted-foreground text-sm">No rewards created yet.</p>
               <p className="text-muted-foreground text-xs mt-1">Add rewards in the Rewards tab.</p>
             </div>
@@ -87,7 +88,7 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
                         : 'bg-muted border-border'
                     }`}
                   >
-                    <EmojiTile emoji={reward.emoji} />
+                    <EmojiTile emoji={reward.emoji} className={canAfford ? "" : "bg-card"} />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground text-sm truncate">{reward.title}</p>
                       <Points value={reward.cost_points} className="text-sm text-muted-foreground mt-0.5" />

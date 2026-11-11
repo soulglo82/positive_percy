@@ -18,6 +18,13 @@ export default function FamilyTimezone() {
     try { return Intl.supportedValuesOf('timeZone'); } catch { return ['Asia/Singapore', 'Europe/London', 'America/New_York']; }
   }, []);
 
+  // A stored zone this browser lists under another name (Asia/Kolkata vs
+  // Asia/Calcutta, UTC) still shows as chosen.
+  const options = useMemo(
+    () => (timezone && !zones.includes(timezone) ? [timezone, ...zones] : zones),
+    [timezone, zones]
+  );
+
   useEffect(() => {
     fetch('/api/family/timezone', { headers: { Authorization: `Bearer ${getToken()}` } })
       .then((r) => (r.ok ? r.json() : null))
@@ -52,8 +59,10 @@ export default function FamilyTimezone() {
     <Card>
       <CardContent className="p-4 space-y-2">
         <Label htmlFor="family-timezone">Timezone</Label>
+        {/* Always controlled ('' shows the placeholder), so a failed save
+            goes back to what is stored instead of showing the rejected zone. */}
         <Select
-          value={timezone || undefined}
+          value={timezone || ''}
           disabled={timezone === null || saving}
           onValueChange={(v) => v && v !== timezone && save(v)}
         >
@@ -61,7 +70,7 @@ export default function FamilyTimezone() {
             <SelectValue placeholder={timezone === null ? 'Loading…' : 'Choose your timezone'} />
           </SelectTrigger>
           <SelectContent>
-            {zones.map((z) => <SelectItem key={z} value={z}>{z.replace(/_/g, ' ')}</SelectItem>)}
+            {options.map((z) => <SelectItem key={z} value={z}>{z.replace(/_/g, ' ')}</SelectItem>)}
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground">Weeks start on Monday at midnight in this timezone.</p>

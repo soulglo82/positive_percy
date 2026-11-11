@@ -23,6 +23,8 @@ export default async function globalSetup(config) {
   for (const [child, points, category] of [[long, 10, 'Kindness'], [long, 10, 'Bravery'], [long, 10, 'Homework'], [sam, 5, 'Caring']]) {
     await api(ctx, 'POST', `/api/children/${child.id}/award`, { points, category, request_id: crypto.randomUUID() }, t);
   }
+  // A behaviour of the family's own (only those can be deleted).
+  await api(ctx, 'POST', '/api/behavior-categories', { name: 'Tidy room', icon: '🧸', points: 5 }, t);
   await api(ctx, 'POST', '/api/rewards', { title: 'Screen time, 30 minutes', cost_points: 20, emoji: '📱', visible_to_child: true }, t);
   await api(ctx, 'POST', '/api/rewards', { title: 'A very long reward title that has to wrap on a small phone screen', cost_points: 5000, emoji: '🎡', visible_to_child: false }, t);
   process.env.PERCY_E2E_FAMILY = JSON.stringify({ code: fam.family_code, token: t });
