@@ -25,7 +25,7 @@ const PAGE_TITLES = {
 };
 
 export default function Layout({ children, currentPageName }) {
-  const { logout, user } = useAuth();
+  const { logout, user, familyCode } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   useRealtimeSync(user?.family_code);
 
@@ -150,8 +150,14 @@ export default function Layout({ children, currentPageName }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Sign out?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to sign out of Positive Percy?
+              You'll need your family code to sign back in. Make sure another grown-up has it, or save it somewhere safe before signing out.
             </AlertDialogDescription>
+            {familyCode && (
+              <div className="rounded-md border border-border bg-muted p-3">
+                <p className="text-xs text-muted-foreground mb-1">Your family code</p>
+                <p className="font-mono text-lg font-semibold text-foreground select-all">{familyCode}</p>
+              </div>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

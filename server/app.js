@@ -95,7 +95,7 @@ export function createApp() {
     // A socket that never joins with a valid token is closed.
     const joinTimer = setTimeout(() => { if (!familyCode) ws.close(4401, 'Authentication required'); }, JOIN_TIMEOUT_MS);
 
-    ws.on('message', (raw) => {
+    ws.on('message', async (raw) => {
       try {
         const msg = JSON.parse(raw);
         // The room comes from the verified token only. A client-supplied
@@ -107,6 +107,21 @@ export function createApp() {
             return;
           }
           const verified = auth.familyCode;
+          // Verify that this family is still present before joining its room.
+          // Tokens stay cryptographically valid after a family is removed.
+          try {
+            const { rowCount } = await pool.query(
+              'SELECT 1 FROM families WHERE family_code = $1', [verified]
+            );
+            if (rowCount === 0) {
+              ws.close(4401, 'Family no longer available');
+              return;
+            }
+          } catch {
+            ws.close(1011, 'Could not verify session');
+            return;
+          }
+          if (ws.readyState !== 1) return;
           clearTimeout(joinTimer);
           // Leave the room when the token expires; the client reconnects with a fresh one.
           clearTimeout(expiryTimer);

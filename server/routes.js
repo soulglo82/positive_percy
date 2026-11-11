@@ -50,18 +50,34 @@ export function verifyToken(token) {
   }
 }
 
-function authMiddleware(req, res, next) {
+// Validate that the family still exists on every authenticated request.
+// A signed JWT for a removed family must not be able to write orphan rows.
+async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    try {
-      const decoded = jwt.verify(authHeader.split(' ')[1], getJwtSecret());
-      req.familyCode = decoded.family_code;
-      return next();
-    } catch {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication required' });
   }
-  return res.status(401).json({ error: 'Authentication required' });
+  let decoded;
+  try {
+    decoded = jwt.verify(authHeader.slice(7), getJwtSecret());
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+  if (typeof decoded.family_code !== 'string') {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+  try {
+    const { rowCount } = await pool.query(
+      'SELECT 1 FROM families WHERE family_code = $1', [decoded.family_code]
+    );
+    if (rowCount === 0) {
+      return res.status(401).json({ error: 'Family no longer available. Sign in again.' });
+    }
+    req.familyCode = decoded.family_code;
+    return next();
+  } catch (err) {
+    return serverError(res, 'Family session check', err);
+  }
 }
 
 // Generic 500: detail goes to the server log only, never to the client.
@@ -77,8 +93,8 @@ const isUuid = (v) => typeof v === 'string' && UUID_RE.test(v);
 export const MAX_AWARD = 1000;
 const isWholeNumber = (v) => typeof v === 'number' && Number.isInteger(v);
 
-// Category points: whole number 1..MAX_AWARD, default 5.
-function categoryPoints(value, fallback = 5) {
+// Category points: whole number 1..MAX_AWARD, default 1 for newly created behaviours.
+function categoryPoints(value, fallback = 1) {
   const n = Number(value);
   if (!Number.isFinite(n)) return fallback;
   return Math.min(MAX_AWARD, Math.max(1, Math.round(n)));
@@ -324,14 +340,14 @@ router.post('/api/family/create', async (req, res) => {
       // IMPL-5.5: Seed default behavior categories atomically
       await pool.query(
         `INSERT INTO behavior_categories (family_code, name, icon, icon_key, sort_order, is_default, points, is_quick_action) VALUES
-          ($1, 'Kindness', '💛', 'heart', 0, true, 5, true),
-          ($1, 'Helpfulness', '🤝', 'handshake', 1, true, 5, true),
-          ($1, 'Bravery', '🦁', 'shield', 2, true, 10, true),
-          ($1, 'Resilience', '💪', 'mountain', 3, true, 10, false),
-          ($1, 'Caring', '🫶', 'hand-heart', 4, true, 5, true),
-          ($1, 'Chores', '🧹', 'brush', 5, true, 5, false),
-          ($1, 'Homework', '📖', 'book-open', 6, true, 5, false),
-          ($1, 'Adventurous', '🌟', 'sparkles', 7, true, 10, false)
+          ($1, 'Kindness', '💛', 'heart', 0, true, 1, true),
+          ($1, 'Helpfulness', '🤝', 'handshake', 1, true, 1, true),
+          ($1, 'Bravery', '🦁', 'shield', 2, true, 1, true),
+          ($1, 'Resilience', '💪', 'mountain', 3, true, 1, false),
+          ($1, 'Caring', '🫶', 'hand-heart', 4, true, 1, true),
+          ($1, 'Chores', '🧹', 'brush', 5, true, 1, false),
+          ($1, 'Homework', '📖', 'book-open', 6, true, 1, false),
+          ($1, 'Adventurous', '🌟', 'sparkles', 7, true, 1, false)
         ON CONFLICT (family_code, name) DO NOTHING`,
         [family_code]
       );

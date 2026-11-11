@@ -13,9 +13,14 @@ import Logo from "@/components/brand/Logo";
 
 const TIPS = [
   {
+    emoji: "🎮",
+    title: "Start with screen time",
+    body: "Extra screen time is a suggested first reward. Choose how many points it costs, and edit or replace it whenever you like. It's a reward, not a separate screen-time tracker.",
+  },
+  {
     emoji: "🎯",
     title: "Start small",
-    body: "Set weekly targets your child can hit about 80% of the time. It's better to raise the bar later than to start too high.",
+    body: "All behaviour categories begin at 1 point, and you can change them in Family settings. Set weekly targets your children can realistically reach.",
   },
   {
     emoji: "🗣️",
@@ -25,7 +30,7 @@ const TIPS = [
   {
     emoji: "💛",
     title: "Stay positive",
-    body: "Aim for at least 5 point awards for every 1 adjustment. The app works best when the focus is on catching good behavior, not punishing bad.",
+    body: "Notice and reward positive choices. Percy doesn't deduct points for behaviour. If you award points by mistake, you can correct that award in Activity during the same week.",
   },
   {
     emoji: "📅",

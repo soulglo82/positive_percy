@@ -4,6 +4,7 @@ const AuthContext = createContext();
 
 const FAMILY_CODE_KEY = 'positive_percy_family_code';
 const TOKEN_KEY = 'positive_percy_token';
+export const NEW_FAMILY_WELCOME_KEY = 'percy_new_family_welcome';
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY) || '';
@@ -76,6 +77,9 @@ export const AuthProvider = ({ children }) => {
     if (!res.ok) throw new Error('Failed to create family');
     const family = await res.json();
     localStorage.setItem(TOKEN_KEY, family.token);
+    // The old signup code screen unmounts immediately after authentication.
+    // Show its welcome/share step on the authenticated dashboard instead.
+    try { sessionStorage.setItem(NEW_FAMILY_WELCOME_KEY, family.family_code); } catch {}
     await loadUser(family.family_code, family.token);
     return family;
   };
