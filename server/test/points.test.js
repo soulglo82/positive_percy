@@ -58,29 +58,24 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
     expect((await balance(c.id)).total_points).toBe(5);
   });
 
-  it('A3: a deduction past the balance stops at 0 and history records what was taken', async () => {
+  it('A3: new deductions are rejected without modifying points or history', async () => {
     const c = await child('Cal');
     await award(c.id, 7);
     const r = await award(c.id, -20, { category: 'Adjustment' });
-    expect(r.status).toBe(200);
-    expect(r.json.capped).toBe(true);
-    expect(r.json.event.points).toBe(-7);
-    expect((await balance(c.id)).total_points).toBe(0);
-    expect(await historyTotal(c.id)).toBe(0);
-    const none = await award(c.id, -1, { category: 'Adjustment' });
-    expect(none.status).toBe(400);
+    expect(r.status).toBe(400);
+    expect((await balance(c.id)).total_points).toBe(7);
+    expect(await historyTotal(c.id)).toBe(7);
     const { rowCount } = await ctx.pool.query('SELECT 1 FROM point_events WHERE child_id = $1', [c.id]);
-    expect(rowCount).toBe(2);
+    expect(rowCount).toBe(1);
   });
 
-  it('A4: amounts must be whole numbers up to 1000 either way', async () => {
+  it('A4: awards must be positive whole numbers from 1 to 1000', async () => {
     const c = await child('Dee');
-    for (const bad of [0, 1001, -1001, 1.5, '5', null]) {
+    for (const bad of [0, -1, 1001, -1001, 1.5, '5', null]) {
       const r = await award(c.id, bad);
       expect(r.status, String(bad)).toBe(400);
     }
     expect((await award(c.id, 1000)).status).toBe(200);
-    expect((await award(c.id, -1000, { category: 'Adjustment' })).status).toBe(200);
     expect((await award(c.id, 5, { request_id: 'not-a-uuid' })).status).toBe(400);
   });
 
@@ -169,17 +164,16 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
     expect(up2.json.points).toBe(1000);
   });
 
-  it('A12: a replayed request returns what happened; a changed one under the same id is refused', async () => {
+  it('A12: a replayed positive award is identical; changed parameters are rejected', async () => {
     const c = await child('Lou');
-    await award(c.id, 4);
     const id = rid();
-    const first = await award(c.id, -10, { category: 'Adjustment', request_id: id });
-    expect(first.json.capped).toBe(true);
-    const again = await award(c.id, -10, { category: 'Adjustment', request_id: id });
-    expect(again.json).toMatchObject({ duplicate: true, capped: true });
-    expect((await award(c.id, 999, { category: 'Adjustment', request_id: id })).status).toBe(409);
-    expect((await award(c.id, -10, { category: 'Other', request_id: id })).status).toBe(409);
-    expect((await balance(c.id)).total_points).toBe(0);
+    const first = await award(c.id, 4, { request_id: id });
+    expect(first.status).toBe(200);
+    const again = await award(c.id, 4, { request_id: id });
+    expect(again.json).toMatchObject({ duplicate: true });
+    expect((await award(c.id, 999, { request_id: id })).status).toBe(409);
+    expect((await award(c.id, 4, { category: 'Other', request_id: id })).status).toBe(409);
+    expect((await balance(c.id)).total_points).toBe(4);
   });
 
   it('A13: one request id raced across two children awards once and never errors', async () => {
@@ -194,16 +188,18 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
     }
   });
 
-  it('A14: this week is shown floored at 0 when deductions outweigh this week\'s awards', async () => {
+  it('A14: historical negative events remain readable but cannot be created by awarding', async () => {
     const c = await child('Max');
-    const first = await award(c.id, 10);
-    // That award was last week; a deduction this week leaves the week at -8.
-    await ctx.pool.query("UPDATE point_events SET created_date = now() - interval '8 days' WHERE id = $1", [first.json.event.id]);
-    const r = await award(c.id, -8, { category: 'Adjustment' });
-    expect(r.json.child.total_points).toBe(2);
-    expect(r.json.week_points_after).toBe(0);
+    await award(c.id, 10);
+    const [historic] = (await ctx.pool.query(
+      `INSERT INTO point_events (child_id, points, category, family_code, kind)
+       VALUES ($1, -3, 'Adjustment', $2, 'award') RETURNING id`, [c.id, F.code])).rows;
+    await ctx.pool.query('UPDATE children SET total_points = total_points - 3 WHERE id = $1', [c.id]);
+    expect(historic.id).toBeTruthy();
+    expect((await award(c.id, -3)).status).toBe(400);
     const list = await api(ctx.base, 'GET', '/api/children', { token: F.token });
-    expect(list.json.find((x) => x.id === c.id).week_points).toBe(0);
+    expect(list.json.find((x) => x.id === c.id).week_points).toBe(7);
+    expect(await historyTotal(c.id)).toBe((await balance(c.id)).total_points);
   });
 
   it('A15: confirming a stack charges today\'s prices, even for items saved before', async () => {
