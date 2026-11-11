@@ -409,6 +409,11 @@ router.get('/api/family/export', authMiddleware, async (req, res) => {
     res.type('json');
     return res.send(exported.body);
   } catch (err) {
+    if (err.code === 'EXPORT_TOO_LARGE') {
+      return res.status(413).json({
+        error: 'The export is too large. Try downloading without embedded photos.',
+      });
+    }
     return serverError(res, 'Export family data error', err);
   }
 });
