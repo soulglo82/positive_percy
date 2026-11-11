@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Child, Reward } from "@/api/entities";
 import { awardPoints, refreshPoints, undoAction, UNDO_TOAST_MS } from "@/lib/points";
 import { buildChildCreatePayload } from "@/lib/childPayload";
-import { useAuth } from "@/lib/AuthContext";
+import { useAuth, NEW_FAMILY_WELCOME_KEY } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -23,27 +23,37 @@ import EditChildModal from "../components/child/EditChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
 import SpendRewardsModal from "../components/child/SpendRewardsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
+import WelcomeFamilyDialog from "../components/WelcomeFamilyDialog";
 import HeroCard from "../components/dashboard/HeroCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
 export default function ParentDashboard() {
-  const { user } = useAuth();
+  const { user, familyCode } = useAuth();
   const [showAddChild, setShowAddChild] = useState(false);
   const [showEditChild, setShowEditChild] = useState(false);
   const [showAddPoints, setShowAddPoints] = useState(false);
   const [showSpendRewards, setShowSpendRewards] = useState(false);
   const [selectedChild, setSelectedChild] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [welcomeCode, setWelcomeCode] = useState(null);
   const [streak, setStreak] = useState(0);
 
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (user && shouldShowOnboarding()) {
-      setShowOnboarding(true);
+    if (!user) return;
+    // The signup view unmounts on successful authentication. Give brand-new
+    // families one chance to copy their code and set a first reward instead.
+    let pending = null;
+    try { pending = sessionStorage.getItem(NEW_FAMILY_WELCOME_KEY); } catch {}
+    if (pending && pending === familyCode) {
+      try { sessionStorage.removeItem(NEW_FAMILY_WELCOME_KEY); } catch {}
+      setWelcomeCode(pending);
+      return;
     }
-  }, [user]);
+    if (shouldShowOnboarding()) setShowOnboarding(true);
+  }, [user, familyCode]);
 
   // The family's timezone: filled in once from this browser if it was never
   // set. The server ignores it otherwise (A2 W1).
@@ -398,8 +408,12 @@ export default function ParentDashboard() {
         )}
       />
 
+      <WelcomeFamilyDialog
+        familyCode={welcomeCode}
+        onClose={() => setWelcomeCode(null)}
+      />
       <OnboardingTips
-        isOpen={showOnboarding}
+        isOpen={showOnboarding && !welcomeCode}
         onClose={() => setShowOnboarding(false)}
       />
     </div>
