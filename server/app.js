@@ -50,6 +50,8 @@ export function createApp() {
   app.post('/api/family/join', limit(15, 10));
   app.post('/api/family/create', limit(60, 10));
   app.post('/api/upload', limit(15, 60));
+  // Limit credential-protected bulk exports, even for valid accounts.
+  app.get('/api/family/export', limit(60, 10));
 
   // Uploads are capped at 2MB of image, which is about 2.7MB as base64.
   app.use(express.json({ limit: '3mb' }));
