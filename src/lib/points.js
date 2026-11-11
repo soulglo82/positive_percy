@@ -90,20 +90,28 @@ export const undoSpend = (redemptionId, requestId = newRequestId()) =>
 
 export const UNDO_TOAST_MS = 10000;
 
-// The toast's Undo button. Runs once: a second tap does nothing. The request
-// id is fixed per toast, so even a repeat call could only replay.
-export function undoAction(kind, id, queryClient) {
-  const requestId = newRequestId();
-  let started = false;
+// The toast's Undo button. One tap at a time; the request id is fixed for
+// this award or spend, so a retry after a dropped connection can only replay.
+export function undoAction(kind, id, queryClient, requestId = newRequestId()) {
+  let running = false;
   return async () => {
-    if (started) return;
-    started = true;
+    if (running) return;
+    running = true;
     try {
       const r = await (kind === 'spend' ? undoSpend(id, requestId) : undoAward(id, requestId));
       toast.success(`Undone. ${r.child.name} has ${r.child.total_points} points.`);
     } catch (err) {
-      toast.error(err.status === 409 || err.status === 404 ? err.message : "Couldn't undo that. Check your connection and look in Activity.");
+      if (err.status === 409 || err.status === 404) {
+        toast.error(err.message);
+      } else {
+        // Connection or server trouble: offer the same undo again.
+        toast.error("Couldn't undo that. Check your connection.", {
+          duration: UNDO_TOAST_MS,
+          action: { label: 'Try again', onClick: undoAction(kind, id, queryClient, requestId) },
+        });
+      }
     } finally {
+      running = false;
       refreshPoints(queryClient);
     }
   };

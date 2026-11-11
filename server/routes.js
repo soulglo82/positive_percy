@@ -820,7 +820,8 @@ async function undoReplay(res, client, familyCode, requestId, endpoint, args) {
   if (prior.conflict) return res.status(409).json({ error: 'Invalid request' });
   if (!prior.replay) return null;
   const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [prior.replay.child_id, familyCode]);
-  return res.json({ ...prior.replay, child: rows[0], duplicate: true });
+  const [child] = await withWeekPoints(pool, familyCode, rows);
+  return res.json({ ...prior.replay, child, duplicate: true });
 }
 
 router.post('/api/point-events/:id/undo', authMiddleware, async (req, res) => {
@@ -853,9 +854,12 @@ router.post('/api/point-events/:id/undo', authMiddleware, async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Already undone.' });
     }
+    // Only undoing a positive award lowers the balance, so only then can the
+    // points already be used. Undoing a deduction gives points back.
     const after = child.total_points - ev.points;
-    const reserved = stackTotalOf(await pricedStack(client, child.reward_stack, child.id, req.familyCode));
-    if (after < 0 || after < reserved) {
+    const reserved = ev.points > 0
+      ? stackTotalOf(await pricedStack(client, child.reward_stack, child.id, req.familyCode)) : 0;
+    if (ev.points > 0 && (after < 0 || after < reserved)) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: SPENT_ALREADY });
     }
@@ -1439,9 +1443,12 @@ router.delete('/api/behavior-categories/:id', authMiddleware, async (req, res) =
       return res.status(400).json({ error: 'Default categories cannot be deleted' });
     }
 
-    // Check if category has associated point events
+    // Check if category has associated point events (an undone award and its
+    // undo row don't count: history can't be reassigned, and they net to 0)
     const { rows: eventCount } = await pool.query(
-      'SELECT COUNT(*)::int as count FROM point_events WHERE family_code = $1 AND category = $2',
+      `SELECT COUNT(*)::int as count FROM point_events p
+       WHERE p.family_code = $1 AND p.category = $2 AND p.kind <> 'undo'
+         AND NOT EXISTS (SELECT 1 FROM point_events u WHERE u.reverses_id = p.id)`,
       [req.familyCode, catRows[0].name]
     );
     if (eventCount[0].count > 0) {

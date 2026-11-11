@@ -188,6 +188,86 @@ describe.skipIf(!runDb)('A2 PR2: undo', () => {
     expect(await balance(c.id)).toBe(25);
   });
 
+  it('U1: undoing a deduction is never refused by the stack reserve (it gives points back)', async () => {
+    const c = await newChild(F, 'Stackdeduct');
+    await award(c, 10);
+    const r10 = await reward(10);
+    expect((await api(ctx.base, 'POST', `/api/children/${c.id}/stack/add`, { token: F.token, body: { reward_id: r10.id } })).status).toBe(200);
+    await award(c, -5);
+    const d = (await award(c, -3)).json;
+    expect(await balance(c.id)).toBe(2);
+    expect((await undoAward(d.event.id)).status).toBe(200);
+    expect(await balance(c.id)).toBe(5);
+    expect(await history(c.id)).toBe(5);
+  });
+
+  it('U1: an undo racing a spend on the same child: balance never below 0 and equals history', async () => {
+    for (let i = 0; i < 5; i += 1) {
+      const c = await newChild(F, `Race${i}`);
+      const a = (await award(c, 10)).json;
+      const [u, s] = await Promise.all([undoAward(a.event.id), redeem(c, await reward(10))]);
+      expect([u.status, s.status].filter((x) => x === 200)).toHaveLength(1);
+      expect(await balance(c.id)).toBeGreaterThanOrEqual(0);
+      expect(await balance(c.id)).toBe(await history(c.id));
+    }
+  });
+
+  it('C7: an undone award leaves summary and motivation as if it never happened', async () => {
+    const c = await newChild(F, 'Summary7');
+    await award(c, 7);
+    const before = {
+      sum: (await api(ctx.base, 'GET', '/api/summary', { token: F.token })).json,
+      mot: (await api(ctx.base, 'GET', `/api/children/${c.id}/motivation`, { token: F.token })).json,
+    };
+    const a = (await award(c, 9)).json;
+    await undoAward(a.event.id);
+    const sum = (await api(ctx.base, 'GET', '/api/summary', { token: F.token })).json;
+    const mot = (await api(ctx.base, 'GET', `/api/children/${c.id}/motivation`, { token: F.token })).json;
+    expect(sum).toEqual(before.sum);
+    expect(mot).toEqual(before.mot);
+  });
+
+  it('U1: starting points can\'t be undone (404)', async () => {
+    const c = (await api(ctx.base, 'POST', '/api/children', { token: F.token, body: { name: 'Starter', total_points: 12 } })).json;
+    const [s] = await q("SELECT id FROM point_events WHERE child_id = $1 AND kind = 'starting'", [c.id]);
+    expect(s).toBeTruthy();
+    expect((await undoAward(s.id)).status).toBe(404);
+    expect(await balance(c.id)).toBe(12);
+  });
+
+  it('I0: undo ids already used by a spend are refused, and an award can\'t reuse an undo id', async () => {
+    const c = await newChild(F, 'Ids');
+    await award(c, 20);
+    const spendId = rid();
+    const r5 = await reward(5);
+    expect((await api(ctx.base, 'POST', `/api/children/${c.id}/redeem`, { token: F.token, body: { reward_id: r5.id, request_id: spendId } })).status).toBe(200);
+    const a = (await award(c, 4)).json;
+    expect((await undoAward(a.event.id, F, spendId)).status).toBe(409);
+    const undoId = rid();
+    expect((await undoAward(a.event.id, F, undoId)).status).toBe(200);
+    expect((await award(c, 4, F, undoId)).status).toBe(409);
+    expect(await balance(c.id)).toBe(15);
+    expect(await history(c.id)).toBe(15);
+  });
+
+  it('Replay returns the same shape as the first reply (week_points included)', async () => {
+    const c = await newChild(F, 'Shape');
+    const a = (await award(c, 6)).json;
+    const id = rid();
+    const first = (await undoAward(a.event.id, F, id)).json;
+    const again = (await undoAward(a.event.id, F, id)).json;
+    expect(again.duplicate).toBe(true);
+    expect(again.child.week_points).toBe(first.child.week_points);
+  });
+
+  it('A category whose only use was an undone award can be deleted', async () => {
+    const cat = (await api(ctx.base, 'POST', '/api/behavior-categories', { token: F.token, body: { name: 'Mistap' } })).json;
+    const c = await newChild(F, 'Cat');
+    const a = (await api(ctx.base, 'POST', `/api/children/${c.id}/award`, { token: F.token, body: { points: 5, category: 'Mistap', request_id: rid() } })).json;
+    await undoAward(a.event.id);
+    expect((await api(ctx.base, 'DELETE', `/api/behavior-categories/${cat.id}`, { token: F.token })).status).toBe(200);
+  });
+
   it('Sequence: random awards, deductions, spends and undos keep balance = history and >= 0', async () => {
     const c = await newChild(F, 'Seq');
     const rs = [await reward(3), await reward(9)];

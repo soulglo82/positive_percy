@@ -239,7 +239,9 @@ export default function BehaviorCategoryManager() {
                       <button
                         type="button"
                         aria-expanded={isExpanded}
-                        onClick={() => { if (!isEditing) setExpandedId(isExpanded ? null : cat.id); }}
+                        aria-controls={`category-panel-${cat.id}`}
+                        disabled={isEditing}
+                        onClick={() => setExpandedId(isExpanded ? null : cat.id)}
                         className="flex flex-1 min-w-0 min-h-11 items-center gap-3 px-3 py-2.5 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                       >
                         <span className="text-lg shrink-0 w-7 text-center" aria-hidden="true">{cat.icon}</span>
@@ -262,7 +264,7 @@ export default function BehaviorCategoryManager() {
 
                     {/* Expanded detail panel */}
                     {isExpanded && (
-                      <div className="px-3 pb-3 pt-1 bg-slate-50 border-t border-slate-100">
+                      <div id={`category-panel-${cat.id}`} className="px-3 pb-3 pt-1 bg-slate-50 border-t border-slate-100">
                         {isEditing ? (
                           <div className="space-y-3">
                             <div className="flex items-center gap-2">
