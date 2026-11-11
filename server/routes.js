@@ -592,14 +592,13 @@ function replayAward(res, prior, child, points, category) {
   return res.json({ event: prior, child, duplicate: true, capped: prior.points !== points });
 }
 
-// Award or deduct points. The only way a balance changes outside spending:
-// one transaction locks the child, applies the amount (a deduction stops at
-// 0), and writes the history row for exactly what was applied. request_id
-// makes a retried request apply once.
+// Awards only: parents can no longer deduct points. Mistaken awards are
+// corrected from Activity, with an auditable reversing event. request_id
+// makes a retried request apply only once.
 router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
   const { points, category, note, request_id } = req.body || {};
-  if (!isWholeNumber(points) || points === 0 || Math.abs(points) > MAX_AWARD) {
-    return res.status(400).json({ error: `Points must be a whole number from 1 to ${MAX_AWARD}, or minus that.` });
+  if (!isWholeNumber(points) || points < 1 || points > MAX_AWARD) {
+    return res.status(400).json({ error: `Points must be a whole number from 1 to ${MAX_AWARD}.` });
   }
   if (typeof category !== 'string' || !category.trim() || category.length > 100) {
     return res.status(400).json({ error: 'Please choose a category.' });
@@ -648,11 +647,7 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
       return res.status(409).json({ error: 'Invalid request' });
     }
 
-    const applied = points < 0 ? Math.max(points, -child.total_points) : points;
-    if (applied === 0) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: `${child.name} has no points to take away.` });
-    }
+    const applied = points;
 
     const weekBefore = (await weekPointsFor(client, req.familyCode, [child.id])).get(child.id);
     let eventRows;
@@ -828,7 +823,13 @@ async function undoReplay(res, client, familyCode, requestId, endpoint, args) {
   return res.json({ ...prior.replay, child, duplicate: true });
 }
 
-router.post('/api/point-events/:id/undo', authMiddleware, async (req, res) => {
+// Reuse the transaction-safe reversal for the existing ten-minute Undo and
+// same-week correction in Activity. Both preserve history and reserved points.
+async function reverseAward(req, res, sameWeek = false) {
+  const endpoint = sameWeek ? 'correct_award' : 'undo_award';
+  const agePredicate = sameWeek
+    ? `created_date >= ${weekStartSql("COALESCE((SELECT timezone FROM families WHERE family_code = $2), 'UTC')")} AND points > 0`
+    : `created_date > now() - ${UNDO_WINDOW}`;
   const requestId = req.body?.request_id;
   if (!isUuid(String(requestId || ''))) return res.status(400).json({ error: 'Invalid request' });
   if (!isUuid(req.params.id)) return res.status(404).json({ error: 'Not found' });
@@ -841,16 +842,16 @@ router.post('/api/point-events/:id/undo', authMiddleware, async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Not found' });
     }
-    const replayed = await undoReplay(res, client, req.familyCode, requestId, 'undo_award', args);
+    const replayed = await undoReplay(res, client, req.familyCode, requestId, endpoint, args);
     if (replayed) { await client.query('ROLLBACK'); return replayed; }
 
     const { rows: evRows } = await client.query(
       `SELECT * FROM point_events
-       WHERE id = $1 AND family_code = $2 AND kind = 'award' AND created_date > now() - ${UNDO_WINDOW}`,
+       WHERE id = $1 AND family_code = $2 AND kind = 'award' AND ${agePredicate}`,
       [req.params.id, req.familyCode]);
     if (evRows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'This can no longer be undone.' });
+      return res.status(404).json({ error: sameWeek ? 'Only awards from this week can be corrected.' : 'This can no longer be undone.' });
     }
     const ev = evRows[0];
     const { rowCount: done } = await client.query('SELECT 1 FROM point_events WHERE reverses_id = $1', [ev.id]);
@@ -875,18 +876,21 @@ router.post('/api/point-events/:id/undo', authMiddleware, async (req, res) => {
       'UPDATE children SET total_points = total_points - $1 WHERE id = $2 AND family_code = $3 RETURNING *',
       [ev.points, child.id, req.familyCode]);
     const week = (await weekPointsFor(client, req.familyCode, [child.id])).get(child.id);
-    await rememberRequest(client, req.familyCode, requestId, 'undo_award', args, { event: undoRows[0], child_id: child.id });
+    await rememberRequest(client, req.familyCode, requestId, endpoint, args, { event: undoRows[0], child_id: child.id });
     await client.query('COMMIT');
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
     res.json({ event: undoRows[0], child: { ...updated[0], week_points: week }, duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') return res.status(409).json({ error: 'Already undone.' });
-    return serverError(res, 'Undo award error', err);
+    return serverError(res, sameWeek ? 'Correct award error' : 'Undo award error', err);
   } finally {
     client.release();
   }
-});
+}
+
+router.post('/api/point-events/:id/undo', authMiddleware, (req, res) => reverseAward(req, res));
+router.post('/api/point-events/:id/correct', authMiddleware, (req, res) => reverseAward(req, res, true));
 
 router.post('/api/redemptions/:id/undo', authMiddleware, async (req, res) => {
   const requestId = req.body?.request_id;
@@ -1223,7 +1227,14 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
       ORDER BY created_date DESC
     `, [familyCode, weekStart]);
 
-    res.json({ weekStart, childStats, topCategories, categoryBreakdowns, weekEvents });
+    // Count distinct calendar days in the family's timezone, not the phone's.
+    const { rows: [{ active_days: activeDays }] } = await pool.query(`
+      SELECT COUNT(DISTINCT (created_date AT TIME ZONE ${tz})::date)::int AS active_days
+      FROM effective_point_events
+      WHERE family_code = $1 AND created_date >= $2 AND points > 0
+    `, [familyCode, weekStart]);
+
+    res.json({ weekStart, childStats, topCategories, categoryBreakdowns, weekEvents, activeDays });
   } catch (err) {
     return serverError(res, 'Summary error:', err);
   }
