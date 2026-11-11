@@ -50,18 +50,34 @@ export function verifyToken(token) {
   }
 }
 
-function authMiddleware(req, res, next) {
+// Validate that the family still exists on every authenticated request.
+// A signed JWT for a removed family must not be able to write orphan rows.
+async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    try {
-      const decoded = jwt.verify(authHeader.split(' ')[1], getJwtSecret());
-      req.familyCode = decoded.family_code;
-      return next();
-    } catch {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication required' });
   }
-  return res.status(401).json({ error: 'Authentication required' });
+  let decoded;
+  try {
+    decoded = jwt.verify(authHeader.slice(7), getJwtSecret());
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+  if (typeof decoded.family_code !== 'string') {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+  try {
+    const { rowCount } = await pool.query(
+      'SELECT 1 FROM families WHERE family_code = $1', [decoded.family_code]
+    );
+    if (rowCount === 0) {
+      return res.status(401).json({ error: 'Family no longer available. Sign in again.' });
+    }
+    req.familyCode = decoded.family_code;
+    return next();
+  } catch (err) {
+    return serverError(res, 'Family session check', err);
+  }
 }
 
 // Generic 500: detail goes to the server log only, never to the client.
