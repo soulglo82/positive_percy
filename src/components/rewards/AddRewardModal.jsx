@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,18 +21,31 @@ import { PERCY } from "@/constants/terminology";
 const EMOJI_OPTIONS = ["🎮", "🍕", "🎬", "🎨", "⚽", "📚", "🎪", "🎭", "🏊", "🎵", "🍦", "🎁"];
 
 const CATEGORY_LABELS = {
+  starter: 'Recommended first reward',
   quick: PERCY.REWARD_CAT_QUICK,
   medium: PERCY.REWARD_CAT_MEDIUM,
   big: PERCY.REWARD_CAT_BIG,
 };
 
-export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [] }) {
+export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [], initialTemplate = null }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [costPoints, setCostPoints] = useState(50);
   const [emoji, setEmoji] = useState("🎁");
   const [assignedChildIds, setAssignedChildIds] = useState([]);
   const [showIdeas, setShowIdeas] = useState(false);
+
+  // Prefill only when opening the modal. Parents can change every field
+  // before saving; opening a normal blank reward never reuses old values.
+  useEffect(() => {
+    if (!isOpen) return;
+    setTitle(initialTemplate?.title || "");
+    setDescription(initialTemplate?.description || "");
+    setCostPoints(initialTemplate?.cost_points ?? 50);
+    setEmoji(initialTemplate?.emoji || "🎁");
+    setAssignedChildIds([]);
+    setShowIdeas(false);
+  }, [isOpen, initialTemplate]);
 
   const selectTemplate = (template) => {
     setTitle(template.title);
