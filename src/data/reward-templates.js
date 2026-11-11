@@ -1,6 +1,6 @@
 export const REWARD_TEMPLATES = [
   // Recommended starter reward (parents may edit the title, amount or cost).
-  { title: "Extra Screen Time", emoji: "🎮", cost_points: 30, category: "quick",
+  { title: "Extra Screen Time", emoji: "🎮", cost_points: 30, category: "starter",
     description: "30 minutes of extra tablet or TV time" },
 
   // Other quick ideas (5-15 points)
