@@ -1,10 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import ChildCard from './ChildCard';
 import { CHILD_COLOURS } from '@/lib/childColour';
 
 const child = { id: '1', name: 'Sam', total_points: 12, week_points: 4, weekly_target: 10 };
 const props = { child, colour: CHILD_COLOURS[0], onAddPoints: () => {} };
+
+describe('ChildCard quick points', () => {
+  it('none ticked: no built-in buttons, a link to Settings instead', () => {
+    render(<MemoryRouter><ChildCard {...props} onQuickAction={() => {}} quickActions={[]} /></MemoryRouter>);
+    expect(screen.getByRole('link', { name: /Choose them in Settings/ })).toHaveAttribute('href', '/parentprofile');
+    expect(screen.queryByRole('button', { name: / for Sam$/ })).toBeNull();
+  });
+});
 
 describe('ChildCard pop', () => {
   it('no pop without an award from this device', () => {

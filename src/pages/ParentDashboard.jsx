@@ -27,13 +27,6 @@ import HeroCard from "../components/dashboard/HeroCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
-const DEFAULT_QUICK_ACTIONS = [
-  { id: 'default-1', label: "Kindness", points: 5, icon: "💛", category: "Kindness", assigned_children: [] },
-  { id: 'default-2', label: "Helpfulness", points: 5, icon: "🤝", category: "Helpfulness", assigned_children: [] },
-  { id: 'default-3', label: "Bravery", points: 10, icon: "🦁", category: "Bravery", assigned_children: [] },
-  { id: 'default-4', label: "Caring", points: 5, icon: "🫶", category: "Caring", assigned_children: [] },
-];
-
 export default function ParentDashboard() {
   const { user } = useAuth();
   const [showAddChild, setShowAddChild] = useState(false);
@@ -99,10 +92,9 @@ export default function ParentDashboard() {
     .filter(c => c.is_quick_action)
     .map(c => ({ id: c.id, label: c.name, points: c.points || 5, icon: c.icon, category: c.name, assigned_children: c.assigned_children || [] }));
 
-  // Fall back to defaults if no categories have quick action enabled
-  const allQuickActions = categoryQuickActions.length > 0
-    ? categoryQuickActions
-    : DEFAULT_QUICK_ACTIONS;
+  // Only the family's own ticked behaviours (A2 W4). None ticked: none shown,
+  // and the card points to Settings (external review, 2026-11-11).
+  const allQuickActions = categoryQuickActions;
 
   // Fetch recent activity feed
   const { data: recentActivity = [] } = useQuery({
@@ -298,7 +290,11 @@ export default function ParentDashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={
+            children.length === 1 ? "grid grid-cols-1 gap-6 max-w-xl"
+              : children.length === 2 ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+              : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          }>
             {children.map((child) => (
               <ChildCard
                 key={child.id}

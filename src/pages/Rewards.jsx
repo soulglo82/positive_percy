@@ -8,6 +8,7 @@ import { Plus, Gift } from "lucide-react";
 import { toast } from "sonner";
 
 import Logo from "@/components/brand/Logo";
+import { sortRewardsForParent } from "@/lib/rewardOrder";
 import SectionHeader from "../components/SectionHeader";
 import RewardCard from "../components/rewards/RewardCard";
 import AddRewardModal from "../components/rewards/AddRewardModal";
@@ -131,7 +132,8 @@ export default function Rewards() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {rewards.map((reward) => (
+            {/* Shown-to-children rewards first, then hidden ones; cheapest first in each. */}
+            {sortRewardsForParent(rewards).map((reward) => (
               <RewardCard
                 key={reward.id}
                 reward={reward}

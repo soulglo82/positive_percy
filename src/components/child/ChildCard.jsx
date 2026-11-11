@@ -1,6 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Gift } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import { PERCY } from "@/constants/terminology";
 import ChildAvatar from "./ChildAvatar";
 import PointsStar from "@/components/brand/PointsStar";
@@ -73,6 +75,16 @@ export default function ChildCard({ child, colour, popKey = 0, onAddPoints, onEd
         </div>
 
         <GoalBar week={week} target={child.weekly_target} colour={colour} />
+
+        {/* No quick points ticked: say where to choose them (no built-in set). */}
+        {onQuickAction && quickActions.length === 0 && (
+          <p className="text-sm text-muted-foreground mb-3">
+            No quick points yet.{' '}
+            <Link to={createPageUrl('ParentProfile')} className="inline-flex items-center min-h-11 font-medium text-foreground underline underline-offset-4 rounded-sm hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              Choose them in Settings
+            </Link>
+          </p>
+        )}
 
         {/* Quick Actions, labelled */}
         {onQuickAction && quickActions.length > 0 && (
