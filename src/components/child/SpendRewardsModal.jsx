@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { refreshPoints, spendReward } from "@/lib/points";
+import { refreshPoints, spendReward, undoAction, UNDO_TOAST_MS } from "@/lib/points";
 import {
   Dialog,
   DialogContent,
@@ -32,11 +32,17 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
 
     setRedeeming(reward.id);
     try {
-      await spendReward(child.id, reward.id);
+      const { redemption } = await spendReward(child.id, reward.id);
 
       refreshPoints(queryClient);
+      // Close first: an open dialog blocks taps outside it, including the
+      // toast's Undo button.
+      onClose();
 
-      toast.success(`${child.name} redeemed ${reward.title}!`);
+      toast.success(`${child.name} redeemed ${reward.title}!`, {
+        duration: UNDO_TOAST_MS,
+        action: { label: 'Undo', onClick: undoAction('spend', redemption.id, queryClient) },
+      });
       confetti({
         particleCount: 120,
         spread: 70,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Child, Reward } from "@/api/entities";
-import { awardPoints, refreshPoints } from "@/lib/points";
+import { awardPoints, refreshPoints, undoAction, UNDO_TOAST_MS } from "@/lib/points";
 import { buildChildCreatePayload } from "@/lib/childPayload";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
@@ -179,14 +179,16 @@ export default function ParentDashboard() {
   };
 
   // The server records the streak inside the award; show what it returned.
+  // Returns the line to add to the award's toast, if any.
   const showStreak = (result) => {
-    if (!result) return;
+    if (!result) return null;
     setStreak(result.streak);
     if (result.milestone) {
       confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 },
         colors: ['#f59e0b', '#ef4444', '#f97316'] });
-      toast.success(`${result.streak}-day streak! You're on fire!`);
+      return `${result.streak}-day streak.`;
     }
+    return null;
   };
 
   useEffect(() => {
@@ -203,11 +205,11 @@ export default function ParentDashboard() {
     setAwardingIds([...awarding.current]);
     try {
       const { child: updated, capped, event, streak: streakResult, duplicate, week_points_before: weekBefore, week_points_after: weekAfter } = await awardPoints(child.id, { points, category, note });
-      if (capped) {
-        toast.warning(`${child.name} only had ${Math.abs(event.points)} points, so ${Math.abs(event.points)} were taken away.`);
-      } else {
-        toast.success(points > 0 ? `+${points} ${category} for ${child.name}` : `${points} points for ${child.name}`);
-      }
+      // One toast per award, with Undo for 10 seconds (A2 U3). The weekly
+      // goal and a streak milestone are added to it, not shown separately.
+      const lines = [capped
+        ? `${child.name} only had ${Math.abs(event.points)} points, so ${Math.abs(event.points)} were taken away.`
+        : points > 0 ? `+${points} ${category} for ${child.name}` : `${points} points for ${child.name}`];
       // This week from history; a replay carries no figures, so no confetti.
       const wasBelow = typeof weekBefore === 'number' && weekBefore < updated.weekly_target;
       const isNowAbove = typeof weekAfter === 'number' && updated.weekly_target > 0 && weekAfter >= updated.weekly_target;
@@ -218,10 +220,15 @@ export default function ParentDashboard() {
           origin: { y: 0.6 },
           colors: ['#a855f7', '#ec4899', '#22c55e', '#3b82f6', '#f59e0b'],
         });
-        toast.success(`${child.name} hit their weekly goal!`);
+        lines.push(`${child.name} hit their weekly goal.`);
       }
       // A replayed award (first reply lost) carries no streak; read it instead.
-      if (duplicate) updateStreak(); else showStreak(streakResult);
+      if (duplicate) updateStreak(); else { const s = showStreak(streakResult); if (s) lines.push(s); }
+      const show = capped ? toast.warning : toast.success;
+      show(lines.join(' '), {
+        duration: UNDO_TOAST_MS,
+        action: { label: 'Undo', onClick: undoAction('award', event.id, queryClient) },
+      });
       refreshPoints(queryClient);
       if (points > 0) {
         // After the lock is released: a slow badge check must not block taps.
@@ -313,9 +320,10 @@ export default function ParentDashboard() {
                   {recentActivity.map((event) => {
                     const isEarn = event.type === 'earn';
                     const isSpend = event.type === 'spend';
-                    const isDeduct = !isEarn && !isSpend && event.points < 0;
+                    const isUndo = event.type === 'undo';
+                    const isDeduct = !isEarn && !isSpend && !isUndo && event.points < 0;
                     const colorClass = isEarn ? 'text-green-600' : isSpend ? 'text-orange-600' : isDeduct ? 'text-red-600' : 'text-slate-500';
-                    const action = isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost' : 'adjusted';
+                    const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'lost' : 'adjusted';
                     const eventChild = children.find(c => c.id === event.child_id);
 
                     return (
@@ -338,7 +346,7 @@ export default function ParentDashboard() {
                             {format(new Date(event.created_date), "MMM d, h:mm a")}
                           </p>
                         </div>
-                        <span className={`text-sm font-bold shrink-0 ${colorClass}`}>
+                        <span className={`text-sm font-bold shrink-0 ${colorClass} ${event.undone ? 'line-through' : ''}`}>
                           {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}pts
                         </span>
                       </div>

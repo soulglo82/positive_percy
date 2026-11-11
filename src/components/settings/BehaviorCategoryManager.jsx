@@ -232,38 +232,39 @@ export default function BehaviorCategoryManager() {
                 return (
                   <div key={cat.id} className={`${idx > 0 ? 'border-t border-slate-200' : ''}`}>
                     {/* Main row — always visible */}
-                    <div
-                      className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-slate-50 transition-colors ${isExpanded ? 'bg-slate-50' : ''}`}
-                      onClick={() => {
-                        if (!isEditing) setExpandedId(isExpanded ? null : cat.id);
-                      }}
-                    >
-                      <span className="text-lg shrink-0 w-7 text-center">{cat.icon}</span>
-                      <span className="font-medium text-slate-700 flex-1 min-w-0 truncate text-sm">{cat.name}</span>
-                      <span className="text-xs text-green-600 font-bold shrink-0 w-14 text-right">{formatPointsBadge(cat.points || 5)}</span>
-                      <div
-                        className="shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleQuickAction(cat);
-                        }}
+                    {/* Two sibling controls, nothing nested (A2 E2): the row
+                        opens with a real button, the quick-action box is its
+                        own labelled checkbox. Both work by keyboard. */}
+                    <div className={`flex items-center gap-1 pr-2 transition-colors ${isExpanded ? 'bg-slate-50' : ''}`}>
+                      <button
+                        type="button"
+                        aria-expanded={isExpanded}
+                        aria-controls={`category-panel-${cat.id}`}
+                        disabled={isEditing}
+                        onClick={() => setExpandedId(isExpanded ? null : cat.id)}
+                        className="flex flex-1 min-w-0 min-h-11 items-center gap-3 px-3 py-2.5 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                       >
+                        <span className="text-lg shrink-0 w-7 text-center" aria-hidden="true">{cat.icon}</span>
+                        <span className="font-medium text-slate-700 flex-1 min-w-0 truncate text-sm">{cat.name}</span>
+                        <span className="text-xs text-green-600 font-bold shrink-0 w-14 text-right">{formatPointsBadge(cat.points || 5)}</span>
+                        <span className="shrink-0 text-slate-400" aria-hidden="true">
+                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </span>
+                      </button>
+                      <label className="shrink-0 flex min-h-11 items-center gap-1.5 px-1 cursor-pointer">
                         <Checkbox
                           checked={cat.is_quick_action}
                           disabled={!cat.is_quick_action && quickActionCount >= MAX_QUICK_ACTIONS}
                           aria-label={`${cat.name} quick action`}
-                          className="pointer-events-none"
+                          onCheckedChange={() => toggleQuickAction(cat)}
                         />
-                      </div>
-                      <span className="text-[10px] text-slate-400 shrink-0 w-8">Quick</span>
-                      <span className="shrink-0 text-slate-400">
-                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </span>
+                        <span className="text-[10px] text-slate-400 w-8" aria-hidden="true">Quick</span>
+                      </label>
                     </div>
 
                     {/* Expanded detail panel */}
                     {isExpanded && (
-                      <div className="px-3 pb-3 pt-1 bg-slate-50 border-t border-slate-100">
+                      <div id={`category-panel-${cat.id}`} className="px-3 pb-3 pt-1 bg-slate-50 border-t border-slate-100">
                         {isEditing ? (
                           <div className="space-y-3">
                             <div className="flex items-center gap-2">
