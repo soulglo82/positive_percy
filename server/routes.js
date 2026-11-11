@@ -819,8 +819,10 @@ async function undoReplay(res, client, familyCode, requestId, endpoint, args) {
   const prior = await priorRequest(client, familyCode, requestId, endpoint, args);
   if (prior.conflict) return res.status(409).json({ error: 'Invalid request' });
   if (!prior.replay) return null;
-  const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [prior.replay.child_id, familyCode]);
-  const [child] = await withWeekPoints(pool, familyCode, rows);
+  // Read on this request's own connection: it holds the child lock, and
+  // waiting for a second pool connection here could starve the pool.
+  const { rows } = await client.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [prior.replay.child_id, familyCode]);
+  const [child] = await withWeekPoints(client, familyCode, rows);
   return res.json({ ...prior.replay, child, duplicate: true });
 }
 
