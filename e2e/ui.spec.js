@@ -43,7 +43,9 @@ async function checkScreen(page, label, testInfo) {
     const visible = (el) => shown(el) && !el.closest('[aria-hidden="true"]');
     // Scope: an open list, else an open dialog (the page behind is inert), else the page.
     const scope = document.querySelector('[role="listbox"]') ||
-      document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]') || document.body;
+      // A confirm opened over a dialog is on top: check it, not the dialog under it.
+      document.querySelector('[role="alertdialog"][data-state="open"]') ||
+      [...document.querySelectorAll('[role="dialog"][data-state="open"]')].pop() || document.body;
     // Anything inside that would scroll sideways (dialog bodies, lists).
     for (const el of scope.querySelectorAll('*')) {
       const ox = getComputedStyle(el).overflowX;

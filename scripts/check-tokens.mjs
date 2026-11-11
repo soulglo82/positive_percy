@@ -28,7 +28,7 @@ const SINGLE_WORD = new Set(['flex', 'grid', 'block', 'hidden', 'inline', 'under
 const STYLE_KEYS = /\b(fontSize|fontFamily|fontWeight|fontStyle|font|lineHeight|letterSpacing|textTransform|color|background|backgroundColor|borderColor|outline|outlineColor|boxShadow|textShadow|fill|stroke|opacity)\s*:/;
 const TYPE_KEYS_ANYWHERE = /\b(fontSize|fontFamily|fontWeight|lineHeight|letterSpacing|textTransform)\s*:/g;
 // CSS properties that set type or colour, outside the :root block and @font-face.
-const CSS_PROPS = /(^|[;{\s])(color|background|background-color|border-color|outline|outline-color|box-shadow|text-shadow|fill|stroke|font|font-size|font-family|font-weight|font-style|line-height|letter-spacing|text-transform)\s*:\s*([^;}]+)/i;
+const CSS_PROPS = /(^|[;{\s])(color|caret-color|-webkit-text-fill-color|border|border-[a-z-]*color|background|background-color|border-color|outline|outline-color|box-shadow|text-shadow|fill|stroke|font|font-size|font-family|font-weight|font-style|line-height|letter-spacing|text-transform)\s*:\s*([^;}]+)/i;
 const CSS_OK_VALUE = /^\s*(inherit|initial|unset|currentcolor|transparent|none|0|var\(--[\w-]+\)|hsl\(var\(--[\w-]+\)(\s*\/\s*[\d.]+)?\)|2px solid hsl\(var\(--ring\)\))\s*(!important)?\s*$/i;
 
 function walk(dir, out = []) {
@@ -137,7 +137,12 @@ export async function check(files) {
     const text = fs.readFileSync(file, 'utf8');
     const lines = text.split('\n');
     // Only a comment with a reason counts, not the words anywhere on the line.
-    const allowed = (ln) => /(\/\/|\/\*)\s*tokens-allow:\s*\S/.test(lines[ln - 1] || '');
+    // String contents are blanked first, and `//` straight after `>` is JSX
+    // text that renders, not a comment.
+    const allowed = (ln) => {
+      const code = (lines[ln - 1] || '').replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`/g, '""');
+      return /\/\*\s*tokens-allow:\s*\S/.test(code) || /(^|[^>\s:/]\s*|^\s*)\/\/\s*tokens-allow:\s*\S/.test(code) && !/>\s*\/\/\s*tokens-allow/.test(code);
+    };
     const isTokensJs = file.endsWith(path.join('src', 'lib', 'tokens.js'));
     const isCss = file.endsWith('.css');
 
@@ -153,8 +158,9 @@ export async function check(files) {
         if (/#[0-9a-fA-F]{3,8}\b/.test(code)) add(file, i + 1, 'colour value outside the :root token block');
         if (/\b(rgba?|hsla?)\((?!var\(--)/.test(code) || /\b(oklch|lab|hwb|color-mix)\(/.test(code)) add(file, i + 1, 'colour function outside the :root token block');
         if (/^\s*\.dark\b|\s\.dark\s*\{/.test(code)) add(file, i + 1, '.dark rule (there is no dark theme)');
-        const prop = code.match(CSS_PROPS);
-        if (prop && !CSS_OK_VALUE.test(prop[3])) add(file, i + 1, `css ${prop[2]}: ${prop[3].trim()} (use a token)`);
+        for (const prop of code.matchAll(new RegExp(CSS_PROPS.source, 'gi'))) {
+          if (!CSS_OK_VALUE.test(prop[3])) add(file, i + 1, `css ${prop[2]}: ${prop[3].trim()} (use a token)`);
+        }
         const applied = code.match(/@apply\s+([^;]+);/);
         if (applied) for (const t of classCandidates(applied[1])) {
           if (!allCandidates.has(t)) allCandidates.set(t, []);
@@ -177,7 +183,7 @@ export async function check(files) {
         if (/^\{?\s*[A-Za-z_$][\w$.]*\s*\}?$/.test(body.trim().split(/\}\s*\w+=/)[0].trim())) add(file, ln, 'style object passed by name (write it inline so it can be checked)');
       }
       const colourProp = tag.attrs.match(/\b(fill|stroke|color|stopColor)=("|')([^"']*)\2/);
-      if (colourProp && !/^(currentColor|none|transparent|inherit)$/i.test(colourProp[3])) add(file, ln, `${colourProp[1]}="${colourProp[3]}" (use a token class)`);
+      if (colourProp && !/^(currentColor|none|transparent|inherit|url\(#[\w-]+\))$/i.test(colourProp[3])) add(file, ln, `${colourProp[1]}="${colourProp[3]}" (use a token class)`);
       const sizeProp = tag.attrs.match(/\bsize=\{?\s*["']?\d+/);
       if (sizeProp && /^[A-Z]/.test(tag.name) && tag.name !== 'Logo') add(file, ln, `${tag.name} size prop (use w-/h- classes)`);
     }
@@ -193,7 +199,7 @@ export async function check(files) {
     for (const tag of jsxTags(text, 'Button|Input|SelectTrigger|NumberInput')) {
       const ln = lineOf(text, tag.index);
       const cls = tag.attrs.match(/className=("[^"]*"|\{[\s\S]*\})/);
-      if (cls && /(^|[\s"'`:])-?(?:h|size|min-h|max-h)-[\w.[\]/]+/.test(cls[1]) && !allowed(ln)) {
+      if (cls && /(^|[\s"'`:!])-?(?:h|size|min-h|max-h)-[\w.[\]/]+/.test(cls[1]) && !allowed(ln)) {
         add(file, ln, `${tag.name} with its own height (sizes come from the component)`);
       }
     }

@@ -41,7 +41,8 @@ describe('token check', () => {
     'svg-fill.jsx': /fill="hotpink"/, 'icon-color.jsx': /color="hotpink"/, 'icon-size.jsx': /size prop/,
     'dynamic-class.jsx': /built from a variable/, 'plus-variant.jsx': /not in the token scale/,
     'colour-outside-root.css': /colour value/, 'dark.css': /\.dark rule/,
-    'css-font-size.css': /css font-size/, 'css-named-colour.css': /css color/, 'css-uppercase.css': /css text-transform/,
+    'css-font-size.css': /css font-size/, 'css-second-prop.css': /css background: hotpink/, 'css-border.css': /css border/,
+    'allow-jsx-text.jsx': /text-2xl is not in the token scale/, 'button-important-height.jsx': /own height/, 'css-named-colour.css': /css color/, 'css-uppercase.css': /css text-transform/,
   };
   const bad = fs.readdirSync(FIXTURES).filter((f) => f !== 'clean.jsx');
 
