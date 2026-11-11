@@ -1,0 +1,118 @@
+// Parent-requested family data export. Intentionally enumerates fields so an
+// internal secret, token, request key or a newly added table column cannot be
+// exported just because it happens to exist in the database.
+import { uploadIdOf } from './uploads.js';
+
+export const MAX_EXPORT_BYTES = 25 * 1024 * 1024;
+
+export async function prepareFamilyExport(pool, familyCode, { includePhotos = true } = {}) {
+  const client = await pool.connect();
+  try {
+    // A consistent, read-only view: a parent should not get a balance from
+    // one moment and the matching history from another.
+    await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+
+    const rows = async (sql) => (await client.query(sql, [familyCode])).rows;
+    const families = await rows(`
+      SELECT family_name, timezone, current_streak, longest_streak,
+             last_active_date, created_date
+      FROM families WHERE family_code = $1
+    `);
+    if (families.length !== 1) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    const children = await rows(`
+      SELECT id, name, age, avatar_url, total_points, weekly_target,
+             badges_earned, points_spent, reward_stack, colour_index, created_date
+      FROM children WHERE family_code = $1 ORDER BY created_date, id
+    `);
+    const rewards = await rows(`
+      SELECT id, title, description, cost_points, image_url, emoji,
+             visible_to_child, assigned_child_ids, created_date
+      FROM rewards WHERE family_code = $1 ORDER BY created_date, id
+    `);
+    const pointEvents = await rows(`
+      SELECT id, child_id, points, category, note, child_name, kind,
+             reverses_id, created_date
+      FROM point_events WHERE family_code = $1 ORDER BY created_date, id
+    `);
+    const redemptions = await rows(`
+      SELECT id, child_id, child_name, reward_id, reward_title,
+             reward_cost, status, reversed_at, created_date
+      FROM redemptions WHERE family_code = $1 ORDER BY created_date, id
+    `);
+    const behaviours = await rows(`
+      SELECT id, name, icon, icon_key, sort_order, is_default, points,
+             is_quick_action, assigned_children, created_date, updated_date
+      FROM behavior_categories WHERE family_code = $1 ORDER BY sort_order, id
+    `);
+    const familyGoals = await rows(`
+      SELECT id, title, description, emoji, target_points, current_points,
+             status, created_date
+      FROM family_goals WHERE family_code = $1 ORDER BY created_date, id
+    `);
+    const legacyQuickActions = await rows(`
+      SELECT id, label, points, icon, display_order, created_date
+      FROM quick_actions WHERE family_code = $1 ORDER BY display_order, id
+    `);
+    const grownUps = await rows(`
+      SELECT full_name, mum_name, mum_phone, dad_name, dad_phone, created_date
+      FROM users WHERE family_code = $1 ORDER BY created_date, id
+    `);
+
+    // Only photos referenced by this family's children/rewards may be included.
+    // Even if an older row references another family's photo, the export may
+    // never contain that other family's photo bytes.
+    const referenced = [...new Set([
+      ...children.map((c) => uploadIdOf(c.avatar_url)),
+      ...rewards.map((r) => uploadIdOf(r.image_url)),
+    ].filter(Boolean))];
+    let photos = [];
+    if (includePhotos && referenced.length) {
+      const { rows: owned } = await client.query(`
+        SELECT id, data, content_type, created_date
+        FROM uploads WHERE family_code = $1 AND id = ANY($2::uuid[])
+        ORDER BY created_date, id
+      `, [familyCode, referenced]);
+      photos = owned;
+    }
+
+    const result = {
+      format: 'positive-percy-family-export',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      // Family code (the account credential), JWTs, internal request keys and
+      // synthesized login email are deliberately excluded.
+      family: families[0],
+      grownUps,
+      children,
+      behaviours,
+      rewards,
+      pointEvents,
+      redemptions,
+      familyGoals,
+      legacyQuickActions,
+      photos,
+      photoInformation: {
+        included: includePhotos,
+        referencedCount: referenced.length,
+        includedCount: photos.length,
+        // External photo URLs and older unowned images remain in the
+        // child/reward records but their image bytes are not bundled.
+        unavailableCount: includePhotos ? referenced.length - photos.length : referenced.length,
+      },
+    };
+    const body = JSON.stringify(result, null, 2);
+    const byteLength = Buffer.byteLength(body, 'utf8');
+
+    await client.query('COMMIT');
+    return { body, byteLength };
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
