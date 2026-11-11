@@ -1,5 +1,9 @@
 export const REWARD_TEMPLATES = [
-  // Quick Wins (5-15 points)
+  // Recommended starter reward (parents may edit the title, amount or cost).
+  { title: "Extra Screen Time", emoji: "🎮", cost_points: 30, category: "quick",
+    description: "30 minutes of extra tablet or TV time" },
+
+  // Other quick ideas (5-15 points)
   { title: "Extra Bedtime Story", emoji: "📚", cost_points: 5, category: "quick",
     description: "One extra story at bedtime" },
   { title: "Choose Breakfast", emoji: "🥞", cost_points: 10, category: "quick",
@@ -12,8 +16,6 @@ export const REWARD_TEMPLATES = [
   // Medium (20-50 points)
   { title: "Movie Night Pick", emoji: "🎬", cost_points: 25, category: "medium",
     description: "Choose the family movie" },
-  { title: "Extra Screen Time", emoji: "🎮", cost_points: 30, category: "medium",
-    description: "30 minutes of extra tablet or TV time" },
   { title: "Friend Sleepover", emoji: "🏠", cost_points: 50, category: "medium",
     description: "Have a friend sleep over this weekend" },
   { title: "Choose Dinner", emoji: "🍕", cost_points: 20, category: "medium",
