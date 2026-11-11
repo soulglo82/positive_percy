@@ -78,13 +78,12 @@ describe.skipIf(!runDb)('batch B: streak and age', () => {
     expect((await award(F, childId, 2)).json.streak.milestone).toBe(false);
   });
 
-  it('B5: a deduction does not count towards the streak', async () => {
+  it('B5: rejected negative scoring leaves streak unchanged', async () => {
     const { F, childId } = await setup('Deduct');
     await award(F, childId, 5);
     await ctx.pool.query('UPDATE families SET current_streak = 2, last_active_date = $1 WHERE family_code = $2', [day(1), F.code]);
     const r = await award(F, childId, -2);
-    expect(r.status).toBe(200);
-    expect(r.json.streak).toBeNull();
+    expect(r.status).toBe(400);
     expect((await family(F.code)).last_active_date).toBe(day(1));
   });
 
