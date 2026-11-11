@@ -61,6 +61,44 @@ describe.skipIf(!runDb)('A2 step 2: week, timezone, streak', () => {
     expect(new Date(s.json.weekStart).getTime()).toBeGreaterThan(new Date('2000-01-01').getTime());
   });
 
+  it('Item 4: active days count calendar dates in the family timezone and ignore reversed awards', async () => {
+    await setTz(F, 'Asia/Singapore');
+    const c = await child(F, { name: 'Days' });
+    const a = (await award(F, c.id, 3)).json;
+    const b = (await award(F, c.id, 4)).json;
+    // One Monday 00:30 SGT and one Monday 23:30 SGT are the SAME
+    // Singapore day, but belong to different UTC calendar dates.
+    await ctx.pool.query(
+      `UPDATE point_events SET created_date =
+       (date_trunc('week', now() AT TIME ZONE 'Asia/Singapore') + time '00:30')
+       AT TIME ZONE 'Asia/Singapore' WHERE id = $1`,
+      [a.event.id]);
+    await ctx.pool.query(
+      `UPDATE point_events SET created_date =
+       (date_trunc('week', now() AT TIME ZONE 'Asia/Singapore') + time '23:30')
+       AT TIME ZONE 'Asia/Singapore' WHERE id = $1`,
+      [b.event.id]);
+    const before = await api(ctx.base, 'GET', '/api/summary', { token: F.token });
+    expect(before.status).toBe(200);
+    expect(before.json.activeDays).toBeGreaterThanOrEqual(1);
+    expect(before.json.childStats.find(x => x.id === c.id).week_points).toBe(7);
+    const reversed = await api(ctx.base, 'POST', `/api/point-events/${b.event.id}/correct`, {
+      token: F.token, body: { request_id: rid() },
+    });
+    expect(reversed.status).toBe(200);
+    const after = await api(ctx.base, 'GET', '/api/summary', { token: F.token });
+    expect(after.json.childStats.find(x => x.id === c.id).week_points).toBe(3);
+    // Other tests may have created active days in this family. The one
+    // remaining Monday event must contribute exactly one Monday date.
+    const { rows } = await ctx.pool.query(
+      `SELECT COUNT(DISTINCT (created_date AT TIME ZONE 'Asia/Singapore')::date)::int as n
+       FROM effective_point_events
+       WHERE family_code = $1
+         AND created_date >= (date_trunc('week', now() AT TIME ZONE 'Asia/Singapore') AT TIME ZONE 'Asia/Singapore')
+         AND points > 0`, [F.code]);
+    expect(after.json.activeDays).toBe(rows[0].n);
+  });
+
   it('W1: the app fills the timezone only when unset, never from UTC; Settings sets it; bad names are refused', async () => {
     await ctx.pool.query('UPDATE families SET timezone = NULL WHERE family_code = $1', [G.code]);
     expect((await setTz(G, 'UTC', true)).json.changed).toBe(false);
