@@ -107,7 +107,7 @@ export async function initDb() {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         family_code TEXT NOT NULL,
         label TEXT NOT NULL,
-        points INTEGER NOT NULL DEFAULT 5,
+        points INTEGER NOT NULL DEFAULT 1,
         icon TEXT DEFAULT '⭐',
         display_order INTEGER DEFAULT 0,
         created_date TIMESTAMPTZ DEFAULT NOW()
@@ -160,7 +160,7 @@ export async function initDb() {
       // Reward stack: queued rewards awaiting parent confirmation
       "ALTER TABLE children ADD COLUMN IF NOT EXISTS reward_stack JSONB DEFAULT '[]'",
       // FIX-1: Merge quick actions into behavior categories
-      "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 5",
+      "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 1",
       "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS is_quick_action BOOLEAN DEFAULT false",
       "ALTER TABLE behavior_categories ADD COLUMN IF NOT EXISTS assigned_children TEXT[] DEFAULT '{}'",
       // Batch A: one award per request_id per family (retry safety)
