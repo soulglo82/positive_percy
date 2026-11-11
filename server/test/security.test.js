@@ -236,6 +236,33 @@ describe.skipIf(!runDb)('security tranche 1', () => {
     }
   });
 
+  it('Batch C: deleting a family invalidates old API and websocket sessions', async () => {
+    const gone = await makeFamily(ctx.base, 'Removed session family');
+    const before = await api(ctx.base, 'GET', '/api/auth/me', { token: gone.token });
+    expect(before.status).toBe(200);
+
+    // Reproduce the existing production-cleanup situation. No account-delete
+    // endpoint is added in this release; only an orphan-proof session check.
+    await ctx.pool.query('DELETE FROM families WHERE family_code = $1', [gone.code]);
+
+    expect((await api(ctx.base, 'GET', '/api/auth/me', { token: gone.token })).status).toBe(401);
+    expect((await api(ctx.base, 'POST', '/api/children', {
+      token: gone.token, body: { name: 'Should not be added' },
+    })).status).toBe(401);
+    expect((await api(ctx.base, 'POST', '/api/family/join', {
+      body: { family_code: gone.code },
+    })).status).toBe(404);
+
+    const socket = new WebSocket(ctx.base.replace('http', 'ws') + '/ws');
+    await new Promise((resolve, reject) => {
+      socket.once('open', resolve);
+      socket.once('error', reject);
+    });
+    const closed = new Promise((resolve) => socket.once('close', resolve));
+    socket.send(JSON.stringify({ type: 'join', token: gone.token }));
+    expect(await closed).toBe(4401);
+  });
+
   // 9. F9
   it('9: date_of_birth is not accepted and the column is gone', async () => {
     const r = await api(ctx.base, 'POST', '/api/children', { token: A.token, body: { name: 'Dob kid', date_of_birth: '2019-01-01' } });
