@@ -212,7 +212,7 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await checkScreen(page, 'add child', testInfo);
   await closeDialog(page);
 
-  await page.getByRole('button', { name: /Parenting Tips/ }).click();
+  await page.getByRole('button', { name: /parenting tips/i }).click();
   await checkScreen(page, 'tips', testInfo);
   await closeDialog(page);
 });
