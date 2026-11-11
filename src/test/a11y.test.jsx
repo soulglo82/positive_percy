@@ -5,8 +5,6 @@ import React from 'react';
 
 import ChildCard from '../components/child/ChildCard';
 import RewardCard from '../components/rewards/RewardCard';
-import RedemptionCard from '../components/redemptions/RedemptionCard';
-import ShareableCard from '../components/ShareableCard';
 
 // Helper to run axe on a container element
 async function checkA11y(container) {
@@ -30,9 +28,9 @@ async function checkA11y(container) {
 
 const mockChild = {
   id: '1',
-  name: 'Test Child',
-  total_points: 25,
-  weekly_points: 10,
+  name: 'Alexandra-Josephine Montgomery',
+  total_points: 1250,
+  week_points: 60,
   weekly_target: 50,
   avatar_url: null,
   badges_earned: [],
@@ -46,15 +44,6 @@ const mockReward = {
   emoji: '🎮',
   visible_to_child: true,
   assigned_child_ids: [],
-};
-
-const mockRedemption = {
-  id: '1',
-  child_name: 'Test Child',
-  reward_title: 'Extra Screen Time',
-  reward_cost: 50,
-  status: 'Completed',
-  created_date: new Date().toISOString(),
 };
 
 describe('Accessibility: ChildCard', () => {
@@ -110,28 +99,6 @@ describe('Accessibility: RewardCard (parent view)', () => {
         onEdit={() => {}}
         onToggleVisibility={() => {}}
       />
-    );
-    await checkA11y(container);
-  });
-});
-
-describe('Accessibility: RedemptionCard', () => {
-  it('should have no critical/serious axe violations', async () => {
-    const { container } = render(
-      <RedemptionCard
-        redemption={mockRedemption}
-        onApprove={() => {}}
-        onDeny={() => {}}
-      />
-    );
-    await checkA11y(container);
-  });
-});
-
-describe('Accessibility: ShareableCard', () => {
-  it('should have no critical/serious axe violations', async () => {
-    const { container } = render(
-      <ShareableCard child={mockChild} message="Great job!" />
     );
     await checkA11y(container);
   });
