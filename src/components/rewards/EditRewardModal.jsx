@@ -169,7 +169,7 @@ export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, onD
             disabled={!title.trim() || costPoints <= 0}
             className="flex-1"
           >
-            Save Changes
+            Save changes
           </Button>
         </DialogFooter>
       </DialogContent>

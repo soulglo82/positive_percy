@@ -114,7 +114,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await go(page, '/');
   await checkScreen(page, 'home', testInfo);
 
-  await page.getByRole('button', { name: /^Add Points/ }).first().click();
+  await page.getByRole('button', { name: /^Add points/ }).first().click();
   await checkScreen(page, 'add points', testInfo);
   await closeDialog(page);
 
@@ -204,15 +204,15 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
 
-  await page.getByRole('button', { name: /Add Category/ }).click();
+  await page.getByRole('button', { name: /Add behaviour/ }).click();
   await checkScreen(page, 'new behaviour', testInfo);
   await closeDialog(page);
 
-  await page.getByRole('button', { name: /^Add Child/ }).click();
+  await page.getByRole('button', { name: /^Add child/ }).click();
   await checkScreen(page, 'add child', testInfo);
   await closeDialog(page);
 
-  await page.getByRole('button', { name: /Parenting Tips/ }).click();
+  await page.getByRole('button', { name: /parenting tips/i }).click();
   await checkScreen(page, 'tips', testInfo);
   await closeDialog(page);
 });

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import CategoryIcon from '@/components/CategoryIcon';
+import { ICON_KEYS, ICON_LABELS } from '@/lib/categoryIcons';
 import { getToken } from "@/lib/AuthContext";
 import { Child } from "@/api/entities";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,7 +40,6 @@ import { toast } from "sonner";
 import SectionHeader from "../SectionHeader";
 import { formatPointsBadge } from "@/constants/terminology";
 
-const EMOJI_OPTIONS = ['⭐', '📚', '🧹', '🤝', '💪', '🎨', '🏃', '🎵', '🧠', '💤', '💛', '✅', '🦁', '🫶', '📖', '🌟'];
 const MAX_QUICK_ACTIONS = 4;
 
 export default function BehaviorCategoryManager() {
@@ -47,7 +48,7 @@ export default function BehaviorCategoryManager() {
   const [expandedId, setExpandedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
-  const [editIcon, setEditIcon] = useState('⭐');
+  const [editIcon, setEditIcon] = useState('star');
   const [editPoints, setEditPoints] = useState(5);
 
   const { data: categories = [], isLoading } = useQuery({
@@ -75,7 +76,7 @@ export default function BehaviorCategoryManager() {
       const res = await fetch('/api/behavior-categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ name, icon, points }),
+        body: JSON.stringify({ name, icon_key: icon, points }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -195,14 +196,14 @@ export default function BehaviorCategoryManager() {
   const startEdit = (cat) => {
     setEditingId(cat.id);
     setEditName(cat.name);
-    setEditIcon(cat.icon);
+    setEditIcon(cat.icon_key || 'circle');
     setEditPoints(cat.points || 5);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditName('');
-    setEditIcon('⭐');
+    setEditIcon('star');
     setEditPoints(5);
   };
 
@@ -246,7 +247,7 @@ export default function BehaviorCategoryManager() {
                         onClick={() => setExpandedId(isExpanded ? null : cat.id)}
                         className="flex flex-1 min-w-0 min-h-11 items-center gap-3 px-3 py-2.5 text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                       >
-                        <span className="text-lg shrink-0 w-7 text-center" aria-hidden="true">{cat.icon}</span>
+                        <span className="shrink-0 w-7 flex justify-center text-muted-foreground"><CategoryIcon iconKey={cat.icon_key} className="w-5 h-5" /></span>
                         <span className="font-medium text-foreground flex-1 min-w-0 truncate text-sm">{cat.name}</span>
                         <span className="text-sm text-earn font-semibold tabular-nums shrink-0 w-14 text-right">{formatPointsBadge(cat.points || 5)}</span>
                         <span className="shrink-0 text-muted-foreground" aria-hidden="true">
@@ -272,13 +273,13 @@ export default function BehaviorCategoryManager() {
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => {
-                                  const nextIdx = EMOJI_OPTIONS.indexOf(editIcon);
-                                  setEditIcon(EMOJI_OPTIONS[(nextIdx + 1) % EMOJI_OPTIONS.length]);
+                                  const nextIdx = ICON_KEYS.indexOf(editIcon);
+                                  setEditIcon(ICON_KEYS[(nextIdx + 1) % ICON_KEYS.length]);
                                 }}
                                 className="text-lg rounded-md border border-input bg-card hover:bg-accent min-w-11 min-h-11 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                aria-label="Change icon"
+                                aria-label={`Change icon, now ${ICON_LABELS[editIcon] || 'Circle'}`}
                               >
-                                {editIcon}
+                                <CategoryIcon iconKey={editIcon} className="w-5 h-5" />
                               </button>
                               <Input
                                 value={editName}
@@ -288,7 +289,7 @@ export default function BehaviorCategoryManager() {
                                 maxLength={100}
                                 autoFocus
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleUpdate(cat.id, { name: editName, icon: editIcon, points: Math.min(1000, Math.max(1, Math.round(Number(editPoints) || 5))) });
+                                  if (e.key === 'Enter') handleUpdate(cat.id, { name: editName, icon_key: editIcon, points: Math.min(1000, Math.max(1, Math.round(Number(editPoints) || 5))) });
                                   if (e.key === 'Escape') cancelEdit();
                                 }}
                               />
@@ -304,7 +305,7 @@ export default function BehaviorCategoryManager() {
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                onClick={() => handleUpdate(cat.id, { name: editName, icon: editIcon, points: Math.min(1000, Math.max(1, Math.round(Number(editPoints) || 5))) })}
+                                onClick={() => handleUpdate(cat.id, { name: editName, icon_key: editIcon, points: Math.min(1000, Math.max(1, Math.round(Number(editPoints) || 5))) })}
                               >
                                 <Check className="w-4 h-4" /> Save
                               </Button>
@@ -390,7 +391,7 @@ export default function BehaviorCategoryManager() {
 
           <Button variant="outline" className="w-full mt-3" onClick={() => setShowAddModal(true)}>
             <Plus className="w-4 h-4" />
-            Add Category
+            Add behaviour
           </Button>
         </CardContent>
       </Card>
@@ -431,7 +432,7 @@ export default function BehaviorCategoryManager() {
 
 function AddCategoryModal({ isOpen, onClose, onSubmit }) {
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState('⭐');
+  const [icon, setIcon] = useState('star');
   const [points, setPoints] = useState(5);
 
   const handleSubmit = () => {
@@ -441,7 +442,7 @@ function AddCategoryModal({ isOpen, onClose, onSubmit }) {
     }
     onSubmit(name.trim(), icon, Math.min(1000, Math.max(1, Math.round(Number(points) || 5))));
     setName('');
-    setIcon('⭐');
+    setIcon('star');
     setPoints(5);
   };
 
@@ -449,26 +450,27 @@ function AddCategoryModal({ isOpen, onClose, onSubmit }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New Behaviour</DialogTitle>
+          <DialogTitle>New behaviour</DialogTitle>
         </DialogHeader>
 
         <DialogBody className="space-y-4">
           <div>
             <p className="text-sm font-medium text-foreground mb-2" id="cat_icon">Icon</p>
             <div className="flex flex-wrap gap-2" role="group" aria-labelledby="cat_icon">
-              {EMOJI_OPTIONS.map((emoji) => (
+              {ICON_KEYS.map((key) => (
                 <button
-                  key={emoji}
+                  key={key}
                   type="button"
-                  aria-pressed={icon === emoji}
-                  onClick={() => setIcon(emoji)}
+                  aria-label={ICON_LABELS[key]}
+                  aria-pressed={icon === key}
+                  onClick={() => setIcon(key)}
                   className={`w-11 h-11 rounded-md border flex items-center justify-center text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                    icon === emoji
+                    icon === key
                       ? 'border-2 border-selected-border bg-selected'
                       : 'border-border bg-card hover:bg-accent'
                   }`}
                 >
-                  {emoji}
+                  <CategoryIcon iconKey={key} className="w-5 h-5" />
                 </button>
               ))}
             </div>

@@ -53,7 +53,7 @@ export default function OnboardingTips({ isOpen, onClose, forceShow = false }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Logo size={32} decorative />
-            Tips for Success
+            Tips for success
           </DialogTitle>
         </DialogHeader>
 

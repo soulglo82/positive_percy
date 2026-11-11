@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { isIconKey } from './iconKeys.js';
+const ICON_KEY_MESSAGE = 'Choose one of the icons shown';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import pool from './db.js';
@@ -321,15 +323,15 @@ router.post('/api/family/create', async (req, res) => {
 
       // IMPL-5.5: Seed default behavior categories atomically
       await pool.query(
-        `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default, points, is_quick_action) VALUES
-          ($1, 'Kindness', '💛', 0, true, 5, true),
-          ($1, 'Helpfulness', '🤝', 1, true, 5, true),
-          ($1, 'Bravery', '🦁', 2, true, 10, true),
-          ($1, 'Resilience', '💪', 3, true, 10, false),
-          ($1, 'Caring', '🫶', 4, true, 5, true),
-          ($1, 'Chores', '🧹', 5, true, 5, false),
-          ($1, 'Homework', '📖', 6, true, 5, false),
-          ($1, 'Adventurous', '🌟', 7, true, 10, false)
+        `INSERT INTO behavior_categories (family_code, name, icon, icon_key, sort_order, is_default, points, is_quick_action) VALUES
+          ($1, 'Kindness', '💛', 'heart', 0, true, 5, true),
+          ($1, 'Helpfulness', '🤝', 'handshake', 1, true, 5, true),
+          ($1, 'Bravery', '🦁', 'shield', 2, true, 10, true),
+          ($1, 'Resilience', '💪', 'mountain', 3, true, 10, false),
+          ($1, 'Caring', '🫶', 'hand-heart', 4, true, 5, true),
+          ($1, 'Chores', '🧹', 'brush', 5, true, 5, false),
+          ($1, 'Homework', '📖', 'book-open', 6, true, 5, false),
+          ($1, 'Adventurous', '🌟', 'sparkles', 7, true, 10, false)
         ON CONFLICT (family_code, name) DO NOTHING`,
         [family_code]
       );
@@ -1322,10 +1324,11 @@ async function quickSlotFree(db, familyCode, exceptId = null) {
 router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { name, icon, points, is_quick_action, assigned_children } = req.body;
+    const { name, icon, icon_key, points, is_quick_action, assigned_children } = req.body;
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(422).json({ error: 'Category name is required' });
     }
+    if (icon_key !== undefined && !isIconKey(icon_key)) return res.status(422).json({ error: ICON_KEY_MESSAGE });
     const trimmedName = name.trim().slice(0, 100);
     if (isReservedCategory(trimmedName)) return res.status(422).json({ error: RESERVED_NAME_MESSAGE });
 
@@ -1341,11 +1344,11 @@ router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
     );
 
     const { rows } = await client.query(
-      `INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default, points, is_quick_action, assigned_children)
-       VALUES ($1, $2, $3, $4, false, $5, $6, $7) RETURNING *`,
+      `INSERT INTO behavior_categories (family_code, name, icon, icon_key, sort_order, is_default, points, is_quick_action, assigned_children)
+       VALUES ($1, $2, $3, $8, $4, false, $5, $6, $7) RETURNING *`,
       [req.familyCode, trimmedName, icon || '⭐', maxOrder[0].next_order,
        categoryPoints(points), Boolean(is_quick_action),
-       Array.isArray(assigned_children) ? assigned_children : []]
+       Array.isArray(assigned_children) ? assigned_children : [], icon_key || 'circle']
     );
     await client.query('COMMIT');
     broadcastFn(req.familyCode, { type: 'behavior_categories_updated' });
@@ -1365,7 +1368,8 @@ router.post('/api/behavior-categories', authMiddleware, async (req, res) => {
 router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { name, icon, points, is_quick_action, assigned_children } = req.body;
+    const { name, icon, icon_key, points, is_quick_action, assigned_children } = req.body;
+    if (icon_key !== undefined && !isIconKey(icon_key)) return res.status(422).json({ error: ICON_KEY_MESSAGE });
     const updates = [];
     const values = [];
     let idx = 1;
@@ -1380,6 +1384,10 @@ router.put('/api/behavior-categories/:id', authMiddleware, async (req, res) => {
     if (icon !== undefined) {
       updates.push(`icon = $${idx++}`);
       values.push(icon);
+    }
+    if (icon_key !== undefined) {
+      updates.push(`icon_key = $${idx++}`);
+      values.push(icon_key);
     }
     if (points !== undefined) {
       updates.push(`points = $${idx++}`);
