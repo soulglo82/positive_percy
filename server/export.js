@@ -36,12 +36,18 @@ export async function prepareFamilyExport(pool, familyCode, { includePhotos = tr
     const pointEvents = await rows(`
       SELECT id, child_id, points, category, note, child_name, kind,
              reverses_id, created_date
-      FROM point_events WHERE family_code = $1 ORDER BY created_date, id
+      FROM point_events
+      WHERE child_id IN (SELECT id FROM children WHERE family_code = $1)
+        AND (family_code = $1 OR family_code IS NULL)
+      ORDER BY created_date, id
     `);
     const redemptions = await rows(`
       SELECT id, child_id, child_name, reward_id, reward_title,
              reward_cost, status, reversed_at, created_date
-      FROM redemptions WHERE family_code = $1 ORDER BY created_date, id
+      FROM redemptions
+      WHERE child_id IN (SELECT id FROM children WHERE family_code = $1)
+        AND (family_code = $1 OR family_code IS NULL)
+      ORDER BY created_date, id
     `);
     const behaviours = await rows(`
       SELECT id, name, icon, icon_key, sort_order, is_default, points,
@@ -71,6 +77,17 @@ export async function prepareFamilyExport(pool, familyCode, { includePhotos = tr
     ].filter(Boolean))];
     let photos = [];
     if (includePhotos && referenced.length) {
+      // Keep huge photo collections from exhausting application memory.
+      // Actual JSON size is checked again before returning the response.
+      const { rows: [size] } = await client.query(`
+        SELECT COALESCE(SUM(octet_length(data)), 0)::bigint AS bytes
+        FROM uploads WHERE family_code = $1 AND id = ANY($2::uuid[])
+      `, [familyCode, referenced]);
+      if (Number(size.bytes) > MAX_EXPORT_BYTES * 0.8) {
+        const error = new Error('Export photos too large');
+        error.code = 'EXPORT_TOO_LARGE';
+        throw error;
+      }
       const { rows: owned } = await client.query(`
         SELECT id, data, content_type, created_date
         FROM uploads WHERE family_code = $1 AND id = ANY($2::uuid[])
