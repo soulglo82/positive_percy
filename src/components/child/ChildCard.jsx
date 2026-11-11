@@ -44,7 +44,7 @@ export default function ChildCard({ child, colour, popKey = 0, onAddPoints, onEd
           <ChildAvatar name={child.name} url={child.avatar_url} colour={colour} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1 min-w-0">
-              <h3 className="font-display text-lg font-semibold text-foreground truncate">{child.name}</h3>
+              <h3 className="font-display text-lg font-semibold text-foreground break-words line-clamp-2 min-w-0">{child.name}</h3>
               {/* Always visible, 44px (A2 E1): hover-only never worked on phones or keyboards. */}
               {onEdit && (
                 <button
