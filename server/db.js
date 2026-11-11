@@ -177,26 +177,6 @@ export async function initDb() {
     // The one-time owner backfill is migration 007.
     await client.query('ALTER TABLE uploads ADD COLUMN IF NOT EXISTS family_code TEXT');
 
-    // IMPL-5: Seed default behavior categories for existing families that don't have any
-    await client.query(`
-      INSERT INTO behavior_categories (family_code, name, icon, sort_order, is_default)
-      SELECT f.family_code, d.name, d.icon, d.sort_order, true
-      FROM families f
-      CROSS JOIN (VALUES
-        ('Kindness', '💛', 0),
-        ('Helpfulness', '🤝', 1),
-        ('Bravery', '🦁', 2),
-        ('Resilience', '💪', 3),
-        ('Caring', '🫶', 4),
-        ('Chores', '🧹', 5),
-        ('Homework', '📖', 6),
-        ('Adventurous', '🌟', 7)
-      ) AS d(name, icon, sort_order)
-      WHERE NOT EXISTS (
-        SELECT 1 FROM behavior_categories bc WHERE bc.family_code = f.family_code
-      )
-      ON CONFLICT (family_code, name) DO NOTHING
-    `).catch(() => {});
 
     // A2 M1: boot never changes existing rows. The old-defaults DELETE, the
     // default-category upsert (which re-enabled 4 quick actions on every boot)
@@ -206,6 +186,27 @@ export async function initDb() {
 
     // One-time changes, each applied once and recorded. Throws on failure.
     await runMigrations(pool);
+
+    // IMPL-5 (after migrations since Batch D PR2, so icon_key exists): Seed default behavior categories for existing families that don't have any
+    await client.query(`
+      INSERT INTO behavior_categories (family_code, name, icon, icon_key, sort_order, is_default)
+      SELECT f.family_code, d.name, d.icon, d.icon_key, d.sort_order, true
+      FROM families f
+      CROSS JOIN (VALUES
+        ('Kindness', '💛', 'heart', 0),
+        ('Helpfulness', '🤝', 'handshake', 1),
+        ('Bravery', '🦁', 'shield', 2),
+        ('Resilience', '💪', 'mountain', 3),
+        ('Caring', '🫶', 'hand-heart', 4),
+        ('Chores', '🧹', 'brush', 5),
+        ('Homework', '📖', 'book-open', 6),
+        ('Adventurous', '🌟', 'sparkles', 7)
+      ) AS d(name, icon, icon_key, sort_order)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM behavior_categories bc WHERE bc.family_code = f.family_code
+      )
+      ON CONFLICT (family_code, name) DO NOTHING
+    `).catch(() => {});
 
     console.log('Database tables initialized');
   } finally {

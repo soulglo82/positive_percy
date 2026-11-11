@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import CategoryIcon from '@/components/CategoryIcon';
 import {
   Dialog,
   DialogContent,
@@ -169,7 +170,7 @@ export default function AddPointsModal({ isOpen, onClose, child, onSubmit }) {
                       onClick={() => setCategory(cat.name)}
                       className={chipClass(category === cat.name)}
                     >
-                      <span aria-hidden="true">{cat.icon}</span>
+                      <CategoryIcon iconKey={cat.icon_key} />
                       <span>{cat.name}</span>
                     </button>
                   ))}

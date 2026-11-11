@@ -204,7 +204,7 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
 
-  await page.getByRole('button', { name: /Add Category/ }).click();
+  await page.getByRole('button', { name: /Add behaviour/ }).click();
   await checkScreen(page, 'new behaviour', testInfo);
   await closeDialog(page);
 

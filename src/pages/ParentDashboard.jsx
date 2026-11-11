@@ -90,7 +90,7 @@ export default function ParentDashboard() {
   // Derive quick actions from categories with is_quick_action=true
   const categoryQuickActions = (behaviorCategories || [])
     .filter(c => c.is_quick_action)
-    .map(c => ({ id: c.id, label: c.name, points: c.points || 5, icon: c.icon, category: c.name, assigned_children: c.assigned_children || [] }));
+    .map(c => ({ id: c.id, label: c.name, points: c.points || 5, icon_key: c.icon_key, category: c.name, assigned_children: c.assigned_children || [] }));
 
   // Only the family's own ticked behaviours (A2 W4). None ticked: none shown,
   // and the card points to Settings (external review, 2026-11-11).

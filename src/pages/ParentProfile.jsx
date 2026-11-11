@@ -55,7 +55,7 @@ export default function ParentProfile() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-2">
           <Settings className="w-6 h-6 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
-          <h1 className="font-display text-title font-semibold text-foreground">Family Settings</h1>
+          <h1 className="font-display text-title font-semibold text-foreground">Family settings</h1>
         </div>
 
         {/* Behavior Categories (includes Quick Action toggle + per-child assignment) */}

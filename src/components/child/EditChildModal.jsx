@@ -236,7 +236,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
             disabled={!name.trim() || uploading || saving || ageInvalid}
             className="flex-1"
           >
-            {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Save Changes'}
+            {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Save changes'}
           </Button>
         </DialogFooter>
       </DialogContent>

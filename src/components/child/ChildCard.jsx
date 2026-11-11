@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import CategoryIcon from '@/components/CategoryIcon';
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Gift } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -59,10 +60,10 @@ export default function ChildCard({ child, colour, popKey = 0, onAddPoints, onEd
             </div>
             {week > 0 ? (
               <p className="text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground tabular-nums">{week}</span> Percy Points this week — <span className="text-earn font-medium">Keep it up!</span>
+                <span className="font-semibold text-foreground tabular-nums">{week}</span> points this week
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground">Ready to earn some points!</p>
+              <p className="text-sm text-muted-foreground">No points yet this week</p>
             )}
           </div>
           <div className="text-right shrink-0">
@@ -99,7 +100,7 @@ export default function ChildCard({ child, colour, popKey = 0, onAddPoints, onEd
                   aria-label={`${action.label} +${action.points} for ${child.name}`}
                   className="disabled:opacity-60 flex items-center gap-1.5 text-sm font-medium px-2.5 rounded-md bg-earn-soft text-foreground border border-transparent hover:border-earn active:border-earn transition-colors min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  <span className="shrink-0" aria-hidden="true">{action.icon || '⭐'}</span>
+                  <CategoryIcon iconKey={action.icon_key} />
                   <span className="truncate flex-1 text-left">{action.label}</span>
                   <span className="font-semibold text-earn shrink-0 text-sm tabular-nums">+{action.points}</span>
                 </button>
