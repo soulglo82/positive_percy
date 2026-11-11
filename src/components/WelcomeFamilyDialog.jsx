@@ -35,7 +35,7 @@ export default function WelcomeFamilyDialog({ familyCode, onClose }) {
         <DialogBody className="space-y-4">
           <div className="rounded-md border border-border bg-muted p-4">
             <p className="text-xs text-muted-foreground mb-1">Your family code</p>
-            <p className="font-mono font-semibold text-title tracking-wider text-foreground select-all">{familyCode}</p>
+            <p className="font-mono font-semibold text-title text-foreground select-all">{familyCode}</p>
             <Button type="button" variant="outline" onClick={copyCode} className="w-full mt-3">
               <Copy className="w-4 h-4" aria-hidden="true" />
               Copy family code
