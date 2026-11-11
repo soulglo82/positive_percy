@@ -49,7 +49,7 @@ export default function BehaviorCategoryManager() {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [editIcon, setEditIcon] = useState('star');
-  const [editPoints, setEditPoints] = useState(5);
+  const [editPoints, setEditPoints] = useState(1);
 
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ['behaviorCategories'],
@@ -197,14 +197,14 @@ export default function BehaviorCategoryManager() {
     setEditingId(cat.id);
     setEditName(cat.name);
     setEditIcon(cat.icon_key || 'circle');
-    setEditPoints(cat.points || 5);
+    setEditPoints(cat.points ?? 1);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditName('');
     setEditIcon('star');
-    setEditPoints(5);
+    setEditPoints(1);
   };
 
   if (isLoading) return null;
@@ -249,7 +249,7 @@ export default function BehaviorCategoryManager() {
                       >
                         <span className="shrink-0 w-7 flex justify-center text-muted-foreground"><CategoryIcon iconKey={cat.icon_key} className="w-5 h-5" /></span>
                         <span className="font-medium text-foreground flex-1 min-w-0 truncate text-sm">{cat.name}</span>
-                        <span className="text-sm text-earn font-semibold tabular-nums shrink-0 w-14 text-right">{formatPointsBadge(cat.points || 5)}</span>
+                        <span className="text-sm text-earn font-semibold tabular-nums shrink-0 w-14 text-right">{formatPointsBadge(cat.points ?? 1)}</span>
                         <span className="shrink-0 text-muted-foreground" aria-hidden="true">
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </span>
@@ -289,7 +289,7 @@ export default function BehaviorCategoryManager() {
                                 maxLength={100}
                                 autoFocus
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleUpdate(cat.id, { name: editName, icon_key: editIcon, points: Math.min(1000, Math.max(1, Math.round(Number(editPoints) || 5))) });
+                                  if (e.key === 'Enter') handleUpdate(cat.id, { name: editName, icon_key: editIcon, points: Math.min(1000, Math.max(1, Math.round(Number(editPoints) || 1))) });
                                   if (e.key === 'Escape') cancelEdit();
                                 }}
                               />
@@ -433,17 +433,17 @@ export default function BehaviorCategoryManager() {
 function AddCategoryModal({ isOpen, onClose, onSubmit }) {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('star');
-  const [points, setPoints] = useState(5);
+  const [points, setPoints] = useState(1);
 
   const handleSubmit = () => {
     if (!name.trim()) {
       toast.error('Category name is required');
       return;
     }
-    onSubmit(name.trim(), icon, Math.min(1000, Math.max(1, Math.round(Number(points) || 5))));
+    onSubmit(name.trim(), icon, Math.min(1000, Math.max(1, Math.round(Number(points) || 1))));
     setName('');
     setIcon('star');
-    setPoints(5);
+    setPoints(1);
   };
 
   return (
