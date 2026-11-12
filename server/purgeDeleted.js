@@ -7,6 +7,7 @@
 // Dry-run is the default, even if the script is accidentally launched.
 // The destructive mode additionally requires two operator controls.
 import pool from './db.js';
+import { uploadIdOf } from './uploads.js';
 
 const MAX_PER_SWEEP = 25;
 
@@ -45,8 +46,15 @@ export async function purgeExpiredFamilies(db, { execute = false, limit = MAX_PE
         }
 
         const kids = await client.query(
-          'SELECT id FROM children WHERE family_code = $1', [familyCode]
+          'SELECT id, avatar_url FROM children WHERE family_code = $1', [familyCode]
         );
+        const rewards = await client.query(
+          'SELECT image_url FROM rewards WHERE family_code = $1', [familyCode]
+        );
+        const legacyPhotoIds = [...new Set([
+          ...kids.rows.map(c => uploadIdOf(c.avatar_url)),
+          ...rewards.rows.map(r => uploadIdOf(r.image_url)),
+        ].filter(Boolean))];
         stats.children += kids.rowCount;
 
         // Remove both modern family-owned history and older rows with a NULL
@@ -72,7 +80,27 @@ export async function purgeExpiredFamilies(db, { execute = false, limit = MAX_PE
         const deletedPhotos = await client.query(
           'DELETE FROM uploads WHERE family_code = $1', [familyCode]
         );
-        stats.photos += deletedPhotos.rowCount;
+        let legacyPhotosDeleted = 0;
+        if (legacyPhotoIds.length) {
+          // Legacy uploads could have no family_code. Delete them only when
+          // no OTHER family refers to them; never erase a shared/other image.
+          const legacy = await client.query(`
+            DELETE FROM uploads u
+            WHERE u.family_code IS NULL AND u.id = ANY($2::uuid[])
+              AND NOT EXISTS (
+                SELECT 1 FROM children c
+                WHERE c.family_code <> $1
+                  AND c.avatar_url = '/api/uploads/' || u.id::text
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM rewards r
+                WHERE r.family_code <> $1
+                  AND r.image_url = '/api/uploads/' || u.id::text
+              )
+          `, [familyCode, legacyPhotoIds]);
+          legacyPhotosDeleted = legacy.rowCount;
+        }
+        stats.photos += deletedPhotos.rowCount + legacyPhotosDeleted;
         const deletion = await client.query(
           'DELETE FROM families WHERE family_code = $1 AND deletion_due_at <= NOW()', [familyCode]
         );
@@ -82,7 +110,7 @@ export async function purgeExpiredFamilies(db, { execute = false, limit = MAX_PE
 
         // Log counts only. Never log the secret code or child identities.
         console.info('Family deletion purge completed', {
-          children: kids.rowCount, photos: deletedPhotos.rowCount,
+          children: kids.rowCount, photos: deletedPhotos.rowCount + legacyPhotosDeleted,
         });
       } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
