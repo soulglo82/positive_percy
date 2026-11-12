@@ -26,6 +26,7 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
   const [categoryId, setCategoryId] = useState('');
   const [schedule, setSchedule] = useState('weekly');
   const [scheduledDate, setScheduledDate] = useState('');
+  const [startDate, setStartDate] = useState('');
   const [weekdays, setWeekdays] = useState([1, 2, 3, 4, 5]);
   const [saving, setSaving] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState(null);
@@ -47,7 +48,8 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
     setEditingId(null);
     setTitle('');
     setSchedule('weekly');
-    setScheduledDate(today || '');
+    setScheduledDate(today || data?.date || '');
+    setStartDate(today || data?.date || '');
     setWeekdays([1, 2, 3, 4, 5]);
     setCategoryId(available[0]?.id || '');
   };
@@ -58,6 +60,7 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
       setTitle('');
       setSchedule('weekly');
       setScheduledDate(today || '');
+      setStartDate(today || '');
       setWeekdays([1, 2, 3, 4, 5]);
       setCategoryId(available[0]?.id || '');
     }
@@ -70,7 +73,10 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
     setTitle(goal.title);
     setCategoryId(goal.category_id || '');
     setSchedule(goal.schedule_kind);
-    setScheduledDate(goal.scheduled_date || today || '');
+    setScheduledDate(goal.scheduled_date || today || data?.date || '');
+    // Editing a running routine cannot backdate its new start.
+    const localDate = today || data?.date || '';
+    setStartDate(goal.start_date && goal.start_date >= localDate ? goal.start_date : localDate);
     setWeekdays(goal.weekdays?.length ? goal.weekdays : [1, 2, 3, 4, 5]);
   };
 
@@ -86,7 +92,7 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
         title: title.trim(), child_id: child.id, category_id: categoryId,
         schedule_kind: schedule,
         ...(schedule === 'one_off' ? { scheduled_date: scheduledDate }
-          : { weekdays, start_date: editingId ? (today || data?.date) : (today || data?.date) }),
+          : { weekdays, start_date: startDate || today || data?.date }),
       };
       await saveTodayGoal(payload, editingId);
       await queryClient.invalidateQueries({ queryKey: ['todaysGoals'] });
@@ -174,6 +180,7 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
                     onChange={event => setScheduledDate(event.target.value)} />
                 </div>
               ) : (
+                <div className="space-y-3">
                 <fieldset className="space-y-2">
                   <legend className="text-sm font-medium text-foreground">Repeat on</legend>
                   <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
@@ -187,6 +194,13 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
                   </div>
                   {weekdays.length === 0 && <p className="text-sm text-destructive">Choose at least one day.</p>}
                 </fieldset>
+                <div className="space-y-2">
+                  <Label htmlFor="goal-start-date">Starts on</Label>
+                  <Input id="goal-start-date" type="date" min={today || data?.date || undefined}
+                    value={startDate || today || data?.date || ''} required
+                    onChange={event => setStartDate(event.target.value)} />
+                </div>
+                </div>
               )}
               <div className="flex flex-wrap gap-2">
                 <Button type="submit" disabled={saving || !categoryId || !title.trim() || (schedule === 'weekly' && weekdays.length === 0)}>
