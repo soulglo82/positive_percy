@@ -4,6 +4,7 @@ const ICON_KEY_MESSAGE = 'Choose one of the icons shown';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import pool from './db.js';
+import { prepareFamilyExport, MAX_EXPORT_BYTES } from './export.js';
 import { pickAllowedColumns, findMissingRequired } from './columns.js';
 import { uploadIdOf, uploadsAreOwned, releaseUpload, UPLOAD_REF_COLUMNS } from './uploads.js';
 import { weekPointsFor, withWeekPoints, weekStartSql, localDays, validTimezone, isGenericZone, recomputeLastActive } from './week.js';
@@ -385,6 +386,35 @@ router.post('/api/family/join', async (req, res) => {
     res.json({ ...rows[0], token });
   } catch (err) {
     return serverError(res, 'Join family error', err);
+  }
+});
+
+// Download the requesting family's own data. The family code is a credential,
+// so it and JWTs are deliberately not included in the downloaded JSON.
+// This MUST be before /api/family/:code (the generic :code route).
+router.get('/api/family/export', authMiddleware, async (req, res) => {
+  try {
+    const includePhotos = req.query.photos !== 'exclude';
+    const exported = await prepareFamilyExport(pool, req.familyCode, { includePhotos });
+    if (!exported) return res.status(404).json({ error: 'Family not found' });
+    res.set('Cache-Control', 'private, no-store, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('X-Content-Type-Options', 'nosniff');
+    if (exported.byteLength > MAX_EXPORT_BYTES) {
+      return res.status(413).json({
+        error: 'The export is too large. Try downloading without embedded photos.',
+      });
+    }
+    res.set('Content-Disposition', 'attachment; filename="positive-percy-family-data.json"');
+    res.type('json');
+    return res.send(exported.body);
+  } catch (err) {
+    if (err.code === 'EXPORT_TOO_LARGE') {
+      return res.status(413).json({
+        error: 'The export is too large. Try downloading without embedded photos.',
+      });
+    }
+    return serverError(res, 'Export family data error', err);
   }
 });
 
