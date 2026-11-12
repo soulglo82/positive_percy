@@ -5,7 +5,7 @@ export const MAX_AWARD = 1000;
 
 // Every query that shows a balance, history or weekly figures. Invalidated
 // together after any points change so no screen shows a stale number.
-export const POINTS_QUERY_KEYS = [['children'], ['recentActivity'], ['activityFeed'], ['weeklySummary']];
+export const POINTS_QUERY_KEYS = [['children'], ['recentActivity'], ['activityFeed'], ['weeklySummary'], ['todaysGoals']];
 
 export function refreshPoints(queryClient) {
   for (const queryKey of POINTS_QUERY_KEYS) {
