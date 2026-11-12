@@ -10,7 +10,7 @@ done
 for key in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_S3_BUCKET AWS_S3_ENDPOINT PERCY_R2_BACKUP_KEY; do
   [[ -n "$(printenv "$key" || true)" ]] || { echo "Missing required environment variable: $key" >&2; exit 2; }
 done
-[[ "$PERCY_RESTORE_DRILL_ACK" == 'isolated-docker-only' ]] || { echo 'Set PERCY_RESTORE_DRILL_ACK=isolated-docker-only after confirming isolation' >&2; exit 2; }
+[[ "${PERCY_RESTORE_DRILL_ACK:-}" == 'isolated-docker-only' ]] || { echo 'Set PERCY_RESTORE_DRILL_ACK=isolated-docker-only after confirming isolation' >&2; exit 2; }
 
 work="$(mktemp -d)"
 container="percy-restore-$$-$RANDOM"
