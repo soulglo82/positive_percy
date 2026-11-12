@@ -1,6 +1,6 @@
 // Batch C PR3: verify the parent can download a real, openable PDF on mobile.
 import { test, expect } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 
 const family = JSON.parse(process.env.PERCY_E2E_FAMILY || '{}');
 
@@ -32,5 +32,9 @@ test('Family settings downloads a multi-page A4 PDF and still offers technical J
   await testInfo.attach('positive-percy-family-report.pdf', {
     body: buffer, contentType: 'application/pdf',
   });
+  // Keep a synthetic sample in CI's screenshot artifact for visual PDF QA.
+  // Only the throwaway fixture family's data is used here.
+  await mkdir('test-results', { recursive: true });
+  await writeFile('test-results/sample-family-report.pdf', buffer);
   await expect(page.getByRole('button', { name: 'Download technical data (JSON)' })).toBeEnabled();
 });
