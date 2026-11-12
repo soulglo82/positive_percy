@@ -308,8 +308,15 @@ router.post('/api/upload', authMiddleware, async (req, res) => {
 router.get('/api/uploads/:id', async (req, res) => {
   try {
     if (!isUuid(req.params.id)) return res.status(404).send('Not found');
-    const { rows } = await pool.query('SELECT data FROM uploads WHERE id = $1', [req.params.id]);
-    if (rows.length === 0) return res.status(404).send('Not found');
+    const { rows } = await pool.query(`
+      SELECT u.data, u.family_code, f.deletion_due_at, f.id AS family_exists
+      FROM uploads u LEFT JOIN families f ON f.family_code = u.family_code
+      WHERE u.id = $1
+    `, [req.params.id]);
+    if (!rows.length ||
+      (rows[0].family_code && (rows[0].deletion_due_at || rows[0].family_exists === null))) {
+      return res.status(404).send('Not found');
+    }
 
     const buffer = decodeDataUrl(rows[0].data) || Buffer.from(String(rows[0].data));
     const type = sniffImageType(buffer);
@@ -321,7 +328,9 @@ router.get('/api/uploads/:id', async (req, res) => {
     }
     res.set('Content-Type', type);
     res.set('Content-Disposition', 'inline');
-    res.set('Cache-Control', 'public, max-age=31536000');
+    // Photos are children's personal data. Do not cache them for a year,
+    // especially when a family may enter its seven-day deletion window.
+    res.set('Cache-Control', 'private, no-store, max-age=0');
     return res.send(buffer);
   } catch (err) {
     console.error('Upload serve error:', err);
