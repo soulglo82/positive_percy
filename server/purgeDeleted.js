@@ -86,16 +86,16 @@ export async function purgeExpiredFamilies(db, { execute = false, limit = MAX_PE
           // no OTHER family refers to them; never erase a shared/other image.
           const legacy = await client.query(`
             DELETE FROM uploads u
-            WHERE u.family_code IS NULL AND u.id = ANY($2::uuid[])
+            WHERE u.family_code IS NULL AND u.id = ANY($1::uuid[])
               AND NOT EXISTS (
                 SELECT 1 FROM children c
-                WHERE lower((regexp_match(c.avatar_url, $3, 'i'))[1]) = u.id::text
+                WHERE lower((regexp_match(c.avatar_url, $2, 'i'))[1]) = u.id::text
               )
               AND NOT EXISTS (
                 SELECT 1 FROM rewards r
-                WHERE lower((regexp_match(r.image_url, $3, 'i'))[1]) = u.id::text
+                WHERE lower((regexp_match(r.image_url, $2, 'i'))[1]) = u.id::text
               )
-          `, [familyCode, legacyPhotoIds, UPLOAD_URL_PATTERN]);
+          `, [legacyPhotoIds, UPLOAD_URL_PATTERN]);
           legacyPhotosDeleted = legacy.rowCount;
         }
         stats.photos += deletedPhotos.rowCount + legacyPhotosDeleted;
