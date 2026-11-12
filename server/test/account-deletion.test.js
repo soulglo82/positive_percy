@@ -62,8 +62,18 @@ describe.skipIf(!hasDb)('Batch C: 7-day family deletion and recovery', () => {
     token, body: { confirmation: confirm },
   });
 
-  it('remains inaccessible when any launch safeguard is missing', async () => {
+  it('remains inaccessible without a durable erasure registry, even if all flags are true', async () => {
     expect(purgeIsEnabled({})).toBe(false);
+    registerErasureRegistry(null);
+    expect((await api(ctx.base, 'GET', '/api/family/deletion-capability')).json.enabled).toBe(false);
+    expect((await requestDeletion(A.token, A.code)).status).toBe(404);
+    expect(() => registerErasureRegistry({
+      recordPurgeReceipt: async () => ({ confirmed: true }),
+    })).toThrow(/requires durable write and restore replay/);
+    registerErasureRegistry({
+      recordPurgeReceipt: async () => ({ confirmed: true, id: 'isolated-test' }),
+      replayBeforeRestore: async () => true,
+    });
     delete process.env.PERCY_DELETION_CRON_VERIFIED;
     expect((await api(ctx.base, 'GET', '/api/family/deletion-capability')).json.enabled).toBe(false);
     expect((await requestDeletion(A.token, A.code)).status).toBe(404);
