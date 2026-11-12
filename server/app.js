@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
 import helmet from 'helmet';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
-import routes, { setBroadcast, verifyToken } from './routes.js';
+import routes, { setBroadcast, setCloseFamilySockets, verifyToken } from './routes.js';
 import pool from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -49,6 +49,8 @@ export function createApp() {
   });
   app.post('/api/family/join', limit(15, 10));
   app.post('/api/family/create', limit(60, 10));
+  app.post('/api/family/restore', limit(60, 5));
+  app.post('/api/family/request-deletion', limit(60, 5));
   app.post('/api/upload', limit(15, 60));
   // Limit credential-protected bulk exports, even for valid accounts.
   app.get('/api/family/export', limit(60, 10));
@@ -113,10 +115,18 @@ export function createApp() {
           // Tokens stay cryptographically valid after a family is removed.
           try {
             const { rowCount } = await pool.query(
-              'SELECT 1 FROM families WHERE family_code = $1', [verified]
+              'SELECT auth_version, deletion_due_at FROM families WHERE family_code = $1', [verified]
             );
             if (rowCount === 0) {
               ws.close(4401, 'Family no longer available');
+              return;
+            }
+            // Deny pending deletion and all pre-deletion session generations.
+            // Reconnects cannot bypass account lockout.
+            const check = await pool.query('SELECT auth_version, deletion_due_at FROM families WHERE family_code = $1', [verified]);
+            if (!check.rows.length || check.rows[0].deletion_due_at ||
+                Number(check.rows[0].auth_version) !== Number(auth.authVersion)) {
+              ws.close(4403, 'Family session revoked');
               return;
             }
           } catch {
@@ -165,6 +175,16 @@ export function createApp() {
       }
     }
   }
+
+  // Close live sessions as soon as a family's deletion request commits.
+  setCloseFamilySockets((code) => {
+    const clients = familyClients.get(code);
+    if (!clients) return;
+    for (const ws of clients) {
+      if (ws.readyState === 1) ws.close(4403, 'Family pending deletion');
+    }
+    familyClients.delete(code);
+  });
 
   // Share broadcast function with routes
   setBroadcast(broadcast);
