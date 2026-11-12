@@ -154,7 +154,8 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
       if (!choice) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Child or category not found.' }); }
       const today = await localToday(client, req.familyCode);
       if (goal.schedule_kind === 'weekly') goal.start_date = goal.start_date || today.date;
-      if (goal.schedule_kind === 'one_off' && goal.start_date < today.date) {
+      // Editing a weekly schedule must respect the same no-backdating rule as creation.
+      if (goal.start_date < today.date) {
         await client.query('ROLLBACK');
         return res.status(400).json({ error: 'Choose today or a future date.' });
       }
