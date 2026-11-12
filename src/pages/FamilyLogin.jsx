@@ -11,10 +11,11 @@ import { PERCY } from "@/constants/terminology";
 import { takeInviteCode } from "@/lib/invite";
 
 export default function FamilyLogin() {
-  const { createFamily, joinFamily } = useAuth();
+  const { createFamily, joinFamily, restoreFamily } = useAuth();
   const [mode, setMode] = useState(null); // null, 'create', 'join'
   const [familyName, setFamilyName] = useState('');
   const [joinCode, setJoinCode] = useState('');
+  const [deletionPending, setDeletionPending] = useState(null);
   const [loading, setLoading] = useState(false);
   const [createdCode, setCreatedCode] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -47,7 +48,25 @@ export default function FamilyLogin() {
     try {
       await joinFamily(joinCode.trim());
     } catch (error) {
-      toast.error(error.message);
+      if (error.deletionPending) {
+        setDeletionPending({ until: error.restoreBefore });
+      } else {
+        toast.error(error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!deletionPending || joinCode.length < 6 || loading) return;
+    setLoading(true);
+    try {
+      await restoreFamily(joinCode);
+      setDeletionPending(null);
+      toast.success('Your family has been restored.');
+    } catch (err) {
+      toast.error(err.message || 'Could not restore family.');
     } finally {
       setLoading(false);
     }
@@ -186,7 +205,10 @@ export default function FamilyLogin() {
                 <Input
                   id="family-code"
                   value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  onChange={(e) => {
+                    setJoinCode(e.target.value.toUpperCase());
+                    setDeletionPending(null);
+                  }}
                   placeholder="e.g., ABC123"
                   className="text-lg mt-1 font-mono text-center"
                   maxLength={6}
@@ -196,13 +218,27 @@ export default function FamilyLogin() {
                   Enter the 6-character code the other parent shared with you.
                 </p>
               </div>
-              <Button
-                onClick={handleJoin}
-                disabled={joinCode.length < 6 || loading}
-                className="w-full"
-              >
-                {loading ? 'Joining...' : 'Join Family'}
-              </Button>
+              {deletionPending && (
+                <div role="status" className="rounded-md bg-muted border border-border p-3 space-y-2">
+                  <p className="text-sm font-semibold text-foreground">This family is pending deletion.</p>
+                  <p className="text-sm text-muted-foreground">
+                    You can restore the family's data using its code before the
+                    seven-day recovery period expires.
+                  </p>
+                  <Button onClick={handleRestore} disabled={loading} className="w-full">
+                    {loading ? 'Restoring family…' : 'Restore family'}
+                  </Button>
+                </div>
+              )}
+              {!deletionPending && (
+                <Button
+                  onClick={handleJoin}
+                  disabled={joinCode.length < 6 || loading}
+                  className="w-full"
+                >
+                  {loading ? 'Joining...' : 'Join Family'}
+                </Button>
+              )}
               <Button
                 onClick={() => setMode(null)}
                 variant="ghost"
