@@ -310,6 +310,10 @@ router.post('/api/upload', authMiddleware, async (req, res) => {
 // ids are random UUIDs. The type comes from the bytes, never from what was
 // stored, so rows saved before validation existed can never render as HTML.
 router.get('/api/uploads/:id', async (req, res) => {
+  // Even unowned or missing legacy images must never fall through to HTML or caches.
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('Cache-Control', 'private, no-store, max-age=0');
+  res.type('text/plain');
   try {
     if (!isUuid(req.params.id)) return res.status(404).send('Not found');
     const { rows } = await pool.query(`
