@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import pool from './db.js';
 import { prepareFamilyExport, MAX_EXPORT_BYTES } from './export.js';
 import { pickAllowedColumns, findMissingRequired } from './columns.js';
-import { uploadIdOf, uploadsAreOwned, releaseUpload, UPLOAD_REF_COLUMNS } from './uploads.js';
+import { uploadIdOf, uploadsAreOwned, releaseUpload, UPLOAD_REF_COLUMNS, UPLOAD_URL_PATTERN } from './uploads.js';
 import { weekPointsFor, withWeekPoints, weekStartSql, localDays, validTimezone, isGenericZone, recomputeLastActive } from './week.js';
 
 const router = Router();
@@ -313,12 +313,30 @@ router.get('/api/uploads/:id', async (req, res) => {
   try {
     if (!isUuid(req.params.id)) return res.status(404).send('Not found');
     const { rows } = await pool.query(`
-      SELECT u.data, u.family_code, f.deletion_due_at, f.id AS family_exists
+      SELECT u.data, u.family_code, f.deletion_due_at, f.id AS family_exists,
+        CASE WHEN u.family_code IS NULL THEN (
+          EXISTS (
+            SELECT 1 FROM children c
+            JOIN families cf ON cf.family_code = c.family_code
+            WHERE cf.deletion_due_at IS NULL
+              AND lower((regexp_match(c.avatar_url, $2, 'i'))[1]) = u.id::text
+          ) OR EXISTS (
+            SELECT 1 FROM rewards r
+            JOIN families rf ON rf.family_code = r.family_code
+            WHERE rf.deletion_due_at IS NULL
+              AND lower((regexp_match(r.image_url, $2, 'i'))[1]) = u.id::text
+          )
+        ) ELSE FALSE END AS legacy_has_active_reference
       FROM uploads u LEFT JOIN families f ON f.family_code = u.family_code
       WHERE u.id = $1
-    `, [req.params.id]);
+    `, [req.params.id, UPLOAD_URL_PATTERN]);
     if (!rows.length ||
-      (rows[0].family_code && (rows[0].deletion_due_at || rows[0].family_exists === null))) {
+        (rows[0].family_code
+          ? rows[0].deletion_due_at || !rows[0].family_exists
+          : !rows[0].legacy_has_active_reference)) {
+      // Legacy unowned URLs must stop being served when every known owner is
+      // suspended. Orphaned unowned URLs are not a public image library.
+      res.set('Cache-Control', 'private, no-store, max-age=0');
       return res.status(404).send('Not found');
     }
 
