@@ -91,12 +91,31 @@ export const AuthProvider = ({ children }) => {
       body: JSON.stringify({ family_code: code.toUpperCase() }),
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to join family');
+      const details = await res.json();
+      const error = new Error(details.error || 'Failed to join family');
+      error.deletionPending = Boolean(details.deletion_pending);
+      error.restoreBefore = details.restore_before;
+      throw error;
     }
     const family = await res.json();
     localStorage.setItem(TOKEN_KEY, family.token);
     await loadUser(code.toUpperCase(), family.token);
+  };
+
+  const restoreFamily = async (code) => {
+    const res = await fetch('/api/family/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ family_code: code.trim().toUpperCase() }),
+    });
+    if (!res.ok) {
+      const details = await res.json().catch(() => ({}));
+      throw new Error(details.error || 'Could not restore family.');
+    }
+    const family = await res.json();
+    localStorage.setItem(TOKEN_KEY, family.token);
+    await loadUser(family.family_code, family.token);
+    return family;
   };
 
   const updateUser = async (data) => {
@@ -131,6 +150,7 @@ export const AuthProvider = ({ children }) => {
       isLoading,
       createFamily,
       joinFamily,
+      restoreFamily,
       updateUser,
       logout,
     }}>
