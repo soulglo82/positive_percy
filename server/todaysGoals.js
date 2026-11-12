@@ -2,7 +2,6 @@
 // All completion dates and weekdays come from Postgres in the family's timezone.
 // Points flow through the SAME point_events ledger as manual awards.
 import { Router } from 'express';
-import crypto from 'node:crypto';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TITLE_MAX = 100;
@@ -155,7 +154,7 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
       if (!choice) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Child or category not found.' }); }
       const today = await localToday(client, req.familyCode);
       if (goal.schedule_kind === 'weekly') goal.start_date = goal.start_date || today.date;
-      if (goal.start_date < today.date) {
+      if (goal.schedule_kind === 'one_off' && goal.start_date < today.date) {
         await client.query('ROLLBACK');
         return res.status(400).json({ error: 'Choose today or a future date.' });
       }
@@ -206,7 +205,9 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
       if (!childRows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Child not found.' }); }
       const child = childRows[0];
       const { rows: goals } = await client.query(
-        'SELECT * FROM today_goals WHERE id=$1 AND family_code=$2 AND archived_at IS NULL FOR UPDATE',
+        `SELECT *, to_char(scheduled_date, 'YYYY-MM-DD') AS scheduled_day,
+          to_char(start_date, 'YYYY-MM-DD') AS begins_day
+         FROM today_goals WHERE id=$1 AND family_code=$2 AND archived_at IS NULL FOR UPDATE`,
         [id, req.familyCode]);
       if (!goals.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Goal not found.' }); }
       const g = goals[0];
@@ -227,8 +228,8 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
       if (reusedEvent) { await client.query('ROLLBACK'); return res.status(409).json({ error: 'Invalid request.' }); }
       const today = await localToday(client, req.familyCode);
       const due = g.schedule_kind === 'one_off'
-        ? g.scheduled_date.toISOString().slice(0,10) === today.date
-        : g.start_date.toISOString().slice(0,10) <= today.date && g.weekdays.includes(today.weekday);
+        ? g.scheduled_day === today.date
+        : g.begins_day <= today.date && g.weekdays.includes(today.weekday);
       if (!due) {
         await client.query('ROLLBACK');
         return res.status(409).json({ error: 'This goal is not scheduled for today.' });
@@ -240,8 +241,9 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
       }
       const { rowCount: done } = await client.query(`
         SELECT 1 FROM today_goal_completions
-        WHERE goal_id=$1 AND scheduled_for=$2::date AND undone_at IS NULL
-      `, [id, today.date]);
+        WHERE goal_id=$1 AND undone_at IS NULL
+          AND ($3::boolean OR scheduled_for=$2::date)
+      `, [id, today.date, g.schedule_kind === 'one_off']);
       if (done) { await client.query('ROLLBACK'); return res.status(409).json({ error: 'Goal already completed today.' }); }
 
       const points = choice.points, category = choice.category_name;
