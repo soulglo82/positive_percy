@@ -19,7 +19,13 @@ router.param('id', (req, res, next, id) => {
 });
 
 let broadcastFn = () => {};
+let closeFamilySocketsFn = () => {};
 export function setBroadcast(fn) { broadcastFn = fn; }
+export function setCloseFamilySockets(fn) { closeFamilySocketsFn = fn; }
+
+// A destructive account workflow is unavailable by default; do not expose it
+// until backups, recovery, privacy and operator identity have been reviewed.
+const deletionEnabled = () => process.env.PERCY_FAMILY_DELETION_ENABLED === 'true';
 
 const JWT_EXPIRY = '30d';
 const MIN_SECRET_LENGTH = 32;
@@ -35,8 +41,8 @@ export function getJwtSecret() {
   return secret;
 }
 
-function signToken(familyCode) {
-  return jwt.sign({ family_code: familyCode }, getJwtSecret(), { expiresIn: JWT_EXPIRY });
+function signToken(familyCode, authVersion = 0) {
+  return jwt.sign({ family_code: familyCode, auth_version: authVersion }, getJwtSecret(), { expiresIn: JWT_EXPIRY });
 }
 
 // Returns { familyCode, expiresAt } for a valid token, or null.
@@ -45,7 +51,7 @@ export function verifyToken(token) {
   try {
     const decoded = jwt.verify(token, getJwtSecret());
     if (typeof decoded.family_code !== 'string') return null;
-    return { familyCode: decoded.family_code, expiresAt: decoded.exp ? decoded.exp * 1000 : null };
+    return { familyCode: decoded.family_code, authVersion: decoded.auth_version ?? 0, expiresAt: decoded.exp ? decoded.exp * 1000 : null };
   } catch {
     return null;
   }
@@ -68,11 +74,20 @@ async function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
   try {
-    const { rowCount } = await pool.query(
-      'SELECT 1 FROM families WHERE family_code = $1', [decoded.family_code]
+    const { rows } = await pool.query(
+      'SELECT auth_version, deletion_due_at FROM families WHERE family_code = $1', [decoded.family_code]
     );
-    if (rowCount === 0) {
+    if (!rows.length) {
       return res.status(401).json({ error: 'Family no longer available. Sign in again.' });
+    }
+    if (rows[0].deletion_due_at) {
+      return res.status(403).json({ error: 'This family is pending deletion. Use its code to restore it.', deletion_pending: true });
+    }
+    // Sessions issued before the first deletion have auth_version 0.
+    // Increment it when deletion is requested so old tokens never regain
+    // access even after a recovery or a backup restore.
+    if (Number(decoded.auth_version ?? 0) !== Number(rows[0].auth_version)) {
+      return res.status(401).json({ error: 'Session expired. Sign in again.' });
     }
     req.familyCode = decoded.family_code;
     return next();
@@ -353,7 +368,7 @@ router.post('/api/family/create', async (req, res) => {
         [family_code]
       );
 
-      const token = signToken(family_code);
+      const token = signToken(family_code, rows[0].auth_version);
       return res.json({ ...rows[0], token });
     } catch (err) {
       if (err.code === '23505') {
@@ -382,10 +397,78 @@ router.post('/api/family/join', async (req, res) => {
       return res.status(404).json({ error: 'Family not found. Check the code and try again.' });
     }
 
-    const token = signToken(rows[0].family_code);
+    if (rows[0].deletion_due_at) {
+      return res.status(409).json({
+        error: 'This family is pending deletion. You can restore it with the family code before the recovery window ends.',
+        deletion_pending: true,
+        restore_before: rows[0].deletion_due_at,
+      });
+    }
+    const token = signToken(rows[0].family_code, rows[0].auth_version);
     res.json({ ...rows[0], token });
   } catch (err) {
     return serverError(res, 'Join family error', err);
+  }
+});
+
+// Capability endpoint lets clients hide the entire destructive flow until
+// the operator has enabled it after legal and recovery checks.
+router.get('/api/family/deletion-capability', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ enabled: deletionEnabled(), recovery_days: 7 });
+});
+
+// The code holder must type the exact family code to confirm the request.
+// The SQL update is atomic and also revokes every existing family JWT.
+router.post('/api/family/request-deletion', authMiddleware, async (req, res) => {
+  if (!deletionEnabled()) return res.status(404).json({ error: 'Not available' });
+  if (req.body?.confirmation !== req.familyCode) {
+    return res.status(400).json({ error: 'Enter your family code exactly to confirm deletion.' });
+  }
+  try {
+    const { rows } = await pool.query(`
+      UPDATE families
+      SET deletion_requested_at = NOW(),
+          deletion_due_at = NOW() + INTERVAL '7 days',
+          auth_version = auth_version + 1
+      WHERE family_code = $1 AND deletion_due_at IS NULL
+      RETURNING family_name, deletion_due_at
+    `, [req.familyCode]);
+    if (!rows.length) return res.status(409).json({ error: 'Deletion already requested. Sign in with the code to restore it.' });
+    const dueAt = rows[0].deletion_due_at;
+    // Revoke existing WebSocket sessions immediately as well.
+    closeFamilySocketsFn(req.familyCode);
+    res.set('Cache-Control', 'no-store');
+    return res.json({ deletion_pending: true, due_at: dueAt });
+  } catch (err) {
+    return serverError(res, 'Request deletion error', err);
+  }
+});
+
+// Parents recover a pending family by re-entering the same secret code.
+// Refuse recovery after expiry; a database purger may process it at any time.
+router.post('/api/family/restore', async (req, res) => {
+  if (!deletionEnabled()) return res.status(404).json({ error: 'Not available' });
+  const code = typeof req.body?.family_code === 'string'
+    ? req.body.family_code.trim().toUpperCase() : '';
+  if (!/^[A-Z2-9]{6}$/.test(code)) {
+    return res.status(400).json({ error: 'Enter a valid family code.' });
+  }
+  try {
+    const { rows } = await pool.query(`
+      UPDATE families
+      SET deletion_requested_at = NULL, deletion_due_at = NULL
+      WHERE family_code = $1 AND deletion_due_at > NOW()
+      RETURNING family_name, auth_version
+    `, [code]);
+    if (!rows.length) {
+      return res.status(404).json({ error: 'This family is not available for recovery.' });
+    }
+    const token = signToken(code, rows[0].auth_version);
+    res.set('Cache-Control', 'no-store');
+    return res.json({ family_code: code, family_name: rows[0].family_name, token });
+  } catch (err) {
+    return serverError(res, 'Restore family error', err);
   }
 });
 
