@@ -12,14 +12,14 @@
 
 ## Four independent production flags
 
-The feature is **invisible and cannot be invoked** until all four flags are set to exactly `true` in the application's Railway service:
+The feature is **invisible and cannot be invoked** until all four flags are set to exactly `true` **and a reviewed external erasure registry adapter has actually been registered by the server**. Merely setting flags is insufficient; this PR has no production adapter.
 
 - `PERCY_FAMILY_DELETION_ENABLED` — operator has approved the feature and legal text.
 - `PERCY_FAMILY_PURGE_ENABLED` — destructive purger operator approval.
 - `PERCY_RESTORE_DRILL_VERIFIED` — a recent R2 archive was actually restored into an isolated Postgres and verified; document the evidence, date, and responsible person.
 - `PERCY_DELETION_CRON_VERIFIED` — scheduled maintenance has been deployed to Railway and its logs and alerting were demonstrated.
 
-The dedicated `npm run maintenance:purge-families` job **also** requires `PERCY_FAMILY_PURGE_ENABLED=true` and `PERCY_RESTORE_DRILL_VERIFIED=true`. **Additionally, the purge API now requires a confirmed durable external erasure receipt callback. No production writer is installed in this PR; therefore the maintenance command deliberately refuses irreversible deletion even if the flags are enabled.** The permanent erasure registry and offline replay design is documented separately. **Do not set any flags in this PR.**
+The dedicated `npm run maintenance:purge-families` job **also** requires `PERCY_FAMILY_PURGE_ENABLED=true` and `PERCY_RESTORE_DRILL_VERIFIED=true`. **Additionally, the purge API now requires a confirmed durable external erasure receipt callback, and the user-facing feature requires a registered erasure registry with both receipt-writing and disaster-recovery replay functions. No production adapter/writer is installed in this PR; therefore the UI, request/recovery endpoints and maintenance purge deliberately remain unavailable even if the flags are enabled.** The permanent erasure registry and offline replay design is documented separately. **Do not set any flags in this PR.**
 
 ## Operational restore and purge runbook (required before enablement)
 
