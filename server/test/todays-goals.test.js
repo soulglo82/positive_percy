@@ -158,6 +158,28 @@ describe.skipIf(!hasDb)("Batch E: Today's Goals", () => {
     expect((await complete(weekly.id)).status).toBe(409);
   });
 
+  it('rejects a weekly edit with a start date before the family-local day', async () => {
+    const created = await create({
+      title: 'Weekly future routine', child_id: child.id, category_id: kindness.id,
+      schedule_kind: 'weekly', weekdays: [weekday], start_date: today,
+    });
+    expect(created.status).toBe(201);
+    const yesterday = new Date(today + 'T00:00:00.000Z');
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    const changed = await api(ctx.base, 'PUT', `/api/todays-goals/${created.json.id}`, {
+      token: fam.token,
+      body: {
+        title: 'Backdated routine', child_id: child.id, category_id: kindness.id,
+        schedule_kind: 'weekly', weekdays: [weekday],
+        start_date: yesterday.toISOString().slice(0, 10),
+      },
+    });
+    expect(changed.status).toBe(400);
+    const saved = (await list(fam.token, '?manage=true')).json.goals.find(g => g.id === created.json.id);
+    expect(saved.title).toBe('Weekly future routine');
+    expect(saved.start_date).toBe(today);
+  });
+
   it('concurrent double taps produce one goal completion and one award', async () => {
     const created = await create(payload('Concurrent task'));
     expect(created.status).toBe(201);
