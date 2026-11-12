@@ -2,7 +2,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import WebSocket from 'ws';
 import { startApp, stopApp, api, makeFamily } from './harness.js';
-import { purgeExpiredFamilies, purgeIsEnabled } from '../purgeDeleted.js';
+// Import maintenance after startApp initialises the disposable Postgres URL.
+let purgeExpiredFamilies, purgeIsEnabled;
 
 const hasDb = Boolean(process.env.TEST_DATABASE_URL);
 const flags = [
@@ -18,6 +19,7 @@ describe.skipIf(!hasDb)('Batch C: 7-day family deletion and recovery', () => {
   beforeAll(async () => {
     for (const f of flags) process.env[f] = 'true';
     ctx = await startApp();
+    ({ purgeExpiredFamilies, purgeIsEnabled } = await import('../purgeDeleted.js'));
     A = await makeFamily(ctx.base, 'Deleted family');
     B = await makeFamily(ctx.base, 'Healthy family');
     const a = await api(ctx.base, 'POST', '/api/children', {
