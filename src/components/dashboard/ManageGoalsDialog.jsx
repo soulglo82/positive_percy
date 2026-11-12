@@ -39,6 +39,10 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
     refetchOnWindowFocus: true,
   });
 
+  useEffect(() => {
+    if (open && !editingId && !categoryId && available.length) setCategoryId(available[0].id);
+  }, [open, editingId, categoryId, categories, child?.id]);
+
   const reset = () => {
     setEditingId(null);
     setTitle('');
@@ -166,7 +170,7 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
               {schedule === 'one_off' ? (
                 <div className="space-y-2">
                   <Label htmlFor="goal-date">Date</Label>
-                  <Input id="goal-date" type="date" value={scheduledDate} min={today || undefined} required
+                  <Input id="goal-date" type="date" value={scheduledDate} min={today || data?.date || undefined} required
                     onChange={event => setScheduledDate(event.target.value)} />
                 </div>
               ) : (
