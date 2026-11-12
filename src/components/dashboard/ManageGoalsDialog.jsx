@@ -130,7 +130,7 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
           <DialogBody className="space-y-6">
             <form id="goal-form" onSubmit={save} className="space-y-4">
               <h3 className="font-semibold text-foreground flex items-center gap-2">
-                <Plus size={18} aria-hidden="true" />
+                <Plus className="w-[18px] h-[18px]" aria-hidden="true" />
                 {editingId ? 'Edit goal' : 'New goal'}
               </h3>
               <div className="space-y-2">
