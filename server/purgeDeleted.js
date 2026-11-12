@@ -5,7 +5,8 @@
 //
 // Run with: npm run maintenance:purge-families
 // Dry-run is the default, even if the script is accidentally launched.
-// The destructive mode additionally requires two operator controls.
+// The destructive mode requires both operator flags AND a durable external
+// erasure receipt writer. It must fail closed until that adapter is installed.
 import pool from './db.js';
 import { uploadIdOf, UPLOAD_URL_PATTERN } from './uploads.js';
 
@@ -16,7 +17,15 @@ export function purgeIsEnabled(env = process.env) {
     env.PERCY_RESTORE_DRILL_VERIFIED === 'true';
 }
 
-export async function purgeExpiredFamilies(db, { execute = false, limit = MAX_PER_SWEEP } = {}) {
+export async function purgeExpiredFamilies(db, {
+  execute = false, limit = MAX_PER_SWEEP, recordErasure = null,
+} = {}) {
+  // No permanent database deletion without a separate durable tombstone.
+  // An R2 ledger adapter is NOT installed yet; the production CLI therefore
+  // fails closed even if someone mistakenly sets its environment flags.
+  if (execute && typeof recordErasure !== 'function') {
+    throw new Error('External erasure registry writer required before permanent deletion.');
+  }
   const cap = Math.max(0, Math.min(MAX_PER_SWEEP, Number(limit) || 0));
   const stats = { eligible: 0, purged: 0, children: 0, photos: 0 };
   const client = await db.connect();
@@ -43,6 +52,14 @@ export async function purgeExpiredFamilies(db, { execute = false, limit = MAX_PE
         if (!execute) {
           await client.query('ROLLBACK');
           break;
+        }
+
+        // With the family row locked after expiry, publish a durable receipt
+        // OUTSIDE ordinary database backups. If recording fails, roll back
+        // the transaction and preserve all live records for a safe retry.
+        const receipt = await recordErasure(familyCode);
+        if (receipt?.confirmed !== true || typeof receipt?.id !== 'string' || !receipt.id) {
+          throw new Error('Durable external erasure receipt not confirmed; refusing to purge.');
         }
 
         const kids = await client.query(
@@ -126,6 +143,8 @@ if (process.argv[1]?.endsWith('/purgeDeleted.js')) {
     console.log('Permanent deletion disabled. Requires both purge and restore-drill gates.');
     process.exit(0);
   }
+  // No writer is wired in by default: this deliberately fails closed until
+  // R2 erasure registry and disaster-restore replay are fully implemented.
   purgeExpiredFamilies(pool, { execute: true }).then((result) => {
     console.log('Purge job finished', result);
     return pool.end();
