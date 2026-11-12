@@ -25,7 +25,11 @@ export function setCloseFamilySockets(fn) { closeFamilySocketsFn = fn; }
 
 // A destructive account workflow is unavailable by default; do not expose it
 // until backups, recovery, privacy and operator identity have been reviewed.
-const deletionEnabled = () => process.env.PERCY_FAMILY_DELETION_ENABLED === 'true';
+const deletionEnabled = () =>
+  process.env.PERCY_FAMILY_DELETION_ENABLED === 'true' &&
+  process.env.PERCY_FAMILY_PURGE_ENABLED === 'true' &&
+  process.env.PERCY_RESTORE_DRILL_VERIFIED === 'true' &&
+  process.env.PERCY_DELETION_CRON_VERIFIED === 'true';
 
 const JWT_EXPIRY = '30d';
 const MIN_SECRET_LENGTH = 32;
