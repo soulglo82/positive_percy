@@ -7,7 +7,7 @@
 // Dry-run is the default, even if the script is accidentally launched.
 // The destructive mode additionally requires two operator controls.
 import pool from './db.js';
-import { uploadIdOf } from './uploads.js';
+import { uploadIdOf, UPLOAD_URL_PATTERN } from './uploads.js';
 
 const MAX_PER_SWEEP = 25;
 
@@ -89,15 +89,13 @@ export async function purgeExpiredFamilies(db, { execute = false, limit = MAX_PE
             WHERE u.family_code IS NULL AND u.id = ANY($2::uuid[])
               AND NOT EXISTS (
                 SELECT 1 FROM children c
-                WHERE c.family_code <> $1
-                  AND c.avatar_url = '/api/uploads/' || u.id::text
+                WHERE lower((regexp_match(c.avatar_url, $3, 'i'))[1]) = u.id::text
               )
               AND NOT EXISTS (
                 SELECT 1 FROM rewards r
-                WHERE r.family_code <> $1
-                  AND r.image_url = '/api/uploads/' || u.id::text
+                WHERE lower((regexp_match(r.image_url, $3, 'i'))[1]) = u.id::text
               )
-          `, [familyCode, legacyPhotoIds]);
+          `, [familyCode, legacyPhotoIds, UPLOAD_URL_PATTERN]);
           legacyPhotosDeleted = legacy.rowCount;
         }
         stats.photos += deletedPhotos.rowCount + legacyPhotosDeleted;
