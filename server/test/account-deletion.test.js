@@ -14,7 +14,7 @@ const flags = [
 ];
 
 describe.skipIf(!hasDb)('Batch C: 7-day family deletion and recovery', () => {
-  let ctx, A, B, childA, childB, photo, deletedToken, restoredToken;
+  let ctx, A, B, childA, childB, photo, legacyPhoto, otherLegacyPhoto, deletedToken, restoredToken;
   const old = Object.fromEntries(flags.map(k => [k, process.env[k]]));
   beforeAll(async () => {
     for (const f of flags) process.env[f] = 'true';
@@ -128,14 +128,35 @@ describe.skipIf(!hasDb)('Batch C: 7-day family deletion and recovery', () => {
     });
     expect(reward.status).toBe(200);
     const id = up.json.file_url.split('/').at(-1);
+    legacyPhoto = up.json.file_url;
     await ctx.pool.query('UPDATE uploads SET family_code = NULL WHERE id = $1', [id]);
     expect((await ctx.pool.query('SELECT 1 FROM uploads WHERE id = $1', [id])).rowCount).toBe(1);
+    expect((await fetch(ctx.base + legacyPhoto)).status).toBe(200);
+
+    // Another family's ownerless legacy photo must still work while the
+    // deleted family is inaccessible.
+    const other = await api(ctx.base, 'POST', '/api/upload', {
+      token: B.token, body: { data: pixels },
+    });
+    expect(other.status).toBe(200);
+    otherLegacyPhoto = other.json.file_url;
+    const theirs = await api(ctx.base, 'POST', '/api/rewards', {
+      token: B.token, body: {
+        title: 'Other family legacy reward', cost_points: 3, image_url: otherLegacyPhoto,
+      },
+    });
+    expect(theirs.status).toBe(200);
+    await ctx.pool.query('UPDATE uploads SET family_code = NULL WHERE id = $1', [
+      otherLegacyPhoto.split('/').at(-1),
+    ]);
   });
 
   it('prevents recovery after expiry and only purges when explicitly executed', async () => {
     const requested = await requestDeletion(restoredToken, A.code);
     expect(requested.status).toBe(200);
     deletedToken = restoredToken;
+    expect((await fetch(ctx.base + legacyPhoto)).status).toBe(404);
+    expect((await fetch(ctx.base + otherLegacyPhoto)).status).toBe(200);
     await ctx.pool.query(`
       UPDATE families
       SET deletion_requested_at = NOW() - INTERVAL '8 days',
@@ -166,6 +187,8 @@ describe.skipIf(!hasDb)('Batch C: 7-day family deletion and recovery', () => {
     })).status).toBe(404);
     expect((await api(ctx.base, 'GET', '/api/auth/me', { token: deletedToken })).status).toBe(401);
     expect((await fetch(ctx.base + photo)).status).toBe(404);
+    expect((await fetch(ctx.base + legacyPhoto)).status).toBe(404);
+    expect((await fetch(ctx.base + otherLegacyPhoto)).status).toBe(200);
     expect((await api(ctx.base, 'GET', '/api/children', { token: B.token })).status).toBe(200);
     const b = await ctx.pool.query('SELECT 1 FROM children WHERE id = $1', [childB.id]);
     expect(b.rowCount).toBe(1);
