@@ -19,7 +19,7 @@ The feature is **invisible and cannot be invoked** until all four flags are set 
 - `PERCY_RESTORE_DRILL_VERIFIED` — a recent R2 archive was actually restored into an isolated Postgres and verified; document the evidence, date, and responsible person.
 - `PERCY_DELETION_CRON_VERIFIED` — scheduled maintenance has been deployed to Railway and its logs and alerting were demonstrated.
 
-The dedicated `npm run maintenance:purge-families` job **also** requires `PERCY_FAMILY_PURGE_ENABLED=true` and `PERCY_RESTORE_DRILL_VERIFIED=true`. **Do not set any flags in this PR.**
+The dedicated `npm run maintenance:purge-families` job **also** requires `PERCY_FAMILY_PURGE_ENABLED=true` and `PERCY_RESTORE_DRILL_VERIFIED=true`. **Additionally, the purge API now requires a confirmed durable external erasure receipt callback. No production writer is installed in this PR; therefore the maintenance command deliberately refuses irreversible deletion even if the flags are enabled.** The permanent erasure registry and offline replay design is documented separately. **Do not set any flags in this PR.**
 
 ## Operational restore and purge runbook (required before enablement)
 
