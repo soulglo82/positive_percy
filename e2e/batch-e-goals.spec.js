@@ -33,6 +33,9 @@ test('parent can add, complete once, edit and archive a dated goal', async ({ pa
 
   await expect(page.getByRole('button', { name: 'Complete ' + title })).toBeVisible();
   await page.getByRole('button', { name: 'Complete ' + title }).click();
+  // Wait for the async award and query refresh before inspecting the ledger.
+  // A click only starts a request; on fast mobile emulation, a GET can race it.
+  await expect(page.getByRole('button', { name: 'Complete ' + title })).toHaveCount(0);
   await expect(page.getByText(title)).toBeVisible();
   const goalResponse = await request.get('/api/todays-goals', { headers });
   const goals = (await goalResponse.json()).goals.filter(goal => goal.title === title);
