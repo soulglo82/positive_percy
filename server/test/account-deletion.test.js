@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import WebSocket from 'ws';
 import { startApp, stopApp, api, makeFamily } from './harness.js';
 // Import maintenance after startApp initialises the disposable Postgres URL.
-let purgeExpiredFamilies, purgeIsEnabled;
+let purgeExpiredFamilies, purgeIsEnabled, registerErasureRegistry;
 
 const hasDb = Boolean(process.env.TEST_DATABASE_URL);
 const flags = [
@@ -20,6 +20,13 @@ describe.skipIf(!hasDb)('Batch C: 7-day family deletion and recovery', () => {
     for (const f of flags) process.env[f] = 'true';
     ctx = await startApp();
     ({ purgeExpiredFamilies, purgeIsEnabled } = await import('../purgeDeleted.js'));
+    ({ registerErasureRegistry } = await import('../routes.js'));
+    // Test-only adapter: production intentionally has no registry until R2
+    // receipts and pre-serve disaster restore replay are implemented.
+    registerErasureRegistry({
+      recordPurgeReceipt: async () => ({ confirmed: true, id: 'isolated-test' }),
+      replayBeforeRestore: async () => true,
+    });
     A = await makeFamily(ctx.base, 'Deleted family');
     B = await makeFamily(ctx.base, 'Healthy family');
     const a = await api(ctx.base, 'POST', '/api/children', {
@@ -43,6 +50,7 @@ describe.skipIf(!hasDb)('Batch C: 7-day family deletion and recovery', () => {
     })).status).toBe(200);
   });
   afterAll(async () => {
+    if (registerErasureRegistry) registerErasureRegistry(null);
     if (ctx) await stopApp(ctx);
     for (const flag of flags) {
       if (old[flag] === undefined) delete process.env[flag];
