@@ -145,6 +145,9 @@ describe.skipIf(!hasDb)('Batch C: 7-day family deletion and recovery', () => {
     expect((await api(ctx.base, 'POST', '/api/family/restore', {
       body: { family_code: A.code },
     })).status).toBe(404);
+    expect((await api(ctx.base, 'POST', '/api/family/join', {
+      body: { family_code: A.code },
+    })).status).toBe(410);
     const before = await purgeExpiredFamilies(ctx.pool, { execute: false });
     expect(before).toMatchObject({ eligible: 1, purged: 0 });
     expect((await ctx.pool.query('SELECT 1 FROM families WHERE family_code = $1', [A.code])).rowCount).toBe(1);
