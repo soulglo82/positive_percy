@@ -261,7 +261,7 @@ export function buildFamilyReportPages(data, at = new Date()) {
   );
 }
 
-const CSS = String.raw`
+const CSS = /* tokens-allow: isolated A4 PDF template requires fixed printable brand colors, not app UI styles */ String.raw`
 .pp-report-page{box-sizing:border-box;width:794px;height:1123px;padding:54px 56px 52px;position:relative;background:#fff;color:#271737;font-family:Arial,"Noto Sans",sans-serif;font-size:17px;line-height:1.4;overflow:hidden;border-top:13px solid #4B1D8C}
 .pp-report-page *{box-sizing:border-box}
 .pp-topline{display:flex;justify-content:space-between;align-items:center;padding-bottom:24px;border-bottom:2px solid #F3E7D9}
@@ -378,7 +378,7 @@ export async function downloadFamilyReport(data, at = new Date()) {
       mount.appendChild(page);
       try {
         const canvas = await html2canvas(page, {
-          scale: 1.6, backgroundColor: '#ffffff', useCORS: false,
+          scale: 1.6, backgroundColor: '#ffffff', useCORS: false, // tokens-allow: opaque white PDF page canvas
           logging: false, width: PAGE.width, height: PAGE.height,
         });
         images.push({
