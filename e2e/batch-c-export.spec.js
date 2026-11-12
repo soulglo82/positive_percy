@@ -14,7 +14,7 @@ test('Settings downloads the current family data without exposing its access cod
   }, [family.code, family.token]);
 
   await page.goto('/parentprofile');
-  const button = page.getByRole('button', { name: 'Download family data' });
+  const button = page.getByRole('button', { name: 'Download technical data (JSON)' });
   await expect(button).toBeVisible();
 
   const pendingDownload = page.waitForEvent('download');
