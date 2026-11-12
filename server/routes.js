@@ -411,6 +411,11 @@ router.post('/api/family/join', async (req, res) => {
     }
 
     if (rows[0].deletion_due_at) {
+      if (new Date(rows[0].deletion_due_at).getTime() <= Date.now()) {
+        return res.status(410).json({
+          error: 'This family\'s recovery window has ended and the account is scheduled for permanent deletion.',
+        });
+      }
       return res.status(409).json({
         error: 'This family is pending deletion. You can restore it with the family code before the recovery window ends.',
         deletion_pending: true,
