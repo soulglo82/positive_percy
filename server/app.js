@@ -114,18 +114,16 @@ export function createApp() {
           // Verify that this family is still present before joining its room.
           // Tokens stay cryptographically valid after a family is removed.
           try {
-            const { rowCount } = await pool.query(
+            const { rows } = await pool.query(
               'SELECT auth_version, deletion_due_at FROM families WHERE family_code = $1', [verified]
             );
-            if (rowCount === 0) {
+            if (!rows.length) {
               ws.close(4401, 'Family no longer available');
               return;
             }
             // Deny pending deletion and all pre-deletion session generations.
-            // Reconnects cannot bypass account lockout.
-            const check = await pool.query('SELECT auth_version, deletion_due_at FROM families WHERE family_code = $1', [verified]);
-            if (!check.rows.length || check.rows[0].deletion_due_at ||
-                Number(check.rows[0].auth_version) !== Number(auth.authVersion)) {
+            if (rows[0].deletion_due_at ||
+                Number(rows[0].auth_version) !== Number(auth.authVersion)) {
               ws.close(4403, 'Family session revoked');
               return;
             }
