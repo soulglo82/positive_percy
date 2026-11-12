@@ -117,6 +117,21 @@ describe.skipIf(!hasDb)('Batch C: 7-day family deletion and recovery', () => {
     })).status).toBe(200);
   });
 
+  it('records a formerly owned legacy photo without deleting another family\'s assets', async () => {
+    const pixels = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const up = await api(ctx.base, 'POST', '/api/upload', {
+      token: restoredToken, body: { data: pixels },
+    });
+    expect(up.status).toBe(200);
+    const reward = await api(ctx.base, 'POST', '/api/rewards', {
+      token: restoredToken, body: { title: 'Old family photo', cost_points: 3, image_url: up.json.file_url },
+    });
+    expect(reward.status).toBe(200);
+    const id = up.json.file_url.split('/').at(-1);
+    await ctx.pool.query('UPDATE uploads SET family_code = NULL WHERE id = $1', [id]);
+    expect((await ctx.pool.query('SELECT 1 FROM uploads WHERE id = $1', [id])).rowCount).toBe(1);
+  });
+
   it('prevents recovery after expiry and only purges when explicitly executed', async () => {
     const requested = await requestDeletion(restoredToken, A.code);
     expect(requested.status).toBe(200);
@@ -134,7 +149,7 @@ describe.skipIf(!hasDb)('Batch C: 7-day family deletion and recovery', () => {
     expect(before).toMatchObject({ eligible: 1, purged: 0 });
     expect((await ctx.pool.query('SELECT 1 FROM families WHERE family_code = $1', [A.code])).rowCount).toBe(1);
     const after = await purgeExpiredFamilies(ctx.pool, { execute: true });
-    expect(after).toMatchObject({ eligible: 1, purged: 1, children: 1, photos: 1 });
+    expect(after).toMatchObject({ eligible: 1, purged: 1, children: 1, photos: 2 });
 
     for (const table of ['families', 'children', 'point_events', 'redemptions', 'rewards',
       'users', 'family_goals', 'quick_actions', 'behavior_categories', 'uploads', 'idempotency_keys']) {
