@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Child } from "@/api/entities";
 import { buildChildCreatePayload } from "@/lib/childPayload";
 import { useAuth, getToken } from "@/lib/AuthContext";
+import { downloadFamilyReport } from "@/lib/familyReport";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ export default function ParentProfile() {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [familyName, setFamilyName] = useState(user?.full_name || '');
   const [showTips, setShowTips] = useState(false);
@@ -47,6 +49,28 @@ export default function ParentProfile() {
       toast.error(error.message || "Failed to update");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    if (reporting) return;
+    setReporting(true);
+    try {
+      const res = await fetch('/api/family/export?photos=exclude', {
+        headers: { Authorization: `Bearer ${getToken()}` },
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        const response = await res.json().catch(() => ({}));
+        throw new Error(response.error || 'Could not prepare the report.');
+      }
+      const data = await res.json();
+      const pageCount = await downloadFamilyReport(data);
+      toast.success(`Family Report ready (${pageCount} ${pageCount === 1 ? 'page' : 'pages'}).`);
+    } catch (err) {
+      toast.error(err.message || 'Could not create Family Report.');
+    } finally {
+      setReporting(false);
     }
   };
 
@@ -163,20 +187,33 @@ export default function ParentProfile() {
           </CardContent>
         </Card>
 
-        {/* Parent-controlled family data portability */}
-        <SectionHeader icon={Download}>Download family data</SectionHeader>
+        {/* Family report is the default; technical export remains available. */}
+        <SectionHeader icon={Download}>Family report &amp; data</SectionHeader>
         <Card>
-          <CardContent className="space-y-3 pt-4">
-            <p className="text-sm text-muted-foreground">
-              Save a copy of your family's children, behaviours, point history, rewards and
-              family settings as a JSON file. Photos stored in Percy are included when
-              available. Your family access code is not included.
-            </p>
-            <Button variant="outline" onClick={handleDownloadData} disabled={downloading}
+          <CardContent className="space-y-4 pt-4">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Our family's achievements</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                A printable PDF with each child's points, achievements, claimed rewards and
+                the past 30 days of activity. Made for sharing within your family.
+              </p>
+            </div>
+            <Button onClick={handleDownloadReport} disabled={reporting || downloading}
               className="w-full sm:w-auto">
               <Download className="w-4 h-4" aria-hidden="true" />
-              {downloading ? 'Preparing download…' : 'Download family data'}
+              {reporting ? 'Creating your report…' : 'Download Family Report (PDF)'}
             </Button>
+            <div className="border-t border-border pt-3 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Need every record, including historical points and available stored photos?
+                Download the technical JSON export. It isn't a printable report or an app backup.
+              </p>
+              <Button variant="outline" onClick={handleDownloadData} disabled={downloading || reporting}
+                className="w-full sm:w-auto">
+                <Download className="w-4 h-4" aria-hidden="true" />
+                {downloading ? 'Preparing data…' : 'Download technical data (JSON)'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
