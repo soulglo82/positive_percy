@@ -23,9 +23,22 @@ let closeFamilySocketsFn = () => {};
 export function setBroadcast(fn) { broadcastFn = fn; }
 export function setCloseFamilySockets(fn) { closeFamilySocketsFn = fn; }
 
+// The app cannot enable deletion just by setting environment flags: a
+// separately implemented and reviewed external erasure registry must actually
+// be registered. This PR intentionally provides NO production adapter.
+let erasureRegistry = null;
+export function registerErasureRegistry(adapter) {
+  if (adapter !== null && (
+    typeof adapter?.recordPurgeReceipt !== 'function' ||
+    typeof adapter?.replayBeforeRestore !== 'function'
+  )) throw new Error('Erasure registry requires durable write and restore replay functions');
+  erasureRegistry = adapter;
+}
+
 // A destructive account workflow is unavailable by default; do not expose it
 // until backups, recovery, privacy and operator identity have been reviewed.
 const deletionEnabled = () =>
+  erasureRegistry !== null &&
   process.env.PERCY_FAMILY_DELETION_ENABLED === 'true' &&
   process.env.PERCY_FAMILY_PURGE_ENABLED === 'true' &&
   process.env.PERCY_RESTORE_DRILL_VERIFIED === 'true' &&
