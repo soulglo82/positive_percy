@@ -45,10 +45,7 @@ export async function purgeExpiredFamilies(db, { execute = false, limit = MAX_PE
         }
 
         const kids = await client.query(
-          'SELECT id, avatar_url FROM children WHERE family_code = $1', [familyCode]
-        );
-        const { rows: rewardRows } = await client.query(
-          'SELECT image_url FROM rewards WHERE family_code = $1', [familyCode]
+          'SELECT id FROM children WHERE family_code = $1', [familyCode]
         );
         stats.children += kids.rowCount;
 
