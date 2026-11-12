@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, CheckCircle2, ClipboardCheck, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getToken } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { completeTodayGoal, loadTodaysGoals } from '@/lib/todaysGoals';
@@ -50,7 +51,7 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
       refreshPoints(queryClient);
       // Badge checks should not delay completion; the server still owns every badge award.
       fetch('/api/children/' + child.id + '/check-badges', {
-        method: 'POST', headers: { Authorization: 'Bearer ' + (localStorage.getItem('positive_percy_token') || '') },
+        method: 'POST', headers: { Authorization: 'Bearer ' + getToken() },
       }).then(() => refreshPoints(queryClient)).catch(() => {});
     } catch (err) {
       if (err.status === 409) {
