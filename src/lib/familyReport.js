@@ -80,7 +80,7 @@ export function buildFamilyReportModel(data, at = new Date()) {
     for (const event of childEarned) {
       cat.set(event.category, (cat.get(event.category) || 0) + num(event.points));
     }
-    const topCategories = [...cat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
+    const topCategories = [...cat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
     const activity = [
       ...eventsInRange.filter(e => e.child_id === child.id).map(e => {
         const isUndo = e.kind === 'undo';
@@ -142,7 +142,7 @@ const row = (left, right, smaller = '') =>
 function pageDescriptions(model) {
   const pages = [];
   const kids = model.children;
-  const overview = chunk(kids, 7);
+  const overview = chunk(kids, 6);
   (overview.length ? overview : [[]]).forEach((portion, i) => {
     const familyRows = portion.length
       ? portion.map(c => row(c.name, num(c.total_points) + ' points',
@@ -168,10 +168,10 @@ function pageDescriptions(model) {
   });
 
   for (const child of kids) {
-    const claimed = child.claimedRewards.slice(-5).reverse().map(r =>
+    const claimed = child.claimedRewards.slice(-3).reverse().map(r =>
       row(r.reward_title, prettyDate(r.created_date, model.timezone))).join('');
     const badges = (child.badges_earned || []).map(b => String(b));
-    const badgeDisplay = badges.slice(0, 9).map(b =>
+    const badgeDisplay = badges.slice(0, 6).map(b =>
       '<span class="pp-pill">' + safe(b) + '</span>').join('');
     const categoryRows = child.topCategories.map(c => row(c[0], c[1] + ' points')).join('');
     const target = num(child.weekly_target);
@@ -194,7 +194,7 @@ function pageDescriptions(model) {
           empty('Earned points will appear here as they are awarded.')) +
         section('Achievements', badgeDisplay
           ? '<div class="pp-pills">' + badgeDisplay + '</div>' +
-            (badges.length > 9 ? '<div class="pp-helper">+' + (badges.length - 9) + ' more badges</div>' : '')
+            (badges.length > 6 ? '<div class="pp-helper">+' + (badges.length - 6) + ' more badges</div>' : '')
           : empty('Milestones and badges will appear here.')) +
         section('Recently claimed rewards', claimed ||
           empty('No rewards claimed yet.')) +
@@ -209,7 +209,7 @@ function pageDescriptions(model) {
         html: section('Points and rewards activity', empty('No recorded activity in the past 30 days.')),
       });
     } else {
-      chunk(child.activity, 16).forEach((events, idx, groups) => {
+      chunk(child.activity, 9).forEach((events, idx, groups) => {
         pages.push({
           heading: child.name + ' · activity',
           subtitle: 'Past 30 days' + (groups.length > 1 ? ' · part ' + (idx + 1) + ' of ' + groups.length : ''),
@@ -221,7 +221,7 @@ function pageDescriptions(model) {
     }
   }
 
-  const allRewards = chunk(model.rewards, 15);
+  const allRewards = chunk(model.rewards, 12);
   (allRewards.length ? allRewards : [[]]).forEach((items, i) => pages.push({
     heading: i ? 'Family rewards · continued' : 'Family rewards',
     subtitle: 'The rewards your family has set up',
@@ -230,7 +230,7 @@ function pageDescriptions(model) {
       : empty('No rewards have been set up yet.')),
   }));
 
-  const allBehaviours = chunk(model.behaviours, 17);
+  const allBehaviours = chunk(model.behaviours, 13);
   (allBehaviours.length ? allBehaviours : [[]]).forEach((items, i) => pages.push({
     heading: i ? 'Behaviour settings · continued' : 'Behaviour settings',
     subtitle: 'The positive behaviours your family rewards',
@@ -269,11 +269,11 @@ const CSS = /* tokens-allow: isolated A4 PDF template requires fixed printable b
 .pp-brand span{color:#FF6A00;font-size:26px;margin-left:7px}
 .pp-report-label{font-size:12px;letter-spacing:1.4px;color:#705E80;font-weight:700}
 .pp-content{padding-top:29px}
-.pp-page-title{font-size:31px;line-height:1.12;font-weight:750;color:#4B1D8C;overflow-wrap:anywhere;max-height:78px;overflow:hidden}
+.pp-page-title{font-size:29px;line-height:1.35;font-weight:750;color:#4B1D8C;overflow-wrap:anywhere;padding-bottom:5px}
 .pp-subtitle{margin-top:8px;color:#705E80;font-size:15px}
 .pp-hero{background:#FFF6E8;padding:25px;border-radius:15px;border-left:7px solid #FF6A00;margin-top:26px}
 .pp-hero-kicker{font-size:12px;letter-spacing:1px;color:#7A4E23;font-weight:bold}
-.pp-hero-title{font-size:28px;font-weight:750;margin-top:6px;overflow-wrap:anywhere;max-height:78px;overflow:hidden}
+.pp-hero-title{font-size:27px;line-height:1.35;font-weight:750;margin-top:6px;overflow-wrap:anywhere}
 .pp-hero-copy{margin-top:9px;font-size:15px;color:#725F52}
 .pp-metrics{display:flex;gap:12px;margin-top:24px}
 .pp-metric{flex:1;background:#F7F3FB;border:1px solid #EDE6F6;border-radius:11px;padding:18px 14px;min-width:0}
