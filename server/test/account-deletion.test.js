@@ -172,7 +172,28 @@ describe.skipIf(!hasDb)('Batch C: 7-day family deletion and recovery', () => {
     const before = await purgeExpiredFamilies(ctx.pool, { execute: false });
     expect(before).toMatchObject({ eligible: 1, purged: 0 });
     expect((await ctx.pool.query('SELECT 1 FROM families WHERE family_code = $1', [A.code])).rowCount).toBe(1);
-    const after = await purgeExpiredFamilies(ctx.pool, { execute: true });
+    // Never delete without a durable erasure receipt writer, even when the
+    // operator flags have accidentally been turned on.
+    await expect(purgeExpiredFamilies(ctx.pool, { execute: true }))
+      .rejects.toThrow(/External erasure registry writer required/);
+    await expect(purgeExpiredFamilies(ctx.pool, {
+      execute: true,
+      recordErasure: async () => { throw new Error('R2 unavailable'); },
+    })).rejects.toThrow(/R2 unavailable/);
+    await expect(purgeExpiredFamilies(ctx.pool, {
+      execute: true,
+      recordErasure: async () => ({ confirmed: false }),
+    })).rejects.toThrow(/receipt not confirmed/);
+    expect((await ctx.pool.query('SELECT 1 FROM families WHERE family_code = $1', [A.code])).rowCount).toBe(1);
+    const receiptLog = [];
+    const after = await purgeExpiredFamilies(ctx.pool, {
+      execute: true,
+      recordErasure: async (code) => {
+        receiptLog.push(code);
+        return { confirmed: true, id: 'isolated-test-receipt' };
+      },
+    });
+    expect(receiptLog).toEqual([A.code]);
     expect(after).toMatchObject({ eligible: 1, purged: 1, children: 1, photos: 2 });
 
     for (const table of ['families', 'children', 'point_events', 'redemptions', 'rewards',
