@@ -25,6 +25,7 @@ import SpendRewardsModal from "../components/child/SpendRewardsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
 import WelcomeFamilyDialog from "../components/WelcomeFamilyDialog";
 import HeroCard from "../components/dashboard/HeroCard";
+import TodaysGoalsPanel from "../components/dashboard/TodaysGoalsPanel";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
@@ -323,6 +324,8 @@ export default function ParentDashboard() {
             ))}
           </div>
         )}
+
+        <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} />
 
         {/* Recent Activity Preview */}
         {recentActivity.length > 0 && (
