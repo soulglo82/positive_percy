@@ -131,9 +131,11 @@ describe.skipIf(!runDb)('P-1: photo clean-up', () => {
     await ctx.pool.query('UPDATE children SET avatar_url = $1 WHERE id = $2', [url, c.id]);
     const r = await put(X, 'children', c.id, { name: 'Still editable', avatar_url: url, weekly_target: 40 });
     expect(r.status).toBe(200);
-    // And an unowned photo is never deleted, even by its only user.
+    // Old unowned bytes are deliberately retained for migration safety, but
+    // after the last active family reference disappears the URL is not public.
     expect((await del(X, 'children', c.id)).status).toBe(200);
-    expect(await exists(url)).toBe(true);
+    expect((await ctx.pool.query('SELECT 1 FROM uploads WHERE id = $1', [uploadIdOf(url)])).rowCount).toBe(1);
+    expect(await exists(url)).toBe(false);
   });
 
   it('a failed update keeps the old photo (release is inside the transaction)', async () => {

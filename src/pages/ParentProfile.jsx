@@ -18,6 +18,7 @@ import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import BehaviorCategoryManager from "../components/settings/BehaviorCategoryManager";
 import FamilyTimezone from "../components/settings/FamilyTimezone";
+import DeleteFamilyCard from "../components/settings/DeleteFamilyCard";
 import { Pencil } from "lucide-react";
 
 export default function ParentProfile() {
@@ -269,6 +270,8 @@ export default function ParentProfile() {
           </Card>
           </>
         )}
+
+        <DeleteFamilyCard />
 
         {/* Parenting Tips - bottom link */}
         <button
