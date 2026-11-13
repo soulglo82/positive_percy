@@ -1,6 +1,6 @@
 # Stage 1 · Your icon and illustration decision worksheet
 
-> **Partial owner choices recorded (13 Nov 2026).** Only the 38 explicit decisions in [APPROVAL_REGISTER.json](APPROVAL_REGISTER.json) have changed. All other decisions remain unselected. Three `NONE OF THESE` decisions require alternative candidates; they do not mean display no icon.
+> **Partial owner choices recorded (13 Nov 2026).** The 38 earlier decisions plus 12 explicitly selected parent-picker category lists are recorded in [APPROVAL_REGISTER.json](APPROVAL_REGISTER.json). All other design decisions remain unselected. Three `NONE OF THESE` decisions require alternative candidates; they do not mean display no icon.
 
 **[Start here](START_HERE.md)** · [Menu & controls](01_NAV_CONTROLS.md) · [Behaviours](02_BEHAVIOURS_GOALS.md) · [Rewards](03_REWARDS.md) · [Visual accents](04_ILLUSTRATIONS_ELEMENTS.md) · [Parent icon picker](05_PARENT_PICKER.md)
 
@@ -81,6 +81,29 @@
 **Mascot scenes:** No new fox artwork until the verified Fox 1A master is available. **Points:** The approved separate points-star is compulsory in point balances and prices.
 
 ## 5. Parent reward icon picker
+
+### Owner-approved category/icon memberships — 13 Nov 2026
+
+These selections specify **exact icons offered under each category**, not any unlisted behaviour or design rules. The repeated identical picker submission is recorded only once.
+
+| Category | Exact Phosphor Duotone icon names selected | Count |
+|---|---|---:|
+| Fun & games | `game-controller`, `dice-five`, `balloon`, `basketball`, `football`, `bowling-ball`, `puzzle-piece` | 7 |
+| Treats & food | `ice-cream`, `cake`, `cookie`, `popcorn`, `pizza`, `hamburger` | 6 |
+| Outings | `mountains`, `car`, `airplane`, `tent`, `train`, `bus`, `bicycle`, `ticket`, `sun`, `fire` | 10 |
+| Learning & growth | `music-notes`, `lightbulb`, `palette`, `paint-brush`, `notebook`, `graduation-cap`, `pencil`, `books`, `guitar`, `microscope` | 10 |
+| Family & kindness | `smiley`, `hands-clapping`, `handshake`, `medal`, `hand-heart`, `gift` | 6 |
+| Creative time | `paint-brush`, `piano-keys`, `film-slate`, `music-notes`, `scissors`, `microphone`, `pen` | 7 |
+| Tech & media | `game-controller`, `watch`, `television`, `device-mobile` | 4 |
+| Things & pocket money | `backpack`, `t-shirt`, `piggy-bank`, `money`, `ticket` | 5 |
+| Nature & outdoors | `tree`, `sun`, `moon-stars`, `paw-print`, `butterfly`, `fish`, `mountains` | 7 |
+| Sports & movement | `basketball`, `football`, `soccer-ball`, `bicycle`, `tennis-ball`, `person-simple-run`, `ping-pong`, `swimming-pool` | 8 |
+| Celebrations | `confetti`, `sparkle`, `crown`, `medal`, `trophy`, `cake`, `smiley-wink` | 7 |
+| Animals & pets | `cat`, `dog`, `fish`, `butterfly`, `rabbit`, `bug`, `cow` | 7 |
+
+**Selected:** 12 categories, 84 category placements, 71 distinct MIT Phosphor SVGs. **Not approved yet:** colours, responsive grid behaviour, search tags, upload support and any inclusion of Streamline in the parent-selectable picker.
+
+### Other picker design choices (still unselected)
 
 | Decision | Proposed default to review | Your approval |
 |---|---|---|

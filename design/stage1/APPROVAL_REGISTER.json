@@ -5,7 +5,7 @@
   "recorded_date": "2026-11-13",
   "version": "1.0",
   "approval_level": "approved_icon_mappings_for_specific_review_contexts_only",
-  "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule.",
+  "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected.",
   "meaning_of_NONE": "Explicitly rejected presented candidates; further icon options required. NOT a deliberate choice of no icon.",
   "source": "Owner's copied interactive Stage 1 decisions, four groups, 13 November 2026",
   "decisions": {
@@ -281,14 +281,282 @@
   "summary": {
     "contexts_reviewed": 38,
     "selected": 35,
-    "none_of_these": 3
+    "none_of_these": 3,
+    "picker_categories_reviewed": 12,
+    "picker_icon_placements": 84,
+    "picker_distinct_icons": 71
   },
   "untouched_and_unselected": [
     "all illustration placements",
     "all decorative element placements",
-    "all parent reward icon picker categories and scope",
-    "global family/style rules",
+    "parent reward picker UX specifications (layout, search, colours, uploads, migration), beyond the 12 explicit category/icon lists",
+    "global icon family/style rules (other than explicitly selected source variants)",
     "brand points-star master and Fox 1A production artwork",
     "unlisted Goals interaction decisions"
-  ]
+  ],
+  "picker": {
+    "status": "owner_selected_exact_category_membership_only",
+    "note": "The user selected these icons under each category. No assumption that icon colours, grid density, search or upload policy are approved. The second identical submission was de-duplicated.",
+    "license": "MIT — Phosphor",
+    "variant": "duotone",
+    "categories": {
+      "Fun & games": {
+        "status": "owner_selected",
+        "icons": [
+          "game-controller",
+          "dice-five",
+          "balloon",
+          "basketball",
+          "football",
+          "bowling-ball",
+          "puzzle-piece"
+        ],
+        "asset_ids": [
+          "phosphor:game-controller:duotone",
+          "phosphor:dice-five:duotone",
+          "phosphor:balloon:duotone",
+          "phosphor:basketball:duotone",
+          "phosphor:football:duotone",
+          "phosphor:bowling-ball:duotone",
+          "phosphor:puzzle-piece:duotone"
+        ]
+      },
+      "Treats & food": {
+        "status": "owner_selected",
+        "icons": [
+          "ice-cream",
+          "cake",
+          "cookie",
+          "popcorn",
+          "pizza",
+          "hamburger"
+        ],
+        "asset_ids": [
+          "phosphor:ice-cream:duotone",
+          "phosphor:cake:duotone",
+          "phosphor:cookie:duotone",
+          "phosphor:popcorn:duotone",
+          "phosphor:pizza:duotone",
+          "phosphor:hamburger:duotone"
+        ]
+      },
+      "Outings": {
+        "status": "owner_selected",
+        "icons": [
+          "mountains",
+          "car",
+          "airplane",
+          "tent",
+          "train",
+          "bus",
+          "bicycle",
+          "ticket",
+          "sun",
+          "fire"
+        ],
+        "asset_ids": [
+          "phosphor:mountains:duotone",
+          "phosphor:car:duotone",
+          "phosphor:airplane:duotone",
+          "phosphor:tent:duotone",
+          "phosphor:train:duotone",
+          "phosphor:bus:duotone",
+          "phosphor:bicycle:duotone",
+          "phosphor:ticket:duotone",
+          "phosphor:sun:duotone",
+          "phosphor:fire:duotone"
+        ]
+      },
+      "Learning & growth": {
+        "status": "owner_selected",
+        "icons": [
+          "music-notes",
+          "lightbulb",
+          "palette",
+          "paint-brush",
+          "notebook",
+          "graduation-cap",
+          "pencil",
+          "books",
+          "guitar",
+          "microscope"
+        ],
+        "asset_ids": [
+          "phosphor:music-notes:duotone",
+          "phosphor:lightbulb:duotone",
+          "phosphor:palette:duotone",
+          "phosphor:paint-brush:duotone",
+          "phosphor:notebook:duotone",
+          "phosphor:graduation-cap:duotone",
+          "phosphor:pencil:duotone",
+          "phosphor:books:duotone",
+          "phosphor:guitar:duotone",
+          "phosphor:microscope:duotone"
+        ]
+      },
+      "Family & kindness": {
+        "status": "owner_selected",
+        "icons": [
+          "smiley",
+          "hands-clapping",
+          "handshake",
+          "medal",
+          "hand-heart",
+          "gift"
+        ],
+        "asset_ids": [
+          "phosphor:smiley:duotone",
+          "phosphor:hands-clapping:duotone",
+          "phosphor:handshake:duotone",
+          "phosphor:medal:duotone",
+          "phosphor:hand-heart:duotone",
+          "phosphor:gift:duotone"
+        ]
+      },
+      "Creative time": {
+        "status": "owner_selected",
+        "icons": [
+          "paint-brush",
+          "piano-keys",
+          "film-slate",
+          "music-notes",
+          "scissors",
+          "microphone",
+          "pen"
+        ],
+        "asset_ids": [
+          "phosphor:paint-brush:duotone",
+          "phosphor:piano-keys:duotone",
+          "phosphor:film-slate:duotone",
+          "phosphor:music-notes:duotone",
+          "phosphor:scissors:duotone",
+          "phosphor:microphone:duotone",
+          "phosphor:pen:duotone"
+        ]
+      },
+      "Tech & media": {
+        "status": "owner_selected",
+        "icons": [
+          "game-controller",
+          "watch",
+          "television",
+          "device-mobile"
+        ],
+        "asset_ids": [
+          "phosphor:game-controller:duotone",
+          "phosphor:watch:duotone",
+          "phosphor:television:duotone",
+          "phosphor:device-mobile:duotone"
+        ]
+      },
+      "Things & pocket money": {
+        "status": "owner_selected",
+        "icons": [
+          "backpack",
+          "t-shirt",
+          "piggy-bank",
+          "money",
+          "ticket"
+        ],
+        "asset_ids": [
+          "phosphor:backpack:duotone",
+          "phosphor:t-shirt:duotone",
+          "phosphor:piggy-bank:duotone",
+          "phosphor:money:duotone",
+          "phosphor:ticket:duotone"
+        ]
+      },
+      "Nature & outdoors": {
+        "status": "owner_selected",
+        "icons": [
+          "tree",
+          "sun",
+          "moon-stars",
+          "paw-print",
+          "butterfly",
+          "fish",
+          "mountains"
+        ],
+        "asset_ids": [
+          "phosphor:tree:duotone",
+          "phosphor:sun:duotone",
+          "phosphor:moon-stars:duotone",
+          "phosphor:paw-print:duotone",
+          "phosphor:butterfly:duotone",
+          "phosphor:fish:duotone",
+          "phosphor:mountains:duotone"
+        ]
+      },
+      "Sports & movement": {
+        "status": "owner_selected",
+        "icons": [
+          "basketball",
+          "football",
+          "soccer-ball",
+          "bicycle",
+          "tennis-ball",
+          "person-simple-run",
+          "ping-pong",
+          "swimming-pool"
+        ],
+        "asset_ids": [
+          "phosphor:basketball:duotone",
+          "phosphor:football:duotone",
+          "phosphor:soccer-ball:duotone",
+          "phosphor:bicycle:duotone",
+          "phosphor:tennis-ball:duotone",
+          "phosphor:person-simple-run:duotone",
+          "phosphor:ping-pong:duotone",
+          "phosphor:swimming-pool:duotone"
+        ]
+      },
+      "Celebrations": {
+        "status": "owner_selected",
+        "icons": [
+          "confetti",
+          "sparkle",
+          "crown",
+          "medal",
+          "trophy",
+          "cake",
+          "smiley-wink"
+        ],
+        "asset_ids": [
+          "phosphor:confetti:duotone",
+          "phosphor:sparkle:duotone",
+          "phosphor:crown:duotone",
+          "phosphor:medal:duotone",
+          "phosphor:trophy:duotone",
+          "phosphor:cake:duotone",
+          "phosphor:smiley-wink:duotone"
+        ]
+      },
+      "Animals & pets": {
+        "status": "owner_selected",
+        "icons": [
+          "cat",
+          "dog",
+          "fish",
+          "butterfly",
+          "rabbit",
+          "bug",
+          "cow"
+        ],
+        "asset_ids": [
+          "phosphor:cat:duotone",
+          "phosphor:dog:duotone",
+          "phosphor:fish:duotone",
+          "phosphor:butterfly:duotone",
+          "phosphor:rabbit:duotone",
+          "phosphor:bug:duotone",
+          "phosphor:cow:duotone"
+        ]
+      }
+    },
+    "summary": {
+      "categories_reviewed": 12,
+      "icon_placements": 84,
+      "unique_icons": 71
+    }
+  }
 }

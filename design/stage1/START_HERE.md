@@ -1,6 +1,6 @@
 # Positive Percy — Stage 1 visual asset selection
 
-**Decision pack · 13 November 2026 · Partial owner mappings recorded (38 contexts)**
+**Decision pack · 13 November 2026 · Partial owner mappings recorded (38 contexts + 12 picker category lists)**
 
 > **Everything pictured is exact source artwork, now bundled locally so all icon previews remain visible without external hotlinks.** This review uses official MIT Phosphor SVGs and CC BY 4.0 files from Streamline's public open-source repository. No image generation, AI icon interpretation, copied premium previews or fabricated fox artwork. Preview boards are code-authored layouts with embedded source SVGs, **not screenshots of a running app**. Until you approve each asset, **nothing here changes Percy's production UI**.
 
@@ -41,7 +41,7 @@ These four boards use the **actual SVG paths**, not generated approximations. Th
 | Category | What is ready for your review | Approval status |
 |---|---|---|
 | Navigation | 5 functions × 3 verified Phosphor candidates + real Streamline style board | **See approval register** |
-| Controls | 10 actions × 3 verified candidates | **Unselected** |
+| Controls | 10 actions × 3 verified candidates | **Review owner decision register** |
 | Behaviours/Goals | 11 contexts × 3 candidate icons + constrained parent-focused Goals layout | **Unselected** |
 | Rewards | 12 examples × 2 original Plump Duo alternatives + MIT Phosphor fallback | **Unselected** |
 | Illustrations | 6 selective placements with 3 existing-source SVG options and a **None** option | **Unselected** |
