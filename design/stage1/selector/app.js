@@ -11,16 +11,25 @@ function hydrate(){try{const x=JSON.parse(localStorage.getItem(STORAGE)||"{}");i
 function persist(){try{localStorage.setItem(STORAGE,JSON.stringify({version:1,selections,picker}));}catch(_){}}
 function loadRecordedApprovals(){
   if(!recorded?.decisions)return;
+  const revision=recorded.last_update?.action||"initial-owner-record";
+  const revisionKey=STORAGE+"_confirmed_revision";
+  let lastRevision=null;
+  try{lastRevision=localStorage.getItem(revisionKey)}catch(_){}
   for(const [group, contexts] of Object.entries(recorded.decisions)){
     for(const [name,decision] of Object.entries(contexts)){
       const key=group+":"+name;
-      if(!Object.hasOwn(selections,key))selections[key]=decision.status==="selected"?decision.asset_id:NONE;
+      // If owner formally resolved a previous NONE, refresh that older browser choice once.
+      // Keep any newer explicit local choices on subsequent loads of this revision.
+      if(!Object.hasOwn(selections,key)||(lastRevision!==revision&&selections[key]===NONE&&decision.status==="selected"&&decision.resolved_from==="none_of_these")){
+        selections[key]=decision.status==="selected"?decision.asset_id:NONE;
+      }
     }
   }
   for(const [category,decision] of Object.entries(recorded.picker?.categories||{})){
     if(!Object.hasOwn(picker,category))picker[category]={decided:true,selected:[...decision.icons]};
   }
   persist();
+  try{localStorage.setItem(revisionKey,revision)}catch(_){}
 }
 
 function asset(id){return byId.get(id)||null}
