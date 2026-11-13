@@ -1,0 +1,93 @@
+{
+  "status": "unselected",
+  "license_mit": "https://github.com/phosphor-icons/core/blob/main/LICENSE",
+  "license_streamline": "https://creativecommons.org/licenses/by/4.0/",
+  "streamline_set": "plump/duo",
+  "reference_source": "https://github.com/webalys-hq/streamline-vectors",
+  "rewards": {
+    "Gaming time": {
+      "streamline": [
+        "computer-devices/controller-1.svg",
+        "entertainment/gameboy.svg"
+      ],
+      "phosphor": "game-controller"
+    },
+    "Movie night": {
+      "streamline": [
+        "images-photography/film-slate.svg",
+        "entertainment/camera-video.svg"
+      ],
+      "phosphor": "film-slate"
+    },
+    "Ice cream treat": {
+      "streamline": [
+        "food-drink/ice-cream-2.svg",
+        "food-drink/cake-slice.svg"
+      ],
+      "phosphor": "ice-cream"
+    },
+    "New book": {
+      "streamline": [
+        "interface-essential/book-1.svg",
+        "interface-essential/bookmark.svg"
+      ],
+      "phosphor": "book-open"
+    },
+    "Bike ride": {
+      "streamline": [
+        "map-travel/bicycle-bike.svg",
+        "map-travel/beach.svg"
+      ],
+      "phosphor": "bicycle"
+    },
+    "Gift": {
+      "streamline": [
+        "money-shopping/gift.svg",
+        "interface-essential/give-gift.svg"
+      ],
+      "phosphor": "gift"
+    },
+    "Day out": {
+      "streamline": [
+        "culture/ticket-1.svg",
+        "map-travel/beach.svg"
+      ],
+      "phosphor": "ticket"
+    },
+    "Cake treat": {
+      "streamline": [
+        "food-drink/cake-slice.svg",
+        "food-drink/burger.svg"
+      ],
+      "phosphor": "cake"
+    },
+    "Art activity": {
+      "streamline": [
+        "interface-essential/paint-palette.svg",
+        "interface-essential/paintbrush-2.svg"
+      ],
+      "phosphor": "palette"
+    },
+    "Photo adventure": {
+      "streamline": [
+        "images-photography/camera-1.svg",
+        "images-photography/polaroid.svg"
+      ],
+      "phosphor": "camera"
+    },
+    "Music time": {
+      "streamline": [
+        "entertainment/music-note-2.svg",
+        "entertainment/music-note-trebble-clef.svg"
+      ],
+      "phosphor": "music-notes"
+    },
+    "Family outing": {
+      "streamline": [
+        "map-travel/beach.svg",
+        "map-travel/hot-air-balloon.svg"
+      ],
+      "phosphor": "sun"
+    }
+  }
+}

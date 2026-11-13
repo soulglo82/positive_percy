@@ -1,0 +1,325 @@
+{
+  "version": "stage1-v2-144-icon-picker",
+  "status": "candidate_only_no_icons_selected",
+  "sources": {
+    "phosphor_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
+    "streamline_commit": "52d750c9ce051e51cb181b7a78932120c48541d0"
+  },
+  "visual_identity": {
+    "background": "#FFF6E8",
+    "purple": "#4B1D8C",
+    "orange": "#FF6A00",
+    "heading_font": "Nunito",
+    "body_font": "Poppins",
+    "fox_master": "not available in repository; do not recreate",
+    "points_star": "separate owned asset, never replace with standard library star"
+  },
+  "phosphor": {
+    "nav": {
+      "Home": [
+        "house",
+        "house-simple",
+        "house-line"
+      ],
+      "Progress": [
+        "user",
+        "users",
+        "user-circle"
+      ],
+      "Activity": [
+        "pulse",
+        "chart-line-up",
+        "clock-counter-clockwise"
+      ],
+      "Rewards": [
+        "gift",
+        "ticket",
+        "shopping-bag"
+      ],
+      "Settings": [
+        "gear",
+        "sliders-horizontal",
+        "wrench"
+      ]
+    },
+    "controls": {
+      "Goals": [
+        "target",
+        "list-checks",
+        "calendar-check"
+      ],
+      "Complete": [
+        "check-circle",
+        "seal-check",
+        "check-square"
+      ],
+      "Add": [
+        "plus-circle",
+        "plus",
+        "note-pencil"
+      ],
+      "Edit": [
+        "pencil-simple",
+        "note-pencil",
+        "pencil"
+      ],
+      "Schedule": [
+        "calendar-dots",
+        "repeat",
+        "calendar-check"
+      ],
+      "Pause": [
+        "pause-circle",
+        "hand-palm",
+        "clock"
+      ],
+      "Undo": [
+        "arrow-counter-clockwise",
+        "clock-counter-clockwise",
+        "arrow-u-up-left"
+      ],
+      "Archive": [
+        "archive",
+        "tray",
+        "folder"
+      ],
+      "Help": [
+        "info",
+        "question",
+        "chat-circle-text"
+      ],
+      "Child switch": [
+        "users",
+        "user-switch",
+        "caret-down"
+      ]
+    },
+    "behaviors": {
+      "Kindness": [
+        "heart",
+        "hand-heart",
+        "smiley"
+      ],
+      "Learning": [
+        "book-open",
+        "books",
+        "graduation-cap"
+      ],
+      "Helping": [
+        "hand-heart",
+        "handshake",
+        "hands-clapping"
+      ],
+      "Chores": [
+        "broom",
+        "spray-bottle",
+        "house"
+      ],
+      "Movement": [
+        "bicycle",
+        "basketball",
+        "person-simple-run"
+      ],
+      "Reading": [
+        "book-open-text",
+        "book-bookmark",
+        "books"
+      ],
+      "Routines": [
+        "list-checks",
+        "calendar-check",
+        "check-square"
+      ],
+      "Self-care": [
+        "tooth",
+        "hand-soap",
+        "drop"
+      ],
+      "Community": [
+        "hands-clapping",
+        "heart",
+        "users"
+      ],
+      "Creativity": [
+        "palette",
+        "paint-brush",
+        "music-notes"
+      ],
+      "Sleep": [
+        "bed",
+        "moon-stars",
+        "moon"
+      ]
+    },
+    "picker": {
+      "Fun & games": [
+        "game-controller",
+        "puzzle-piece",
+        "dice-five",
+        "balloon",
+        "basketball",
+        "football",
+        "bowling-ball",
+        "trophy",
+        "target",
+        "robot",
+        "cards",
+        "video-camera"
+      ],
+      "Treats & food": [
+        "ice-cream",
+        "cake",
+        "cookie",
+        "pizza",
+        "hamburger",
+        "popcorn",
+        "orange",
+        "egg",
+        "coffee",
+        "carrot",
+        "bread",
+        "bowl-food"
+      ],
+      "Outings": [
+        "bicycle",
+        "airplane",
+        "car",
+        "train",
+        "bus",
+        "ticket",
+        "sun",
+        "beach-ball",
+        "mountains",
+        "tent",
+        "fire",
+        "camera"
+      ],
+      "Learning & growth": [
+        "book-open",
+        "books",
+        "graduation-cap",
+        "pencil",
+        "palette",
+        "paint-brush",
+        "music-notes",
+        "guitar",
+        "microscope",
+        "planet",
+        "lightbulb",
+        "notebook"
+      ],
+      "Family & kindness": [
+        "heart",
+        "hand-heart",
+        "handshake",
+        "house",
+        "users-three",
+        "hands-clapping",
+        "smiley",
+        "flower",
+        "gift",
+        "medal",
+        "sun",
+        "seal-check"
+      ],
+      "Creative time": [
+        "paint-brush",
+        "palette",
+        "camera",
+        "music-notes",
+        "music-note",
+        "microphone",
+        "piano-keys",
+        "film-slate",
+        "video-camera",
+        "sparkle",
+        "scissors",
+        "pen"
+      ],
+      "Tech & media": [
+        "headphones",
+        "laptop",
+        "desktop",
+        "device-mobile",
+        "television",
+        "watch",
+        "game-controller",
+        "mouse",
+        "keyboard",
+        "speaker-high",
+        "radio",
+        "camera"
+      ],
+      "Things & pocket money": [
+        "backpack",
+        "t-shirt",
+        "wallet",
+        "shopping-bag",
+        "money",
+        "coin",
+        "piggy-bank",
+        "gift",
+        "bag",
+        "basket",
+        "ticket",
+        "clock"
+      ],
+      "Nature & outdoors": [
+        "tree",
+        "flower",
+        "sun",
+        "moon-stars",
+        "cloud",
+        "mountains",
+        "tent",
+        "campfire",
+        "leaf",
+        "paw-print",
+        "fish",
+        "butterfly"
+      ],
+      "Sports & movement": [
+        "basketball",
+        "football",
+        "soccer-ball",
+        "bicycle",
+        "tennis-ball",
+        "person-simple-run",
+        "person-simple-walk",
+        "barbell",
+        "swimming-pool",
+        "target",
+        "ping-pong",
+        "trophy"
+      ],
+      "Celebrations": [
+        "trophy",
+        "medal",
+        "seal-check",
+        "confetti",
+        "balloon",
+        "gift",
+        "crown",
+        "sparkle",
+        "disco-ball",
+        "cake",
+        "certificate",
+        "smiley-wink"
+      ],
+      "Animals & pets": [
+        "cat",
+        "dog",
+        "fish",
+        "bird",
+        "paw-print",
+        "horse",
+        "butterfly",
+        "rabbit",
+        "bug",
+        "cow",
+        "bug-beetle",
+        "fish-simple"
+      ]
+    }
+  }
+}
