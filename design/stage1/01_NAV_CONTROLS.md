@@ -46,8 +46,8 @@ For a visual check, here is the same **House** source across weights. The app's 
 
 | Regular, 24px | Duotone, 24px | Fill, 24px |
 |---|---|---|
-| <img src="https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/regular/house-regular.svg" width="24" height="24" alt="House regular"/> | <img src="https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/house-duotone.svg" width="24" height="24" alt="House duotone"/> | <img src="https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/fill/house-fill.svg" width="24" height="24" alt="House fill"/> |
-| [Source](https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/regular/house-regular.svg) | [Source](https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/house-duotone.svg) | [Source](https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/fill/house-fill.svg) |
+| <img src="https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/regular/house.svg" width="24" height="24" alt="House regular"/> | <img src="https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/house-duotone.svg" width="24" height="24" alt="House duotone"/> | <img src="https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/fill/house-fill.svg" width="24" height="24" alt="House fill"/> |
+| [Source](https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/regular/house.svg) | [Source](https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/house-duotone.svg) | [Source](https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/fill/house-fill.svg) |
 
 ## Restrictions
 
