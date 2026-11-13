@@ -1,5 +1,5 @@
 {
-  "status": "unselected",
+  "status": "partial_owner_approved_visuals_goals_empty_unresolved",
   "type_note": "These are open-source illustrative SVG icons/stickers, not complete character-scene illustrations or separately licensed Streamline elements collections.",
   "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
   "license": "CC BY 4.0",
@@ -10,9 +10,12 @@
       "stickies/colors/travel-rating/reward.svg"
     ],
     "Goals empty state": [
-      "stickies/colors/school-science/book-library.svg",
-      "stickies/colors/school-science/backpack.svg",
-      "kameleon/pop/school-science/chalkboard.svg"
+      "plump/duo/interface-essential/empty-clipboard.svg",
+      "plump/duo/work-education/task-list-edit.svg",
+      "plump/duo/interface-essential/calendar-add.svg",
+      "plump/duo/interface-essential/notepad-text.svg",
+      "kameleon/pop/interface-essential/dartboard.svg",
+      "plump/duo/interface-essential/lightbulb.svg"
     ],
     "Reward redeemed": [
       "kameleon/pop/entertainment/party-poppers.svg",
@@ -53,5 +56,15 @@
       "kameleon/pop/school-science/chalkboard.svg"
     ]
   },
-  "approved_mascot": "Fox 1A master still needed; no stand-in fox created"
+  "approved_mascot": "Fox 1A master still needed; no stand-in fox created",
+  "rejected_previous_candidates": {
+    "Goals empty state": [
+      "stickies/colors/school-science/book-library.svg",
+      "stickies/colors/school-science/backpack.svg",
+      "kameleon/pop/school-science/chalkboard.svg"
+    ]
+  },
+  "review_context_notes": {
+    "Goals empty state": "Original options were not approved. Current candidates are six NEW exact source vectors. Do NOT treat NONE as an instruction to remove illustration."
+  }
 }

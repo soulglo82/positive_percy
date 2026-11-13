@@ -1,6 +1,6 @@
 {
   "version": "2026-11-13-stage1",
-  "approval_status": "PARTIAL_EXPLICIT_OWNER_MAPPINGS_AND_PICKER_CATEGORIES",
+  "approval_status": "OWNER_APPROVED_38_MAPPINGS_12_PICKER_CATEGORIES_9_VISUALS_1_UNRESOLVED_VISUAL",
   "scope": {
     "navigation": 5,
     "controls": 10,
@@ -3261,8 +3261,12 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/stickies/colors/school-science/star.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "moments:Home welcome",
+        "elements:small decorative sticker"
+      ]
     },
     {
       "asset_id": "streamline:kameleon:pop:entertainment:party-poppers",
@@ -3275,8 +3279,12 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/kameleon/pop/entertainment/party-poppers.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "moments:Reward redeemed",
+        "elements:celebration burst"
+      ]
     },
     {
       "asset_id": "streamline:stickies:colors:travel-rating:reward",
@@ -3289,8 +3297,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/stickies/colors/travel-rating/reward.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "moments:Progress milestone"
+      ]
     },
     {
       "asset_id": "streamline:stickies:colors:school-science:book-library",
@@ -3331,8 +3342,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/kameleon/pop/school-science/chalkboard.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "elements:learning spot art"
+      ]
     },
     {
       "asset_id": "streamline:stickies:colors:travel-rating:medal",
@@ -3345,8 +3359,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/stickies/colors/travel-rating/medal.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "elements:positive progress badge"
+      ]
     },
     {
       "asset_id": "streamline:kameleon:pop:entertainment:dices",
@@ -3387,8 +3404,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/kameleon/pop/school-science/robot.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "moments:First-run onboarding"
+      ]
     },
     {
       "asset_id": "streamline:kameleon:pop:entertainment:joystick",
@@ -3415,8 +3435,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/stickies/colors/shopping-shipping/gift-reciept.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "moments:Reward creation form"
+      ]
     },
     {
       "asset_id": "streamline:kameleon:pop:entertainment:popcorn",
@@ -3548,6 +3571,90 @@
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/shield-check-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
       "approval_status": "unselected_new_option_for_explicit_NONE",
+      "original_file_unchanged": true
+    },
+    {
+      "asset_id": "streamline:plump:duo:interface-essential:empty-clipboard",
+      "library": "Streamline",
+      "family": "plump",
+      "variant": "duo",
+      "local_file_path": "design/assets/streamline/plump/duo/interface-essential/empty-clipboard.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "semantic_name": "Goals empty state – new alternative (unselected)",
+      "legacy_emoji": null,
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/empty-clipboard.svg",
+      "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
+      "approval_status": "unselected_new_candidate_for_goals_empty",
+      "original_file_unchanged": true
+    },
+    {
+      "asset_id": "streamline:plump:duo:work-education:task-list-edit",
+      "library": "Streamline",
+      "family": "plump",
+      "variant": "duo",
+      "local_file_path": "design/assets/streamline/plump/duo/work-education/task-list-edit.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "semantic_name": "Goals empty state – new alternative (unselected)",
+      "legacy_emoji": null,
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/work-education/task-list-edit.svg",
+      "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
+      "approval_status": "unselected_new_candidate_for_goals_empty",
+      "original_file_unchanged": true
+    },
+    {
+      "asset_id": "streamline:plump:duo:interface-essential:calendar-add",
+      "library": "Streamline",
+      "family": "plump",
+      "variant": "duo",
+      "local_file_path": "design/assets/streamline/plump/duo/interface-essential/calendar-add.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "semantic_name": "Goals empty state – new alternative (unselected)",
+      "legacy_emoji": null,
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/calendar-add.svg",
+      "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
+      "approval_status": "unselected_new_candidate_for_goals_empty",
+      "original_file_unchanged": true
+    },
+    {
+      "asset_id": "streamline:plump:duo:interface-essential:notepad-text",
+      "library": "Streamline",
+      "family": "plump",
+      "variant": "duo",
+      "local_file_path": "design/assets/streamline/plump/duo/interface-essential/notepad-text.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "semantic_name": "Goals empty state – new alternative (unselected)",
+      "legacy_emoji": null,
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/notepad-text.svg",
+      "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
+      "approval_status": "unselected_new_candidate_for_goals_empty",
+      "original_file_unchanged": true
+    },
+    {
+      "asset_id": "streamline:kameleon:pop:interface-essential:dartboard",
+      "library": "Streamline",
+      "family": "kameleon",
+      "variant": "pop",
+      "local_file_path": "design/assets/streamline/kameleon/pop/interface-essential/dartboard.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "semantic_name": "Goals empty state – new alternative (unselected)",
+      "legacy_emoji": null,
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/kameleon/pop/interface-essential/dartboard.svg",
+      "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
+      "approval_status": "unselected_new_candidate_for_goals_empty",
+      "original_file_unchanged": true
+    },
+    {
+      "asset_id": "streamline:plump:duo:interface-essential:lightbulb",
+      "library": "Streamline",
+      "family": "plump",
+      "variant": "duo",
+      "local_file_path": "design/assets/streamline/plump/duo/interface-essential/lightbulb.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "semantic_name": "Goals empty state – new alternative (unselected)",
+      "legacy_emoji": null,
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/lightbulb.svg",
+      "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
+      "approval_status": "unselected_new_candidate_for_goals_empty",
       "original_file_unchanged": true
     }
   ],
