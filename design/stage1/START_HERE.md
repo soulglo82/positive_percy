@@ -1,6 +1,6 @@
 # Positive Percy — Stage 1 visual asset selection
 
-**Decision pack · 13 November 2026 · Owner approval required · No selections made**
+**Decision pack · 13 November 2026 · Partial owner mappings recorded (38 contexts)**
 
 > **Everything pictured is exact source artwork, now bundled locally so all icon previews remain visible without external hotlinks.** This review uses official MIT Phosphor SVGs and CC BY 4.0 files from Streamline's public open-source repository. No image generation, AI icon interpretation, copied premium previews or fabricated fox artwork. Preview boards are code-authored layouts with embedded source SVGs, **not screenshots of a running app**. Until you approve each asset, **nothing here changes Percy's production UI**.
 
@@ -14,7 +14,7 @@
 | **4 · Illustrations + elements** | <img src="../assets/streamline/stickies/colors/school-science/book-library.svg" width="56" height="56" alt="Original Stickies Books"/> <img src="../assets/streamline/kameleon/pop/entertainment/party-poppers.svg" width="56" height="56" alt="Original Kameleon Party Poppers"/> | [Open 6 placements + 4 decorative roles](04_ILLUSTRATIONS_ELEMENTS.md) |
 | **5 · Parent reward picker** | <img src="../assets/phosphor/duotone/game-controller.svg" width="48" height="48" alt="game-controller"/> <img src="../assets/phosphor/duotone/cake.svg" width="48" height="48" alt="cake"/> <img src="../assets/phosphor/duotone/palette.svg" width="48" height="48" alt="palette"/> <img src="../assets/phosphor/duotone/ticket.svg" width="48" height="48" alt="ticket"/> | [Open full 12-category picker gallery](05_PARENT_PICKER.md) |
 
-**[Blank icon-by-icon approval worksheet](06_APPROVAL_WORKSHEET.md)** · [Source manifest (CSV)](ASSET_REGISTRY.csv) · [Manifest with all metadata (JSON)](ASSET_REGISTRY.json)
+**[Owner selections and remaining approval worksheet](06_APPROVAL_WORKSHEET.md)** · **[Canonical owner approval register](APPROVAL_REGISTER.json)** · [Source manifest (CSV)](ASSET_REGISTRY.csv) · [Manifest with all metadata (JSON)](ASSET_REGISTRY.json)
 
 ## Compare the families at Percy screen scale
 
@@ -40,7 +40,7 @@ These four boards use the **actual SVG paths**, not generated approximations. Th
 
 | Category | What is ready for your review | Approval status |
 |---|---|---|
-| Navigation | 5 functions × 3 verified Phosphor candidates + real Streamline style board | **Unselected** |
+| Navigation | 5 functions × 3 verified Phosphor candidates + real Streamline style board | **See approval register** |
 | Controls | 10 actions × 3 verified candidates | **Unselected** |
 | Behaviours/Goals | 11 contexts × 3 candidate icons + constrained parent-focused Goals layout | **Unselected** |
 | Rewards | 12 examples × 2 original Plump Duo alternatives + MIT Phosphor fallback | **Unselected** |

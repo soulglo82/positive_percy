@@ -1,6 +1,6 @@
 {
   "version": "2026-11-13-stage1",
-  "approval_status": "NO_SELECTIONS_MADE",
+  "approval_status": "PARTIAL_EXPLICIT_OWNER_MAPPINGS",
   "scope": {
     "navigation": 5,
     "controls": 10,
@@ -57,8 +57,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/house-line-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "nav:Home"
+      ]
     },
     {
       "asset_id": "phosphor:user:duotone",
@@ -85,8 +88,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/users-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "nav:Progress"
+      ]
     },
     {
       "asset_id": "phosphor:user-circle:duotone",
@@ -127,8 +133,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/chart-line-up-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "nav:Activity"
+      ]
     },
     {
       "asset_id": "phosphor:clock-counter-clockwise:duotone",
@@ -155,8 +164,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/gift-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "nav:Rewards"
+      ]
     },
     {
       "asset_id": "phosphor:ticket:duotone",
@@ -197,8 +209,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/gear-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "nav:Settings"
+      ]
     },
     {
       "asset_id": "phosphor:sliders-horizontal:duotone",
@@ -239,8 +254,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/target-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "controls:Goals"
+      ]
     },
     {
       "asset_id": "phosphor:list-checks:duotone",
@@ -253,8 +271,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/list-checks-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "behaviors:Routines"
+      ]
     },
     {
       "asset_id": "phosphor:calendar-check:duotone",
@@ -281,8 +302,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/check-circle-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "controls:Complete"
+      ]
     },
     {
       "asset_id": "phosphor:seal-check:duotone",
@@ -323,8 +347,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/plus-circle-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "controls:Add"
+      ]
     },
     {
       "asset_id": "phosphor:plus:duotone",
@@ -379,8 +406,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/pencil-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "controls:Edit"
+      ]
     },
     {
       "asset_id": "phosphor:calendar-dots:duotone",
@@ -393,8 +423,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/calendar-dots-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "controls:Schedule"
+      ]
     },
     {
       "asset_id": "phosphor:repeat:duotone",
@@ -421,8 +454,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/pause-circle-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "controls:Pause"
+      ]
     },
     {
       "asset_id": "phosphor:hand-palm:duotone",
@@ -463,8 +499,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/arrow-counter-clockwise-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "controls:Undo"
+      ]
     },
     {
       "asset_id": "phosphor:arrow-u-up-left:duotone",
@@ -491,8 +530,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/archive-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "controls:Archive"
+      ]
     },
     {
       "asset_id": "phosphor:tray:duotone",
@@ -533,8 +575,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/info-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "controls:Help"
+      ]
     },
     {
       "asset_id": "phosphor:question:duotone",
@@ -575,8 +620,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/user-switch-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "controls:Child switch"
+      ]
     },
     {
       "asset_id": "phosphor:caret-down:duotone",
@@ -617,8 +665,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/hand-heart-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "behaviors:Kindness"
+      ]
     },
     {
       "asset_id": "phosphor:smiley:duotone",
@@ -687,8 +738,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/handshake-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "behaviors:Helping"
+      ]
     },
     {
       "asset_id": "phosphor:hands-clapping:duotone",
@@ -701,8 +755,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/hands-clapping-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "behaviors:Community"
+      ]
     },
     {
       "asset_id": "phosphor:broom:duotone",
@@ -715,8 +772,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/broom-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "behaviors:Chores"
+      ]
     },
     {
       "asset_id": "phosphor:spray-bottle:duotone",
@@ -743,8 +803,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bicycle-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "behaviors:Movement"
+      ]
     },
     {
       "asset_id": "phosphor:basketball:duotone",
@@ -785,8 +848,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/book-open-text-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "behaviors:Reading"
+      ]
     },
     {
       "asset_id": "phosphor:book-bookmark:duotone",
@@ -869,8 +935,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/paint-brush-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "behaviors:Creativity"
+      ]
     },
     {
       "asset_id": "phosphor:music-notes:duotone",
@@ -897,8 +966,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bed-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "behaviors:Sleep"
+      ]
     },
     {
       "asset_id": "phosphor:moon-stars:duotone",
@@ -2647,8 +2719,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/computer-devices/controller-1.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:Gaming time"
+      ]
     },
     {
       "asset_id": "streamline:plump:duo:entertainment:gameboy",
@@ -2675,8 +2750,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/images-photography/film-slate.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:Movie night"
+      ]
     },
     {
       "asset_id": "streamline:plump:duo:entertainment:camera-video",
@@ -2703,8 +2781,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/food-drink/ice-cream-2.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:Ice cream treat"
+      ]
     },
     {
       "asset_id": "streamline:plump:duo:food-drink:cake-slice",
@@ -2717,8 +2798,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/food-drink/cake-slice.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:Cake treat"
+      ]
     },
     {
       "asset_id": "streamline:plump:duo:interface-essential:book-1",
@@ -2759,8 +2843,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/map-travel/bicycle-bike.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:Bike ride"
+      ]
     },
     {
       "asset_id": "streamline:plump:duo:map-travel:beach",
@@ -2773,8 +2860,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/map-travel/beach.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:Family outing"
+      ]
     },
     {
       "asset_id": "streamline:plump:duo:money-shopping:gift",
@@ -2801,8 +2891,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/give-gift.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:Gift"
+      ]
     },
     {
       "asset_id": "streamline:plump:duo:culture:ticket-1",
@@ -2815,8 +2908,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/culture/ticket-1.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:Day out"
+      ]
     },
     {
       "asset_id": "streamline:plump:duo:food-drink:burger",
@@ -2857,8 +2953,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/paintbrush-2.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:Art activity"
+      ]
     },
     {
       "asset_id": "streamline:plump:duo:images-photography:camera-1",
@@ -2871,8 +2970,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/images-photography/camera-1.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:Photo adventure"
+      ]
     },
     {
       "asset_id": "streamline:plump:duo:images-photography:polaroid",
@@ -2899,8 +3001,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/entertainment/music-note-2.svg",
       "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
-      "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:Music time"
+      ]
     },
     {
       "asset_id": "streamline:plump:duo:entertainment:music-note-trebble-clef",
@@ -3112,5 +3217,6 @@
       "approval_status": "unselected; open-source CC BY; only for in-app approved placements; picker excluded",
       "original_file_unchanged": true
     }
-  ]
+  ],
+  "approval_register": "design/stage1/APPROVAL_REGISTER.json"
 }
