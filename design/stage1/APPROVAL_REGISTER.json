@@ -127,9 +127,13 @@
         "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
       },
       "Learning": {
-        "status": "none_of_these",
-        "asset_id": null,
-        "meaning": "Candidate options rejected; show further options before choosing an icon"
+        "status": "selected",
+        "asset_id": "phosphor:brain:duotone",
+        "source_file": "design/assets/phosphor/duotone/brain.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/brain-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+        "resolved_from": "none_of_these",
+        "resolution_source": "Owner explicit 13 November 2026 submission"
       },
       "Helping": {
         "status": "selected",
@@ -167,9 +171,13 @@
         "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
       },
       "Self-care": {
-        "status": "none_of_these",
-        "asset_id": null,
-        "meaning": "Candidate options rejected; show further options before choosing an icon"
+        "status": "selected",
+        "asset_id": "phosphor:bathtub:duotone",
+        "source_file": "design/assets/phosphor/duotone/bathtub.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bathtub-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+        "resolved_from": "none_of_these",
+        "resolution_source": "Owner explicit 13 November 2026 submission"
       },
       "Community": {
         "status": "selected",
@@ -216,9 +224,13 @@
         "license": "https://creativecommons.org/licenses/by/4.0/"
       },
       "New book": {
-        "status": "none_of_these",
-        "asset_id": null,
-        "meaning": "Candidate options rejected; show further options before choosing an icon"
+        "status": "selected",
+        "asset_id": "phosphor:book-bookmark:duotone",
+        "source_file": "design/assets/phosphor/duotone/book-bookmark.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/book-bookmark-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+        "resolved_from": "none_of_these",
+        "resolution_source": "Owner explicit 13 November 2026 submission"
       },
       "Bike ride": {
         "status": "selected",
@@ -280,8 +292,8 @@
   },
   "summary": {
     "contexts_reviewed": 38,
-    "selected": 35,
-    "none_of_these": 3,
+    "selected": 38,
+    "none_of_these": 0,
     "picker_categories_reviewed": 12,
     "picker_icon_placements": 84,
     "picker_distinct_icons": 71
@@ -558,5 +570,14 @@
       "icon_placements": 84,
       "unique_icons": 71
     }
+  },
+  "last_update": {
+    "date": "2026-11-13",
+    "action": "resolved_three_explicit_none_choices",
+    "contexts": [
+      "behaviors:Learning",
+      "behaviors:Self-care",
+      "rewards:New book"
+    ]
   }
 }

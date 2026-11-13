@@ -4,9 +4,9 @@
 
 > **Everything pictured is exact source artwork, now bundled locally so all icon previews remain visible without external hotlinks.** This review uses official MIT Phosphor SVGs and CC BY 4.0 files from Streamline's public open-source repository. No image generation, AI icon interpretation, copied premium previews or fabricated fox artwork. Preview boards are code-authored layouts with embedded source SVGs, **not screenshots of a running app**. Until you approve each asset, **nothing here changes Percy's production UI**.
 
-### Continue with the outstanding choices
+### Continue with remaining visual decisions
 
-[**Open focused illustration + remaining icons selection**](https://percy-stage1-design-selector-production.up.railway.app/?section=visual) · [**Choose new candidates for three rejected icons**](https://percy-stage1-design-selector-production.up.railway.app/?section=finish). These links lead to the interactive selector and no decisions are pre-filled for the rejected rows.
+[**Open illustrations and decorative elements selector**](https://percy-stage1-design-selector-production.up.railway.app/?section=visual). All three previous icon rejections have now been resolved by explicit owner selections.
 
 ### Choose where to start
 
