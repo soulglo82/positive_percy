@@ -1,6 +1,6 @@
 # Stage 1 · Your icon and illustration decision worksheet
 
-> **Partial owner choices recorded (13 Nov 2026).** The 38 earlier decisions plus 12 explicitly selected parent-picker category lists are recorded in [APPROVAL_REGISTER.json](APPROVAL_REGISTER.json). All other design decisions remain unselected. Three `NONE OF THESE` decisions require alternative candidates; they do not mean display no icon.
+> **Partial owner choices recorded (13 Nov 2026).** The 38 earlier decisions plus 12 explicitly selected parent-picker category lists are recorded in [APPROVAL_REGISTER.json](APPROVAL_REGISTER.json). All other design decisions remain unselected. All three previously rejected icon contexts now have explicitly selected source assets; other design decisions remain unselected.
 
 **[Start here](START_HERE.md)** · [Menu & controls](01_NAV_CONTROLS.md) · [Behaviours](02_BEHAVIOURS_GOALS.md) · [Rewards](03_REWARDS.md) · [Visual accents](04_ILLUSTRATIONS_ELEMENTS.md) · [Parent icon picker](05_PARENT_PICKER.md)
 
@@ -31,13 +31,13 @@
 | Category/context | Selected icon name | Weight/variant | None / More options? | Notes |
 |---|---|---|---|---|
 | Kindness | `phosphor:hand-heart:duotone` | duotone | Selected | Candidate names: `heart`, `hand-heart`, `smiley` |
-| Learning | **NONE OF THESE — more options required** | — | **None of these** | Candidate names: `book-open`, `books`, `graduation-cap` |
+| Learning | `phosphor:brain:duotone` | duotone | Selected | Explicit owner selection from new source options |
 | Helping | `phosphor:handshake:duotone` | duotone | Selected | Candidate names: `hand-heart`, `handshake`, `hands-clapping` |
 | Chores | `phosphor:broom:duotone` | duotone | Selected | Candidate names: `broom`, `spray-bottle`, `house` |
 | Movement | `phosphor:bicycle:duotone` | duotone | Selected | Candidate names: `bicycle`, `basketball`, `person-simple-run` |
 | Reading | `phosphor:book-open-text:duotone` | duotone | Selected | Candidate names: `book-open-text`, `book-bookmark`, `books` |
 | Routines | `phosphor:list-checks:duotone` | duotone | Selected | Candidate names: `list-checks`, `calendar-check`, `check-square` |
-| Self-care | **NONE OF THESE — more options required** | — | **None of these** | Candidate names: `tooth`, `hand-soap`, `drop` |
+| Self-care | `phosphor:bathtub:duotone` | duotone | Selected | Explicit owner selection from new source options |
 | Community | `phosphor:hands-clapping:duotone` | duotone | Selected | Candidate names: `hands-clapping`, `heart`, `users` |
 | Creativity | `phosphor:paint-brush:duotone` | duotone | Selected | Candidate names: `palette`, `paint-brush`, `music-notes` |
 | Sleep | `phosphor:bed:duotone` | duotone | Selected | Candidate names: `bed`, `moon-stars`, `moon` |
@@ -51,7 +51,7 @@
 | Gaming time | `streamline:plump:duo:computer-devices:controller-1` | Streamline · Plump Duo | Dedicated Percy star only | Owner selected exact source vector |
 | Movie night | `streamline:plump:duo:images-photography:film-slate` | Streamline · Plump Duo | Dedicated Percy star only | Owner selected exact source vector |
 | Ice cream treat | `streamline:plump:duo:food-drink:ice-cream-2` | Streamline · Plump Duo | Dedicated Percy star only | Owner selected exact source vector |
-| New book | **NONE OF THESE — more options required** | — | Dedicated Percy star only | Explicitly rejected current candidates |
+| New book | `phosphor:book-bookmark:duotone` | Phosphor · Duotone | Dedicated Percy star only | Explicit owner selection from new source options |
 | Bike ride | `streamline:plump:duo:map-travel:bicycle-bike` | Streamline · Plump Duo | Dedicated Percy star only | Owner selected exact source vector |
 | Gift | `streamline:plump:duo:interface-essential:give-gift` | Streamline · Plump Duo | Dedicated Percy star only | Owner selected exact source vector |
 | Day out | `streamline:plump:duo:culture:ticket-1` | Streamline · Plump Duo | Dedicated Percy star only | Owner selected exact source vector |
@@ -64,15 +64,15 @@
 **Catalogue direction:** **Unselected** · Plump Duo / Phosphor / Mixed only by explicit approval · Picker licensing: **review required**.
 
 
-### Additional real-icon candidates for the three rejected contexts
+### Resolved alternatives for three previously rejected contexts
 
-The original `NONE OF THESE` decisions remain unresolved. These new options are **not selected**. Use the [interactive selector](https://percy-stage1-design-selector-production.up.railway.app/?section=finish) to choose, or reject them again.
+The owner has now selected one exact SVG for each previously rejected context. The remaining alternatives below have not been approved.
 
 | Context | New alternatives (source-verified) | Status |
 |---|---|---|
-| Learning | `phosphor:brain:duotone`, `phosphor:lightbulb:duotone`, `phosphor:atom:duotone`, `phosphor:student:duotone`, `phosphor:microscope:duotone`, `phosphor:notebook:duotone` | **Unselected** |
-| Self-care | `phosphor:shower:duotone`, `phosphor:bathtub:duotone`, `phosphor:first-aid:duotone`, `phosphor:bandaids:duotone`, `phosphor:shield-check:duotone` | **Unselected** |
-| New book | `streamline:stickies:colors:school-science:book-library`, `phosphor:books:duotone`, `phosphor:book-bookmark:duotone`, `phosphor:book-open-text:duotone` | **Unselected** |
+| Learning | `phosphor:brain:duotone`, `phosphor:lightbulb:duotone`, `phosphor:atom:duotone`, `phosphor:student:duotone`, `phosphor:microscope:duotone`, `phosphor:notebook:duotone` | **Selected: `phosphor:brain:duotone`** |
+| Self-care | `phosphor:shower:duotone`, `phosphor:bathtub:duotone`, `phosphor:first-aid:duotone`, `phosphor:bandaids:duotone`, `phosphor:shield-check:duotone` | **Selected: `phosphor:bathtub:duotone`** |
+| New book | `streamline:stickies:colors:school-science:book-library`, `phosphor:books:duotone`, `phosphor:book-bookmark:duotone`, `phosphor:book-open-text:duotone` | **Selected: `phosphor:book-bookmark:duotone`** |
 
 ## 4. Illustrations and elements
 

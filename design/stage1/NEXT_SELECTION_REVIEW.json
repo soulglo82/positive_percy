@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "status": "unselected_new_options",
+  "status": "all_three_contexts_resolved",
   "note": "New, source-verified candidates only for explicitly rejected contexts. No selections inferred. In the selector, NONE OF THESE means current options rejected and more alternatives required.",
   "contexts": {
     "behaviors:Learning": {
@@ -13,7 +13,9 @@
         "phosphor:student:duotone",
         "phosphor:microscope:duotone",
         "phosphor:notebook:duotone"
-      ]
+      ],
+      "status": "owner_selected",
+      "selected_asset_id": "phosphor:brain:duotone"
     },
     "behaviors:Self-care": {
       "name": "Self-care",
@@ -24,7 +26,9 @@
         "phosphor:first-aid:duotone",
         "phosphor:bandaids:duotone",
         "phosphor:shield-check:duotone"
-      ]
+      ],
+      "status": "owner_selected",
+      "selected_asset_id": "phosphor:bathtub:duotone"
     },
     "rewards:New book": {
       "name": "New book",
@@ -34,7 +38,9 @@
         "phosphor:books:duotone",
         "phosphor:book-bookmark:duotone",
         "phosphor:book-open-text:duotone"
-      ]
+      ],
+      "status": "owner_selected",
+      "selected_asset_id": "phosphor:book-bookmark:duotone"
     }
   }
 }

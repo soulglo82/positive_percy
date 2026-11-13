@@ -892,8 +892,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/book-bookmark-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected; exact original SVG locally staged",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "rewards:New book"
+      ]
     },
     {
       "asset_id": "phosphor:tooth:duotone",
@@ -3440,8 +3443,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/brain-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected_new_option_for_explicit_NONE",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "behaviors:Learning"
+      ]
     },
     {
       "asset_id": "phosphor:student:duotone",
@@ -3496,8 +3502,11 @@
       "legacy_emoji": null,
       "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bathtub-duotone.svg",
       "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
-      "approval_status": "unselected_new_option_for_explicit_NONE",
-      "original_file_unchanged": true
+      "approval_status": "owner_selected_for_explicit_contexts_only",
+      "original_file_unchanged": true,
+      "approved_for_contexts": [
+        "behaviors:Self-care"
+      ]
     },
     {
       "asset_id": "phosphor:first-aid:duotone",
