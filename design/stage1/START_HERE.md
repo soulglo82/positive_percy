@@ -1,12 +1,12 @@
 # Positive Percy — Stage 1 visual asset selection
 
-**Decision pack · 13 November 2026 · Partial owner mappings recorded (38 contexts + 12 picker category lists)**
+**Decision pack · 13 November 2026 · Partial owner mappings recorded (38 icons + 12 picker groups + 9 visual assets)**
 
 > **Everything pictured is exact source artwork, now bundled locally so all icon previews remain visible without external hotlinks.** This review uses official MIT Phosphor SVGs and CC BY 4.0 files from Streamline's public open-source repository. No image generation, AI icon interpretation, copied premium previews or fabricated fox artwork. Preview boards are code-authored layouts with embedded source SVGs, **not screenshots of a running app**. Until you approve each asset, **nothing here changes Percy's production UI**.
 
 ### Continue with remaining visual decisions
 
-[**Open illustrations and decorative elements selector**](https://percy-stage1-design-selector-production.up.railway.app/?section=visual). All three previous icon rejections have now been resolved by explicit owner selections.
+[**Review new Goals empty-state illustration options**](https://percy-stage1-design-selector-production.up.railway.app/?section=visual). Nine other illustration/decorative choices are approved. The user rejected the earlier Goals empty-state options; this screen still needs artwork approval.
 
 ### Choose where to start
 

@@ -78,18 +78,31 @@ The owner has now selected one exact SVG for each previously rejected context. T
 
 | Potential placement | Selected actual SVG (or None) | Size/colour | Motion allowed? | Notes |
 |---|---|---|---|---|
-| Home welcome | **Unselected** | — | No by default | "None" is valid |
-| Goals empty state | **Unselected** | — | No by default | "None" is valid |
-| Reward redeemed | **Unselected** | — | No by default | "None" is valid |
-| Progress milestone | **Unselected** | — | No by default | "None" is valid |
-| First-run onboarding | **Unselected** | — | No by default | "None" is valid |
-| Reward creation form | **Unselected** | — | No by default | "None" is valid |
-| small decorative sticker | **Unselected** | — | No by default | "None" is valid |
-| celebration burst | **Unselected** | — | No by default | "None" is valid |
-| positive progress badge | **Unselected** | — | No by default | "None" is valid |
-| learning spot art | **Unselected** | — | No by default | "None" is valid |
+| Home welcome | `streamline:stickies:colors:school-science:star` | Original artwork | No by default | Explicit owner-selected source SVG |
+| Goals empty state | **NONE OF PREVIOUS OPTIONS APPROVED — review new alternatives** | — | — | Requires actual artwork choice; not approved empty state |
+| Reward redeemed | `streamline:kameleon:pop:entertainment:party-poppers` | Original artwork | No by default | Explicit owner-selected source SVG |
+| Progress milestone | `streamline:stickies:colors:travel-rating:reward` | Original artwork | No by default | Explicit owner-selected source SVG |
+| First-run onboarding | `streamline:kameleon:pop:school-science:robot` | Original artwork | No by default | Explicit owner-selected source SVG |
+| Reward creation form | `streamline:stickies:colors:shopping-shipping:gift-reciept` | Original artwork | No by default | Explicit owner-selected source SVG |
+| small decorative sticker | `streamline:stickies:colors:school-science:star` | Original artwork | No by default | Explicit owner-selected source SVG |
+| celebration burst | `streamline:kameleon:pop:entertainment:party-poppers` | Original artwork | No by default | Explicit owner-selected source SVG |
+| positive progress badge | `streamline:stickies:colors:travel-rating:medal` | Original artwork | No by default | Explicit owner-selected source SVG |
+| learning spot art | `streamline:kameleon:pop:school-science:chalkboard` | Original artwork | No by default | Explicit owner-selected source SVG |
 
 **Mascot scenes:** No new fox artwork until the verified Fox 1A master is available. **Points:** The approved separate points-star is compulsory in point balances and prices.
+
+### New genuine-source alternatives for Goals empty state (not approved yet)
+
+| Candidate | Exact source ID | Status |
+|---|---|---|
+| 1. empty clipboard | `streamline:plump:duo:interface-essential:empty-clipboard` | **Unselected** |
+| 2. task list edit | `streamline:plump:duo:work-education:task-list-edit` | **Unselected** |
+| 3. calendar add | `streamline:plump:duo:interface-essential:calendar-add` | **Unselected** |
+| 4. notepad text | `streamline:plump:duo:interface-essential:notepad-text` | **Unselected** |
+| 5. dartboard | `streamline:kameleon:pop:interface-essential:dartboard` | **Unselected** |
+| 6. lightbulb | `streamline:plump:duo:interface-essential:lightbulb` | **Unselected** |
+
+These are selectable in the [interactive illustrations review](https://percy-stage1-design-selector-production.up.railway.app/?section=visual). The previous three options remain logged as rejected, not silently erased.
 
 ## 5. Parent reward icon picker
 

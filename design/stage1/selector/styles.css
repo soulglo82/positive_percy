@@ -2,3 +2,5 @@
 /* Focused unresolved-icon review uses the same exact-source tiles */
 body:has(.tab[data-group="finish"].active) .decision-card .icon-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(min-width:900px){body:has(.tab[data-group="finish"].active) .decision-card .icon-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+
+.choice-action[aria-pressed="true"]{border-color:var(--purple);background:#F5EAFD}
