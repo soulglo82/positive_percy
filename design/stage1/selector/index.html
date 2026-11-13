@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex,nofollow"/>
+<meta name="theme-color" content="#FFF6E8"/>
+<title>Positive Percy · Stage 1 Icon Selection</title>
+<link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Percy design selector">✦ <span>Positive <b>Percy</b></span></a>
+    <span class="status">DESIGN REVIEW · NOT LIVE</span>
+    <button class="tiny" id="reviewButton">Review my choices <span id="selectionCount">0</span></button>
+  </header>
+  <main>
+    <div class="intro">
+      <div>
+        <p class="eyebrow">STAGE 1 · OWNER SELECTION</p>
+        <h1>You choose every icon.</h1>
+        <p class="sub">Click a real SVG to select it. Change your mind, choose <b>None of these</b>, or browse more. Your choices are saved only in this browser until you copy or export them.</p>
+      </div>
+      <div class="progresscard" aria-live="polite"><strong id="progress">0</strong><span>decisions made</span><small>No choices preselected</small></div>
+    </div>
+    <div class="notice"><span aria-hidden="true">✓</span> All preview artwork is sourced from unchanged, buildable SVG files in Percy's repository. No AI-generated icons or scenes. Final Fox 1A and Percy points-star are separate brand assets.</div>
+    <nav class="tabs" aria-label="Design review sections" id="tabs"></nav>
+    <section id="mainContent" aria-live="polite"><p>Loading source assets…</p></section>
+  </main>
+  <footer>
+    <span>Genuine Phosphor (MIT) · Streamline open-source vectors (CC BY 4.0) · No production changes</span>
+    <a href="/sources" target="_blank" rel="noopener">Source registry ↗</a>
+  </footer>
+</div>
+<dialog id="browseDialog" aria-labelledby="browseTitle">
+  <div class="dialoghead">
+    <div><p class="eyebrow">BROWSE REAL SOURCE ASSETS</p><h2 id="browseTitle">Choose a different icon</h2><p id="browseFor" class="sub"></p></div>
+    <button id="closeBrowse" class="tiny">Close ×</button>
+  </div>
+  <div class="filters">
+    <input id="searchIcon" type="search" placeholder="Search an icon name or use…" aria-label="Search all icon candidates"/>
+    <select id="filterFamily" aria-label="Filter by icon family"><option value="all">All verified assets</option><option value="Phosphor">Phosphor (MIT)</option><option value="Streamline">Streamline (CC BY)</option></select>
+  </div>
+  <p class="muted" id="resultCount"></p>
+  <div id="browseGrid" class="icon-grid" role="group" aria-label="Icon results"></div>
+</dialog>
+<dialog id="reviewDialog" aria-labelledby="reviewTitle">
+  <div class="dialoghead"><div><p class="eyebrow">YOUR DECISIONS</p><h2 id="reviewTitle">Review and export</h2></div><button id="closeReview" class="tiny">Close ×</button></div>
+  <p class="sub">These choices aren't sent anywhere automatically. Copy the review text into our ChatGPT conversation so I can record your approved selections in the design register.</p>
+  <div id="reviewSummary"></div>
+  <textarea id="exportText" rows="11" spellcheck="false" aria-label="Your selections to copy"></textarea>
+  <div class="actions"><button id="copyReview" class="primary">Copy selections</button><button id="downloadReview" class="secondary">Download JSON</button><button id="clearSelections" class="danger">Clear saved decisions</button></div>
+  <p id="copyFeedback" class="muted" role="status"></p>
+</dialog>
+<template id="tileTemplate"><button type="button" class="icon-option"><span class="icon-surface"><img loading="lazy" alt="" width="48" height="48"/></span><span class="icon-name"></span><span class="icon-origin"></span><span class="selected-check" aria-hidden="true">✓</span></button></template>
+<script src="/app.js" defer></script>
+</body>
+</html>
