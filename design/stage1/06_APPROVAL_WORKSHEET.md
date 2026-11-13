@@ -63,6 +63,17 @@
 
 **Catalogue direction:** **Unselected** · Plump Duo / Phosphor / Mixed only by explicit approval · Picker licensing: **review required**.
 
+
+### Additional real-icon candidates for the three rejected contexts
+
+The original `NONE OF THESE` decisions remain unresolved. These new options are **not selected**. Use the [interactive selector](https://percy-stage1-design-selector-production.up.railway.app/?section=finish) to choose, or reject them again.
+
+| Context | New alternatives (source-verified) | Status |
+|---|---|---|
+| Learning | `phosphor:brain:duotone`, `phosphor:lightbulb:duotone`, `phosphor:atom:duotone`, `phosphor:student:duotone`, `phosphor:microscope:duotone`, `phosphor:notebook:duotone` | **Unselected** |
+| Self-care | `phosphor:shower:duotone`, `phosphor:bathtub:duotone`, `phosphor:first-aid:duotone`, `phosphor:bandaids:duotone`, `phosphor:shield-check:duotone` | **Unselected** |
+| New book | `streamline:stickies:colors:school-science:book-library`, `phosphor:books:duotone`, `phosphor:book-bookmark:duotone`, `phosphor:book-open-text:duotone` | **Unselected** |
+
 ## 4. Illustrations and elements
 
 | Potential placement | Selected actual SVG (or None) | Size/colour | Motion allowed? | Notes |

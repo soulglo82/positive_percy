@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "status": "unselected_new_options",
+  "note": "New, source-verified candidates only for explicitly rejected contexts. No selections inferred. In the selector, NONE OF THESE means current options rejected and more alternatives required.",
+  "contexts": {
+    "behaviors:Learning": {
+      "name": "Learning",
+      "purpose": "Overall learning and curiosity, distinct from Reading",
+      "candidates": [
+        "phosphor:brain:duotone",
+        "phosphor:lightbulb:duotone",
+        "phosphor:atom:duotone",
+        "phosphor:student:duotone",
+        "phosphor:microscope:duotone",
+        "phosphor:notebook:duotone"
+      ]
+    },
+    "behaviors:Self-care": {
+      "name": "Self-care",
+      "purpose": "Personal care and healthy routines, not healthcare diagnosis",
+      "candidates": [
+        "phosphor:shower:duotone",
+        "phosphor:bathtub:duotone",
+        "phosphor:first-aid:duotone",
+        "phosphor:bandaids:duotone",
+        "phosphor:shield-check:duotone"
+      ]
+    },
+    "rewards:New book": {
+      "name": "New book",
+      "purpose": "A reward for acquiring a new book; larger tile artwork, not reading behaviour control",
+      "candidates": [
+        "streamline:stickies:colors:school-science:book-library",
+        "phosphor:books:duotone",
+        "phosphor:book-bookmark:duotone",
+        "phosphor:book-open-text:duotone"
+      ]
+    }
+  }
+}
