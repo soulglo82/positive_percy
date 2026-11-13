@@ -1,5 +1,5 @@
 {
-  "version": "stage1-v1",
+  "version": "stage1-v2-144-icon-picker",
   "status": "candidate_only_no_icons_selected",
   "sources": {
     "phosphor_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
@@ -263,6 +263,62 @@
         "basket",
         "ticket",
         "clock"
+      ],
+      "Nature & outdoors": [
+        "tree",
+        "flower",
+        "sun",
+        "moon-stars",
+        "cloud",
+        "mountains",
+        "tent",
+        "campfire",
+        "leaf",
+        "paw-print",
+        "fish",
+        "butterfly"
+      ],
+      "Sports & movement": [
+        "basketball",
+        "football",
+        "soccer-ball",
+        "bicycle",
+        "tennis-ball",
+        "person-simple-run",
+        "person-simple-walk",
+        "barbell",
+        "swimming-pool",
+        "target",
+        "ping-pong",
+        "trophy"
+      ],
+      "Celebrations": [
+        "trophy",
+        "medal",
+        "seal-check",
+        "confetti",
+        "balloon",
+        "gift",
+        "crown",
+        "sparkle",
+        "disco-ball",
+        "cake",
+        "certificate",
+        "smiley-wink"
+      ],
+      "Animals & pets": [
+        "cat",
+        "dog",
+        "fish",
+        "bird",
+        "paw-print",
+        "horse",
+        "butterfly",
+        "rabbit",
+        "bug",
+        "cow",
+        "bug-beetle",
+        "fish-simple"
       ]
     }
   }
