@@ -1,0 +1,562 @@
+{
+  "project": "Positive Percy",
+  "stage": 1,
+  "scope": "explicit_owner_choices_only",
+  "recorded_date": "2026-11-13",
+  "version": "1.0",
+  "approval_level": "approved_icon_mappings_for_specific_review_contexts_only",
+  "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected.",
+  "meaning_of_NONE": "Explicitly rejected presented candidates; further icon options required. NOT a deliberate choice of no icon.",
+  "source": "Owner's copied interactive Stage 1 decisions, four groups, 13 November 2026",
+  "decisions": {
+    "nav": {
+      "Home": {
+        "status": "selected",
+        "asset_id": "phosphor:house-line:duotone",
+        "source_file": "design/assets/phosphor/duotone/house-line.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/house-line-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Progress": {
+        "status": "selected",
+        "asset_id": "phosphor:users:duotone",
+        "source_file": "design/assets/phosphor/duotone/users.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/users-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Activity": {
+        "status": "selected",
+        "asset_id": "phosphor:chart-line-up:duotone",
+        "source_file": "design/assets/phosphor/duotone/chart-line-up.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/chart-line-up-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Rewards": {
+        "status": "selected",
+        "asset_id": "phosphor:gift:duotone",
+        "source_file": "design/assets/phosphor/duotone/gift.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/gift-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Settings": {
+        "status": "selected",
+        "asset_id": "phosphor:gear:duotone",
+        "source_file": "design/assets/phosphor/duotone/gear.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/gear-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      }
+    },
+    "controls": {
+      "Complete": {
+        "status": "selected",
+        "asset_id": "phosphor:check-circle:duotone",
+        "source_file": "design/assets/phosphor/duotone/check-circle.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/check-circle-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Goals": {
+        "status": "selected",
+        "asset_id": "phosphor:target:duotone",
+        "source_file": "design/assets/phosphor/duotone/target.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/target-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Add": {
+        "status": "selected",
+        "asset_id": "phosphor:plus-circle:duotone",
+        "source_file": "design/assets/phosphor/duotone/plus-circle.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/plus-circle-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Edit": {
+        "status": "selected",
+        "asset_id": "phosphor:pencil:duotone",
+        "source_file": "design/assets/phosphor/duotone/pencil.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/pencil-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Schedule": {
+        "status": "selected",
+        "asset_id": "phosphor:calendar-dots:duotone",
+        "source_file": "design/assets/phosphor/duotone/calendar-dots.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/calendar-dots-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Pause": {
+        "status": "selected",
+        "asset_id": "phosphor:pause-circle:duotone",
+        "source_file": "design/assets/phosphor/duotone/pause-circle.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/pause-circle-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Undo": {
+        "status": "selected",
+        "asset_id": "phosphor:arrow-counter-clockwise:duotone",
+        "source_file": "design/assets/phosphor/duotone/arrow-counter-clockwise.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/arrow-counter-clockwise-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Archive": {
+        "status": "selected",
+        "asset_id": "phosphor:archive:duotone",
+        "source_file": "design/assets/phosphor/duotone/archive.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/archive-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Help": {
+        "status": "selected",
+        "asset_id": "phosphor:info:duotone",
+        "source_file": "design/assets/phosphor/duotone/info.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/info-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Child switch": {
+        "status": "selected",
+        "asset_id": "phosphor:user-switch:duotone",
+        "source_file": "design/assets/phosphor/duotone/user-switch.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/user-switch-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      }
+    },
+    "behaviors": {
+      "Kindness": {
+        "status": "selected",
+        "asset_id": "phosphor:hand-heart:duotone",
+        "source_file": "design/assets/phosphor/duotone/hand-heart.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/hand-heart-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Learning": {
+        "status": "none_of_these",
+        "asset_id": null,
+        "meaning": "Candidate options rejected; show further options before choosing an icon"
+      },
+      "Helping": {
+        "status": "selected",
+        "asset_id": "phosphor:handshake:duotone",
+        "source_file": "design/assets/phosphor/duotone/handshake.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/handshake-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Chores": {
+        "status": "selected",
+        "asset_id": "phosphor:broom:duotone",
+        "source_file": "design/assets/phosphor/duotone/broom.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/broom-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Movement": {
+        "status": "selected",
+        "asset_id": "phosphor:bicycle:duotone",
+        "source_file": "design/assets/phosphor/duotone/bicycle.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bicycle-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Reading": {
+        "status": "selected",
+        "asset_id": "phosphor:book-open-text:duotone",
+        "source_file": "design/assets/phosphor/duotone/book-open-text.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/book-open-text-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Routines": {
+        "status": "selected",
+        "asset_id": "phosphor:list-checks:duotone",
+        "source_file": "design/assets/phosphor/duotone/list-checks.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/list-checks-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Self-care": {
+        "status": "none_of_these",
+        "asset_id": null,
+        "meaning": "Candidate options rejected; show further options before choosing an icon"
+      },
+      "Community": {
+        "status": "selected",
+        "asset_id": "phosphor:hands-clapping:duotone",
+        "source_file": "design/assets/phosphor/duotone/hands-clapping.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/hands-clapping-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Creativity": {
+        "status": "selected",
+        "asset_id": "phosphor:paint-brush:duotone",
+        "source_file": "design/assets/phosphor/duotone/paint-brush.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/paint-brush-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "Sleep": {
+        "status": "selected",
+        "asset_id": "phosphor:bed:duotone",
+        "source_file": "design/assets/phosphor/duotone/bed.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bed-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      }
+    },
+    "rewards": {
+      "Gaming time": {
+        "status": "selected",
+        "asset_id": "streamline:plump:duo:computer-devices:controller-1",
+        "source_file": "design/assets/streamline/plump/duo/computer-devices/controller-1.svg",
+        "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/computer-devices/controller-1.svg",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "Movie night": {
+        "status": "selected",
+        "asset_id": "streamline:plump:duo:images-photography:film-slate",
+        "source_file": "design/assets/streamline/plump/duo/images-photography/film-slate.svg",
+        "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/images-photography/film-slate.svg",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "Ice cream treat": {
+        "status": "selected",
+        "asset_id": "streamline:plump:duo:food-drink:ice-cream-2",
+        "source_file": "design/assets/streamline/plump/duo/food-drink/ice-cream-2.svg",
+        "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/food-drink/ice-cream-2.svg",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "New book": {
+        "status": "none_of_these",
+        "asset_id": null,
+        "meaning": "Candidate options rejected; show further options before choosing an icon"
+      },
+      "Bike ride": {
+        "status": "selected",
+        "asset_id": "streamline:plump:duo:map-travel:bicycle-bike",
+        "source_file": "design/assets/streamline/plump/duo/map-travel/bicycle-bike.svg",
+        "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/map-travel/bicycle-bike.svg",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "Gift": {
+        "status": "selected",
+        "asset_id": "streamline:plump:duo:interface-essential:give-gift",
+        "source_file": "design/assets/streamline/plump/duo/interface-essential/give-gift.svg",
+        "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/give-gift.svg",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "Day out": {
+        "status": "selected",
+        "asset_id": "streamline:plump:duo:culture:ticket-1",
+        "source_file": "design/assets/streamline/plump/duo/culture/ticket-1.svg",
+        "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/culture/ticket-1.svg",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "Cake treat": {
+        "status": "selected",
+        "asset_id": "streamline:plump:duo:food-drink:cake-slice",
+        "source_file": "design/assets/streamline/plump/duo/food-drink/cake-slice.svg",
+        "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/food-drink/cake-slice.svg",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "Art activity": {
+        "status": "selected",
+        "asset_id": "streamline:plump:duo:interface-essential:paintbrush-2",
+        "source_file": "design/assets/streamline/plump/duo/interface-essential/paintbrush-2.svg",
+        "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/paintbrush-2.svg",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "Photo adventure": {
+        "status": "selected",
+        "asset_id": "streamline:plump:duo:images-photography:camera-1",
+        "source_file": "design/assets/streamline/plump/duo/images-photography/camera-1.svg",
+        "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/images-photography/camera-1.svg",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "Music time": {
+        "status": "selected",
+        "asset_id": "streamline:plump:duo:entertainment:music-note-2",
+        "source_file": "design/assets/streamline/plump/duo/entertainment/music-note-2.svg",
+        "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/entertainment/music-note-2.svg",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "Family outing": {
+        "status": "selected",
+        "asset_id": "streamline:plump:duo:map-travel:beach",
+        "source_file": "design/assets/streamline/plump/duo/map-travel/beach.svg",
+        "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/map-travel/beach.svg",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      }
+    }
+  },
+  "summary": {
+    "contexts_reviewed": 38,
+    "selected": 35,
+    "none_of_these": 3,
+    "picker_categories_reviewed": 12,
+    "picker_icon_placements": 84,
+    "picker_distinct_icons": 71
+  },
+  "untouched_and_unselected": [
+    "all illustration placements",
+    "all decorative element placements",
+    "parent reward picker UX specifications (layout, search, colours, uploads, migration), beyond the 12 explicit category/icon lists",
+    "global icon family/style rules (other than explicitly selected source variants)",
+    "brand points-star master and Fox 1A production artwork",
+    "unlisted Goals interaction decisions"
+  ],
+  "picker": {
+    "status": "owner_selected_exact_category_membership_only",
+    "note": "The user selected these icons under each category. No assumption that icon colours, grid density, search or upload policy are approved. The second identical submission was de-duplicated.",
+    "license": "MIT — Phosphor",
+    "variant": "duotone",
+    "categories": {
+      "Fun & games": {
+        "status": "owner_selected",
+        "icons": [
+          "game-controller",
+          "dice-five",
+          "balloon",
+          "basketball",
+          "football",
+          "bowling-ball",
+          "puzzle-piece"
+        ],
+        "asset_ids": [
+          "phosphor:game-controller:duotone",
+          "phosphor:dice-five:duotone",
+          "phosphor:balloon:duotone",
+          "phosphor:basketball:duotone",
+          "phosphor:football:duotone",
+          "phosphor:bowling-ball:duotone",
+          "phosphor:puzzle-piece:duotone"
+        ]
+      },
+      "Treats & food": {
+        "status": "owner_selected",
+        "icons": [
+          "ice-cream",
+          "cake",
+          "cookie",
+          "popcorn",
+          "pizza",
+          "hamburger"
+        ],
+        "asset_ids": [
+          "phosphor:ice-cream:duotone",
+          "phosphor:cake:duotone",
+          "phosphor:cookie:duotone",
+          "phosphor:popcorn:duotone",
+          "phosphor:pizza:duotone",
+          "phosphor:hamburger:duotone"
+        ]
+      },
+      "Outings": {
+        "status": "owner_selected",
+        "icons": [
+          "mountains",
+          "car",
+          "airplane",
+          "tent",
+          "train",
+          "bus",
+          "bicycle",
+          "ticket",
+          "sun",
+          "fire"
+        ],
+        "asset_ids": [
+          "phosphor:mountains:duotone",
+          "phosphor:car:duotone",
+          "phosphor:airplane:duotone",
+          "phosphor:tent:duotone",
+          "phosphor:train:duotone",
+          "phosphor:bus:duotone",
+          "phosphor:bicycle:duotone",
+          "phosphor:ticket:duotone",
+          "phosphor:sun:duotone",
+          "phosphor:fire:duotone"
+        ]
+      },
+      "Learning & growth": {
+        "status": "owner_selected",
+        "icons": [
+          "music-notes",
+          "lightbulb",
+          "palette",
+          "paint-brush",
+          "notebook",
+          "graduation-cap",
+          "pencil",
+          "books",
+          "guitar",
+          "microscope"
+        ],
+        "asset_ids": [
+          "phosphor:music-notes:duotone",
+          "phosphor:lightbulb:duotone",
+          "phosphor:palette:duotone",
+          "phosphor:paint-brush:duotone",
+          "phosphor:notebook:duotone",
+          "phosphor:graduation-cap:duotone",
+          "phosphor:pencil:duotone",
+          "phosphor:books:duotone",
+          "phosphor:guitar:duotone",
+          "phosphor:microscope:duotone"
+        ]
+      },
+      "Family & kindness": {
+        "status": "owner_selected",
+        "icons": [
+          "smiley",
+          "hands-clapping",
+          "handshake",
+          "medal",
+          "hand-heart",
+          "gift"
+        ],
+        "asset_ids": [
+          "phosphor:smiley:duotone",
+          "phosphor:hands-clapping:duotone",
+          "phosphor:handshake:duotone",
+          "phosphor:medal:duotone",
+          "phosphor:hand-heart:duotone",
+          "phosphor:gift:duotone"
+        ]
+      },
+      "Creative time": {
+        "status": "owner_selected",
+        "icons": [
+          "paint-brush",
+          "piano-keys",
+          "film-slate",
+          "music-notes",
+          "scissors",
+          "microphone",
+          "pen"
+        ],
+        "asset_ids": [
+          "phosphor:paint-brush:duotone",
+          "phosphor:piano-keys:duotone",
+          "phosphor:film-slate:duotone",
+          "phosphor:music-notes:duotone",
+          "phosphor:scissors:duotone",
+          "phosphor:microphone:duotone",
+          "phosphor:pen:duotone"
+        ]
+      },
+      "Tech & media": {
+        "status": "owner_selected",
+        "icons": [
+          "game-controller",
+          "watch",
+          "television",
+          "device-mobile"
+        ],
+        "asset_ids": [
+          "phosphor:game-controller:duotone",
+          "phosphor:watch:duotone",
+          "phosphor:television:duotone",
+          "phosphor:device-mobile:duotone"
+        ]
+      },
+      "Things & pocket money": {
+        "status": "owner_selected",
+        "icons": [
+          "backpack",
+          "t-shirt",
+          "piggy-bank",
+          "money",
+          "ticket"
+        ],
+        "asset_ids": [
+          "phosphor:backpack:duotone",
+          "phosphor:t-shirt:duotone",
+          "phosphor:piggy-bank:duotone",
+          "phosphor:money:duotone",
+          "phosphor:ticket:duotone"
+        ]
+      },
+      "Nature & outdoors": {
+        "status": "owner_selected",
+        "icons": [
+          "tree",
+          "sun",
+          "moon-stars",
+          "paw-print",
+          "butterfly",
+          "fish",
+          "mountains"
+        ],
+        "asset_ids": [
+          "phosphor:tree:duotone",
+          "phosphor:sun:duotone",
+          "phosphor:moon-stars:duotone",
+          "phosphor:paw-print:duotone",
+          "phosphor:butterfly:duotone",
+          "phosphor:fish:duotone",
+          "phosphor:mountains:duotone"
+        ]
+      },
+      "Sports & movement": {
+        "status": "owner_selected",
+        "icons": [
+          "basketball",
+          "football",
+          "soccer-ball",
+          "bicycle",
+          "tennis-ball",
+          "person-simple-run",
+          "ping-pong",
+          "swimming-pool"
+        ],
+        "asset_ids": [
+          "phosphor:basketball:duotone",
+          "phosphor:football:duotone",
+          "phosphor:soccer-ball:duotone",
+          "phosphor:bicycle:duotone",
+          "phosphor:tennis-ball:duotone",
+          "phosphor:person-simple-run:duotone",
+          "phosphor:ping-pong:duotone",
+          "phosphor:swimming-pool:duotone"
+        ]
+      },
+      "Celebrations": {
+        "status": "owner_selected",
+        "icons": [
+          "confetti",
+          "sparkle",
+          "crown",
+          "medal",
+          "trophy",
+          "cake",
+          "smiley-wink"
+        ],
+        "asset_ids": [
+          "phosphor:confetti:duotone",
+          "phosphor:sparkle:duotone",
+          "phosphor:crown:duotone",
+          "phosphor:medal:duotone",
+          "phosphor:trophy:duotone",
+          "phosphor:cake:duotone",
+          "phosphor:smiley-wink:duotone"
+        ]
+      },
+      "Animals & pets": {
+        "status": "owner_selected",
+        "icons": [
+          "cat",
+          "dog",
+          "fish",
+          "butterfly",
+          "rabbit",
+          "bug",
+          "cow"
+        ],
+        "asset_ids": [
+          "phosphor:cat:duotone",
+          "phosphor:dog:duotone",
+          "phosphor:fish:duotone",
+          "phosphor:butterfly:duotone",
+          "phosphor:rabbit:duotone",
+          "phosphor:bug:duotone",
+          "phosphor:cow:duotone"
+        ]
+      }
+    },
+    "summary": {
+      "categories_reviewed": 12,
+      "icon_placements": 84,
+      "unique_icons": 71
+    }
+  }
+}

@@ -10,7 +10,7 @@ const map=(pathname)=>{
  if(pathname==='/app.js')return path.join(current,'app.js');
  if(pathname==='/styles.css')return path.join(current,'styles.css');
  if(pathname==='/sources')return path.join(root,'design/stage1/ASSET_REGISTRY.json');
- const dataset={'/data/candidate-plan.json':'design/stage1/candidate-plan.json','/data/rewards-candidates.json':'design/stage1/rewards-candidates.json','/data/illustration-element-candidates.json':'design/stage1/illustration-element-candidates.json','/data/ASSET_REGISTRY.json':'design/stage1/ASSET_REGISTRY.json'};
+ const dataset={'/data/candidate-plan.json':'design/stage1/candidate-plan.json','/data/rewards-candidates.json':'design/stage1/rewards-candidates.json','/data/illustration-element-candidates.json':'design/stage1/illustration-element-candidates.json','/data/ASSET_REGISTRY.json':'design/stage1/ASSET_REGISTRY.json','/data/NEXT_SELECTION_REVIEW.json':'design/stage1/NEXT_SELECTION_REVIEW.json','/data/APPROVAL_REGISTER.json':'design/stage1/APPROVAL_REGISTER.json'};
  if(dataset[pathname])return path.join(root,dataset[pathname]);
  if(/^\/assets\/(phosphor|streamline)\/[a-z0-9-\/]+\.svg$/.test(pathname)){const resolved=path.resolve(root,'design'+pathname);const allowed=path.join(root,'design/assets/');if(resolved.startsWith(allowed))return resolved;}
  return null;
