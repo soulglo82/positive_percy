@@ -3,7 +3,7 @@
   "stage": 1,
   "scope": "explicit_owner_choices_only",
   "recorded_date": "2026-11-13",
-  "version": "1.4",
+  "version": "1.5",
   "approval_level": "approved_icon_mappings_for_specific_review_contexts_only",
   "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state now has a specific external Freepik artwork selected by owner, subject to licensing verification and obtaining the exact asset; no production usage authorised yet.",
   "meaning_of_NONE": "Explicitly rejected presented candidates; further icon options required. NOT a deliberate choice of no icon.",
@@ -360,11 +360,11 @@
     "visual_explicit_no_artwork": 0,
     "visual_assets_pending_license": 1,
     "visual_assets_implementation_ready": 9,
-    "picker_ux_choices_selected": 3
+    "picker_ux_choices_selected": 6
   },
   "untouched_and_unselected": [
     "Goals empty state selected Freepik artwork licence, exact author attribution, and local download remain unverified and blocked from production",
-    "Parent reward picker: category+search, responsive columns and palette-accent direction are approved; cross-category duplicates, search tags/synonyms, exact colour map, source licensing, image uploads, and saved reward migration remain unselected",
+    "Parent reward picker: six UX choices approved including launch library of 71, category-preserving deduplicated search and name/synonym matching. Unselected: exact synonym map, breakpoints, category-to-colour map, visible category presentation, licensing/attribution policy, uploads, and existing saved reward migration. The additional 44 library candidates and all post-launch additions are not approved.",
     "global icon family/style rules (other than explicitly selected source variants)",
     "brand points-star master and Fox 1A production artwork",
     "Remaining Goals UI asset details: exact Done indicator treatment, repeat glyph source, and sparkle artwork remain unselected; broad interaction design choices are approved"
@@ -640,9 +640,9 @@
         "label": "Categories plus search",
         "behavior": "Provide category browsing and a search field within the parent reward icon picker.",
         "unresolved": [
-          "Search matching, synonyms and tags",
           "Exact layout/placement of search input",
-          "Filtering mechanics"
+          "Filtering mechanics",
+          "Exact synonym dictionary and search-result ranking remain unselected"
         ],
         "approved_on": "2026-11-14"
       },
@@ -680,53 +680,100 @@
           "Keep the base icon visible without reliance solely on colour"
         ],
         "approved_on": "2026-11-14"
+      },
+      "launch_library": {
+        "status": "owner_approved",
+        "choice": "C",
+        "label": "Start with 71, expand after launch",
+        "launch_distinct_icon_count": 71,
+        "launch_category_placements": 84,
+        "launch_category_count": 12,
+        "launch_asset_scope": "Exactly the 71 distinct Phosphor Duotone icons in the owner's approved twelve category membership lists; do not silently include the remaining 44 candidates from the broader review.",
+        "future_expansion": {
+          "status": "intent_only_not_asset_approval",
+          "timing": "after_launch",
+          "new_assets_approved": 0,
+          "requires": "separate candidate review, licensing and explicit owner sign-off"
+        },
+        "approved_on": "2026-11-14"
+      },
+      "cross_category_duplicates": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "Preserve category memberships, deduplicate search",
+        "behavior": "An approved icon remains visible in every owner-approved category to which it belongs; combined search results show each unique asset ID only once.",
+        "canonical_identity": "asset_id",
+        "category_mappings": "unchanged",
+        "approved_on": "2026-11-14"
+      },
+      "search_matching": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "Names and common-language synonyms",
+        "behavior": "Match an approved icon by its display/icon name and curated everyday-language aliases. Searching does not add unapproved icons.",
+        "implementation_direction": "Local, deterministic keyword/synonym matching; no external AI or third-party service implied.",
+        "unresolved": [
+          "Exact search alias dictionary and language coverage",
+          "Result ranking / search empty-state UI",
+          "Search input positioning and filtering details"
+        ],
+        "approved_on": "2026-11-14"
       }
     },
-    "ux_choices_status": "three_owner_approved_discovery_grid_colour"
+    "ux_choices_status": "six_owner_approved_picker_ux_choices"
   },
   "last_update": {
     "date": "2026-11-14",
-    "action": "owner_approved_picker_discovery_grid_and_colour",
+    "action": "owner_approved_picker_launch_library_dedup_search_synonyms",
     "contexts": [
-      "picker_ux:discovery",
-      "picker_ux:responsive_grid",
-      "picker_ux:icon_color"
+      "picker_ux:launch_library",
+      "picker_ux:cross_category_duplicates",
+      "picker_ux:search_matching"
     ],
     "previous": {
       "date": "2026-11-14",
-      "action": "owner_approved_remaining_three_goals_design_choices",
+      "action": "owner_approved_picker_discovery_grid_and_colour",
       "contexts": [
-        "goals_interactions:recurring_indicator",
-        "goals_interactions:header_accent",
-        "goals_interactions:control_size_weight"
+        "picker_ux:discovery",
+        "picker_ux:responsive_grid",
+        "picker_ux:icon_color"
       ],
       "previous": {
         "date": "2026-11-14",
-        "action": "owner_approved_completed_goal_option_A",
+        "action": "owner_approved_remaining_three_goals_design_choices",
         "contexts": [
-          "goals_interactions:completed_goal"
+          "goals_interactions:recurring_indicator",
+          "goals_interactions:header_accent",
+          "goals_interactions:control_size_weight"
         ],
         "previous": {
           "date": "2026-11-14",
-          "action": "owner_selected_goals_empty_state_freepik_pending_license",
+          "action": "owner_approved_completed_goal_option_A",
           "contexts": [
-            "moments:Goals empty state"
+            "goals_interactions:completed_goal"
           ],
           "previous": {
-            "date": "2026-11-13",
-            "action": "record_9_visuals_goals_empty_needs_alternatives",
+            "date": "2026-11-14",
+            "action": "owner_selected_goals_empty_state_freepik_pending_license",
             "contexts": [
-              "moments:Home welcome",
-              "moments:Progress milestone",
-              "moments:Reward redeemed",
-              "moments:First-run onboarding",
-              "moments:Reward creation form",
-              "elements:small decorative sticker",
-              "elements:celebration burst",
-              "elements:positive progress badge",
-              "elements:learning spot art",
               "moments:Goals empty state"
-            ]
+            ],
+            "previous": {
+              "date": "2026-11-13",
+              "action": "record_9_visuals_goals_empty_needs_alternatives",
+              "contexts": [
+                "moments:Home welcome",
+                "moments:Progress milestone",
+                "moments:Reward redeemed",
+                "moments:First-run onboarding",
+                "moments:Reward creation form",
+                "elements:small decorative sticker",
+                "elements:celebration burst",
+                "elements:positive progress badge",
+                "elements:learning spot art",
+                "moments:Goals empty state"
+              ]
+            }
           }
         }
       }
