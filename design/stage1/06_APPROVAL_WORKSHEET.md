@@ -42,7 +42,16 @@
 | Creativity | `phosphor:paint-brush:duotone` | duotone | Selected | Candidate names: `palette`, `paint-brush`, `music-notes` |
 | Sleep | `phosphor:bed:duotone` | duotone | Selected | Candidate names: `bed`, `moon-stars`, `moon` |
 
-**Goals interaction decisions:** Done state icon **Unselected** · Recurring indicator **Unselected** · Header accent **Unselected** · Control size/weight **Unselected**.
+**Goals interaction decisions:** Completed-state behaviour **Option A — Approved (14 Nov 2026)**: retain the original goal/category SVG and add a separate visible **Done** indicator. The category icon must not change on completion. Done status must be readable without relying on colour alone. The precise indicator glyph/colour is **Unselected**. · Recurring indicator **Unselected** · Header accent **Unselected** · Control size/weight **Unselected**.
+
+| Remaining Goals design item | Status | Notes |
+|---|---|---|
+| Completed-goal icon behaviour | **Approved — Option A** | Keep the category glyph and add a separately identifiable Done status; no server/ledger logic changes |
+| Recurring goal indicator | **Unselected** | User to review alternatives; avoid suggesting missed-day punishment |
+| Header accent | **Unselected** | User to review accent options; approved Percy brand palette remains fixed |
+| Control sizing and weight | **Unselected** | User to review tap-target and visual weight alternatives across desktop/mobile |
+
+**Approval boundary:** Stage 1 design-only decision. No production code edits, branch merge or deployment.
 
 ## 3. Reward artwork
 
