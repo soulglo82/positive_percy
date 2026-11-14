@@ -3,7 +3,7 @@
   "stage": 1,
   "scope": "explicit_owner_choices_only",
   "recorded_date": "2026-11-13",
-  "version": "1.3",
+  "version": "1.4",
   "approval_level": "approved_icon_mappings_for_specific_review_contexts_only",
   "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state now has a specific external Freepik artwork selected by owner, subject to licensing verification and obtaining the exact asset; no production usage authorised yet.",
   "meaning_of_NONE": "Explicitly rejected presented candidates; further icon options required. NOT a deliberate choice of no icon.",
@@ -359,11 +359,12 @@
     "visual_contexts_awaiting_alternatives": 0,
     "visual_explicit_no_artwork": 0,
     "visual_assets_pending_license": 1,
-    "visual_assets_implementation_ready": 9
+    "visual_assets_implementation_ready": 9,
+    "picker_ux_choices_selected": 3
   },
   "untouched_and_unselected": [
     "Goals empty state selected Freepik artwork licence, exact author attribution, and local download remain unverified and blocked from production",
-    "parent reward picker UX specifications (layout, search, colours, uploads, migration), beyond the 12 explicit category/icon lists",
+    "Parent reward picker: category+search, responsive columns and palette-accent direction are approved; cross-category duplicates, search tags/synonyms, exact colour map, source licensing, image uploads, and saved reward migration remain unselected",
     "global icon family/style rules (other than explicitly selected source variants)",
     "brand points-star master and Fox 1A production artwork",
     "Remaining Goals UI asset details: exact Done indicator treatment, repeat glyph source, and sparkle artwork remain unselected; broad interaction design choices are approved"
@@ -631,43 +632,102 @@
       "categories_reviewed": 12,
       "icon_placements": 84,
       "unique_icons": 71
-    }
+    },
+    "ux_choices": {
+      "discovery": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "Categories plus search",
+        "behavior": "Provide category browsing and a search field within the parent reward icon picker.",
+        "unresolved": [
+          "Search matching, synonyms and tags",
+          "Exact layout/placement of search input",
+          "Filtering mechanics"
+        ],
+        "approved_on": "2026-11-14"
+      },
+      "responsive_grid": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "Three phone, five or six larger",
+        "columns_phone": 3,
+        "columns_larger": "5_or_6",
+        "unresolved": [
+          "Exact breakpoint widths",
+          "Whether larger screens use five or six columns at each available width",
+          "Tile size and padding"
+        ],
+        "approved_on": "2026-11-14"
+      },
+      "icon_color": {
+        "status": "owner_approved",
+        "choice": "B",
+        "label": "Approved palette accents per category",
+        "behavior": "Use category-specific accents drawn only from Percy's already approved brand palette.",
+        "approved_brand_palette": [
+          "#4B1D8C",
+          "#FF6A00",
+          "#FFF6E8"
+        ],
+        "unresolved": [
+          "Precise category-to-colour mapping",
+          "Colour treatment on icon paths vs surrounding surfaces",
+          "Accessibility contrast validation"
+        ],
+        "constraints": [
+          "Preserve approved Phosphor Duotone source icons and icon meanings",
+          "Do not introduce unapproved hues or license alterations",
+          "Keep the base icon visible without reliance solely on colour"
+        ],
+        "approved_on": "2026-11-14"
+      }
+    },
+    "ux_choices_status": "three_owner_approved_discovery_grid_colour"
   },
   "last_update": {
     "date": "2026-11-14",
-    "action": "owner_approved_remaining_three_goals_design_choices",
+    "action": "owner_approved_picker_discovery_grid_and_colour",
     "contexts": [
-      "goals_interactions:recurring_indicator",
-      "goals_interactions:header_accent",
-      "goals_interactions:control_size_weight"
+      "picker_ux:discovery",
+      "picker_ux:responsive_grid",
+      "picker_ux:icon_color"
     ],
     "previous": {
       "date": "2026-11-14",
-      "action": "owner_approved_completed_goal_option_A",
+      "action": "owner_approved_remaining_three_goals_design_choices",
       "contexts": [
-        "goals_interactions:completed_goal"
+        "goals_interactions:recurring_indicator",
+        "goals_interactions:header_accent",
+        "goals_interactions:control_size_weight"
       ],
       "previous": {
         "date": "2026-11-14",
-        "action": "owner_selected_goals_empty_state_freepik_pending_license",
+        "action": "owner_approved_completed_goal_option_A",
         "contexts": [
-          "moments:Goals empty state"
+          "goals_interactions:completed_goal"
         ],
         "previous": {
-          "date": "2026-11-13",
-          "action": "record_9_visuals_goals_empty_needs_alternatives",
+          "date": "2026-11-14",
+          "action": "owner_selected_goals_empty_state_freepik_pending_license",
           "contexts": [
-            "moments:Home welcome",
-            "moments:Progress milestone",
-            "moments:Reward redeemed",
-            "moments:First-run onboarding",
-            "moments:Reward creation form",
-            "elements:small decorative sticker",
-            "elements:celebration burst",
-            "elements:positive progress badge",
-            "elements:learning spot art",
             "moments:Goals empty state"
-          ]
+          ],
+          "previous": {
+            "date": "2026-11-13",
+            "action": "record_9_visuals_goals_empty_needs_alternatives",
+            "contexts": [
+              "moments:Home welcome",
+              "moments:Progress milestone",
+              "moments:Reward redeemed",
+              "moments:First-run onboarding",
+              "moments:Reward creation form",
+              "elements:small decorative sticker",
+              "elements:celebration burst",
+              "elements:positive progress badge",
+              "elements:learning spot art",
+              "moments:Goals empty state"
+            ]
+          }
         }
       }
     }
