@@ -1,12 +1,14 @@
 # Positive Percy — Stage 1 visual asset selection
 
-**Decision pack · 13 November 2026 · Partial owner mappings recorded (38 icons + 12 picker groups + 9 visual assets)**
+**Decision pack · updated 14 November 2026 · 38 icon mappings + 12 picker groups + 10 visual selections (one Freepik asset licence-pending)**
 
 > **Everything pictured is exact source artwork, now bundled locally so all icon previews remain visible without external hotlinks.** This review uses official MIT Phosphor SVGs and CC BY 4.0 files from Streamline's public open-source repository. No image generation, AI icon interpretation, copied premium previews or fabricated fox artwork. Preview boards are code-authored layouts with embedded source SVGs, **not screenshots of a running app**. Until you approve each asset, **nothing here changes Percy's production UI**.
 
 ### Continue with remaining visual decisions
 
-[**Review new Goals empty-state illustration options**](https://percy-stage1-design-selector-production.up.railway.app/?section=visual). Nine other illustration/decorative choices are approved. The user rejected the earlier Goals empty-state options; this screen still needs artwork approval.
+**Goals empty state:** Owner selected [Freepik Bright Adventure Map](https://www.freepik.com/icon/treasure-map_3570506) (asset `3570506`) on 14 Nov 2026, **subject to exact-asset licence and attribution verification**. The artwork is not yet acquired or approved for production use. The six Streamline alternatives in the selector remain unselected. See the [approval register](APPROVAL_REGISTER.json) and [worksheet](06_APPROVAL_WORKSHEET.md).
+
+**Next:** Review unresolved Goals completion/status styling, shared icon family/weight policy and parent-picker UX. None is implicitly approved.
 
 ### Choose where to start
 

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "RAILPACK",
+    "buildCommand": "echo 'Static Percy review: no application build or database connections'"
+  },
+  "deploy": {
+    "startCommand": "node design/stage1/selector/server.mjs",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 60,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 2
+  }
+}

@@ -3,9 +3,9 @@
   "stage": 1,
   "scope": "explicit_owner_choices_only",
   "recorded_date": "2026-11-13",
-  "version": "1.0",
+  "version": "1.8",
   "approval_level": "approved_icon_mappings_for_specific_review_contexts_only",
-  "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state NONE means none of the three options approved, not request for no illustration.",
+  "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state now has a specific external Freepik artwork selected by owner, subject to licensing verification and obtaining the exact asset; no production usage authorised yet.",
   "meaning_of_NONE": "Explicitly rejected presented candidates; further icon options required. NOT a deliberate choice of no icon.",
   "source": "Owner's copied interactive Stage 1 decisions, four groups, 13 November 2026",
   "decisions": {
@@ -288,6 +288,93 @@
         "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/map-travel/beach.svg",
         "license": "https://creativecommons.org/licenses/by/4.0/"
       }
+    },
+    "goals_interactions": {
+      "completed_goal": {
+        "status": "selected",
+        "choice": "A",
+        "behavior": "retain_original_goal_category_icon_and_display_separate_done_indicator",
+        "icon_rule": "Keep the approved behavior/category SVG unchanged after goal completion; never replace it with the done checkmark.",
+        "done_indicator": "Separate Done indicator using the verified Phosphor check-circle:duotone SVG together with visible 'Done' text. Keep category icon unchanged. Final colour/spacing remains pending React design preview.",
+        "accessibility": "Done status must be conveyed in text, not colour alone.",
+        "owner_approval_date": "2026-11-14",
+        "scope": "Design behaviour only; do not merge, deploy, or modify production UI.",
+        "exact_source_svg": {
+          "status": "owner_approved",
+          "asset_id": "phosphor:check-circle:duotone",
+          "local_file": "design/assets/phosphor/duotone/check-circle.svg",
+          "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/check-circle-duotone.svg",
+          "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
+          "license_reference": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+          "context": "completed_goal_done_indicator",
+          "approved_on": "2026-11-14"
+        }
+      },
+      "recurring_indicator": {
+        "status": "selected",
+        "choice": "A",
+        "label": "Repeat icon and schedule",
+        "behavior": "Show a repeat icon alongside a readable schedule for recurring goals.",
+        "example": "Repeats Mon, Wed, Fri",
+        "constraints": [
+          "Only show the actual scheduled days/cadence configured for that goal.",
+          "Recurrence must not be confused with streaks.",
+          "Missing a goal carries no points deduction or streak penalty.",
+          "Exact source glyph not separately approved; use an existing appropriately licensed asset only after source verification."
+        ],
+        "exact_asset_status": "approved_exact_source",
+        "owner_approval_date": "2026-11-14",
+        "scope": "design_only_no_merge_no_deploy",
+        "exact_source_svg": {
+          "status": "owner_approved",
+          "asset_id": "phosphor:repeat:duotone",
+          "local_file": "design/assets/phosphor/duotone/repeat.svg",
+          "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/repeat-duotone.svg",
+          "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
+          "license_reference": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+          "context": "recurring_goal_indicator",
+          "approved_on": "2026-11-14"
+        }
+      },
+      "header_accent": {
+        "status": "selected",
+        "choice": "B",
+        "label": "Playful sparkle",
+        "behavior": "Use a small, restrained sparkle accent next to the Today's Goals heading; preserve existing Percy palette and layout legibility.",
+        "constraints": [
+          "Accent decorative, not a control or substitute for the heading.",
+          "Exact artwork/vector not yet approved, so do not infer a new licensed asset.",
+          "No motion or animation approved by this choice."
+        ],
+        "exact_asset_status": "approved_exact_source",
+        "owner_approval_date": "2026-11-14",
+        "scope": "design_only_no_merge_no_deploy",
+        "exact_source_svg": {
+          "status": "owner_approved",
+          "asset_id": "phosphor:sparkle:duotone",
+          "local_file": "design/assets/phosphor/duotone/sparkle.svg",
+          "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/sparkle-duotone.svg",
+          "source_commit": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
+          "license_reference": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+          "context": "todays_goals_header_accent",
+          "approved_on": "2026-11-14"
+        }
+      },
+      "control_size_weight": {
+        "status": "selected",
+        "choice": "A",
+        "label": "Balanced 44px target / 24px glyph",
+        "tappable_target_px": 44,
+        "visible_glyph_px": 24,
+        "behavior": "Use a minimum 44 × 44 CSS pixel hit target for the primary goal-completion control, with a 24 × 24 CSS pixel approved-source icon, preserving surrounding spacing and accessible labels.",
+        "constraints": [
+          "Use the approved Phosphor Duotone source variants for controls where already selected.",
+          "44px is the touch target, not a requirement for a 44px coloured icon.",
+          "Do not change completion semantics, permissions or server-ledger idempotency."
+        ],
+        "owner_approval_date": "2026-11-14",
+        "scope": "design_only_no_merge_no_deploy"
+      }
     }
   },
   "summary": {
@@ -298,16 +385,20 @@
     "picker_icon_placements": 84,
     "picker_distinct_icons": 71,
     "visual_contexts_reviewed": 10,
-    "visual_assets_selected": 9,
-    "visual_contexts_awaiting_alternatives": 1,
-    "visual_explicit_no_artwork": 0
+    "visual_assets_selected": 10,
+    "visual_contexts_awaiting_alternatives": 0,
+    "visual_explicit_no_artwork": 0,
+    "visual_assets_pending_license": 1,
+    "visual_assets_implementation_ready": 9,
+    "picker_ux_choices_selected": 10,
+    "goals_svg_source_approvals": 3
   },
   "untouched_and_unselected": [
-    "Goals empty state artwork: prior proposals rejected; actual artwork choice pending",
-    "parent reward picker UX specifications (layout, search, colours, uploads, migration), beyond the 12 explicit category/icon lists",
+    "Goals empty state selected Freepik artwork licence, exact author attribution, and local download remain unverified and blocked from production",
+    "Parent reward picker: ten UX choices approved including exact 12-category palette grouping and 520/760px picker-container grid breakpoints. Open: exact synonym dictionary/ranking, visible category presentation, tile accent application/contrast QA, proposed Phosphor-only picker policy (not owner-approved), existing reward migration technical plan, and post-launch icon additions.",
     "global icon family/style rules (other than explicitly selected source variants)",
     "brand points-star master and Fox 1A production artwork",
-    "unlisted Goals interaction decisions"
+    "Today's Goals: exact pinned Phosphor Repeat, Sparkle, and Check Circle Duotone SVGs now approved for their separate contexts; final colouring/spacing and running React rendering remain unsigned."
   ],
   "picker": {
     "status": "owner_selected_exact_category_membership_only",
@@ -572,23 +663,279 @@
       "categories_reviewed": 12,
       "icon_placements": 84,
       "unique_icons": 71
-    }
+    },
+    "ux_choices": {
+      "discovery": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "Categories plus search",
+        "behavior": "Provide category browsing and a search field within the parent reward icon picker.",
+        "unresolved": [
+          "Exact layout/placement of search input",
+          "Filtering mechanics",
+          "Exact synonym dictionary and search-result ranking remain unselected"
+        ],
+        "approved_on": "2026-11-14"
+      },
+      "responsive_grid": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "Three phone, five or six larger",
+        "columns_phone": 3,
+        "columns_larger": "5_or_6",
+        "unresolved": [
+          "Exact breakpoint widths",
+          "Whether larger screens use five or six columns at each available width",
+          "Tile size and padding"
+        ],
+        "approved_on": "2026-11-14"
+      },
+      "icon_color": {
+        "status": "owner_approved",
+        "choice": "B",
+        "label": "Approved palette accents per category",
+        "behavior": "Use category-specific accents drawn only from Percy's already approved brand palette.",
+        "approved_brand_palette": [
+          "#4B1D8C",
+          "#FF6A00",
+          "#FFF6E8"
+        ],
+        "unresolved": [
+          "Precise category-to-colour mapping",
+          "Colour treatment on icon paths vs surrounding surfaces",
+          "Accessibility contrast validation"
+        ],
+        "constraints": [
+          "Preserve approved Phosphor Duotone source icons and icon meanings",
+          "Do not introduce unapproved hues or license alterations",
+          "Keep the base icon visible without reliance solely on colour"
+        ],
+        "approved_on": "2026-11-14"
+      },
+      "launch_library": {
+        "status": "owner_approved",
+        "choice": "C",
+        "label": "Start with 71, expand after launch",
+        "launch_distinct_icon_count": 71,
+        "launch_category_placements": 84,
+        "launch_category_count": 12,
+        "launch_asset_scope": "Exactly the 71 distinct Phosphor Duotone icons in the owner's approved twelve category membership lists; do not silently include the remaining 44 candidates from the broader review.",
+        "future_expansion": {
+          "status": "intent_only_not_asset_approval",
+          "timing": "after_launch",
+          "new_assets_approved": 0,
+          "requires": "separate candidate review, licensing and explicit owner sign-off"
+        },
+        "approved_on": "2026-11-14"
+      },
+      "cross_category_duplicates": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "Preserve category memberships, deduplicate search",
+        "behavior": "An approved icon remains visible in every owner-approved category to which it belongs; combined search results show each unique asset ID only once.",
+        "canonical_identity": "asset_id",
+        "category_mappings": "unchanged",
+        "approved_on": "2026-11-14"
+      },
+      "search_matching": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "Names and common-language synonyms",
+        "behavior": "Match an approved icon by its display/icon name and curated everyday-language aliases. Searching does not add unapproved icons.",
+        "implementation_direction": "Local, deterministic keyword/synonym matching; no external AI or third-party service implied.",
+        "unresolved": [
+          "Exact search alias dictionary and language coverage",
+          "Result ranking / search empty-state UI",
+          "Search input positioning and filtering details"
+        ],
+        "approved_on": "2026-11-14"
+      },
+      "image_uploads": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "No parent reward image uploads at launch; revisit later",
+        "launch_enabled": false,
+        "future_review": {
+          "status": "post_launch_candidate_not_approved",
+          "requires": [
+            "storage architecture",
+            "security and access controls",
+            "privacy and data retention review",
+            "explicit owner approval"
+          ]
+        },
+        "constraints": [
+          "Do not remove support for existing reward images or references",
+          "Do not infer a promise to ship uploads on a particular date"
+        ],
+        "approved_on": "2026-11-14",
+        "scope": "design_only"
+      },
+      "existing_saved_rewards": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "Preserve existing saved rewards; allow optional icon changes through Edit",
+        "behavior": "Keep existing reward records, emoji, images, points, history and identifiers intact. Parents may optionally choose one of the 71 approved icons when editing a reward.",
+        "migration": "additive_non_destructive_only",
+        "constraints": [
+          "No automatic replacement or bulk conversion of existing emoji/image rewards",
+          "Maintain rendering fallback for existing icon/emoji/image representations",
+          "No changes to reward points, past redemption records or ownership/permissions",
+          "Exact data migration design and implementation tests remain engineering gates"
+        ],
+        "approved_on": "2026-11-14",
+        "scope": "design_only"
+      },
+      "category_colour_mapping": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "Approve 12-category purple, orange, sunshine mapping",
+        "per_category": {
+          "Fun & games": "orange",
+          "Treats & food": "orange",
+          "Outings": "sunshine",
+          "Learning & growth": "purple",
+          "Family & kindness": "purple",
+          "Creative time": "sunshine",
+          "Tech & media": "purple",
+          "Things & pocket money": "orange",
+          "Nature & outdoors": "sunshine",
+          "Sports & movement": "orange",
+          "Celebrations": "sunshine",
+          "Animals & pets": "purple"
+        },
+        "palette": {
+          "purple": "#4B1D8C",
+          "orange": "#FF6A00",
+          "sunshine": "#FFC938",
+          "cream": "#FFF6E8",
+          "ink": "#271737"
+        },
+        "semantics": "Accent families for category tile surfaces/borders/details, not approval to recolour original SVG geometry wholesale",
+        "accessibility": "Validate text/glyph contrast for each treatment; essential icons/text use sufficiently contrasting purple or ink when orange/yellow on cream would be insufficient.",
+        "source": "Owner explicitly approved prior proposed list of 12 categories grouped by 4 each",
+        "approved_on": "2026-11-14",
+        "scope": "stage1_design_only",
+        "outstanding": [
+          "Precise use of accent within icon tiles and selected states",
+          "Contrast and dark mode/disabled states in running React preview"
+        ]
+      },
+      "responsive_breakpoints": {
+        "status": "owner_approved",
+        "choice": "A",
+        "label": "Container-based 520px and 760px breakpoints",
+        "unit": "CSS pixels",
+        "measured_width": "available inner content width of picker grid container, not full viewport",
+        "ranges": [
+          {
+            "min_inclusive": 0,
+            "max_exclusive": 520,
+            "columns": 3
+          },
+          {
+            "min_inclusive": 520,
+            "max_exclusive": 760,
+            "columns": 5
+          },
+          {
+            "min_inclusive": 760,
+            "max_exclusive": null,
+            "columns": 6
+          }
+        ],
+        "implementation_direction": "Use container-query or responsive container measurement without exceeding the available grid width; test with real dialogs on phones and tablets.",
+        "approved_on": "2026-11-14",
+        "scope": "stage1_design_only",
+        "outstanding": [
+          "Validate grid gap/tile content fit and mobile accessibility in the React preview"
+        ]
+      }
+    },
+    "ux_choices_status": "ten_owner_approved_picker_ux_choices"
   },
   "last_update": {
-    "date": "2026-11-13",
-    "action": "record_9_visuals_goals_empty_needs_alternatives",
+    "date": "2026-11-14",
+    "action": "verified_owner_project_treasure_map_png_source_availability",
     "contexts": [
-      "moments:Home welcome",
-      "moments:Progress milestone",
-      "moments:Reward redeemed",
-      "moments:First-run onboarding",
-      "moments:Reward creation form",
-      "elements:small decorative sticker",
-      "elements:celebration burst",
-      "elements:positive progress badge",
-      "elements:learning spot art",
       "moments:Goals empty state"
-    ]
+    ],
+    "previous": {
+      "date": "2026-11-14",
+      "action": "owner_approved_picker_category_colours_and_container_breakpoints",
+      "contexts": [
+        "picker_ux:category_colour_mapping",
+        "picker_ux:responsive_breakpoints"
+      ],
+      "previous": {
+        "date": "2026-11-14",
+        "action": "owner_approved_picker_uploads_legacy_rewards_and_three_goals_svgs",
+        "contexts": [
+          "picker_ux:image_uploads",
+          "picker_ux:existing_saved_rewards",
+          "goals_interactions:recurring_indicator:svg",
+          "goals_interactions:header_accent:svg",
+          "goals_interactions:completed_goal:svg"
+        ],
+        "previous": {
+          "date": "2026-11-14",
+          "action": "owner_approved_picker_launch_library_dedup_search_synonyms",
+          "contexts": [
+            "picker_ux:launch_library",
+            "picker_ux:cross_category_duplicates",
+            "picker_ux:search_matching"
+          ],
+          "previous": {
+            "date": "2026-11-14",
+            "action": "owner_approved_picker_discovery_grid_and_colour",
+            "contexts": [
+              "picker_ux:discovery",
+              "picker_ux:responsive_grid",
+              "picker_ux:icon_color"
+            ],
+            "previous": {
+              "date": "2026-11-14",
+              "action": "owner_approved_remaining_three_goals_design_choices",
+              "contexts": [
+                "goals_interactions:recurring_indicator",
+                "goals_interactions:header_accent",
+                "goals_interactions:control_size_weight"
+              ],
+              "previous": {
+                "date": "2026-11-14",
+                "action": "owner_approved_completed_goal_option_A",
+                "contexts": [
+                  "goals_interactions:completed_goal"
+                ],
+                "previous": {
+                  "date": "2026-11-14",
+                  "action": "owner_selected_goals_empty_state_freepik_pending_license",
+                  "contexts": [
+                    "moments:Goals empty state"
+                  ],
+                  "previous": {
+                    "date": "2026-11-13",
+                    "action": "record_9_visuals_goals_empty_needs_alternatives",
+                    "contexts": [
+                      "moments:Home welcome",
+                      "moments:Progress milestone",
+                      "moments:Reward redeemed",
+                      "moments:First-run onboarding",
+                      "moments:Reward creation form",
+                      "elements:small decorative sticker",
+                      "elements:celebration burst",
+                      "elements:positive progress badge",
+                      "elements:learning spot art",
+                      "moments:Goals empty state"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   },
   "visuals": {
     "moments": {
@@ -628,15 +975,36 @@
         "license": "https://creativecommons.org/licenses/by/4.0/"
       },
       "Goals empty state": {
-        "status": "none_of_these",
-        "asset_id": null,
-        "meaning": "The prior candidate artwork was rejected, but no decision to omit artwork was made.",
+        "status": "selected_pending_license",
+        "asset_id": "freepik:icon:treasure-map:3570506",
+        "asset_label": "Bright Adventure Map",
+        "source_platform": "Freepik / Magnific",
+        "source_url": "https://www.freepik.com/icon/treasure-map_3570506",
+        "source_file": null,
+        "license_status": "not_verified_for_this_exact_asset",
+        "attribution_requirements": "pending_asset_specific_license_and_author_details",
+        "implementation_status": "project_file_confirmed_not_yet_checked_into_app_repository; asset_specific_license_record_pending",
         "no_artwork_approved": false,
+        "selected_by": "owner_explicit_approval",
+        "selected_date": "2026-11-14",
+        "condition": "Design choice approved, subject to licensing verification; do not use in production yet.",
         "rejected_previous_candidates": [
           "stickies/colors/school-science/book-library.svg",
           "stickies/colors/school-science/backpack.svg",
           "kameleon/pop/school-science/chalkboard.svg"
-        ]
+        ],
+        "project_file_availability": {
+          "status": "owner_provided_image_visible_in_project",
+          "location": "/Postive Percy/treasure-map_3570506.png",
+          "basename": "treasure-map_3570506.png",
+          "image_dimensions_px": [
+            512,
+            512
+          ],
+          "observed_visual": "Bright yellow-orange treasure map, red X, winding white dotted route, purple-blue round backing",
+          "verified_date": "2026-11-14",
+          "implementation_note": "Source image is available in user Project Library but is not yet checked into app repository; file materialization to this runtime was unavailable. Use exact original supplied file, not a replacement."
+        }
       }
     },
     "elements": {
@@ -668,6 +1036,13 @@
         "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/kameleon/pop/school-science/chalkboard.svg",
         "license": "https://creativecommons.org/licenses/by/4.0/"
       }
+    }
+  },
+  "proposed_engineering_constraints": {
+    "parent_picker_launch_source_policy": {
+      "status": "proposal_not_owner_approved",
+      "proposal": "Ship the parent-selectable reward icon picker using the 71 already owner-approved MIT Phosphor Duotone SVGs only; do not enable Streamline redistribution in the picker without additional written legal/licensing clearance and explicit owner approval.",
+      "distinction": "Curated Streamline spot artwork and Freepik Goals empty-state artwork have separate asset-specific licence checks."
     }
   }
 }
