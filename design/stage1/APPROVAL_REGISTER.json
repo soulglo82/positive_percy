@@ -3,7 +3,7 @@
   "stage": 1,
   "scope": "explicit_owner_choices_only",
   "recorded_date": "2026-11-13",
-  "version": "1.1",
+  "version": "1.2",
   "approval_level": "approved_icon_mappings_for_specific_review_contexts_only",
   "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state now has a specific external Freepik artwork selected by owner, subject to licensing verification and obtaining the exact asset; no production usage authorised yet.",
   "meaning_of_NONE": "Explicitly rejected presented candidates; further icon options required. NOT a deliberate choice of no icon.",
@@ -288,6 +288,27 @@
         "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/map-travel/beach.svg",
         "license": "https://creativecommons.org/licenses/by/4.0/"
       }
+    },
+    "goals_interactions": {
+      "completed_goal": {
+        "status": "selected",
+        "choice": "A",
+        "behavior": "retain_original_goal_category_icon_and_display_separate_done_indicator",
+        "icon_rule": "Keep the approved behavior/category SVG unchanged after goal completion; never replace it with the done checkmark.",
+        "done_indicator": "Separate completion indicator with visible 'Done' text; exact marker treatment and colour not approved yet.",
+        "accessibility": "Done status must be conveyed in text, not colour alone.",
+        "owner_approval_date": "2026-11-14",
+        "scope": "Design behaviour only; do not merge, deploy, or modify production UI."
+      },
+      "recurring_indicator": {
+        "status": "unselected"
+      },
+      "header_accent": {
+        "status": "unselected"
+      },
+      "control_size_weight": {
+        "status": "unselected"
+      }
     }
   },
   "summary": {
@@ -309,7 +330,7 @@
     "parent reward picker UX specifications (layout, search, colours, uploads, migration), beyond the 12 explicit category/icon lists",
     "global icon family/style rules (other than explicitly selected source variants)",
     "brand points-star master and Fox 1A production artwork",
-    "unlisted Goals interaction decisions"
+    "Remaining Goals UI design decisions: recurring indicator, header accent, control size/weight and exact Done indicator treatment are unselected"
   ],
   "picker": {
     "status": "owner_selected_exact_category_membership_only",
@@ -578,25 +599,32 @@
   },
   "last_update": {
     "date": "2026-11-14",
-    "action": "owner_selected_goals_empty_state_freepik_pending_license",
+    "action": "owner_approved_completed_goal_option_A",
     "contexts": [
-      "moments:Goals empty state"
+      "goals_interactions:completed_goal"
     ],
     "previous": {
-      "date": "2026-11-13",
-      "action": "record_9_visuals_goals_empty_needs_alternatives",
+      "date": "2026-11-14",
+      "action": "owner_selected_goals_empty_state_freepik_pending_license",
       "contexts": [
-        "moments:Home welcome",
-        "moments:Progress milestone",
-        "moments:Reward redeemed",
-        "moments:First-run onboarding",
-        "moments:Reward creation form",
-        "elements:small decorative sticker",
-        "elements:celebration burst",
-        "elements:positive progress badge",
-        "elements:learning spot art",
         "moments:Goals empty state"
-      ]
+      ],
+      "previous": {
+        "date": "2026-11-13",
+        "action": "record_9_visuals_goals_empty_needs_alternatives",
+        "contexts": [
+          "moments:Home welcome",
+          "moments:Progress milestone",
+          "moments:Reward redeemed",
+          "moments:First-run onboarding",
+          "moments:Reward creation form",
+          "elements:small decorative sticker",
+          "elements:celebration burst",
+          "elements:positive progress badge",
+          "elements:learning spot art",
+          "moments:Goals empty state"
+        ]
+      }
     }
   },
   "visuals": {
