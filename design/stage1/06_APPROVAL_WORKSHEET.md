@@ -42,14 +42,14 @@
 | Creativity | `phosphor:paint-brush:duotone` | duotone | Selected | Candidate names: `palette`, `paint-brush`, `music-notes` |
 | Sleep | `phosphor:bed:duotone` | duotone | Selected | Candidate names: `bed`, `moon-stars`, `moon` |
 
-**Goals interaction decisions:** Completed-state behaviour **Option A — Approved (14 Nov 2026)**: retain the original goal/category SVG and add a separate visible **Done** indicator. The category icon must not change on completion. Done status must be readable without relying on colour alone. The precise indicator glyph/colour is **Unselected**. · Recurring indicator **Unselected** · Header accent **Unselected** · Control size/weight **Unselected**.
+**Goals interaction decisions (all four behaviour choices now approved, 14 Nov 2026):** Completed state **A — retain category icon + separate visible Done indicator** · Recurrence **A — repeat icon + human-readable schedule** · Header **B — small playful sparkle accent** · Control **A — minimum 44×44 CSS px touch target with 24×24 CSS px glyph**. **Exact Done treatment, repeat source SVG and sparkle artwork remain subject to separate design/source verification.** No production change or deployment authorised.
 
 | Remaining Goals design item | Status | Notes |
 |---|---|---|
 | Completed-goal icon behaviour | **Approved — Option A** | Keep the category glyph and add a separately identifiable Done status; no server/ledger logic changes |
-| Recurring goal indicator | **Unselected** | User to review alternatives; avoid suggesting missed-day punishment |
-| Header accent | **Unselected** | User to review accent options; approved Percy brand palette remains fixed |
-| Control sizing and weight | **Unselected** | User to review tap-target and visual weight alternatives across desktop/mobile |
+| Recurring goal indicator | **Approved — Option A** | Repeat icon plus actual human-readable goal schedule (e.g., Mon/Wed/Fri). Not a streak; missed goals never penalise. Specific SVG not yet approved |
+| Header accent | **Approved — Option B** | Small playful sparkle next to Today's Goals heading; decorative only, not animated by default. Exact artwork source awaits approval |
+| Control sizing and weight | **Approved — Option A** | Primary completion control minimum 44×44 CSS px interactive target / 24×24 CSS px glyph. Preserve approved source artwork and accessible labels |
 
 **Approval boundary:** Stage 1 design-only decision. No production code edits, branch merge or deployment.
 
