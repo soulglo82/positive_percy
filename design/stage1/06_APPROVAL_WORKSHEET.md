@@ -149,16 +149,18 @@ These selections specify **exact icons offered under each category**, not any un
 
 ### Parent picker — approved UX choices and remaining decisions
 
-**Owner approvals (14 Nov 2026):** A — browse the 12 previously owner-selected categories **plus search**; A — **3 columns on phones and 5 or 6 on larger displays**; B — **approved Percy palette accents by category**. These are Stage 1 design approvals only. Do not interpret this as approval of exact responsive breakpoints, icon surface treatments, tag/synonym matching, category-to-colour mapping, uploads, or licence redistribution. The 12 exact category/icon membership lists (84 placements, 71 distinct icons) are preserved without any additions or removals.
+**Owner approvals (14 Nov 2026):** A — browse the 12 previously owner-selected categories **plus search**; A — **3 columns on phones and 5 or 6 on larger displays**; B — **approved Percy palette accents by category**.
+
+**Additional owner approvals (14 Nov 2026):** C — launch with exactly **71 previously approved distinct icons** (84 approved placements) and plan an expansion only **after launch**, subject to separate asset approval; A — retain approved category memberships while **deduplicating search results by asset ID**; A — support **icon names and everyday-language synonyms** for local search. The other 44 candidates are not launch-approved; no new icon assets are admitted by these selections. These are Stage 1 design approvals only. Do not interpret this as approval of exact responsive breakpoints, icon surface treatments, tag/synonym matching, category-to-colour mapping, uploads, or licence redistribution. The 12 exact category/icon membership lists (84 placements, 71 distinct icons) are preserved without any additions or removals.
 
 
 | Decision | Proposed default to review | Your approval |
 |---|---|---|
-| Library | 115 distinct Phosphor Duotone SVGs, MIT, 144 category placements | **Unselected** |
+| Library | 71 distinct owner-approved Phosphor Duotone icons, 84 placements in 12 categories | **Approved — C:** Launch with 71; expand after launch only after additional review. The other 44 candidates are **unapproved** |
 | Visible categories | 12 proposed categories | **Unselected** |
-| Cross-category duplicates | Allowed provisionally for discovery, or remove duplicates | **Unselected** |
+| Cross-category duplicates | Preserve the owner-selected category memberships; deduplicate combined search by `asset_id` | **Approved — A**: an icon may appear in multiple categories, but only once per search result set |
 | Grid density | 3 across phones, 5–6 on wider displays | **Approved — A: 3 on phones, 5 or 6 larger**; exact breakpoint and large-screen count pending |
-| Search and discovery | Categories + search field | **Approved — A**; search tag/synonym matching behaviour still unselected |
+| Search and discovery | Categories + search field; match icon names and common-language synonyms | **Approved — A for discovery and A for matching**; exact synonym dictionary, ranking and UI placement remain unselected |
 | Colour variants | Category accents drawn from approved Percy palette (`#4B1D8C`, `#FF6A00`, `#FFF6E8`) | **Approved — B**; exact category-colour mapping and contrast testing pending |
 | Picker source licensing | MIT-only until written Streamline confirmation | **Unselected** |
 | Reward image uploads | Out of scope pending storage/privacy review | **Unselected** |
