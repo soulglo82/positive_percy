@@ -3,7 +3,7 @@
   "stage": 1,
   "scope": "explicit_owner_choices_only",
   "recorded_date": "2026-11-13",
-  "version": "1.2",
+  "version": "1.3",
   "approval_level": "approved_icon_mappings_for_specific_review_contexts_only",
   "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state now has a specific external Freepik artwork selected by owner, subject to licensing verification and obtaining the exact asset; no production usage authorised yet.",
   "meaning_of_NONE": "Explicitly rejected presented candidates; further icon options required. NOT a deliberate choice of no icon.",
@@ -301,13 +301,49 @@
         "scope": "Design behaviour only; do not merge, deploy, or modify production UI."
       },
       "recurring_indicator": {
-        "status": "unselected"
+        "status": "selected",
+        "choice": "A",
+        "label": "Repeat icon and schedule",
+        "behavior": "Show a repeat icon alongside a readable schedule for recurring goals.",
+        "example": "Repeats Mon, Wed, Fri",
+        "constraints": [
+          "Only show the actual scheduled days/cadence configured for that goal.",
+          "Recurrence must not be confused with streaks.",
+          "Missing a goal carries no points deduction or streak penalty.",
+          "Exact source glyph not separately approved; use an existing appropriately licensed asset only after source verification."
+        ],
+        "exact_asset_status": "pending_source_glyph_selection",
+        "owner_approval_date": "2026-11-14",
+        "scope": "design_only_no_merge_no_deploy"
       },
       "header_accent": {
-        "status": "unselected"
+        "status": "selected",
+        "choice": "B",
+        "label": "Playful sparkle",
+        "behavior": "Use a small, restrained sparkle accent next to the Today's Goals heading; preserve existing Percy palette and layout legibility.",
+        "constraints": [
+          "Accent decorative, not a control or substitute for the heading.",
+          "Exact artwork/vector not yet approved, so do not infer a new licensed asset.",
+          "No motion or animation approved by this choice."
+        ],
+        "exact_asset_status": "pending_exact_artwork_verification",
+        "owner_approval_date": "2026-11-14",
+        "scope": "design_only_no_merge_no_deploy"
       },
       "control_size_weight": {
-        "status": "unselected"
+        "status": "selected",
+        "choice": "A",
+        "label": "Balanced 44px target / 24px glyph",
+        "tappable_target_px": 44,
+        "visible_glyph_px": 24,
+        "behavior": "Use a minimum 44 × 44 CSS pixel hit target for the primary goal-completion control, with a 24 × 24 CSS pixel approved-source icon, preserving surrounding spacing and accessible labels.",
+        "constraints": [
+          "Use the approved Phosphor Duotone source variants for controls where already selected.",
+          "44px is the touch target, not a requirement for a 44px coloured icon.",
+          "Do not change completion semantics, permissions or server-ledger idempotency."
+        ],
+        "owner_approval_date": "2026-11-14",
+        "scope": "design_only_no_merge_no_deploy"
       }
     }
   },
@@ -330,7 +366,7 @@
     "parent reward picker UX specifications (layout, search, colours, uploads, migration), beyond the 12 explicit category/icon lists",
     "global icon family/style rules (other than explicitly selected source variants)",
     "brand points-star master and Fox 1A production artwork",
-    "Remaining Goals UI design decisions: recurring indicator, header accent, control size/weight and exact Done indicator treatment are unselected"
+    "Remaining Goals UI asset details: exact Done indicator treatment, repeat glyph source, and sparkle artwork remain unselected; broad interaction design choices are approved"
   ],
   "picker": {
     "status": "owner_selected_exact_category_membership_only",
@@ -599,31 +635,40 @@
   },
   "last_update": {
     "date": "2026-11-14",
-    "action": "owner_approved_completed_goal_option_A",
+    "action": "owner_approved_remaining_three_goals_design_choices",
     "contexts": [
-      "goals_interactions:completed_goal"
+      "goals_interactions:recurring_indicator",
+      "goals_interactions:header_accent",
+      "goals_interactions:control_size_weight"
     ],
     "previous": {
       "date": "2026-11-14",
-      "action": "owner_selected_goals_empty_state_freepik_pending_license",
+      "action": "owner_approved_completed_goal_option_A",
       "contexts": [
-        "moments:Goals empty state"
+        "goals_interactions:completed_goal"
       ],
       "previous": {
-        "date": "2026-11-13",
-        "action": "record_9_visuals_goals_empty_needs_alternatives",
+        "date": "2026-11-14",
+        "action": "owner_selected_goals_empty_state_freepik_pending_license",
         "contexts": [
-          "moments:Home welcome",
-          "moments:Progress milestone",
-          "moments:Reward redeemed",
-          "moments:First-run onboarding",
-          "moments:Reward creation form",
-          "elements:small decorative sticker",
-          "elements:celebration burst",
-          "elements:positive progress badge",
-          "elements:learning spot art",
           "moments:Goals empty state"
-        ]
+        ],
+        "previous": {
+          "date": "2026-11-13",
+          "action": "record_9_visuals_goals_empty_needs_alternatives",
+          "contexts": [
+            "moments:Home welcome",
+            "moments:Progress milestone",
+            "moments:Reward redeemed",
+            "moments:First-run onboarding",
+            "moments:Reward creation form",
+            "elements:small decorative sticker",
+            "elements:celebration burst",
+            "elements:positive progress badge",
+            "elements:learning spot art",
+            "moments:Goals empty state"
+          ]
+        }
       }
     }
   },
