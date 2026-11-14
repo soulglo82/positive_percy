@@ -147,16 +147,19 @@ These selections specify **exact icons offered under each category**, not any un
 
 **Selected:** 12 categories, 84 category placements, 71 distinct MIT Phosphor SVGs. **Not approved yet:** colours, responsive grid behaviour, search tags, upload support and any inclusion of Streamline in the parent-selectable picker.
 
-### Other picker design choices (still unselected)
+### Parent picker — approved UX choices and remaining decisions
+
+**Owner approvals (14 Nov 2026):** A — browse the 12 previously owner-selected categories **plus search**; A — **3 columns on phones and 5 or 6 on larger displays**; B — **approved Percy palette accents by category**. These are Stage 1 design approvals only. Do not interpret this as approval of exact responsive breakpoints, icon surface treatments, tag/synonym matching, category-to-colour mapping, uploads, or licence redistribution. The 12 exact category/icon membership lists (84 placements, 71 distinct icons) are preserved without any additions or removals.
+
 
 | Decision | Proposed default to review | Your approval |
 |---|---|---|
 | Library | 115 distinct Phosphor Duotone SVGs, MIT, 144 category placements | **Unselected** |
 | Visible categories | 12 proposed categories | **Unselected** |
 | Cross-category duplicates | Allowed provisionally for discovery, or remove duplicates | **Unselected** |
-| Grid density | 3 across phones, 4–6 on wider displays | **Unselected** |
-| Search tags | Local metadata keyword search | **Unselected** |
-| Colour variants | Same purple/white/cream tokens, or a safe palette | **Unselected** |
+| Grid density | 3 across phones, 5–6 on wider displays | **Approved — A: 3 on phones, 5 or 6 larger**; exact breakpoint and large-screen count pending |
+| Search and discovery | Categories + search field | **Approved — A**; search tag/synonym matching behaviour still unselected |
+| Colour variants | Category accents drawn from approved Percy palette (`#4B1D8C`, `#FF6A00`, `#FFF6E8`) | **Approved — B**; exact category-colour mapping and contrast testing pending |
 | Picker source licensing | MIT-only until written Streamline confirmation | **Unselected** |
 | Reward image uploads | Out of scope pending storage/privacy review | **Unselected** |
 
