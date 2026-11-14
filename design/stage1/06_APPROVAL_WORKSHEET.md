@@ -79,7 +79,7 @@ The owner has now selected one exact SVG for each previously rejected context. T
 | Potential placement | Selected actual SVG (or None) | Size/colour | Motion allowed? | Notes |
 |---|---|---|---|---|
 | Home welcome | `streamline:stickies:colors:school-science:star` | Original artwork | No by default | Explicit owner-selected source SVG |
-| Goals empty state | **NONE OF PREVIOUS OPTIONS APPROVED — review new alternatives** | — | — | Requires actual artwork choice; not approved empty state |
+| Goals empty state | **Freepik · Bright Adventure Map · asset `3570506` — selected, licence pending** | Original artwork, pending acquisition | No by default | [Source asset](https://www.freepik.com/icon/treasure-map_3570506); exact author/licence and attribution must be verified before production use |
 | Reward redeemed | `streamline:kameleon:pop:entertainment:party-poppers` | Original artwork | No by default | Explicit owner-selected source SVG |
 | Progress milestone | `streamline:stickies:colors:travel-rating:reward` | Original artwork | No by default | Explicit owner-selected source SVG |
 | First-run onboarding | `streamline:kameleon:pop:school-science:robot` | Original artwork | No by default | Explicit owner-selected source SVG |
@@ -91,7 +91,18 @@ The owner has now selected one exact SVG for each previously rejected context. T
 
 **Mascot scenes:** No new fox artwork until the verified Fox 1A master is available. **Points:** The approved separate points-star is compulsory in point balances and prices.
 
-### New genuine-source alternatives for Goals empty state (not approved yet)
+### Approved external alternative (14 Nov 2026) — blocked until licensed
+
+Owner explicitly selected **Freepik Bright Adventure Map** as the Goals empty-state illustration.
+
+- Source reference: [freepik.com/icon/treasure-map_3570506](https://www.freepik.com/icon/treasure-map_3570506)
+- Internal ID: `freepik:icon:treasure-map:3570506`
+- Decision: **Design-selected, subject to licensing verification**; not permission to deploy.
+- Asset file: **not acquired or committed**. Exact author, licence type, attribution, and commercial web/mobile reuse rights must be checked and the downloadable licence retained before engineering can use it.
+- The earlier three rejected Streamline candidates and six later unselected Streamline candidates remain unchanged. This is **not** a decision to omit an empty-state illustration.
+- Freepik links can redirect to Magnific; that redirect alone is not proof of a licence for this exact asset.
+
+### Earlier genuine-source alternatives for Goals empty state (not approved)
 
 | Candidate | Exact source ID | Status |
 |---|---|---|
