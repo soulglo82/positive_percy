@@ -157,6 +157,8 @@ These selections specify **exact icons offered under each category**, not any un
 
 ### Parent picker — approved UX choices and remaining decisions
 
+**Final owner-approved picker design decisions (14 Nov 2026):** A — category accent mapping across all 12 categories: purple (Learning & growth, Family & kindness, Tech & media, Animals & pets); orange (Fun & games, Treats & food, Sports & movement, Things & pocket money); sunshine yellow (Outings, Creative time, Nature & outdoors, Celebrations). A — **container** breakpoints under 520 CSS px = 3 columns, 520–759 = 5 columns, 760+ = 6 columns. The exact icon surface treatments and contrast QA remain gates, not extra approvals.
+
 **Further approvals (14 Nov 2026):** A — **no new reward image uploads at launch**, possible post-launch review; A — **preserve all existing saved rewards and allow optional icon change in Edit**. These approvals do not authorise any destructive migration, loss of previous reward imagery or data, new file-storage service, or production deployment.
 
 **Owner approvals (14 Nov 2026):** A — browse the 12 previously owner-selected categories **plus search**; A — **3 columns on phones and 5 or 6 on larger displays**; B — **approved Percy palette accents by category**.
@@ -169,9 +171,9 @@ These selections specify **exact icons offered under each category**, not any un
 | Library | 71 distinct owner-approved Phosphor Duotone icons, 84 placements in 12 categories | **Approved — C:** Launch with 71; expand after launch only after additional review. The other 44 candidates are **unapproved** |
 | Visible categories | 12 proposed categories | **Unselected** |
 | Cross-category duplicates | Preserve the owner-selected category memberships; deduplicate combined search by `asset_id` | **Approved — A**: an icon may appear in multiple categories, but only once per search result set |
-| Grid density | 3 across phones, 5–6 on wider displays | **Approved — A: 3 on phones, 5 or 6 larger**; exact breakpoint and large-screen count pending |
+| Grid density and breakpoints | **Picker-container width:** under 520px → 3 columns; 520–759px → 5 columns; 760px and wider → 6 columns | **Approved — A (14 Nov 2026)**; validate tile fit and accessibility in React preview |
 | Search and discovery | Categories + search field; match icon names and common-language synonyms | **Approved — A for discovery and A for matching**; exact synonym dictionary, ranking and UI placement remain unselected |
-| Colour variants | Category accents drawn from approved Percy palette (`#4B1D8C`, `#FF6A00`, `#FFF6E8`) | **Approved — B**; exact category-colour mapping and contrast testing pending |
+| Colour variants and mapping | **Purple** (`#4B1D8C`): Learning & growth, Family & kindness, Tech & media, Animals & pets. **Orange** (`#FF6A00`): Fun & games, Treats & food, Sports & movement, Things & pocket money. **Sunshine** (`#FFC938`): Outings, Creative time, Nature & outdoors, Celebrations | **Approved — A (14 Nov 2026)**; exact accent application and contrast tested in React preview |
 | Picker source licensing | MIT-only until written Streamline confirmation | **Unselected** |
 | Reward image uploads | Disabled at launch; potential post-launch reconsideration | **Approved — A**: no new parent image uploads at launch, revisit only after storage/security/privacy review and separate sign-off |
 | Existing saved rewards | Keep existing reward icons, emoji, images, amounts, history and IDs intact; allow optional replacement of icon in Edit | **Approved — A**: non-destructive; no automatic replacement or bulk migration |
