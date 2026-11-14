@@ -3,9 +3,9 @@
   "stage": 1,
   "scope": "explicit_owner_choices_only",
   "recorded_date": "2026-11-13",
-  "version": "1.0",
+  "version": "1.1",
   "approval_level": "approved_icon_mappings_for_specific_review_contexts_only",
-  "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state NONE means none of the three options approved, not request for no illustration.",
+  "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state now has a specific external Freepik artwork selected by owner, subject to licensing verification and obtaining the exact asset; no production usage authorised yet.",
   "meaning_of_NONE": "Explicitly rejected presented candidates; further icon options required. NOT a deliberate choice of no icon.",
   "source": "Owner's copied interactive Stage 1 decisions, four groups, 13 November 2026",
   "decisions": {
@@ -298,12 +298,14 @@
     "picker_icon_placements": 84,
     "picker_distinct_icons": 71,
     "visual_contexts_reviewed": 10,
-    "visual_assets_selected": 9,
-    "visual_contexts_awaiting_alternatives": 1,
-    "visual_explicit_no_artwork": 0
+    "visual_assets_selected": 10,
+    "visual_contexts_awaiting_alternatives": 0,
+    "visual_explicit_no_artwork": 0,
+    "visual_assets_pending_license": 1,
+    "visual_assets_implementation_ready": 9
   },
   "untouched_and_unselected": [
-    "Goals empty state artwork: prior proposals rejected; actual artwork choice pending",
+    "Goals empty state selected Freepik artwork licence, exact author attribution, and local download remain unverified and blocked from production",
     "parent reward picker UX specifications (layout, search, colours, uploads, migration), beyond the 12 explicit category/icon lists",
     "global icon family/style rules (other than explicitly selected source variants)",
     "brand points-star master and Fox 1A production artwork",
@@ -575,20 +577,27 @@
     }
   },
   "last_update": {
-    "date": "2026-11-13",
-    "action": "record_9_visuals_goals_empty_needs_alternatives",
+    "date": "2026-11-14",
+    "action": "owner_selected_goals_empty_state_freepik_pending_license",
     "contexts": [
-      "moments:Home welcome",
-      "moments:Progress milestone",
-      "moments:Reward redeemed",
-      "moments:First-run onboarding",
-      "moments:Reward creation form",
-      "elements:small decorative sticker",
-      "elements:celebration burst",
-      "elements:positive progress badge",
-      "elements:learning spot art",
       "moments:Goals empty state"
-    ]
+    ],
+    "previous": {
+      "date": "2026-11-13",
+      "action": "record_9_visuals_goals_empty_needs_alternatives",
+      "contexts": [
+        "moments:Home welcome",
+        "moments:Progress milestone",
+        "moments:Reward redeemed",
+        "moments:First-run onboarding",
+        "moments:Reward creation form",
+        "elements:small decorative sticker",
+        "elements:celebration burst",
+        "elements:positive progress badge",
+        "elements:learning spot art",
+        "moments:Goals empty state"
+      ]
+    }
   },
   "visuals": {
     "moments": {
@@ -628,10 +637,19 @@
         "license": "https://creativecommons.org/licenses/by/4.0/"
       },
       "Goals empty state": {
-        "status": "none_of_these",
-        "asset_id": null,
-        "meaning": "The prior candidate artwork was rejected, but no decision to omit artwork was made.",
+        "status": "selected_pending_license",
+        "asset_id": "freepik:icon:treasure-map:3570506",
+        "asset_label": "Bright Adventure Map",
+        "source_platform": "Freepik / Magnific",
+        "source_url": "https://www.freepik.com/icon/treasure-map_3570506",
+        "source_file": null,
+        "license_status": "not_verified_for_this_exact_asset",
+        "attribution_requirements": "pending_asset_specific_license_and_author_details",
+        "implementation_status": "blocked_until_license_verified_and_asset_acquired",
         "no_artwork_approved": false,
+        "selected_by": "owner_explicit_approval",
+        "selected_date": "2026-11-14",
+        "condition": "Design choice approved, subject to licensing verification; do not use in production yet.",
         "rejected_previous_candidates": [
           "stickies/colors/school-science/book-library.svg",
           "stickies/colors/school-science/backpack.svg",
