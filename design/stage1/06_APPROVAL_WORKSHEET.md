@@ -42,14 +42,22 @@
 | Creativity | `phosphor:paint-brush:duotone` | duotone | Selected | Candidate names: `palette`, `paint-brush`, `music-notes` |
 | Sleep | `phosphor:bed:duotone` | duotone | Selected | Candidate names: `bed`, `moon-stars`, `moon` |
 
-**Goals interaction decisions (all four behaviour choices now approved, 14 Nov 2026):** Completed state **A — retain category icon + separate visible Done indicator** · Recurrence **A — repeat icon + human-readable schedule** · Header **B — small playful sparkle accent** · Control **A — minimum 44×44 CSS px touch target with 24×24 CSS px glyph**. **Exact Done treatment, repeat source SVG and sparkle artwork remain subject to separate design/source verification.** No production change or deployment authorised.
+**Goals interaction decisions (four behaviour choices + exact three source SVGs approved, 14 Nov 2026):** Completed state **A — retain category icon + separate Done indicator** (exact SVG `phosphor:check-circle:duotone` with visible **Done** text) · Recurrence **A — repeat icon + human-readable schedule** (exact SVG `phosphor:repeat:duotone`) · Header **B — small playful sparkle accent** (exact SVG `phosphor:sparkle:duotone`) · Control **A — minimum 44×44 CSS px touch target with 24×24 CSS px glyph**. The three SVGs are exact original Phosphor Duotone files already staged in the asset library. Exact colour/placement still requires a running React visual review. No production change or deployment authorised.
 
 | Remaining Goals design item | Status | Notes |
 |---|---|---|
-| Completed-goal icon behaviour | **Approved — Option A** | Keep the category glyph and add a separately identifiable Done status; no server/ledger logic changes |
-| Recurring goal indicator | **Approved — Option A** | Repeat icon plus actual human-readable goal schedule (e.g., Mon/Wed/Fri). Not a streak; missed goals never penalise. Specific SVG not yet approved |
-| Header accent | **Approved — Option B** | Small playful sparkle next to Today's Goals heading; decorative only, not animated by default. Exact artwork source awaits approval |
+| Completed-goal icon behaviour | **Approved — Option A + pinned SVG** | Keep category glyph and add `phosphor:check-circle:duotone` with visible Done text; no server/ledger logic changes |
+| Recurring goal indicator | **Approved — Option A + pinned SVG** | `phosphor:repeat:duotone` and actual schedule (e.g., Mon/Wed/Fri); not a streak, no missed-day penalty |
+| Header accent | **Approved — Option B + pinned SVG** | `phosphor:sparkle:duotone` beside Today's Goals heading; decorative, no animation approved |
 | Control sizing and weight | **Approved — Option A** | Primary completion control minimum 44×44 CSS px interactive target / 24×24 CSS px glyph. Preserve approved source artwork and accessible labels |
+
+**Owner-approved exact SVG source files (14 Nov 2026):**
+
+- `phosphor:repeat:duotone` — [pinned original SVG](https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/repeat.svg) · MIT, Phosphor pinned source commit `2b75f3ad12b420c9504ef05df8d2564a28f8500e`
+- `phosphor:sparkle:duotone` — [pinned original SVG](https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/sparkle.svg) · MIT, Phosphor pinned source commit `2b75f3ad12b420c9504ef05df8d2564a28f8500e`
+- `phosphor:check-circle:duotone` — [pinned original SVG](https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/check-circle.svg) · MIT, Phosphor pinned source commit `2b75f3ad12b420c9504ef05df8d2564a28f8500e`
+
+Colour/spacing requires final visual QA. Repeat and sparkle are now exact asset approvals, not merely generic visual-direction decisions. The check-circle glyph is approved as a **separate** Done indicator, never a replacement for the original goal/category icon.
 
 **Approval boundary:** Stage 1 design-only decision. No production code edits, branch merge or deployment.
 
@@ -149,9 +157,11 @@ These selections specify **exact icons offered under each category**, not any un
 
 ### Parent picker — approved UX choices and remaining decisions
 
+**Further approvals (14 Nov 2026):** A — **no new reward image uploads at launch**, possible post-launch review; A — **preserve all existing saved rewards and allow optional icon change in Edit**. These approvals do not authorise any destructive migration, loss of previous reward imagery or data, new file-storage service, or production deployment.
+
 **Owner approvals (14 Nov 2026):** A — browse the 12 previously owner-selected categories **plus search**; A — **3 columns on phones and 5 or 6 on larger displays**; B — **approved Percy palette accents by category**.
 
-**Additional owner approvals (14 Nov 2026):** C — launch with exactly **71 previously approved distinct icons** (84 approved placements) and plan an expansion only **after launch**, subject to separate asset approval; A — retain approved category memberships while **deduplicating search results by asset ID**; A — support **icon names and everyday-language synonyms** for local search. The other 44 candidates are not launch-approved; no new icon assets are admitted by these selections. These are Stage 1 design approvals only. Do not interpret this as approval of exact responsive breakpoints, icon surface treatments, tag/synonym matching, category-to-colour mapping, uploads, or licence redistribution. The 12 exact category/icon membership lists (84 placements, 71 distinct icons) are preserved without any additions or removals.
+**Additional owner approvals (14 Nov 2026):** C — launch with exactly **71 previously approved distinct icons** (84 approved placements) and plan an expansion only **after launch**, subject to separate asset approval; A — retain approved category memberships while **deduplicating search results by asset ID**; A — support **icon names and everyday-language synonyms** for local search. The other 44 candidates are not launch-approved; no new icon assets are admitted by these selections. These are Stage 1 design approvals only. Name/synonym matching is approved as a principle; the exact synonym dictionary and search result ranking remain open. Do not infer approval of exact responsive breakpoints, icon surface treatments, category-to-colour mapping, or licence redistribution. Uploads and saved-reward handling are separately recorded below. The 12 exact category/icon membership lists (84 placements, 71 distinct icons) are preserved without any additions or removals.
 
 
 | Decision | Proposed default to review | Your approval |
@@ -163,7 +173,9 @@ These selections specify **exact icons offered under each category**, not any un
 | Search and discovery | Categories + search field; match icon names and common-language synonyms | **Approved — A for discovery and A for matching**; exact synonym dictionary, ranking and UI placement remain unselected |
 | Colour variants | Category accents drawn from approved Percy palette (`#4B1D8C`, `#FF6A00`, `#FFF6E8`) | **Approved — B**; exact category-colour mapping and contrast testing pending |
 | Picker source licensing | MIT-only until written Streamline confirmation | **Unselected** |
-| Reward image uploads | Out of scope pending storage/privacy review | **Unselected** |
+| Reward image uploads | Disabled at launch; potential post-launch reconsideration | **Approved — A**: no new parent image uploads at launch, revisit only after storage/security/privacy review and separate sign-off |
+| Existing saved rewards | Keep existing reward icons, emoji, images, amounts, history and IDs intact; allow optional replacement of icon in Edit | **Approved — A**: non-destructive; no automatic replacement or bulk migration |
+| Picker source policy | MIT Phosphor-only picker at launch; separate attribution/licence for curated Streamline and Freepik | **Proposed engineering constraint, NOT owner-approved**; no picker redistribution of other families without rights review and approval |
 
 ## Sign-off and handover
 
