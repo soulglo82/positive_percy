@@ -3,7 +3,7 @@
   "stage": 1,
   "scope": "explicit_owner_choices_only",
   "recorded_date": "2026-11-13",
-  "version": "1.7",
+  "version": "1.8",
   "approval_level": "approved_icon_mappings_for_specific_review_contexts_only",
   "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state now has a specific external Freepik artwork selected by owner, subject to licensing verification and obtaining the exact asset; no production usage authorised yet.",
   "meaning_of_NONE": "Explicitly rejected presented candidates; further icon options required. NOT a deliberate choice of no icon.",
@@ -856,72 +856,79 @@
   },
   "last_update": {
     "date": "2026-11-14",
-    "action": "owner_approved_picker_category_colours_and_container_breakpoints",
+    "action": "verified_owner_project_treasure_map_png_source_availability",
     "contexts": [
-      "picker_ux:category_colour_mapping",
-      "picker_ux:responsive_breakpoints"
+      "moments:Goals empty state"
     ],
     "previous": {
       "date": "2026-11-14",
-      "action": "owner_approved_picker_uploads_legacy_rewards_and_three_goals_svgs",
+      "action": "owner_approved_picker_category_colours_and_container_breakpoints",
       "contexts": [
-        "picker_ux:image_uploads",
-        "picker_ux:existing_saved_rewards",
-        "goals_interactions:recurring_indicator:svg",
-        "goals_interactions:header_accent:svg",
-        "goals_interactions:completed_goal:svg"
+        "picker_ux:category_colour_mapping",
+        "picker_ux:responsive_breakpoints"
       ],
       "previous": {
         "date": "2026-11-14",
-        "action": "owner_approved_picker_launch_library_dedup_search_synonyms",
+        "action": "owner_approved_picker_uploads_legacy_rewards_and_three_goals_svgs",
         "contexts": [
-          "picker_ux:launch_library",
-          "picker_ux:cross_category_duplicates",
-          "picker_ux:search_matching"
+          "picker_ux:image_uploads",
+          "picker_ux:existing_saved_rewards",
+          "goals_interactions:recurring_indicator:svg",
+          "goals_interactions:header_accent:svg",
+          "goals_interactions:completed_goal:svg"
         ],
         "previous": {
           "date": "2026-11-14",
-          "action": "owner_approved_picker_discovery_grid_and_colour",
+          "action": "owner_approved_picker_launch_library_dedup_search_synonyms",
           "contexts": [
-            "picker_ux:discovery",
-            "picker_ux:responsive_grid",
-            "picker_ux:icon_color"
+            "picker_ux:launch_library",
+            "picker_ux:cross_category_duplicates",
+            "picker_ux:search_matching"
           ],
           "previous": {
             "date": "2026-11-14",
-            "action": "owner_approved_remaining_three_goals_design_choices",
+            "action": "owner_approved_picker_discovery_grid_and_colour",
             "contexts": [
-              "goals_interactions:recurring_indicator",
-              "goals_interactions:header_accent",
-              "goals_interactions:control_size_weight"
+              "picker_ux:discovery",
+              "picker_ux:responsive_grid",
+              "picker_ux:icon_color"
             ],
             "previous": {
               "date": "2026-11-14",
-              "action": "owner_approved_completed_goal_option_A",
+              "action": "owner_approved_remaining_three_goals_design_choices",
               "contexts": [
-                "goals_interactions:completed_goal"
+                "goals_interactions:recurring_indicator",
+                "goals_interactions:header_accent",
+                "goals_interactions:control_size_weight"
               ],
               "previous": {
                 "date": "2026-11-14",
-                "action": "owner_selected_goals_empty_state_freepik_pending_license",
+                "action": "owner_approved_completed_goal_option_A",
                 "contexts": [
-                  "moments:Goals empty state"
+                  "goals_interactions:completed_goal"
                 ],
                 "previous": {
-                  "date": "2026-11-13",
-                  "action": "record_9_visuals_goals_empty_needs_alternatives",
+                  "date": "2026-11-14",
+                  "action": "owner_selected_goals_empty_state_freepik_pending_license",
                   "contexts": [
-                    "moments:Home welcome",
-                    "moments:Progress milestone",
-                    "moments:Reward redeemed",
-                    "moments:First-run onboarding",
-                    "moments:Reward creation form",
-                    "elements:small decorative sticker",
-                    "elements:celebration burst",
-                    "elements:positive progress badge",
-                    "elements:learning spot art",
                     "moments:Goals empty state"
-                  ]
+                  ],
+                  "previous": {
+                    "date": "2026-11-13",
+                    "action": "record_9_visuals_goals_empty_needs_alternatives",
+                    "contexts": [
+                      "moments:Home welcome",
+                      "moments:Progress milestone",
+                      "moments:Reward redeemed",
+                      "moments:First-run onboarding",
+                      "moments:Reward creation form",
+                      "elements:small decorative sticker",
+                      "elements:celebration burst",
+                      "elements:positive progress badge",
+                      "elements:learning spot art",
+                      "moments:Goals empty state"
+                    ]
+                  }
                 }
               }
             }
@@ -976,7 +983,7 @@
         "source_file": null,
         "license_status": "not_verified_for_this_exact_asset",
         "attribution_requirements": "pending_asset_specific_license_and_author_details",
-        "implementation_status": "blocked_until_license_verified_and_asset_acquired",
+        "implementation_status": "project_file_confirmed_not_yet_checked_into_app_repository; asset_specific_license_record_pending",
         "no_artwork_approved": false,
         "selected_by": "owner_explicit_approval",
         "selected_date": "2026-11-14",
@@ -985,7 +992,19 @@
           "stickies/colors/school-science/book-library.svg",
           "stickies/colors/school-science/backpack.svg",
           "kameleon/pop/school-science/chalkboard.svg"
-        ]
+        ],
+        "project_file_availability": {
+          "status": "owner_provided_image_visible_in_project",
+          "location": "/Postive Percy/treasure-map_3570506.png",
+          "basename": "treasure-map_3570506.png",
+          "image_dimensions_px": [
+            512,
+            512
+          ],
+          "observed_visual": "Bright yellow-orange treasure map, red X, winding white dotted route, purple-blue round backing",
+          "verified_date": "2026-11-14",
+          "implementation_note": "Source image is available in user Project Library but is not yet checked into app repository; file materialization to this runtime was unavailable. Use exact original supplied file, not a replacement."
+        }
       }
     },
     "elements": {
