@@ -26,7 +26,7 @@ export default function RewardCard({ reward, onToggleStack, isParentView, onTogg
         <div className="flex items-start gap-3 mb-2">
           {!reward.image_url && <EmojiTile emoji={reward.emoji} />}
           <div className="flex-1 min-w-0">
-            <h3 className="font-display font-semibold text-foreground text-lg line-clamp-2">
+            <h3 className="font-display font-bold text-foreground text-lg line-clamp-2">
               {reward.title}
             </h3>
             {hidden && (

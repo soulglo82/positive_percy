@@ -48,9 +48,10 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex items-center gap-3">
               <Link
                 to={createPageUrl('ParentDashboard')}
+                aria-label="Positive Percy home"
                 className="flex items-center min-h-11 rounded-md shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                <Logo size={32} wordmark />
+                <Logo size={40} wordmark decorative />
               </Link>
               {pageTitle && (
                 <span className="text-sm font-medium text-muted-foreground">
@@ -96,8 +97,8 @@ export default function Layout({ children, currentPageName }) {
       {/* Mobile top header, visible on mobile only */}
       <header className="sm:hidden bg-card border-b border-border sticky top-0 z-50">
         <div className="flex items-center justify-between pl-4 pr-1 h-12">
-          <Link to={createPageUrl('ParentDashboard')} className="flex items-center min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-            <Logo size={32} wordmark />
+          <Link to={createPageUrl('ParentDashboard')} aria-label="Positive Percy home" className="flex items-center min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <Logo size={36} wordmark decorative />
           </Link>
           <button
             onClick={() => setShowLogoutConfirm(true)}

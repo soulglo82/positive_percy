@@ -121,7 +121,7 @@ export default function ChildView() {
           <>
             {/* Points summary */}
             <div className={cn("text-center rounded-lg px-4 py-5 border-t-4", childColour(selectedChild, children).soft, childColour(selectedChild, children).border)}>
-              <h1 className="font-display text-title font-semibold text-foreground">{selectedChild.name}'s Rewards</h1>
+              <h1 className="font-display text-title font-extrabold text-foreground">{selectedChild.name}'s Rewards</h1>
               <p className="text-lg text-muted-foreground mt-1 flex items-center justify-center gap-2">
                 <Points value={selectedChild.total_points} className="font-semibold text-foreground text-title" starClassName="h-6 w-6" /> {PERCY.POINTS} available
               </p>

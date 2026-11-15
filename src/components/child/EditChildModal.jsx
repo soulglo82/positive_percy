@@ -133,7 +133,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
                   </button>
                 </div>
               ) : (
-                <div className={cn("w-20 h-20 rounded-full flex items-center justify-center font-display text-title font-semibold text-foreground ring-2 ring-offset-2 ring-offset-card", childColour(child).soft, childColour(child).ring)} aria-hidden="true">
+                <div className={cn("w-20 h-20 rounded-full flex items-center justify-center font-display text-title font-extrabold text-foreground ring-2 ring-offset-2 ring-offset-card", childColour(child).soft, childColour(child).ring)} aria-hidden="true">
                   {name.charAt(0) || '?'}
                 </div>
               )}

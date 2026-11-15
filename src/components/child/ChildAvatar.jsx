@@ -9,7 +9,7 @@ export default function ChildAvatar({ name, url, size = 'md', colour, className 
     return <img src={url} alt={name || ''} className={cn(box, 'rounded-full object-cover shrink-0', ring, className)} />;
   }
   return (
-    <div className={cn(box, 'rounded-full font-display font-semibold text-foreground flex items-center justify-center shrink-0', colour ? colour.soft : 'bg-selected', ring, className)} aria-hidden="true">
+    <div className={cn(box, 'rounded-full font-display font-bold text-foreground flex items-center justify-center shrink-0', colour ? colour.soft : 'bg-selected', ring, className)} aria-hidden="true">
       {(name || '?').charAt(0).toUpperCase()}
     </div>
   );

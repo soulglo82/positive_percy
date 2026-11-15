@@ -1,0 +1,202 @@
+{
+  "version": "1.0",
+  "issued": "2026-11-15",
+  "owner": "Percy v2 engineering",
+  "status": "E01 provenance for runtime brand files; not deployed",
+  "chain": "Logo/icon sources are members of the pinned archive design/brand/archives (sha256 e7e93dde728048cb03ba78a1f761cc221af184bfda3bdd4234f7fd3df61f3638), checked in src/test/brandAssets.test.js. Font sources are vendored from the npm tarballs whose sha512 integrity is recorded per entry; the tarball check was done at import (2026-11-15) and is not re-run in CI.",
+  "excluded_from_runtime": "Everything else in the 150-file pack stays design source only. Not used in this web app: iOS AppIcon-1024 and Android adaptive layers (no native app; the PWA maskable icon covers Android launchers), print/PDF/letterhead files (E12), social covers (website, E12), and the Freepik treasure map (E03, licence gate).",
+  "entries": [
+    {
+      "runtime": "public/brand/fox-1a-symbol-black.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/fox-1a-symbol-black.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "2ed89979cad76043ab9bb6d737382c79abc51779e92363d46b72a52b877c4382"
+    },
+    {
+      "runtime": "public/brand/fox-1a-symbol-full.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/fox-1a-symbol-full.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "071d7614d7f4c49decbe179d42375ffa7fad1a59b0e2f79250de7150c990ac3c"
+    },
+    {
+      "runtime": "public/brand/fox-1a-symbol-purple.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/fox-1a-symbol-purple.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "baeeb742d2dc3dff107c97ca8f25d73a6d6967f258cf4da5cefd63475b1d8fd7"
+    },
+    {
+      "runtime": "public/brand/fox-1a-symbol-white.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/fox-1a-symbol-white.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "7b44710b24eaf57bbc2ea28724fa9479b76fd32849f3337de65561bc269047d4"
+    },
+    {
+      "runtime": "public/brand/positive-percy-horizontal-full.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/positive-percy-horizontal-full.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "f0ceb5c8673a024aa60cc9f2884f1c21682265838346440c6a1db46f1cd0a98f"
+    },
+    {
+      "runtime": "public/brand/positive-percy-horizontal-mono-black.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/positive-percy-horizontal-mono-black.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "1a793f9920892f302b1afdbb882b41b1ec3558b671a64c0aab1286f4746a56bc"
+    },
+    {
+      "runtime": "public/brand/positive-percy-horizontal-mono-purple.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/positive-percy-horizontal-mono-purple.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "5ae4f1147f9356bc970e0280ff7375aa1b11c4dc8c6ad99102e68a7de7c67f8f"
+    },
+    {
+      "runtime": "public/brand/positive-percy-horizontal-reverse.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/positive-percy-horizontal-reverse.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "437f2b8b81ef7d67e2e430297c1e10fd279034de20c8d004752cbec8ba130610"
+    },
+    {
+      "runtime": "public/brand/positive-percy-stacked-full.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/positive-percy-stacked-full.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "a102adf47012dabca45f19899cdf39c0247379faf9c5865a6222151406d1b309"
+    },
+    {
+      "runtime": "public/brand/positive-percy-stacked-mono-black.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/positive-percy-stacked-mono-black.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "9ca5f589e4931bf99396dd7b8d072e7863b8d84a505889c28613cee15ea547d9"
+    },
+    {
+      "runtime": "public/brand/positive-percy-stacked-mono-purple.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/positive-percy-stacked-mono-purple.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "fe652883d82ebf7a3d0e0174ca34629b782d48ab7ce379c4c2aea5f301ea850e"
+    },
+    {
+      "runtime": "public/brand/positive-percy-stacked-reverse.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/02_SVG_Masters/positive-percy-stacked-reverse.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "c9a02f65fa620aa38eed5171ea8f922d0ec48da9b2d38a5975e5eab85afc295e"
+    },
+    {
+      "runtime": "public/icon-192.png",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/04_App_Icons/PWA/icon-192.png",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "4af383f2d9f236f8a00374619cecfb467777e4b22f94553fb66e586ad7ec9902"
+    },
+    {
+      "runtime": "public/icon-512.png",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/04_App_Icons/PWA/icon-512.png",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "317cfe9451471b28e70a86c60d06ab31002b82827fa59df9e220a513ec8be52a"
+    },
+    {
+      "runtime": "public/maskable-512.png",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/04_App_Icons/PWA/maskable-512.png",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "07dbe32d6517bc90aaa71b901bc1f8bf0f87b0fe8e8c10ff081ff354527b231d"
+    },
+    {
+      "runtime": "public/apple-touch-icon.png",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/04_App_Icons/PWA/apple-touch-icon.png",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "9f260706d7a9b16b4cc198566c59aa4685920da5003c509d4c41e56e5bebc178"
+    },
+    {
+      "runtime": "public/favicon.ico",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/04_App_Icons/Web/favicon.ico",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "5edc1cfb358e663bb134010559ce5ea6741983ece7d729ee23f5b43da3db3b42"
+    },
+    {
+      "runtime": "public/favicon.svg",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/04_App_Icons/Web/favicon.svg",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "f4de55386501fa7bb12bc55dc78efb20893f9382fb1f6ddbf7091dba5b322f05"
+    },
+    {
+      "runtime": "public/favicon-32.png",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/04_App_Icons/Web/favicon-32.png",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "a6c036b75c6fe692cbed50cd2300396fc23467d0f2e8f55f953ee431810cfdb4"
+    },
+    {
+      "runtime": "public/og-image.png",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/05_Website_And_Social/open-graph-1200x630.png",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending",
+      "sha256": "2802cd3f6933833d81ff8b46e7e1d5efe479cec1b652405c7b32da623876ba0a"
+    },
+    {
+      "runtime": "public/fonts/OFL-nunito.txt",
+      "source": "design/brand/fonts/OFL-nunito.txt",
+      "licence": "SIL OFL 1.1, @fontsource/nunito@5.3.0 (tarball sha512-vw9TaTQJ/zpEpKrsODuPmOvaVjXgdda6B+xXA4YqjrdeJ62MLgVoDerdRXFQHyBnSCt2yQ2nHKCHPP/Pv7Xq4Q==)",
+      "sha256": "40991bfa02ac620aae16dc527f3c47765a25e43f270d4c301ee6ab663a8d9015"
+    },
+    {
+      "runtime": "public/fonts/OFL-poppins.txt",
+      "source": "design/brand/fonts/OFL-poppins.txt",
+      "licence": "SIL OFL 1.1, @fontsource/poppins@5.3.0 (tarball sha512-cms1nM7U6SN8epIV1WMVOV8VsA645aSm3wHfzIQnkk188U341ThbJGSl2Sv54V29gnDbT2arMPfLzvVIIVCceQ==)",
+      "sha256": "5c4a92c8f8ce0ab211f4c72889d82383c9644546115d9ba39a4f2d5b8f37014b"
+    },
+    {
+      "runtime": "public/fonts/nunito-latin-700-normal.woff2",
+      "source": "design/brand/fonts/nunito-latin-700-normal.woff2",
+      "licence": "SIL OFL 1.1, @fontsource/nunito@5.3.0 (tarball sha512-vw9TaTQJ/zpEpKrsODuPmOvaVjXgdda6B+xXA4YqjrdeJ62MLgVoDerdRXFQHyBnSCt2yQ2nHKCHPP/Pv7Xq4Q==)",
+      "sha256": "fa89300b9bbb3bd0f60d6991aa055965d98e2ccca27bf8688fe0c39cdc796846"
+    },
+    {
+      "runtime": "public/fonts/nunito-latin-800-normal.woff2",
+      "source": "design/brand/fonts/nunito-latin-800-normal.woff2",
+      "licence": "SIL OFL 1.1, @fontsource/nunito@5.3.0 (tarball sha512-vw9TaTQJ/zpEpKrsODuPmOvaVjXgdda6B+xXA4YqjrdeJ62MLgVoDerdRXFQHyBnSCt2yQ2nHKCHPP/Pv7Xq4Q==)",
+      "sha256": "2363d3ed037283ebb961e8c4b4917e40a8bc8853cf9965cf1ea7b4daa1df630a"
+    },
+    {
+      "runtime": "public/fonts/nunito-latin-ext-700-normal.woff2",
+      "source": "design/brand/fonts/nunito-latin-ext-700-normal.woff2",
+      "licence": "SIL OFL 1.1, @fontsource/nunito@5.3.0 (tarball sha512-vw9TaTQJ/zpEpKrsODuPmOvaVjXgdda6B+xXA4YqjrdeJ62MLgVoDerdRXFQHyBnSCt2yQ2nHKCHPP/Pv7Xq4Q==)",
+      "sha256": "0a4e4a02e13c6b36cf2a3ce236cc5ad8c0b93352fc5fb380860161557a9b199e"
+    },
+    {
+      "runtime": "public/fonts/nunito-latin-ext-800-normal.woff2",
+      "source": "design/brand/fonts/nunito-latin-ext-800-normal.woff2",
+      "licence": "SIL OFL 1.1, @fontsource/nunito@5.3.0 (tarball sha512-vw9TaTQJ/zpEpKrsODuPmOvaVjXgdda6B+xXA4YqjrdeJ62MLgVoDerdRXFQHyBnSCt2yQ2nHKCHPP/Pv7Xq4Q==)",
+      "sha256": "39f54b55b83547df294894bdf68d75c11e2ac626bc0c88b73ba8993422de2fe7"
+    },
+    {
+      "runtime": "public/fonts/poppins-latin-400-normal.woff2",
+      "source": "design/brand/fonts/poppins-latin-400-normal.woff2",
+      "licence": "SIL OFL 1.1, @fontsource/poppins@5.3.0 (tarball sha512-cms1nM7U6SN8epIV1WMVOV8VsA645aSm3wHfzIQnkk188U341ThbJGSl2Sv54V29gnDbT2arMPfLzvVIIVCceQ==)",
+      "sha256": "7d93459d86585bfcdbb7e0376056226adb25821ee54b96236fe2123e9560929f"
+    },
+    {
+      "runtime": "public/fonts/poppins-latin-500-normal.woff2",
+      "source": "design/brand/fonts/poppins-latin-500-normal.woff2",
+      "licence": "SIL OFL 1.1, @fontsource/poppins@5.3.0 (tarball sha512-cms1nM7U6SN8epIV1WMVOV8VsA645aSm3wHfzIQnkk188U341ThbJGSl2Sv54V29gnDbT2arMPfLzvVIIVCceQ==)",
+      "sha256": "cd36de204aca2d5fa263a731f7c20009b5e3d754ba1f1e03c33e93a48f3e7446"
+    },
+    {
+      "runtime": "public/fonts/poppins-latin-600-normal.woff2",
+      "source": "design/brand/fonts/poppins-latin-600-normal.woff2",
+      "licence": "SIL OFL 1.1, @fontsource/poppins@5.3.0 (tarball sha512-cms1nM7U6SN8epIV1WMVOV8VsA645aSm3wHfzIQnkk188U341ThbJGSl2Sv54V29gnDbT2arMPfLzvVIIVCceQ==)",
+      "sha256": "f4e80d9dfd374d02989b87a27b5ed4cb78fbb177c27f1478e9a8b0afb7513149"
+    },
+    {
+      "runtime": "public/fonts/poppins-latin-ext-400-normal.woff2",
+      "source": "design/brand/fonts/poppins-latin-ext-400-normal.woff2",
+      "licence": "SIL OFL 1.1, @fontsource/poppins@5.3.0 (tarball sha512-cms1nM7U6SN8epIV1WMVOV8VsA645aSm3wHfzIQnkk188U341ThbJGSl2Sv54V29gnDbT2arMPfLzvVIIVCceQ==)",
+      "sha256": "0b1fcab42c18b69bcfe9ce4799fcbff5af1621c53ffcfdc4723c6f5ec4ee3ffb"
+    },
+    {
+      "runtime": "public/fonts/poppins-latin-ext-500-normal.woff2",
+      "source": "design/brand/fonts/poppins-latin-ext-500-normal.woff2",
+      "licence": "SIL OFL 1.1, @fontsource/poppins@5.3.0 (tarball sha512-cms1nM7U6SN8epIV1WMVOV8VsA645aSm3wHfzIQnkk188U341ThbJGSl2Sv54V29gnDbT2arMPfLzvVIIVCceQ==)",
+      "sha256": "af5fda16a19169e029a132374616728e1bf326d90bef5a552395c5053e21cd0f"
+    },
+    {
+      "runtime": "public/fonts/poppins-latin-ext-600-normal.woff2",
+      "source": "design/brand/fonts/poppins-latin-ext-600-normal.woff2",
+      "licence": "SIL OFL 1.1, @fontsource/poppins@5.3.0 (tarball sha512-cms1nM7U6SN8epIV1WMVOV8VsA645aSm3wHfzIQnkk188U341ThbJGSl2Sv54V29gnDbT2arMPfLzvVIIVCceQ==)",
+      "sha256": "bb1f2d582e7fba586ab70c91ef062d3becaf78b887654953863521b73665d171"
+    }
+  ]
+}
