@@ -1,0 +1,71 @@
+{
+  "brand": "Positive Percy",
+  "approved_icon_inventory": {
+    "context_icon_mappings": 38,
+    "picker_categories": 12,
+    "category_placements": 84,
+    "unique_picker_icons": 71,
+    "source": "GitHub review branch"
+  },
+  "original_svg_source_root": "https://github.com/soulglo82/positive_percy/tree/design/percy-stage1-interactive-preview/design/assets",
+  "freepik_map_library_name": "treasure-map_3570506.png",
+  "logo_and_currency_masters": "not present as verified files",
+  "generated_files": [
+    {
+      "path": "README.md",
+      "bytes": 2352
+    },
+    {
+      "path": "01_Guide/Positive_Percy_Stage1_Style_Guide.html",
+      "bytes": 20682
+    },
+    {
+      "path": "01_Guide/Positive_Percy_Stage1_Style_Guide.pdf",
+      "bytes": 46413
+    },
+    {
+      "path": "03_Icons/approved-assets.manifest.json",
+      "bytes": 25825
+    },
+    {
+      "path": "03_Icons/collect_icons_from_repo.py",
+      "bytes": 1500
+    },
+    {
+      "path": "03_Icons/selected-context-icons.csv",
+      "bytes": 13752
+    },
+    {
+      "path": "03_Icons/parent-picker-approved-71.csv",
+      "bytes": 9621
+    },
+    {
+      "path": "04_Illustrations/TREASURE_MAP_AND_ILLUSTRATIONS.md",
+      "bytes": 1072
+    },
+    {
+      "path": "05_Logos/LOGO_SET_EXPORT_SPEC.md",
+      "bytes": 2459
+    },
+    {
+      "path": "06_Fonts/TYPOGRAPHY.md",
+      "bytes": 1827
+    },
+    {
+      "path": "02_Tokens/percy-tokens.js",
+      "bytes": 934
+    },
+    {
+      "path": "02_Tokens/design-tokens.json",
+      "bytes": 1108
+    },
+    {
+      "path": "02_Tokens/percy-tokens.css",
+      "bytes": 2704
+    },
+    {
+      "path": "07_Engineering/RELEASE_READINESS_AND_INTEGRATION.md",
+      "bytes": 2502
+    }
+  ]
+}

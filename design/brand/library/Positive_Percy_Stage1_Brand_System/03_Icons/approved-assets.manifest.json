@@ -1,0 +1,535 @@
+{
+  "name": "Positive Percy Stage 1 Brand System",
+  "version": "1.0-design-approved",
+  "date": "2026-11-14",
+  "approval_boundary": "Design selections only. Not a production-ready brand asset release.",
+  "colors": {
+    "percy-purple": "#4B1D8C",
+    "percy-orange": "#FF6A00",
+    "sunshine": "#FFC938",
+    "warm-cream": "#FFF6E8",
+    "ink": "#271737",
+    "fine-lilac": "#E5DCEA",
+    "white": "#FFFFFF"
+  },
+  "typography": {
+    "headings": {
+      "family": "Nunito",
+      "weights": [
+        700,
+        800
+      ]
+    },
+    "body": {
+      "family": "Poppins",
+      "weights": [
+        400,
+        500,
+        600
+      ]
+    },
+    "license": "SIL Open Font License; official source links in typography guide; no font binaries included"
+  },
+  "mappings": {
+    "Navigation": {
+      "Home": {
+        "asset_id": "phosphor:house-line:duotone",
+        "repo_file": "design/assets/phosphor/duotone/house-line.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/house-line.svg"
+      },
+      "Progress": {
+        "asset_id": "phosphor:users:duotone",
+        "repo_file": "design/assets/phosphor/duotone/users.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/users.svg"
+      },
+      "Activity": {
+        "asset_id": "phosphor:chart-line-up:duotone",
+        "repo_file": "design/assets/phosphor/duotone/chart-line-up.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/chart-line-up.svg"
+      },
+      "Rewards": {
+        "asset_id": "phosphor:gift:duotone",
+        "repo_file": "design/assets/phosphor/duotone/gift.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/gift.svg"
+      },
+      "Settings": {
+        "asset_id": "phosphor:gear:duotone",
+        "repo_file": "design/assets/phosphor/duotone/gear.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/gear.svg"
+      }
+    },
+    "Controls": {
+      "Complete": {
+        "asset_id": "phosphor:check-circle:duotone",
+        "repo_file": "design/assets/phosphor/duotone/check-circle.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/check-circle.svg"
+      },
+      "Goals": {
+        "asset_id": "phosphor:target:duotone",
+        "repo_file": "design/assets/phosphor/duotone/target.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/target.svg"
+      },
+      "Add": {
+        "asset_id": "phosphor:plus-circle:duotone",
+        "repo_file": "design/assets/phosphor/duotone/plus-circle.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/plus-circle.svg"
+      },
+      "Edit": {
+        "asset_id": "phosphor:pencil:duotone",
+        "repo_file": "design/assets/phosphor/duotone/pencil.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/pencil.svg"
+      },
+      "Schedule": {
+        "asset_id": "phosphor:calendar-dots:duotone",
+        "repo_file": "design/assets/phosphor/duotone/calendar-dots.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/calendar-dots.svg"
+      },
+      "Pause": {
+        "asset_id": "phosphor:pause-circle:duotone",
+        "repo_file": "design/assets/phosphor/duotone/pause-circle.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/pause-circle.svg"
+      },
+      "Undo": {
+        "asset_id": "phosphor:arrow-counter-clockwise:duotone",
+        "repo_file": "design/assets/phosphor/duotone/arrow-counter-clockwise.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/arrow-counter-clockwise.svg"
+      },
+      "Archive": {
+        "asset_id": "phosphor:archive:duotone",
+        "repo_file": "design/assets/phosphor/duotone/archive.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/archive.svg"
+      },
+      "Help": {
+        "asset_id": "phosphor:info:duotone",
+        "repo_file": "design/assets/phosphor/duotone/info.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/info.svg"
+      },
+      "Child switch": {
+        "asset_id": "phosphor:user-switch:duotone",
+        "repo_file": "design/assets/phosphor/duotone/user-switch.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/user-switch.svg"
+      }
+    },
+    "Behaviours": {
+      "Kindness": {
+        "asset_id": "phosphor:hand-heart:duotone",
+        "repo_file": "design/assets/phosphor/duotone/hand-heart.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/hand-heart.svg"
+      },
+      "Learning": {
+        "asset_id": "phosphor:brain:duotone",
+        "repo_file": "design/assets/phosphor/duotone/brain.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/brain.svg"
+      },
+      "Helping": {
+        "asset_id": "phosphor:handshake:duotone",
+        "repo_file": "design/assets/phosphor/duotone/handshake.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/handshake.svg"
+      },
+      "Chores": {
+        "asset_id": "phosphor:broom:duotone",
+        "repo_file": "design/assets/phosphor/duotone/broom.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/broom.svg"
+      },
+      "Movement": {
+        "asset_id": "phosphor:bicycle:duotone",
+        "repo_file": "design/assets/phosphor/duotone/bicycle.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/bicycle.svg"
+      },
+      "Reading": {
+        "asset_id": "phosphor:book-open-text:duotone",
+        "repo_file": "design/assets/phosphor/duotone/book-open-text.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/book-open-text.svg"
+      },
+      "Routines": {
+        "asset_id": "phosphor:list-checks:duotone",
+        "repo_file": "design/assets/phosphor/duotone/list-checks.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/list-checks.svg"
+      },
+      "Self-care": {
+        "asset_id": "phosphor:bathtub:duotone",
+        "repo_file": "design/assets/phosphor/duotone/bathtub.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/bathtub.svg"
+      },
+      "Community": {
+        "asset_id": "phosphor:hands-clapping:duotone",
+        "repo_file": "design/assets/phosphor/duotone/hands-clapping.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/hands-clapping.svg"
+      },
+      "Creativity": {
+        "asset_id": "phosphor:paint-brush:duotone",
+        "repo_file": "design/assets/phosphor/duotone/paint-brush.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/paint-brush.svg"
+      },
+      "Sleep": {
+        "asset_id": "phosphor:bed:duotone",
+        "repo_file": "design/assets/phosphor/duotone/bed.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/bed.svg"
+      }
+    },
+    "Reward examples": {
+      "Gaming time": {
+        "asset_id": "streamline:plump:duo:computer-devices:controller-1",
+        "repo_file": "design/assets/streamline/plump/duo/computer-devices/controller-1.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/plump/duo/computer-devices/controller-1.svg"
+      },
+      "Movie night": {
+        "asset_id": "streamline:plump:duo:images-photography:film-slate",
+        "repo_file": "design/assets/streamline/plump/duo/images-photography/film-slate.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/plump/duo/images-photography/film-slate.svg"
+      },
+      "Ice cream treat": {
+        "asset_id": "streamline:plump:duo:food-drink:ice-cream-2",
+        "repo_file": "design/assets/streamline/plump/duo/food-drink/ice-cream-2.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/plump/duo/food-drink/ice-cream-2.svg"
+      },
+      "New book": {
+        "asset_id": "phosphor:book-bookmark:duotone",
+        "repo_file": "design/assets/phosphor/duotone/book-bookmark.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/book-bookmark.svg"
+      },
+      "Bike ride": {
+        "asset_id": "streamline:plump:duo:map-travel:bicycle-bike",
+        "repo_file": "design/assets/streamline/plump/duo/map-travel/bicycle-bike.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/plump/duo/map-travel/bicycle-bike.svg"
+      },
+      "Gift": {
+        "asset_id": "streamline:plump:duo:interface-essential:give-gift",
+        "repo_file": "design/assets/streamline/plump/duo/interface-essential/give-gift.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/plump/duo/interface-essential/give-gift.svg"
+      },
+      "Day out": {
+        "asset_id": "streamline:plump:duo:culture:ticket-1",
+        "repo_file": "design/assets/streamline/plump/duo/culture/ticket-1.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/plump/duo/culture/ticket-1.svg"
+      },
+      "Cake treat": {
+        "asset_id": "streamline:plump:duo:food-drink:cake-slice",
+        "repo_file": "design/assets/streamline/plump/duo/food-drink/cake-slice.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/plump/duo/food-drink/cake-slice.svg"
+      },
+      "Art activity": {
+        "asset_id": "streamline:plump:duo:interface-essential:paintbrush-2",
+        "repo_file": "design/assets/streamline/plump/duo/interface-essential/paintbrush-2.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/plump/duo/interface-essential/paintbrush-2.svg"
+      },
+      "Photo adventure": {
+        "asset_id": "streamline:plump:duo:images-photography:camera-1",
+        "repo_file": "design/assets/streamline/plump/duo/images-photography/camera-1.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/plump/duo/images-photography/camera-1.svg"
+      },
+      "Music time": {
+        "asset_id": "streamline:plump:duo:entertainment:music-note-2",
+        "repo_file": "design/assets/streamline/plump/duo/entertainment/music-note-2.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/plump/duo/entertainment/music-note-2.svg"
+      },
+      "Family outing": {
+        "asset_id": "streamline:plump:duo:map-travel:beach",
+        "repo_file": "design/assets/streamline/plump/duo/map-travel/beach.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/plump/duo/map-travel/beach.svg"
+      }
+    }
+  },
+  "picker": {
+    "categories": {
+      "Fun & games": {
+        "color_token": "percy-orange",
+        "color": "#FF6A00",
+        "icons": [
+          "phosphor:game-controller:duotone",
+          "phosphor:dice-five:duotone",
+          "phosphor:balloon:duotone",
+          "phosphor:basketball:duotone",
+          "phosphor:football:duotone",
+          "phosphor:bowling-ball:duotone",
+          "phosphor:puzzle-piece:duotone"
+        ]
+      },
+      "Treats & food": {
+        "color_token": "percy-orange",
+        "color": "#FF6A00",
+        "icons": [
+          "phosphor:ice-cream:duotone",
+          "phosphor:cake:duotone",
+          "phosphor:cookie:duotone",
+          "phosphor:popcorn:duotone",
+          "phosphor:pizza:duotone",
+          "phosphor:hamburger:duotone"
+        ]
+      },
+      "Outings": {
+        "color_token": "sunshine",
+        "color": "#FFC938",
+        "icons": [
+          "phosphor:mountains:duotone",
+          "phosphor:car:duotone",
+          "phosphor:airplane:duotone",
+          "phosphor:tent:duotone",
+          "phosphor:train:duotone",
+          "phosphor:bus:duotone",
+          "phosphor:bicycle:duotone",
+          "phosphor:ticket:duotone",
+          "phosphor:sun:duotone",
+          "phosphor:fire:duotone"
+        ]
+      },
+      "Learning & growth": {
+        "color_token": "percy-purple",
+        "color": "#4B1D8C",
+        "icons": [
+          "phosphor:music-notes:duotone",
+          "phosphor:lightbulb:duotone",
+          "phosphor:palette:duotone",
+          "phosphor:paint-brush:duotone",
+          "phosphor:notebook:duotone",
+          "phosphor:graduation-cap:duotone",
+          "phosphor:pencil:duotone",
+          "phosphor:books:duotone",
+          "phosphor:guitar:duotone",
+          "phosphor:microscope:duotone"
+        ]
+      },
+      "Family & kindness": {
+        "color_token": "percy-purple",
+        "color": "#4B1D8C",
+        "icons": [
+          "phosphor:smiley:duotone",
+          "phosphor:hands-clapping:duotone",
+          "phosphor:handshake:duotone",
+          "phosphor:medal:duotone",
+          "phosphor:hand-heart:duotone",
+          "phosphor:gift:duotone"
+        ]
+      },
+      "Creative time": {
+        "color_token": "sunshine",
+        "color": "#FFC938",
+        "icons": [
+          "phosphor:paint-brush:duotone",
+          "phosphor:piano-keys:duotone",
+          "phosphor:film-slate:duotone",
+          "phosphor:music-notes:duotone",
+          "phosphor:scissors:duotone",
+          "phosphor:microphone:duotone",
+          "phosphor:pen:duotone"
+        ]
+      },
+      "Tech & media": {
+        "color_token": "percy-purple",
+        "color": "#4B1D8C",
+        "icons": [
+          "phosphor:game-controller:duotone",
+          "phosphor:watch:duotone",
+          "phosphor:television:duotone",
+          "phosphor:device-mobile:duotone"
+        ]
+      },
+      "Things & pocket money": {
+        "color_token": "percy-orange",
+        "color": "#FF6A00",
+        "icons": [
+          "phosphor:backpack:duotone",
+          "phosphor:t-shirt:duotone",
+          "phosphor:piggy-bank:duotone",
+          "phosphor:money:duotone",
+          "phosphor:ticket:duotone"
+        ]
+      },
+      "Nature & outdoors": {
+        "color_token": "sunshine",
+        "color": "#FFC938",
+        "icons": [
+          "phosphor:tree:duotone",
+          "phosphor:sun:duotone",
+          "phosphor:moon-stars:duotone",
+          "phosphor:paw-print:duotone",
+          "phosphor:butterfly:duotone",
+          "phosphor:fish:duotone",
+          "phosphor:mountains:duotone"
+        ]
+      },
+      "Sports & movement": {
+        "color_token": "percy-orange",
+        "color": "#FF6A00",
+        "icons": [
+          "phosphor:basketball:duotone",
+          "phosphor:football:duotone",
+          "phosphor:soccer-ball:duotone",
+          "phosphor:bicycle:duotone",
+          "phosphor:tennis-ball:duotone",
+          "phosphor:person-simple-run:duotone",
+          "phosphor:ping-pong:duotone",
+          "phosphor:swimming-pool:duotone"
+        ]
+      },
+      "Celebrations": {
+        "color_token": "sunshine",
+        "color": "#FFC938",
+        "icons": [
+          "phosphor:confetti:duotone",
+          "phosphor:sparkle:duotone",
+          "phosphor:crown:duotone",
+          "phosphor:medal:duotone",
+          "phosphor:trophy:duotone",
+          "phosphor:cake:duotone",
+          "phosphor:smiley-wink:duotone"
+        ]
+      },
+      "Animals & pets": {
+        "color_token": "percy-purple",
+        "color": "#4B1D8C",
+        "icons": [
+          "phosphor:cat:duotone",
+          "phosphor:dog:duotone",
+          "phosphor:fish:duotone",
+          "phosphor:butterfly:duotone",
+          "phosphor:rabbit:duotone",
+          "phosphor:bug:duotone",
+          "phosphor:cow:duotone"
+        ]
+      }
+    },
+    "total_icon_placements": 84,
+    "distinct_icon_count": 71,
+    "future_assets_approved": 0,
+    "discovery": "Categories plus name/synonym search, deduplicated by exact asset ID",
+    "breakpoints": {
+      "container_lt_520_px": 3,
+      "container_520_through_759_px": 5,
+      "container_ge_760_px": 6
+    },
+    "image_uploads_at_launch": false,
+    "legacy_reward_migration": "Preserve existing; optional edit only",
+    "licensing_policy": "Phosphor-only picker is recommended, not additional owner approval"
+  },
+  "todays_goals": {
+    "category_icon": "Retain on completion",
+    "completed_label": "Done",
+    "recurring": "Repeat icon plus real schedule, no missed-day penalty",
+    "header": "Small sparkle accent",
+    "tap_target_css_px": 44,
+    "glyph_size_css_px": 24,
+    "svg": {
+      "recurring": {
+        "asset_id": "phosphor:repeat:duotone",
+        "repo_file": "design/assets/phosphor/duotone/repeat.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/repeat.svg"
+      },
+      "header": {
+        "asset_id": "phosphor:sparkle:duotone",
+        "repo_file": "design/assets/phosphor/duotone/sparkle.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/sparkle.svg"
+      },
+      "done": {
+        "asset_id": "phosphor:check-circle:duotone",
+        "repo_file": "design/assets/phosphor/duotone/check-circle.svg",
+        "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/phosphor/duotone/check-circle.svg"
+      }
+    }
+  },
+  "illustrations": {
+    "Home welcome": {
+      "asset_id": "streamline:stickies:colors:school-science:star",
+      "repo_file": "design/assets/streamline/stickies/colors/school-science/star.svg",
+      "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/stickies/colors/school-science/star.svg",
+      "release_hold": false
+    },
+    "Progress milestone": {
+      "asset_id": "streamline:stickies:colors:travel-rating:reward",
+      "repo_file": "design/assets/streamline/stickies/colors/travel-rating/reward.svg",
+      "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/stickies/colors/travel-rating/reward.svg",
+      "release_hold": false
+    },
+    "Reward redeemed": {
+      "asset_id": "streamline:kameleon:pop:entertainment:party-poppers",
+      "repo_file": "design/assets/streamline/kameleon/pop/entertainment/party-poppers.svg",
+      "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/kameleon/pop/entertainment/party-poppers.svg",
+      "release_hold": false
+    },
+    "First-run onboarding": {
+      "asset_id": "streamline:kameleon:pop:school-science:robot",
+      "repo_file": "design/assets/streamline/kameleon/pop/school-science/robot.svg",
+      "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/kameleon/pop/school-science/robot.svg",
+      "release_hold": false
+    },
+    "Reward creation form": {
+      "asset_id": "streamline:stickies:colors:shopping-shipping:gift-reciept",
+      "repo_file": "design/assets/streamline/stickies/colors/shopping-shipping/gift-reciept.svg",
+      "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/stickies/colors/shopping-shipping/gift-reciept.svg",
+      "release_hold": false
+    },
+    "Goals empty state": {
+      "asset_id": "freepik:icon:treasure-map:3570506",
+      "repo_file": null,
+      "source_link": "https://www.freepik.com/icon/treasure-map_3570506",
+      "release_hold": true
+    },
+    "small decorative sticker": {
+      "asset_id": "streamline:stickies:colors:school-science:star",
+      "repo_file": "design/assets/streamline/stickies/colors/school-science/star.svg",
+      "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/stickies/colors/school-science/star.svg",
+      "release_hold": false
+    },
+    "celebration burst": {
+      "asset_id": "streamline:kameleon:pop:entertainment:party-poppers",
+      "repo_file": "design/assets/streamline/kameleon/pop/entertainment/party-poppers.svg",
+      "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/kameleon/pop/entertainment/party-poppers.svg",
+      "release_hold": false
+    },
+    "positive progress badge": {
+      "asset_id": "streamline:stickies:colors:travel-rating:medal",
+      "repo_file": "design/assets/streamline/stickies/colors/travel-rating/medal.svg",
+      "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/stickies/colors/travel-rating/medal.svg",
+      "release_hold": false
+    },
+    "learning spot art": {
+      "asset_id": "streamline:kameleon:pop:school-science:chalkboard",
+      "repo_file": "design/assets/streamline/kameleon/pop/school-science/chalkboard.svg",
+      "source_link": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/assets/streamline/kameleon/pop/school-science/chalkboard.svg",
+      "release_hold": false
+    }
+  },
+  "logo": {
+    "approved_direction": "Fox 1A slender seated fox with one yellow star and custom purple wordmark",
+    "verified_master": "NOT FOUND: real outlined vector and wordmark still required",
+    "legacy_logo_mark": "Do not treat public/logo-mark.png as new Fox 1A master",
+    "deliverable": "logo export specification and production checklist only"
+  },
+  "points_star": {
+    "rule": "Dedicated Positive Percy points currency star; must be distinct from decorative star",
+    "verified_master": "NOT FOUND",
+    "existing_code": "src/components/brand/PointsStar.jsx renders legacy lucide Star"
+  },
+  "freepik_map": {
+    "asset_id": "3570506",
+    "file_name": "treasure-map_3570506.png",
+    "location": "Project Library /Postive Percy/treasure-map_3570506.png",
+    "visual_identity": "Orange and yellow map, white dotted path, red X, purple circular backdrop",
+    "exact_file_readable_in_project": true,
+    "raw_file_access_for_export": false,
+    "license_specific_terms": "not documented in project"
+  },
+  "licenses": {
+    "phosphor": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+    "streamline": "https://creativecommons.org/licenses/by/4.0/",
+    "freepik": "Asset-specific evidence pending"
+  },
+  "repository": {
+    "url": "https://github.com/soulglo82/positive_percy",
+    "review_branch": "design/percy-stage1-interactive-preview",
+    "register": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/stage1/APPROVAL_REGISTER.json",
+    "worksheet": "https://github.com/soulglo82/positive_percy/blob/design/percy-stage1-interactive-preview/design/stage1/06_APPROVAL_WORKSHEET.md"
+  },
+  "release_gates": [
+    "Fox 1A master and wordmark",
+    "Dedicated points-star master",
+    "Freepik exact-asset licence",
+    "MIT/CC BY notices",
+    "Nu​nito/Poppins self-hosted fonts and OFL notices",
+    "React previews at 390/834/1280 px",
+    "Responsive/contrast/a11y QA",
+    "No destructive reward migrations",
+    "Backend permissions, goals, and shared-carer tests",
+    "Owner visual approval and deliberate merge/deploy"
+  ]
+}

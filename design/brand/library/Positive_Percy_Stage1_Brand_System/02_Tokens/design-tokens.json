@@ -1,0 +1,49 @@
+{
+  "colors": {
+    "percy-purple": "#4B1D8C",
+    "percy-orange": "#FF6A00",
+    "sunshine": "#FFC938",
+    "warm-cream": "#FFF6E8",
+    "ink": "#271737",
+    "fine-lilac": "#E5DCEA",
+    "white": "#FFFFFF"
+  },
+  "categoryAccents": {
+    "Fun & games": "percy-orange",
+    "Treats & food": "percy-orange",
+    "Outings": "sunshine",
+    "Learning & growth": "percy-purple",
+    "Family & kindness": "percy-purple",
+    "Creative time": "sunshine",
+    "Tech & media": "percy-purple",
+    "Things & pocket money": "percy-orange",
+    "Nature & outdoors": "sunshine",
+    "Sports & movement": "percy-orange",
+    "Celebrations": "sunshine",
+    "Animals & pets": "percy-purple"
+  },
+  "breakpoints": {
+    "pickerContainer": [
+      520,
+      760
+    ]
+  },
+  "typography": {
+    "headings": {
+      "family": "Nunito",
+      "weights": [
+        700,
+        800
+      ]
+    },
+    "body": {
+      "family": "Poppins",
+      "weights": [
+        400,
+        500,
+        600
+      ]
+    },
+    "license": "SIL Open Font License; official source links in typography guide; no font binaries included"
+  }
+}
