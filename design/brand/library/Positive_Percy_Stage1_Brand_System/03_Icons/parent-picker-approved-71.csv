@@ -1,0 +1,85 @@
+category,accent_name,accent_hex,icon,asset_id,svg_file
+Fun & games,percy-orange,#FF6A00,game-controller,phosphor:game-controller:duotone,design/assets/phosphor/duotone/game-controller.svg
+Fun & games,percy-orange,#FF6A00,dice-five,phosphor:dice-five:duotone,design/assets/phosphor/duotone/dice-five.svg
+Fun & games,percy-orange,#FF6A00,balloon,phosphor:balloon:duotone,design/assets/phosphor/duotone/balloon.svg
+Fun & games,percy-orange,#FF6A00,basketball,phosphor:basketball:duotone,design/assets/phosphor/duotone/basketball.svg
+Fun & games,percy-orange,#FF6A00,football,phosphor:football:duotone,design/assets/phosphor/duotone/football.svg
+Fun & games,percy-orange,#FF6A00,bowling-ball,phosphor:bowling-ball:duotone,design/assets/phosphor/duotone/bowling-ball.svg
+Fun & games,percy-orange,#FF6A00,puzzle-piece,phosphor:puzzle-piece:duotone,design/assets/phosphor/duotone/puzzle-piece.svg
+Treats & food,percy-orange,#FF6A00,ice-cream,phosphor:ice-cream:duotone,design/assets/phosphor/duotone/ice-cream.svg
+Treats & food,percy-orange,#FF6A00,cake,phosphor:cake:duotone,design/assets/phosphor/duotone/cake.svg
+Treats & food,percy-orange,#FF6A00,cookie,phosphor:cookie:duotone,design/assets/phosphor/duotone/cookie.svg
+Treats & food,percy-orange,#FF6A00,popcorn,phosphor:popcorn:duotone,design/assets/phosphor/duotone/popcorn.svg
+Treats & food,percy-orange,#FF6A00,pizza,phosphor:pizza:duotone,design/assets/phosphor/duotone/pizza.svg
+Treats & food,percy-orange,#FF6A00,hamburger,phosphor:hamburger:duotone,design/assets/phosphor/duotone/hamburger.svg
+Outings,sunshine,#FFC938,mountains,phosphor:mountains:duotone,design/assets/phosphor/duotone/mountains.svg
+Outings,sunshine,#FFC938,car,phosphor:car:duotone,design/assets/phosphor/duotone/car.svg
+Outings,sunshine,#FFC938,airplane,phosphor:airplane:duotone,design/assets/phosphor/duotone/airplane.svg
+Outings,sunshine,#FFC938,tent,phosphor:tent:duotone,design/assets/phosphor/duotone/tent.svg
+Outings,sunshine,#FFC938,train,phosphor:train:duotone,design/assets/phosphor/duotone/train.svg
+Outings,sunshine,#FFC938,bus,phosphor:bus:duotone,design/assets/phosphor/duotone/bus.svg
+Outings,sunshine,#FFC938,bicycle,phosphor:bicycle:duotone,design/assets/phosphor/duotone/bicycle.svg
+Outings,sunshine,#FFC938,ticket,phosphor:ticket:duotone,design/assets/phosphor/duotone/ticket.svg
+Outings,sunshine,#FFC938,sun,phosphor:sun:duotone,design/assets/phosphor/duotone/sun.svg
+Outings,sunshine,#FFC938,fire,phosphor:fire:duotone,design/assets/phosphor/duotone/fire.svg
+Learning & growth,percy-purple,#4B1D8C,music-notes,phosphor:music-notes:duotone,design/assets/phosphor/duotone/music-notes.svg
+Learning & growth,percy-purple,#4B1D8C,lightbulb,phosphor:lightbulb:duotone,design/assets/phosphor/duotone/lightbulb.svg
+Learning & growth,percy-purple,#4B1D8C,palette,phosphor:palette:duotone,design/assets/phosphor/duotone/palette.svg
+Learning & growth,percy-purple,#4B1D8C,paint-brush,phosphor:paint-brush:duotone,design/assets/phosphor/duotone/paint-brush.svg
+Learning & growth,percy-purple,#4B1D8C,notebook,phosphor:notebook:duotone,design/assets/phosphor/duotone/notebook.svg
+Learning & growth,percy-purple,#4B1D8C,graduation-cap,phosphor:graduation-cap:duotone,design/assets/phosphor/duotone/graduation-cap.svg
+Learning & growth,percy-purple,#4B1D8C,pencil,phosphor:pencil:duotone,design/assets/phosphor/duotone/pencil.svg
+Learning & growth,percy-purple,#4B1D8C,books,phosphor:books:duotone,design/assets/phosphor/duotone/books.svg
+Learning & growth,percy-purple,#4B1D8C,guitar,phosphor:guitar:duotone,design/assets/phosphor/duotone/guitar.svg
+Learning & growth,percy-purple,#4B1D8C,microscope,phosphor:microscope:duotone,design/assets/phosphor/duotone/microscope.svg
+Family & kindness,percy-purple,#4B1D8C,smiley,phosphor:smiley:duotone,design/assets/phosphor/duotone/smiley.svg
+Family & kindness,percy-purple,#4B1D8C,hands-clapping,phosphor:hands-clapping:duotone,design/assets/phosphor/duotone/hands-clapping.svg
+Family & kindness,percy-purple,#4B1D8C,handshake,phosphor:handshake:duotone,design/assets/phosphor/duotone/handshake.svg
+Family & kindness,percy-purple,#4B1D8C,medal,phosphor:medal:duotone,design/assets/phosphor/duotone/medal.svg
+Family & kindness,percy-purple,#4B1D8C,hand-heart,phosphor:hand-heart:duotone,design/assets/phosphor/duotone/hand-heart.svg
+Family & kindness,percy-purple,#4B1D8C,gift,phosphor:gift:duotone,design/assets/phosphor/duotone/gift.svg
+Creative time,sunshine,#FFC938,paint-brush,phosphor:paint-brush:duotone,design/assets/phosphor/duotone/paint-brush.svg
+Creative time,sunshine,#FFC938,piano-keys,phosphor:piano-keys:duotone,design/assets/phosphor/duotone/piano-keys.svg
+Creative time,sunshine,#FFC938,film-slate,phosphor:film-slate:duotone,design/assets/phosphor/duotone/film-slate.svg
+Creative time,sunshine,#FFC938,music-notes,phosphor:music-notes:duotone,design/assets/phosphor/duotone/music-notes.svg
+Creative time,sunshine,#FFC938,scissors,phosphor:scissors:duotone,design/assets/phosphor/duotone/scissors.svg
+Creative time,sunshine,#FFC938,microphone,phosphor:microphone:duotone,design/assets/phosphor/duotone/microphone.svg
+Creative time,sunshine,#FFC938,pen,phosphor:pen:duotone,design/assets/phosphor/duotone/pen.svg
+Tech & media,percy-purple,#4B1D8C,game-controller,phosphor:game-controller:duotone,design/assets/phosphor/duotone/game-controller.svg
+Tech & media,percy-purple,#4B1D8C,watch,phosphor:watch:duotone,design/assets/phosphor/duotone/watch.svg
+Tech & media,percy-purple,#4B1D8C,television,phosphor:television:duotone,design/assets/phosphor/duotone/television.svg
+Tech & media,percy-purple,#4B1D8C,device-mobile,phosphor:device-mobile:duotone,design/assets/phosphor/duotone/device-mobile.svg
+Things & pocket money,percy-orange,#FF6A00,backpack,phosphor:backpack:duotone,design/assets/phosphor/duotone/backpack.svg
+Things & pocket money,percy-orange,#FF6A00,t-shirt,phosphor:t-shirt:duotone,design/assets/phosphor/duotone/t-shirt.svg
+Things & pocket money,percy-orange,#FF6A00,piggy-bank,phosphor:piggy-bank:duotone,design/assets/phosphor/duotone/piggy-bank.svg
+Things & pocket money,percy-orange,#FF6A00,money,phosphor:money:duotone,design/assets/phosphor/duotone/money.svg
+Things & pocket money,percy-orange,#FF6A00,ticket,phosphor:ticket:duotone,design/assets/phosphor/duotone/ticket.svg
+Nature & outdoors,sunshine,#FFC938,tree,phosphor:tree:duotone,design/assets/phosphor/duotone/tree.svg
+Nature & outdoors,sunshine,#FFC938,sun,phosphor:sun:duotone,design/assets/phosphor/duotone/sun.svg
+Nature & outdoors,sunshine,#FFC938,moon-stars,phosphor:moon-stars:duotone,design/assets/phosphor/duotone/moon-stars.svg
+Nature & outdoors,sunshine,#FFC938,paw-print,phosphor:paw-print:duotone,design/assets/phosphor/duotone/paw-print.svg
+Nature & outdoors,sunshine,#FFC938,butterfly,phosphor:butterfly:duotone,design/assets/phosphor/duotone/butterfly.svg
+Nature & outdoors,sunshine,#FFC938,fish,phosphor:fish:duotone,design/assets/phosphor/duotone/fish.svg
+Nature & outdoors,sunshine,#FFC938,mountains,phosphor:mountains:duotone,design/assets/phosphor/duotone/mountains.svg
+Sports & movement,percy-orange,#FF6A00,basketball,phosphor:basketball:duotone,design/assets/phosphor/duotone/basketball.svg
+Sports & movement,percy-orange,#FF6A00,football,phosphor:football:duotone,design/assets/phosphor/duotone/football.svg
+Sports & movement,percy-orange,#FF6A00,soccer-ball,phosphor:soccer-ball:duotone,design/assets/phosphor/duotone/soccer-ball.svg
+Sports & movement,percy-orange,#FF6A00,bicycle,phosphor:bicycle:duotone,design/assets/phosphor/duotone/bicycle.svg
+Sports & movement,percy-orange,#FF6A00,tennis-ball,phosphor:tennis-ball:duotone,design/assets/phosphor/duotone/tennis-ball.svg
+Sports & movement,percy-orange,#FF6A00,person-simple-run,phosphor:person-simple-run:duotone,design/assets/phosphor/duotone/person-simple-run.svg
+Sports & movement,percy-orange,#FF6A00,ping-pong,phosphor:ping-pong:duotone,design/assets/phosphor/duotone/ping-pong.svg
+Sports & movement,percy-orange,#FF6A00,swimming-pool,phosphor:swimming-pool:duotone,design/assets/phosphor/duotone/swimming-pool.svg
+Celebrations,sunshine,#FFC938,confetti,phosphor:confetti:duotone,design/assets/phosphor/duotone/confetti.svg
+Celebrations,sunshine,#FFC938,sparkle,phosphor:sparkle:duotone,design/assets/phosphor/duotone/sparkle.svg
+Celebrations,sunshine,#FFC938,crown,phosphor:crown:duotone,design/assets/phosphor/duotone/crown.svg
+Celebrations,sunshine,#FFC938,medal,phosphor:medal:duotone,design/assets/phosphor/duotone/medal.svg
+Celebrations,sunshine,#FFC938,trophy,phosphor:trophy:duotone,design/assets/phosphor/duotone/trophy.svg
+Celebrations,sunshine,#FFC938,cake,phosphor:cake:duotone,design/assets/phosphor/duotone/cake.svg
+Celebrations,sunshine,#FFC938,smiley-wink,phosphor:smiley-wink:duotone,design/assets/phosphor/duotone/smiley-wink.svg
+Animals & pets,percy-purple,#4B1D8C,cat,phosphor:cat:duotone,design/assets/phosphor/duotone/cat.svg
+Animals & pets,percy-purple,#4B1D8C,dog,phosphor:dog:duotone,design/assets/phosphor/duotone/dog.svg
+Animals & pets,percy-purple,#4B1D8C,fish,phosphor:fish:duotone,design/assets/phosphor/duotone/fish.svg
+Animals & pets,percy-purple,#4B1D8C,butterfly,phosphor:butterfly:duotone,design/assets/phosphor/duotone/butterfly.svg
+Animals & pets,percy-purple,#4B1D8C,rabbit,phosphor:rabbit:duotone,design/assets/phosphor/duotone/rabbit.svg
+Animals & pets,percy-purple,#4B1D8C,bug,phosphor:bug:duotone,design/assets/phosphor/duotone/bug.svg
+Animals & pets,percy-purple,#4B1D8C,cow,phosphor:cow:duotone,design/assets/phosphor/duotone/cow.svg

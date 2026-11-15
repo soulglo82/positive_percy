@@ -1,0 +1,43 @@
+name: Materialize approved Positive Percy brand assets
+
+on:
+  push:
+    branches:
+      - handover/percy-v2-engineering-assets-2026-11-15
+    paths:
+      - .github/workflows/percy-materialize-brand.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  commit-extracted-assets:
+    if: github.ref_name == 'handover/percy-v2-engineering-assets-2026-11-15'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout isolated engineering handover branch
+        uses: actions/checkout@v4
+        with:
+          ref: handover/percy-v2-engineering-assets-2026-11-15
+          persist-credentials: true
+
+      - name: Verify archive SHA256 and unpack all 150 source/derived assets
+        run: python3 scripts/brand/unpack-stage1-brand-pack.py
+
+      - name: Commit the actual individual asset files, never deploy
+        run: |
+          set -euo pipefail
+          rm -f design/brand/library/Positive_Percy_Stage1_Brand_Pack.zip
+          git add -- design/brand/library/Positive_Percy_Stage1_Brand_System
+          if git diff --cached --quiet; then
+            echo "All extracted assets are already committed."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "assets(brand): expand exact Fox 1A and full Stage 1 kit (150 files)"
+          git push origin HEAD:handover/percy-v2-engineering-assets-2026-11-15
+
+      - name: Record handover scope
+        run: |
+          echo "No application merge, database migration, Railway deployment, or Framer publication was performed."

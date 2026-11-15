@@ -1,10 +1,13 @@
 # Positive Percy — Stage 1 final selected design system (14 November 2026)
 
+> **15 NOV 2026 ENGINEERING SOURCE UPDATE:** The original 150-file Stage 1 brand kit, including Fox 1A source-traced SVGs, the wordmark, app/web/marketing exports and exact Freepik map PNG, has now been committed as individual files under `design/brand/library/Positive_Percy_Stage1_Brand_System/` on this handover branch. Prior statements that these files were not located in GitHub describe the **earlier 14 November state** and are superseded. The traced Fox SVGs still require visual QA; the separate points-star master and Freepik asset-specific licence remain open. Follow `docs/engineering/PERCY_V2_IMPLEMENTATION_PLAN.md` for implementation and release gates.
+
+
 **Status: DAY 1 VISUAL SELECTIONS COMPLETE; NOT A PRODUCTION RELEASE.** This handover consolidates explicit owner approvals, not implied selections or unsourced substitutes. The [canonical approval register](APPROVAL_REGISTER.json) and [approval worksheet](06_APPROVAL_WORKSHEET.md) remain authoritative. All changes are limited to this isolated design branch.
 
 ## Brand identity across app, website and documents
 - Approved direction: Fox **1A** — sleek slender seated fox with one yellow star, alongside a custom purple outlined **Positive Percy** wordmark. No generic or previous fox logo substitution.
-- Exact master vector and wordmark: **not located in repository**; mandatory release input.
+- Fox 1A **source-traced SVG and outlined wordmark**: now present in the 15 Nov 2026 engineering handover asset library. This is a faithful board-derived trace, **not the original illustrator's vector control points**; actual app/rendered fidelity approval is still required.
 - Brand points currency: dedicated points-star master required. The existing `src/components/brand/PointsStar.jsx` is **legacy Lucide Star**, not the approved new brand master. The decorative Streamline star is not points currency.
 - Fonts: **Nunito 700/800 for headings**; **Poppins 400/500/600 for body and UI**. Self-host licensed font files and SIL OFL notices; current production Batch D Figtree/Fredoka is legacy.
 - Colors: purple `#4B1D8C`, orange `#FF6A00`, sunshine `#FFC938`, cream `#FFF6E8`, ink `#271737`, lilac `#E5DCEA`. White on vibrant orange and orange/yellow on cream are not guaranteed accessible for normal text; final actual contrast QA required.
@@ -106,14 +109,14 @@
 - elements: positive progress badge — `streamline:stickies:colors:travel-rating:medal`
 - elements: learning spot art — `streamline:kameleon:pop:school-science:chalkboard`
 
-**Freepik Bright Adventure Map #3570506:** approved for the Goals empty state. The actual matching 512×512 PNG is in the Positive Percy Project Library as `/Postive Percy/treasure-map_3570506.png`. It has not been checked into the repository, and the exact asset-specific licence/attribution document has not been stored. No replacement illustration is authorised.
+**Freepik Bright Adventure Map #3570506:** approved for the Goals empty state. The actual matching 512×512 PNG is in the Positive Percy Project Library as `/Postive Percy/treasure-map_3570506.png`. It is checked into the isolated engineering handover repository under `design/brand/library/Positive_Percy_Stage1_Brand_System/04_Illustrations/treasure-map_3570506.png`, but the exact asset-specific licence/attribution document has not been stored. No replacement illustration is authorised.
 
 ## Source, licenses and design release gates
 - Approved Phosphor icons: original staged SVGs pinned to `2b75f3ad12b420c9504ef05df8d2564a28f8500e`, MIT licence.
 - Approved Streamline visuals/reward examples: original selected staged SVGs pinned to `52d750c9ce051e51cb181b7a78932120c48541d0`; check relevant CC BY 4.0 attribution and selection/redistribution terms; selected source variants stay unchanged.
 - Freepik map: use the exact uploaded PNG, retain the relevant downloaded licence record when integrated.
 - Do **not** replace Fox 1A / points star with the legacy `public/logo-mark.png` or generic Lucide Star.
-- Before release: obtain true Fox 1A master and custom wordmark, dedicated points-star, integrate uploaded exact map and licence, self-host fonts, run true React previews at **390 / 834 / 1280px**. Test 1/2/3/6 children, long names, empty and many rewards, empty/completed goals, search/dedupe, keyboard/screen readers, contrast, legacy reward migration, role/permission enforcement, idempotent points ledger, family-local schedule/Undo and end-to-end tests.
+- Before release: visually validate the traced Fox 1A SVG/wordmark in React, obtain the dedicated points-star, clear exact-map licence, self-host fonts, run true React previews at **390 / 834 / 1280px**. Test 1/2/3/6 children, long names, empty and many rewards, empty/completed goals, search/dedupe, keyboard/screen readers, contrast, legacy reward migration, role/permission enforcement, idempotent points ledger, family-local schedule/Undo and end-to-end tests.
 - Independent code/privacy/security review plus explicit owner visual sign-off precedes any merge/deployment.
 
 **No production changes, merges or deployments are approved by this document.**
