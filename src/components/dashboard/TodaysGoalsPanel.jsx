@@ -72,7 +72,7 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
         <CardContent className="p-4 sm:p-5 space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 id="todays-goals-title" className="flex items-center gap-2 font-display font-semibold text-lg text-foreground">
+              <h2 id="todays-goals-title" className="flex items-center gap-2 font-display font-bold text-lg text-foreground">
                 <ClipboardCheck className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden="true" />
                 Today's goals
               </h2>

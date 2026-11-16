@@ -163,7 +163,7 @@ export default function Activity() {
     <div className="min-h-screen">
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
         <div>
-          <h1 className="font-display text-title font-semibold text-foreground flex items-center gap-3">
+          <h1 className="font-display text-title font-extrabold text-foreground flex items-center gap-3">
             <ActivityIcon className="w-6 h-6 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
             Activity
           </h1>

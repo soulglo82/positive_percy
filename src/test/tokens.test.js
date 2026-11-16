@@ -131,7 +131,10 @@ describe('contrast of declared pairs', () => {
     ['selected-border', ['card', 'selected']],
     ['warning-border', ['card', 'warning']],
     ['earn', ['muted']],
-    ['chart-1', ['card']], ['chart-2', ['card']], ['chart-4', ['card']], ['chart-5', ['card']],
+    ['chart-1', ['card']], ['chart-2', ['card']], ['chart-4', ['card']],
+    // E02: the points-star outline must show on white and on its own chip.
+    ['warning-border', ['star-soft']],
+    ['primary', ['selected']],
   ];
   for (const [fg, bgs] of graphics) {
     for (const bg of bgs) {
@@ -151,13 +154,17 @@ describe('contrast of declared pairs', () => {
     });
   }
   for (const [fg, bg] of [['earn', 'earn-soft'], ['foreground', 'earn-soft'], ['foreground', 'star-soft'], ['muted-foreground', 'star-soft'],
-    ['primary-foreground', 'primary'], ['primary-foreground', 'primary-hover'], ['foreground', 'selected'], ['primary-hover', 'selected']]) {
+    ['primary-foreground', 'primary'], ['primary-foreground', 'primary-hover'], ['foreground', 'selected'], ['primary-hover', 'selected'],
+    ['primary', 'selected'], ['muted-foreground', 'selected'], ['foreground', 'kid-4-soft']]) {
     it(`${fg} on ${bg} >= 4.5`, () => expect(ratio(fg, bg)).toBeGreaterThanOrEqual(4.5));
   }
-  it('the active nav label is not orange on the selected tint (4.24 fails)', () => {
-    expect(ratio('primary', 'selected')).toBeLessThan(4.5);
-    const layout = fs.readFileSync(path.join(ROOT, 'src/Layout.jsx'), 'utf8');
-    expect(layout).not.toMatch(/'bg-selected text-primary/);
+  // E02 replaces the Batch D guard (orange on its tint failed at 4.24). The
+  // active tab is now ink or purple on lilac; both are text-safe (pairs above).
+  // Selected must still be its own surface: not the muted fill (a hidden
+  // reward) and not the card (the avatar fallback would vanish).
+  it('selected is distinct from muted, card and accent', () => {
+    for (const other of ['muted', 'card', 'accent']) expect(TOKENS.selected, other).not.toBe(TOKENS[other]);
+    expect(ratio('selected', 'card')).toBeGreaterThan(1.2);
   });
 
   // Children must be told apart from each other and from the brand orange and
@@ -172,17 +179,44 @@ describe('contrast of declared pairs', () => {
   it('child colours differ from each other', () => {
     for (let i = 0; i < kids.length; i++) for (let j = i + 1; j < kids.length; j++) expect(dE(kids[i], kids[j]), `${kids[i]} vs ${kids[j]}`).toBeGreaterThan(20);
   });
-  it('child colours differ from the brand orange and the earned green', () => {
+  it('child colours differ from the brand purple and the earned green', () => {
     for (const k of kids) {
       expect(dE(k, 'primary'), `${k} vs primary`).toBeGreaterThan(35);
       expect(dE(k, 'earn'), `${k} vs earn`).toBeGreaterThan(35);
     }
   });
+  // E02 peer review: navy read as ink (19.5). A child band must not look like
+  // a text rule or divider, nor like the error red.
+  it('child colours differ from ink and from destructive', () => {
+    for (const k of kids) {
+      expect(dE(k, 'foreground'), `${k} vs foreground`).toBeGreaterThan(30);
+      expect(dE(k, 'destructive'), `${k} vs destructive`).toBeGreaterThan(20);
+    }
+  });
+  it('child colours have no text slot (identity is never text colour)', async () => {
+    const { CHILD_COLOURS } = await import('../lib/childColour.js');
+    for (const c of CHILD_COLOURS) expect(Object.keys(c).sort()).toEqual(['band', 'border', 'ring', 'soft']);
+  });
 
   it('star is decoration only: it never meets text contrast, so it must never be text', () => {
-    // Documented, not a pass: chart-3 and --star sit at about 2.2:1 on white.
+    // Documented, not a pass: sunshine --star sits at about 1.5:1 on white.
     // Every chart series carries a direct label, and points always show the number.
     expect(ratio('star', 'card')).toBeLessThan(3);
+  });
+});
+
+describe('Percy v2 brand values (E02)', () => {
+  // The six locked palette values (plan section 3) land on these tokens.
+  it.each([
+    ['primary', '#4b1d8c'], ['foreground', '#271737'], ['background', '#fff6e8'],
+    ['star', '#ffc938'], ['border', '#e5dcea'], ['selected', '#e5dcea'],
+  ])('%s is %s', (k, v) => expect(TOKENS[k]).toBe(v));
+  it('no token is the vivid orange (2.87:1 on white; logo artwork only)', () => {
+    expect(Object.values(TOKENS).map((v) => v.toLowerCase())).not.toContain('#ff6a00');
+    expect(ratio('#ff6a00', 'card')).toBeLessThan(3);
+  });
+  it('no retired Batch D brand value survives', () => {
+    for (const v of ['#c2410c', '#9a3412', '#1e3a5f', '#e8a317', '#fbf6ee', '#7d3c8f']) expect(Object.values(TOKENS)).not.toContain(v);
   });
 });
 

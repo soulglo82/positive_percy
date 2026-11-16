@@ -2,36 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Figtree, self-hosted (SIL OFL, see public/fonts/OFL-figtree.txt). Latin only. */
+/* Percy v2 type (E02): Nunito 700/800 headings, Poppins 400/500/600 body.
+   Self-hosted WOFF2 from @fontsource 5.3.0, SIL OFL 1.1 (public/fonts/OFL-*.txt;
+   provenance in design/brand/RUNTIME_ASSETS.json). Latin plus Latin Extended,
+   split by unicode-range so Latin-only pages fetch one file per weight.
+   No Nunito 600 or Poppins 700 ships: font-synthesis is off (html rule below),
+   so a missing weight falls to the nearest real face, never a faux bold. */
 @font-face {
-  font-family: 'Figtree';
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/nunito-latin-700-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/nunito-latin-ext-700-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/nunito-latin-800-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/nunito-latin-ext-800-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Poppins';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/figtree-400.woff2') format('woff2');
+  src: url('/fonts/poppins-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 @font-face {
-  font-family: 'Figtree';
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/poppins-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Poppins';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/fonts/figtree-500.woff2') format('woff2');
+  src: url('/fonts/poppins-latin-500-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 @font-face {
-  font-family: 'Figtree';
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/poppins-latin-ext-500-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Poppins';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/figtree-600.woff2') format('woff2');
+  src: url('/fonts/poppins-latin-600-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
-
-/* Fredoka 600 for titles and point totals (SIL OFL, see public/fonts/OFL-fredoka.txt). */
 @font-face {
-  font-family: 'Fredoka';
+  font-family: 'Poppins';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/fredoka-600.woff2') format('woff2');
+  src: url('/fonts/poppins-latin-ext-600-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
 /* Safe area for iPhone home indicator */
@@ -40,61 +95,59 @@
 }
 
 @layer base {
-  /* Design tokens (Batch D). HSL channels; the hex is in src/lib/tokens.js and
+  /* Design tokens (Batch D structure, Percy v2 values from E02). HSL channels; the hex is in src/lib/tokens.js and
      a test checks both match. This is the only place colour values live.
      There is no dark theme: tailwind keeps darkMode "class" but nothing sets it. */
   :root {
-    --background: 36.9 61.9% 95.9%; /* #fbf6ee */
+    --background: 36.5 100% 95.5%; /* #fff6e8 */
     --card: 0 0% 100%; /* #ffffff */
     --popover: 0 0% 100%; /* #ffffff */
-    --muted: 42.9 22.6% 93.9%; /* #f3f1ec */
-    --secondary: 42.9 22.6% 93.9%; /* #f3f1ec */
-    --accent: 41.5 22.8% 88.8%; /* #e9e5dc */
-    --foreground: 33.3 17% 10.4%; /* #1f1b16 */
-    --card-foreground: 33.3 17% 10.4%; /* #1f1b16 */
-    --popover-foreground: 33.3 17% 10.4%; /* #1f1b16 */
-    --secondary-foreground: 33.3 17% 10.4%; /* #1f1b16 */
-    --accent-foreground: 33.3 17% 10.4%; /* #1f1b16 */
-    --muted-foreground: 33 11.9% 32.9%; /* #5e554a */
-    --subtle-foreground: 33 10.3% 38%; /* #6b6257 */
-    --primary: 17.5 88.3% 40.4%; /* #c2410c */
-    --primary-hover: 15 79.1% 33.7%; /* #9a3412 */
+    --muted: 270 100% 97.6%; /* #f9f3ff */
+    --secondary: 270 100% 97.6%; /* #f9f3ff */
+    --accent: 290 28.6% 91.8%; /* #eee4f0 */
+    --foreground: 270 41% 15.3%; /* #271737 */
+    --card-foreground: 270 41% 15.3%; /* #271737 */
+    --popover-foreground: 270 41% 15.3%; /* #271737 */
+    --secondary-foreground: 270 41% 15.3%; /* #271737 */
+    --accent-foreground: 270 41% 15.3%; /* #271737 */
+    --muted-foreground: 264.4 14.8% 35.9%; /* #594e69 */
+    --subtle-foreground: 264.4 14.8% 35.9%; /* #594e69 */
+    --primary: 264.9 65.7% 33.1%; /* #4b1d8c */
+    --primary-hover: 263.4 69.6% 24.5%; /* #35136a */
     --primary-foreground: 0 0% 100%; /* #ffffff */
     --destructive: 4.2 76.5% 40%; /* #b42318 */
     --destructive-foreground: 0 0% 100%; /* #ffffff */
-    --negative: 33.3 17% 10.4%; /* #1f1b16 */
-    --spend: 33 11.9% 32.9%; /* #5e554a */
+    --negative: 270 41% 15.3%; /* #271737 */
+    --spend: 264.4 14.8% 35.9%; /* #594e69 */
     --earn: 127.9 44.7% 29.8%; /* #2a6e33 */
-    --star: 40.2 82% 50%; /* #e8a317 */
-    --selected: 24.3 91.3% 91%; /* #fde4d3 */
-    --selected-border: 17.5 88.3% 40.4%; /* #c2410c */
-    --warning: 34.6 100% 94.9%; /* #fff4e5 */
+    --star: 43.7 100% 61%; /* #ffc938 */
+    --selected: 278.6 25% 89%; /* #e5dcea */
+    --selected-border: 264.9 65.7% 33.1%; /* #4b1d8c */
+    --warning: 41.7 100% 91%; /* #fff1d1 */
     --warning-border: 35.5 71% 42%; /* #b7791f */
-    --warning-foreground: 33.3 17% 10.4%; /* #1f1b16 */
-    --brand-ink: 214.2 52% 24.5%; /* #1e3a5f */
-    --border: 38.6 21.9% 87.5%; /* #e6e1d8 */
-    --input: 33.9 9.1% 49.6%; /* #8a8073 */
-    --ring: 17.5 88.3% 40.4%; /* #c2410c */
-    --overlay: 33.3 17% 10.4%; /* #1f1b16 */
+    --warning-foreground: 270 41% 15.3%; /* #271737 */
+    --brand-ink: 264.9 65.7% 33.1%; /* #4b1d8c */
+    --border: 278.6 25% 89%; /* #e5dcea */
+    --input: 263.6 11.8% 53.3%; /* #857a96 */
+    --ring: 264.9 65.7% 33.1%; /* #4b1d8c */
+    --overlay: 270 41% 15.3%; /* #271737 */
     --earn-soft: 128 36.6% 92%; /* #e3f2e5 */
-    --star-soft: 42.7 91.8% 90.4%; /* #fdf0d0 */
+    --star-soft: 41.7 100% 91%; /* #fff1d1 */
     --kid-1: 207.3 70.3% 41%; /* #1f6fb2 */
     --kid-1-soft: 207.9 66.7% 91.8%; /* #dcebf8 */
     --kid-2: 338.2 67% 45.1%; /* #c0265e */
     --kid-2-soft: 339.2 76.5% 93.3%; /* #fbe1ea */
     --kid-3: 182.1 80% 27.5%; /* #0e7a7e */
     --kid-3-soft: 180 46.7% 88.2%; /* #d3efef */
-    --kid-4: 287 40.9% 39.8%; /* #7d3c8f */
-    --kid-4-soft: 287.4 48.7% 92.4%; /* #f1e2f5 */
+    --kid-4: 44.9 80.4% 30%; /* #8a6b0f */
+    --kid-4-soft: 52.8 42.4% 88.4%; /* #eeebd5 */
     --kid-5: 24.8 48.8% 32.2%; /* #7a4b2a */
     --kid-5-soft: 28.8 47.2% 89.6%; /* #f1e4d8 */
     --kid-6: 210 17.8% 35.3%; /* #4a5a6a */
     --kid-6-soft: 210 20.8% 90.6%; /* #e2e7ec */
     --chart-1: 127.9 44.7% 29.8%; /* #2a6e33 */
-    --chart-2: 214.2 52% 24.5%; /* #1e3a5f */
-    --chart-3: 40.2 82% 50%; /* #e8a317 */
-    --chart-4: 33 11.9% 32.9%; /* #5e554a */
-    --chart-5: 17.5 88.3% 40.4%; /* #c2410c */
+    --chart-2: 264.9 65.7% 33.1%; /* #4b1d8c */
+    --chart-4: 264.4 14.8% 35.9%; /* #594e69 */
     --radius: 0.75rem;
   }
 }

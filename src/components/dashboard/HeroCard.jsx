@@ -1,4 +1,4 @@
-// HeroCard: the family's header on Home. Fox orange, one short band
+// HeroCard: the family's header on Home. Percy purple (E02), one short band
 // (Batch D v0.6; shortened after the external review, Nael 2026-11-11).
 import { Button } from "@/components/ui/button";
 import { UserPlus, Flame } from "lucide-react";
@@ -22,8 +22,8 @@ export default function HeroCard({ children = [], streak = 0, onAddFirstChild })
       <section className="rounded-lg bg-primary text-primary-foreground shadow">
         <div className="px-4 py-3 sm:px-5 flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-3 min-w-0 mr-auto">
-            <span className="shrink-0 rounded-full bg-card p-1"><Logo size={32} decorative /></span>
-            <h1 className="font-display text-lg sm:text-title font-semibold">Welcome to Positive Percy</h1>
+            <span className="shrink-0 rounded-full bg-card h-10 w-10 flex items-center justify-center"><Logo size={30} decorative /></span>
+            <h1 className="font-display text-lg sm:text-title font-extrabold">Welcome to Positive Percy</h1>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm">{PERCY.TAGLINE}</p>
@@ -44,9 +44,9 @@ export default function HeroCard({ children = [], streak = 0, onAddFirstChild })
     <section className="rounded-lg bg-primary text-primary-foreground shadow" aria-labelledby="family-week">
       <div className="px-4 py-3 sm:px-5 flex flex-wrap items-center gap-x-5 gap-y-2">
         <div className="flex items-center gap-3 min-w-0 mr-auto">
-          <span className="shrink-0 rounded-full bg-card p-1"><Logo size={32} decorative /></span>
+          <span className="shrink-0 rounded-full bg-card h-10 w-10 flex items-center justify-center"><Logo size={30} decorative /></span>
           <div className="min-w-0">
-            <h1 id="family-week" className="font-display text-base sm:text-lg font-semibold leading-tight">Your family this week</h1>
+            <h1 id="family-week" className="font-display text-base sm:text-lg font-bold leading-tight">Your family this week</h1>
             <p className="flex items-baseline gap-1.5">
               <span className="text-total font-semibold tabular-nums leading-none">{weeklyTotal}</span>
               <span className="text-sm">points earned</span>
