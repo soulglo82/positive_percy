@@ -23,7 +23,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import PercyIcon from "@/components/icons/PercyIcon";
 
 const EMOJI_OPTIONS = ["🎮", "🍕", "🎬", "🎨", "⚽", "📚", "🎪", "🎭", "🏊", "🎵", "🍦", "🎁"];
 
@@ -73,7 +74,7 @@ export default function EditRewardModal({ isOpen, onClose, reward, onSubmit, onD
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Pencil className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
+            <PercyIcon id="phosphor:pencil:duotone" className="w-5 h-5 text-muted-foreground" />
             Edit Reward
           </DialogTitle>
         </DialogHeader>

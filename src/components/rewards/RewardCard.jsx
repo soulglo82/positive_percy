@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, Pencil, Plus, Check } from "lucide-react";
+import { Eye, EyeOff, Check } from "lucide-react";
+import PercyIcon from "@/components/icons/PercyIcon";
 import { Points } from "@/components/brand/PointsStar";
 import EmojiTile from "./EmojiTile";
 
@@ -45,7 +46,7 @@ export default function RewardCard({ reward, onToggleStack, isParentView, onTogg
                 onClick={() => onEdit(reward)}
                 aria-label={`Edit ${reward.title}`}
               >
-                <Pencil className="w-4 h-4" strokeWidth={1.5} />
+                <PercyIcon id="phosphor:pencil:duotone" className="w-4 h-4" />
               </Button>
               <Button
                 variant="ghost"
@@ -99,7 +100,7 @@ export default function RewardCard({ reward, onToggleStack, isParentView, onTogg
                 </Button>
               ) : canAfford ? (
                 <Button size="sm" onClick={() => onToggleStack(reward)}>
-                  <Plus className="w-4 h-4" />
+                  <PercyIcon id="phosphor:plus-circle:duotone" className="w-4 h-4" />
                   Add to stack
                 </Button>
               ) : (

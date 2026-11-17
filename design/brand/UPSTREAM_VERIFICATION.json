@@ -1,0 +1,307 @@
+{
+  "version": "1.0",
+  "issued": "2026-11-17",
+  "owner": "Percy v2 engineering",
+  "status": "Record of a one-time upstream fetch; CI cannot reach the network, so tests anchor to this record",
+  "method": "Each register-selected asset (nav, controls, behaviors, rewards, goals sources, Streamline visuals) was fetched with curl from its pinned source_url and compared by SHA-256 with the checked-in file. 47 of 47 matched. Control: phosphor regular/gift.svg vs duotone/gift.svg hash differently.",
+  "licence_sources": {
+    "design/brand/licenses/phosphor-MIT.txt": {
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+      "sha256": "b5b1f1da112d18ea2147decfd48ddc1bf2b5aeb6c265381579340e95b15a2bb2"
+    },
+    "design/brand/licenses/streamline-vectors-README@52d750c.md": {
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/README.md",
+      "sha256": "c0a0a82fcde25a068392256e51b8a32bda4d95dcdc7575035d301d0c78c4b6d3",
+      "note": "The repository has no LICENSE file at this commit; its README section \"Open-source license\" states CC BY 4.0 and the credit requirement."
+    },
+    "design/brand/licenses/CC-BY-4.0.txt": {
+      "upstream": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/CC-BY-4.0.txt",
+      "sha256": "d557539df68e771cc1eedcc91d13f70fca930e508d11eedcafa4b15db49e3744",
+      "note": "creativecommons.org legalcode.txt was refused by this environment network proxy (403); SPDX copy used."
+    }
+  },
+  "assets": [
+    {
+      "asset_id": "phosphor:archive:duotone",
+      "source": "design/assets/phosphor/duotone/archive.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/archive-duotone.svg",
+      "sha256": "431c7f0bb63026b34f9381fd21cf90fc2368313356619edeb0cd40ee5d5a5ac4"
+    },
+    {
+      "asset_id": "phosphor:arrow-counter-clockwise:duotone",
+      "source": "design/assets/phosphor/duotone/arrow-counter-clockwise.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/arrow-counter-clockwise-duotone.svg",
+      "sha256": "7f8253410467897776eff66017822f3b9b44f15a317d9d19b9a0ba07e277118e"
+    },
+    {
+      "asset_id": "phosphor:bathtub:duotone",
+      "source": "design/assets/phosphor/duotone/bathtub.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bathtub-duotone.svg",
+      "sha256": "1632b919732e8f0855876a02a6e34b32cb3a5b3fbc19de7d06b7638be31995c0"
+    },
+    {
+      "asset_id": "phosphor:bed:duotone",
+      "source": "design/assets/phosphor/duotone/bed.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bed-duotone.svg",
+      "sha256": "eae20fa01ef5de4f014fbe56fbfbdcd47a627b0cc299d3f5b34393fcd363009a"
+    },
+    {
+      "asset_id": "phosphor:bicycle:duotone",
+      "source": "design/assets/phosphor/duotone/bicycle.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bicycle-duotone.svg",
+      "sha256": "f99f21cc07a6ae8ad32cdf5b986888e293f9f572c039912d60a4a6efb30a4ccf"
+    },
+    {
+      "asset_id": "phosphor:book-bookmark:duotone",
+      "source": "design/assets/phosphor/duotone/book-bookmark.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/book-bookmark-duotone.svg",
+      "sha256": "fd3df771fbd0d671e4c1cba526427930995965851650cf91b40a2f09011f4f2b"
+    },
+    {
+      "asset_id": "phosphor:book-open-text:duotone",
+      "source": "design/assets/phosphor/duotone/book-open-text.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/book-open-text-duotone.svg",
+      "sha256": "523066f01683f1879bbc20219bfcfb1cb4452fb26c0e074a3f8da4e06a75b60a"
+    },
+    {
+      "asset_id": "phosphor:brain:duotone",
+      "source": "design/assets/phosphor/duotone/brain.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/brain-duotone.svg",
+      "sha256": "21c4456e71486b819599cc5feecde1451dc172c82f40ae10f8469f434567979b"
+    },
+    {
+      "asset_id": "phosphor:broom:duotone",
+      "source": "design/assets/phosphor/duotone/broom.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/broom-duotone.svg",
+      "sha256": "6c9eb5de6e40c538e3e9c67fe438cbcd2d1caf5ee3f531e77ef2eb092049aae3"
+    },
+    {
+      "asset_id": "phosphor:calendar-dots:duotone",
+      "source": "design/assets/phosphor/duotone/calendar-dots.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/calendar-dots-duotone.svg",
+      "sha256": "72b4bb72b7b180840bb6f5b86ad94987fc8b1b0fdb49caab09c7a2790a93c707"
+    },
+    {
+      "asset_id": "phosphor:chart-line-up:duotone",
+      "source": "design/assets/phosphor/duotone/chart-line-up.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/chart-line-up-duotone.svg",
+      "sha256": "86b5bfdff2eb2bc6fc8545a71950aef4185356ee9bde18191d543fee97ff4e30"
+    },
+    {
+      "asset_id": "phosphor:check-circle:duotone",
+      "source": "design/assets/phosphor/duotone/check-circle.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/check-circle-duotone.svg",
+      "sha256": "d9c7016e83a81c8ef1a250a307acc6d29d5c492fc46066ab5e5e7446a65b48f6"
+    },
+    {
+      "asset_id": "phosphor:gear:duotone",
+      "source": "design/assets/phosphor/duotone/gear.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/gear-duotone.svg",
+      "sha256": "844f6e041e4622283f651e76882c784af0627f950a6a2536e923b12e4ae5e590"
+    },
+    {
+      "asset_id": "phosphor:gift:duotone",
+      "source": "design/assets/phosphor/duotone/gift.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/gift-duotone.svg",
+      "sha256": "8d1c765396fa149ee4d709be754945860dd1b034dab8572fa51a95c074f7a3bb"
+    },
+    {
+      "asset_id": "phosphor:hand-heart:duotone",
+      "source": "design/assets/phosphor/duotone/hand-heart.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/hand-heart-duotone.svg",
+      "sha256": "58773db78b71504d7b74eb25caa788d7ac2cb9f16bfdd985fc2c46e97fe55b9b"
+    },
+    {
+      "asset_id": "phosphor:hands-clapping:duotone",
+      "source": "design/assets/phosphor/duotone/hands-clapping.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/hands-clapping-duotone.svg",
+      "sha256": "ec06f6fd5f5b8800cf1e12961259ad81ae1693712759c978cc66c3e35bb9c9ee"
+    },
+    {
+      "asset_id": "phosphor:handshake:duotone",
+      "source": "design/assets/phosphor/duotone/handshake.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/handshake-duotone.svg",
+      "sha256": "4f8827d067f5b777902e4e6e0f1e6ccc6b60c5d34605d65ecb8020137072ebb9"
+    },
+    {
+      "asset_id": "phosphor:house-line:duotone",
+      "source": "design/assets/phosphor/duotone/house-line.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/house-line-duotone.svg",
+      "sha256": "c4a8e60acc0a98d65c01c210d9e6ac1cbc302d9e3df9ceffbbf9d9ff06f8dba4"
+    },
+    {
+      "asset_id": "phosphor:info:duotone",
+      "source": "design/assets/phosphor/duotone/info.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/info-duotone.svg",
+      "sha256": "dec9ea1394c618d6d576ba43e0f08eea265eaf20046e98bc3da19eb4b8da73e8"
+    },
+    {
+      "asset_id": "phosphor:list-checks:duotone",
+      "source": "design/assets/phosphor/duotone/list-checks.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/list-checks-duotone.svg",
+      "sha256": "aa71967b96fc44f2e40fabf3b297e333925c994cc22a2da2177980b7eea5a55e"
+    },
+    {
+      "asset_id": "phosphor:paint-brush:duotone",
+      "source": "design/assets/phosphor/duotone/paint-brush.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/paint-brush-duotone.svg",
+      "sha256": "0b51caafe4ae1a139e7da7bd4051f199fdf466ef9cc2ba6b1a30058eaf93285a"
+    },
+    {
+      "asset_id": "phosphor:pause-circle:duotone",
+      "source": "design/assets/phosphor/duotone/pause-circle.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/pause-circle-duotone.svg",
+      "sha256": "94175b4db6fae91ebadb9e08105285cef2c1e0c70598f0b1971a638e4168dc78"
+    },
+    {
+      "asset_id": "phosphor:pencil:duotone",
+      "source": "design/assets/phosphor/duotone/pencil.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/pencil-duotone.svg",
+      "sha256": "98d18d7c189b0a8911d5605d7bf50e807b0e4174d605fda265977b014b7f843a"
+    },
+    {
+      "asset_id": "phosphor:plus-circle:duotone",
+      "source": "design/assets/phosphor/duotone/plus-circle.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/plus-circle-duotone.svg",
+      "sha256": "96f01d50fb5c1c830a8a136e43a3254db228a4a1db2cbc6afabc057b7a7b4471"
+    },
+    {
+      "asset_id": "phosphor:repeat:duotone",
+      "source": "design/assets/phosphor/duotone/repeat.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/repeat-duotone.svg",
+      "sha256": "3b6c818a506d0a591de61f835504b2a4828c3a1be60132dd49bfa5a64f60d541"
+    },
+    {
+      "asset_id": "phosphor:sparkle:duotone",
+      "source": "design/assets/phosphor/duotone/sparkle.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/sparkle-duotone.svg",
+      "sha256": "c4740b4365131487e4b49b54fc554a6cbdde28aaad74c5a8a8be2195b5fb4c19"
+    },
+    {
+      "asset_id": "phosphor:target:duotone",
+      "source": "design/assets/phosphor/duotone/target.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/target-duotone.svg",
+      "sha256": "f7e6e8cb3ff844db1ac5b65e34257651d7a55f68eb97da574ac369fcc259343f"
+    },
+    {
+      "asset_id": "phosphor:user-switch:duotone",
+      "source": "design/assets/phosphor/duotone/user-switch.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/user-switch-duotone.svg",
+      "sha256": "795c6707352bd922b333ea22f894787143708f6e4cf7268cd3f9ee57e06d4ce7"
+    },
+    {
+      "asset_id": "phosphor:users:duotone",
+      "source": "design/assets/phosphor/duotone/users.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/users-duotone.svg",
+      "sha256": "bce473e028982d8383e97e4f4c9cde592564be57cc16c7a303fe72cfdced34ff"
+    },
+    {
+      "asset_id": "streamline:kameleon:pop:entertainment:party-poppers",
+      "source": "design/assets/streamline/kameleon/pop/entertainment/party-poppers.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/kameleon/pop/entertainment/party-poppers.svg",
+      "sha256": "85b2f9860961b67f4e9343d40999ac92af26ebf48a7a485a284ded8079b40a96"
+    },
+    {
+      "asset_id": "streamline:kameleon:pop:school-science:chalkboard",
+      "source": "design/assets/streamline/kameleon/pop/school-science/chalkboard.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/kameleon/pop/school-science/chalkboard.svg",
+      "sha256": "861f1bc7896973b9d7d72c0f148c4b99ae040f2900a4b6b272a2c07e15e29773"
+    },
+    {
+      "asset_id": "streamline:kameleon:pop:school-science:robot",
+      "source": "design/assets/streamline/kameleon/pop/school-science/robot.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/kameleon/pop/school-science/robot.svg",
+      "sha256": "5ef88d2b9d70a30c87ec24a7a11d7ef5a7ef72aded5c7d5ca243bdf8eb9063b5"
+    },
+    {
+      "asset_id": "streamline:plump:duo:computer-devices:controller-1",
+      "source": "design/assets/streamline/plump/duo/computer-devices/controller-1.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/computer-devices/controller-1.svg",
+      "sha256": "2e641297af07c3eac439b16a481e45ee7ae9e8d02748e0ecd6b8c96dfed22580"
+    },
+    {
+      "asset_id": "streamline:plump:duo:culture:ticket-1",
+      "source": "design/assets/streamline/plump/duo/culture/ticket-1.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/culture/ticket-1.svg",
+      "sha256": "4461364498a09477d68f98d822ef8b901bb20c7d8432cf26b06766bae5950f38"
+    },
+    {
+      "asset_id": "streamline:plump:duo:entertainment:music-note-2",
+      "source": "design/assets/streamline/plump/duo/entertainment/music-note-2.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/entertainment/music-note-2.svg",
+      "sha256": "a2e0b13e1f221121c4856050bcad39a1f8d3f8476e316dce4b8a1cb2b5492b3b"
+    },
+    {
+      "asset_id": "streamline:plump:duo:food-drink:cake-slice",
+      "source": "design/assets/streamline/plump/duo/food-drink/cake-slice.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/food-drink/cake-slice.svg",
+      "sha256": "33e30ec103debd47161e46098ee3f86d2240d2ab6e270a6c5138d5e04de72183"
+    },
+    {
+      "asset_id": "streamline:plump:duo:food-drink:ice-cream-2",
+      "source": "design/assets/streamline/plump/duo/food-drink/ice-cream-2.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/food-drink/ice-cream-2.svg",
+      "sha256": "73a528c553231e198cd225f6c4a94142a89fb6e86035ba1cd8d4c1c36c6a28c8"
+    },
+    {
+      "asset_id": "streamline:plump:duo:images-photography:camera-1",
+      "source": "design/assets/streamline/plump/duo/images-photography/camera-1.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/images-photography/camera-1.svg",
+      "sha256": "5eb86af881b33b0e21927d8435e40580fb25ba8b265a67329f07d614e12b996c"
+    },
+    {
+      "asset_id": "streamline:plump:duo:images-photography:film-slate",
+      "source": "design/assets/streamline/plump/duo/images-photography/film-slate.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/images-photography/film-slate.svg",
+      "sha256": "23c443d729f20977d9fb0d15209c667c91c9f3b4ce9e121f02050da4d1376a99"
+    },
+    {
+      "asset_id": "streamline:plump:duo:interface-essential:give-gift",
+      "source": "design/assets/streamline/plump/duo/interface-essential/give-gift.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/give-gift.svg",
+      "sha256": "87343e737d23cc99a786ba61654e93b3382f5e18b7456e2285ffce840cb38be1"
+    },
+    {
+      "asset_id": "streamline:plump:duo:interface-essential:paintbrush-2",
+      "source": "design/assets/streamline/plump/duo/interface-essential/paintbrush-2.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/paintbrush-2.svg",
+      "sha256": "25ef73363ca98563c86a0ef3ad8eda0b0ded6a4d51a41003c0845f2616bde5a4"
+    },
+    {
+      "asset_id": "streamline:plump:duo:map-travel:beach",
+      "source": "design/assets/streamline/plump/duo/map-travel/beach.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/map-travel/beach.svg",
+      "sha256": "81c7b4c9e992d49e7bd1b6e68e1d147c485d108f31201869ad0f8e1dba148106"
+    },
+    {
+      "asset_id": "streamline:plump:duo:map-travel:bicycle-bike",
+      "source": "design/assets/streamline/plump/duo/map-travel/bicycle-bike.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/map-travel/bicycle-bike.svg",
+      "sha256": "23c61397780d68ad0d49146f163b5f56933ebb39dd863fb23011c3b63fba8025"
+    },
+    {
+      "asset_id": "streamline:stickies:colors:school-science:star",
+      "source": "design/assets/streamline/stickies/colors/school-science/star.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/stickies/colors/school-science/star.svg",
+      "sha256": "9c6a18879baacecceb86d635903132adb3ad43f2ee91741ec4be4e1ee959065a"
+    },
+    {
+      "asset_id": "streamline:stickies:colors:shopping-shipping:gift-reciept",
+      "source": "design/assets/streamline/stickies/colors/shopping-shipping/gift-reciept.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/stickies/colors/shopping-shipping/gift-reciept.svg",
+      "sha256": "450f48f2ac29f1be4db712673398e37a8bee1cb07f530c1cecbcef1e5dd48f9b"
+    },
+    {
+      "asset_id": "streamline:stickies:colors:travel-rating:medal",
+      "source": "design/assets/streamline/stickies/colors/travel-rating/medal.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/stickies/colors/travel-rating/medal.svg",
+      "sha256": "fb493171b207f205217e39675f0f76ac92b691220bcb56dd4ebdc3a2047798b3"
+    },
+    {
+      "asset_id": "streamline:stickies:colors:travel-rating:reward",
+      "source": "design/assets/streamline/stickies/colors/travel-rating/reward.svg",
+      "upstream": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/stickies/colors/travel-rating/reward.svg",
+      "sha256": "73031857565d9383bbdc95b9ec6856f37a7e446487d683b0119faaa7b350445e"
+    }
+  ]
+}

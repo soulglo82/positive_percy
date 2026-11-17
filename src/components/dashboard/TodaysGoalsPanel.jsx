@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, CheckCircle2, ClipboardCheck, Settings2 } from 'lucide-react';
+// E05 owns the completed-goal tile (CheckCircle2/ClipboardCheck below): the
+// register forbids swapping a goal's category icon for a check, and the goal
+// API does not return icon_key yet (E03 design section 2.2).
+import { CheckCircle2, ClipboardCheck } from 'lucide-react';
+import PercyIcon from "@/components/icons/PercyIcon";
 import { toast } from 'sonner';
 import { getToken } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -73,7 +77,8 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 id="todays-goals-title" className="flex items-center gap-2 font-display font-bold text-lg text-foreground">
-                <ClipboardCheck className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden="true" />
+                {/* E03: approved header accent (goals_interactions.header_accent); decorative, no motion. */}
+                <PercyIcon id="phosphor:sparkle:duotone" className="h-5 w-5 text-primary" />
                 Today's goals
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
@@ -82,7 +87,7 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
             </div>
             <Button variant="outline" onClick={() => setManageOpen(true)}
               aria-label={'Manage goals for ' + child.name}>
-              <Settings2 className="h-4 w-4" aria-hidden="true" /> Manage goals
+              <PercyIcon id="phosphor:target:duotone" className="h-4 w-4" /> Manage goals
             </Button>
           </div>
 
@@ -135,7 +140,7 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
                     </div>
                     {completed ? (
                       <span className="inline-flex items-center gap-1 text-sm font-semibold text-earn" role="status">
-                        <Check className="w-4 h-4" aria-hidden="true" /> Done
+                        <PercyIcon id="phosphor:check-circle:duotone" className="w-4 h-4" /> Done
                       </span>
                     ) : (
                       <Button size="sm" disabled={pending || !goal.category_points}

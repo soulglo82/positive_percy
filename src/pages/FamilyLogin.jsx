@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, LogIn, Copy, Check } from "lucide-react";
+import { Users, LogIn, Copy, Check } from "lucide-react";
+import PercyIcon from "@/components/icons/PercyIcon";
 import { toast } from "sonner";
 import Logo from "@/components/brand/Logo";
 import { PERCY } from "@/constants/terminology";
@@ -112,7 +113,7 @@ export default function FamilyLogin() {
                 size="lg"
                 className="w-full text-base"
               >
-                <Plus className="w-5 h-5" />
+                <PercyIcon id="phosphor:plus-circle:duotone" className="w-5 h-5" />
                 Create a Family
               </Button>
               <div className="flex items-center gap-3">

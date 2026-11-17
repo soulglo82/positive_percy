@@ -21,7 +21,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, X, Trash2 } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
+import PercyIcon from "@/components/icons/PercyIcon";
 import { UploadFile } from "@/api/integrations";
 import { toast } from "sonner";
 import { PERCY } from "@/constants/terminology";
@@ -99,7 +100,7 @@ export default function EditChildModal({ isOpen, onClose, child, onSubmit, onDel
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Pencil className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
+            <PercyIcon id="phosphor:pencil:duotone" className="w-5 h-5 text-muted-foreground" />
             Edit Child
           </DialogTitle>
         </DialogHeader>

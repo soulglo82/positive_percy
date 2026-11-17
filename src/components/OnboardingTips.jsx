@@ -41,7 +41,9 @@ const TIPS = [
 
 const STORAGE_KEY = 'percy_onboarding_done';
 
-export default function OnboardingTips({ isOpen, onClose, forceShow = false }) {
+// firstRun: opened by the dashboard's first-run flow (not Settings > tips). Only
+// then does step 1 show the approved onboarding illustration (E03).
+export default function OnboardingTips({ isOpen, onClose, forceShow = false, firstRun = false }) {
   const [step, setStep] = useState(0);
 
   const handleClose = () => {
@@ -63,7 +65,12 @@ export default function OnboardingTips({ isOpen, onClose, forceShow = false }) {
         </DialogHeader>
 
         <DialogBody className="text-center">
-          <div className="text-total mb-4" aria-hidden="true">{TIPS[step].emoji}</div>
+          {firstRun && step === 0 ? (
+            // E03: approved First-run onboarding illustration (Streamline, CC BY 4.0), in place of the step's emoji.
+            <img src="/illustrations/kameleon-robot.svg" alt="" aria-hidden="true" width={120} height={120} className="mx-auto mb-4" />
+          ) : (
+            <div className="text-total mb-4" aria-hidden="true">{TIPS[step].emoji}</div>
+          )}
           <h3 className="text-lg font-semibold text-foreground mb-3">{TIPS[step].title}</h3>
           <p className="text-muted-foreground leading-relaxed">{TIPS[step].body}</p>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, Pencil, Plus, Repeat2 } from 'lucide-react';
+
+import PercyIcon from "@/components/icons/PercyIcon";
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,7 +137,7 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
           <DialogBody className="space-y-6">
             <form id="goal-form" onSubmit={save} className="space-y-4">
               <h3 className="font-semibold text-foreground flex items-center gap-2">
-                <Plus className="w-[18px] h-[18px]" aria-hidden="true" />
+                <PercyIcon id="phosphor:plus-circle:duotone" className="w-[18px] h-[18px]" />
                 {editingId ? 'Edit goal' : 'New goal'}
               </h3>
               <div className="space-y-2">
@@ -161,11 +162,14 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
                   <p className="text-sm text-muted-foreground">Add a behaviour in Family settings first.</p>}
               </div>
               <fieldset className="space-y-2">
-                <legend className="text-sm font-medium text-foreground">Schedule</legend>
+                <legend className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <PercyIcon id="phosphor:calendar-dots:duotone" className="h-4 w-4 text-muted-foreground" />
+                  Schedule
+                </legend>
                 <div className="grid grid-cols-2 gap-2">
                   <Button type="button" variant={schedule === 'weekly' ? 'default' : 'outline'}
                     aria-pressed={schedule === 'weekly'} onClick={() => setSchedule('weekly')}>
-                    <Repeat2 className="h-4 w-4" aria-hidden="true" /> Weekly
+                    <PercyIcon id="phosphor:repeat:duotone" className="h-4 w-4" /> Weekly
                   </Button>
                   <Button type="button" variant={schedule === 'one_off' ? 'default' : 'outline'}
                     aria-pressed={schedule === 'one_off'} onClick={() => setSchedule('one_off')}>
@@ -232,11 +236,11 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
                   </div>
                   <Button type="button" variant="outline" size="icon"
                     aria-label={'Edit ' + goal.title} onClick={() => startEditing(goal)}>
-                    <Pencil className="h-4 w-4" aria-hidden="true" />
+                    <PercyIcon id="phosphor:pencil:duotone" className="h-4 w-4" />
                   </Button>
                   <Button type="button" variant="outline" size="icon"
                     aria-label={'Archive ' + goal.title} onClick={() => setArchiveTarget(goal)}>
-                    <Archive className="h-4 w-4" aria-hidden="true" />
+                    <PercyIcon id="phosphor:archive:duotone" className="h-4 w-4" />
                   </Button>
                 </div>
               ))}

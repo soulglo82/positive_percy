@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import CategoryIcon from '@/components/CategoryIcon';
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Gift } from "lucide-react";
+import { Gift } from "lucide-react";
+import PercyIcon from "@/components/icons/PercyIcon";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { PERCY } from "@/constants/terminology";
@@ -54,7 +55,7 @@ export default function ChildCard({ child, colour, popKey = 0, onAddPoints, onEd
                   aria-label={`Edit ${child.name}`}
                   className="shrink-0 w-11 h-11 -my-2 rounded-full flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  <Pencil className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
+                  <PercyIcon id="phosphor:pencil:duotone" className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -112,7 +113,7 @@ export default function ChildCard({ child, colour, popKey = 0, onAddPoints, onEd
         {/* Action Buttons */}
         <div className="flex gap-2">
           <Button onClick={() => onAddPoints(child)} className="flex-1">
-            <Plus className="w-4 h-4" />
+            <PercyIcon id="phosphor:plus-circle:duotone" className="w-4 h-4" />
             Add points
           </Button>
           {onSpendRewards && rewards.length > 0 && (

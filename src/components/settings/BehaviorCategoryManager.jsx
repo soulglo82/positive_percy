@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import CategoryIcon from '@/components/CategoryIcon';
-import { ICON_KEYS, ICON_LABELS } from '@/lib/categoryIcons';
+import { ICON_LABELS, pickerChoices, nextPickerKey } from '@/lib/categoryIcons';
 import { getToken } from "@/lib/AuthContext";
 import { Child } from "@/api/entities";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -35,7 +35,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Check, ChevronDown, ChevronUp, ListChecks } from "lucide-react";
+import { Trash2, Check, ChevronDown, ChevronUp, ListChecks } from "lucide-react";
+import PercyIcon from "@/components/icons/PercyIcon";
 import { toast } from "sonner";
 import SectionHeader from "../SectionHeader";
 import { formatPointsBadge } from "@/constants/terminology";
@@ -49,6 +50,8 @@ export default function BehaviorCategoryManager() {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [editIcon, setEditIcon] = useState('star');
+  // The key the category had when editing started (E03 picker round trip).
+  const [editStoredIcon, setEditStoredIcon] = useState('star');
   const [editPoints, setEditPoints] = useState(1);
 
   const { data: categories = [], isLoading } = useQuery({
@@ -197,6 +200,7 @@ export default function BehaviorCategoryManager() {
     setEditingId(cat.id);
     setEditName(cat.name);
     setEditIcon(cat.icon_key || 'circle');
+    setEditStoredIcon(cat.icon_key || 'circle');
     setEditPoints(cat.points ?? 1);
   };
 
@@ -272,10 +276,7 @@ export default function BehaviorCategoryManager() {
                           <div className="space-y-3">
                             <div className="flex items-center gap-2">
                               <button
-                                onClick={() => {
-                                  const nextIdx = ICON_KEYS.indexOf(editIcon);
-                                  setEditIcon(ICON_KEYS[(nextIdx + 1) % ICON_KEYS.length]);
-                                }}
+                                onClick={() => setEditIcon(nextPickerKey(editIcon, editStoredIcon))}
                                 className="text-lg rounded-md border border-input bg-card hover:bg-accent min-w-11 min-h-11 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 aria-label={`Change icon, now ${ICON_LABELS[editIcon] || 'Circle'}`}
                               >
@@ -366,7 +367,7 @@ export default function BehaviorCategoryManager() {
                                 size="sm"
                                 onClick={() => startEdit(cat)}
                               >
-                                <Pencil className="w-4 h-4" /> Edit
+                                <PercyIcon id="phosphor:pencil:duotone" className="w-4 h-4" /> Edit
                               </Button>
                               {!cat.is_default && (
                                 <Button
@@ -390,7 +391,7 @@ export default function BehaviorCategoryManager() {
           )}
 
           <Button variant="outline" className="w-full mt-3" onClick={() => setShowAddModal(true)}>
-            <Plus className="w-4 h-4" />
+            <PercyIcon id="phosphor:plus-circle:duotone" className="w-4 h-4" />
             Add behaviour
           </Button>
         </CardContent>
@@ -457,7 +458,7 @@ function AddCategoryModal({ isOpen, onClose, onSubmit }) {
           <div>
             <p className="text-sm font-medium text-foreground mb-2" id="cat_icon">Icon</p>
             <div className="flex flex-wrap gap-2" role="group" aria-labelledby="cat_icon">
-              {ICON_KEYS.map((key) => (
+              {pickerChoices('star').map((key) => (
                 <button
                   key={key}
                   type="button"
