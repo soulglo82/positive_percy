@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { LOGO_ART, logoSrc } from '../components/brand/logoArt.js';
+import { svgProblems } from './svgScan.js';
 
 const ROOT = path.resolve(__dirname, '../..');
 const rel = (...p) => path.join(ROOT, ...p);
@@ -79,9 +80,18 @@ describe('E01 library -> runtime', () => {
     expect(e.licence).toBeTruthy();
   });
 
-  it('logo and icon sources are inside the checksummed library', () => {
-    for (const e of MANIFEST.entries.filter((x) => !x.runtime.startsWith('public/fonts/'))) {
-      expect(e.source.startsWith(LIBRARY), e.source).toBe(true);
+  // Every source is anchored: the pinned archive (library), the vendored fonts
+  // (tarball integrity in the licence field), or, for E03 sources under
+  // design/assets and design/brand/licenses, the committed upstream fetch record.
+  it('every source sits in an anchored location', () => {
+    const UP = JSON.parse(fs.readFileSync(rel('design/brand/UPSTREAM_VERIFICATION.json'), 'utf8'));
+    const upstream = new Map(UP.assets.map((a) => [a.source, a.sha256]));
+    for (const [src, v] of Object.entries(UP.licence_sources)) upstream.set(src, v.sha256);
+    for (const e of MANIFEST.entries) {
+      if (e.source.startsWith(LIBRARY)) continue;
+      if (e.source.startsWith('design/brand/fonts/')) { expect(e.runtime.startsWith('public/fonts/'), e.runtime).toBe(true); continue; }
+      if (e.source === 'design/brand/licenses/CREDITS.txt') continue; // our own draft text, no upstream
+      expect(upstream.get(e.source), `${e.source} has no upstream record`).toBe(e.sha256);
     }
   });
 
@@ -99,19 +109,6 @@ describe('E01 library -> runtime', () => {
     }
   });
 });
-
-// Anything that could run, fetch or embed is refused. Internal url(#id) is the
-// only reference the kit uses (its gradient).
-export function svgProblems(text) {
-  const out = [];
-  const rules = [
-    [/<script/i, 'script'], [/<foreignObject/i, 'foreignObject'], [/<image\b/i, 'image'],
-    [/\b(xlink:)?href\s*=/i, 'href'], [/@import/i, '@import'], [/\son[a-z]+\s*=/i, 'event handler'],
-    [/url\(\s*(?!['"]?#)/i, 'external url()'], [/<!ENTITY/i, 'entity'],
-  ];
-  for (const [re, label] of rules) if (re.test(text)) out.push(label);
-  return out;
-}
 
 describe('SVG active content', () => {
   const svgs = walk(rel('public')).filter((f) => f.endsWith('.svg'));

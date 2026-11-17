@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { EmojiPicker, ChildAssignList } from "./RewardFormParts";
 import { Points } from "@/components/brand/PointsStar";
-import { Gift, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 import { REWARD_TEMPLATES } from "@/data/reward-templates";
 import { PERCY } from "@/constants/terminology";
 
@@ -88,7 +88,8 @@ export default function AddRewardModal({ isOpen, onClose, onSubmit, children = [
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Gift className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
+            {/* E03: approved Reward creation form illustration (Streamline, CC BY 4.0), replacing the gift glyph. */}
+            <img src="/illustrations/stickies-gift-reciept.svg" alt="" aria-hidden="true" width={40} height={40} className="shrink-0" />
             Create Reward
           </DialogTitle>
         </DialogHeader>

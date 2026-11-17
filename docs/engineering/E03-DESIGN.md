@@ -2,207 +2,212 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.0 |
+| Version | 1.1 |
 | Issued | 2026-11-17 |
 | Owner | Percy v2 engineering, on branch `claude/percy-v2-e03-icons-illustrations` (stacked on PR #51) |
-| Status | Design for peer review; nothing built yet |
-| Parent plan | `PERCY_V2_IMPLEMENTATION_PLAN.md`, W2 and ticket E03 |
+| Status | Reviewed design; being built on the branch; not merged or deployed |
+| Parent plan | `PERCY_V2_IMPLEMENTATION_PLAN.md` W2, ticket E03 |
 
 ## Change log
 
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 2026-11-17 | First design, for peer review |
+| 1.1 | 2026-11-17 | Peer review adopted (6 blocking, 7 non-blocking; see "Peer review record"). Inferred mappings moved from build into owner decisions. Reward-context icons removed from the runtime module. Placements narrowed to those with a real, single-instance home |
 
 ## 1. Contract
 
-There are two contracts.
-
-1. Every glyph or illustration that represents an owner-approved context is drawn from the exact approved source file. Nothing is generated, redrawn or recoloured. Each approved asset must trace to:
-   - its register entry, in `design/stage1/APPROVAL_REGISTER.json` v1.9;
-   - its checked-in file under `design/assets/`;
-   - the pinned upstream URL in that entry. Phosphor sources are pinned at core commit `2b75f3a`; Streamline sources at streamline-vectors commit `52d750c`.
-2. Behaviour icon keys stored on the server (`behavior_categories.icon_key`) still round-trip unchanged.
-   - Adding new approved keys is additive.
-   - No stored key is rewritten.
-   - An unknown key renders a neutral fallback and is never deleted.
+1. **Every glyph or illustration for an owner-approved context is the exact approved source file.** Nothing is generated, redrawn or recoloured.
+   - Each approved asset traces to:
+     - its register entry (`design/stage1/APPROVAL_REGISTER.json` v1.9);
+     - its checked-in file under `design/assets/`;
+     - its pinned upstream URL (Phosphor core `2b75f3a`, Streamline vectors `52d750c`).
+   - Upstream equality was checked on 2026-11-17 and is committed in `design/brand/UPSTREAM_VERIFICATION.json`.
+2. **Stored behaviour icon keys round-trip unchanged.**
+   - New keys are additive.
+   - No stored key is rewritten, no default seed changes, and no legacy key is re-pointed.
+   - An unknown key draws the neutral fallback and is kept.
 
 Out of contract:
-- Glyphs for which no owner-approved context exists. These are chevrons, close, trash, copy, eye, download and similar. They stay as Lucide, because "do not infer approvals for unselected items".
-- The 71-icon reward picker, which is E06.
+- Glyphs with no approved context. These stay Lucide, because approvals cannot be inferred.
+- The 71-icon picker, which is E06.
 
-## 2. Inventory and where each asset lands
+## 2. What E03 builds
 
-### 2.1 Navigation (5): `src/Layout.jsx`, desktop bar and mobile tab bar
+### 2.1 Navigation (5), `src/Layout.jsx` only
 
 | Context | Approved asset | Replaces |
 | --- | --- | --- |
-| Home | phosphor:house-line:duotone | Lucide `Home` |
-| Progress (the "Child" tab) | phosphor:users:duotone | Lucide `User` |
-| Activity | phosphor:chart-line-up:duotone | Lucide `Activity` |
-| Rewards | phosphor:gift:duotone | Lucide `Gift` |
-| Settings | phosphor:gear:duotone | Lucide `Settings` |
+| Home | house-line:duotone | Lucide `Home` |
+| Progress (the "Child" tab) | users:duotone | Lucide `User` |
+| Activity | chart-line-up:duotone | Lucide `Activity` |
+| Rewards | gift:duotone | Lucide `Gift` |
+| Settings | gear:duotone | Lucide `Settings` |
 
-Tab labels are unchanged. Whether "Child" should become "Progress" is a copy decision for E07 and is not touched here.
+Page headings that reuse these Lucide names are a different meaning and are **not** changed:
+- `Settings` on the Family settings title;
+- `Activity` on the Activity title;
+- `Home` on the "Family name" section.
 
-### 2.2 Controls (10)
+### 2.2 Controls: one row per call site
 
-Each row lists the call sites this design maps to the context. A call site is mapped only where the control's meaning **is** that context.
-
-| Context | Asset | Call sites |
+| Context | Asset | Call sites (all read in this session) |
 | --- | --- | --- |
-| Complete | check-circle:duotone | `TodaysGoalsPanel` completion control and done mark (Lucide `Check`/`CheckCircle2` there only) |
-| Goals | target:duotone | `TodaysGoalsPanel` heading icon (`ClipboardCheck`) |
-| Add | plus-circle:duotone | Every Lucide `Plus` that starts an "add / new" action: `Rewards`, `ChildCard` (add points), `RewardCard`, `BehaviorCategoryManager`, `ManageGoalsDialog`, `FamilyLogin` (create family) |
-| Edit | pencil:duotone | Every Lucide `Pencil` (7 sites; all are edit actions) |
-| Schedule | calendar-dots:duotone | `ManageGoalsDialog` schedule field (none exists yet; registered for E05) |
-| Pause | pause-circle:duotone | None in the current UI (registered for E05) |
-| Undo | arrow-counter-clockwise:duotone | The `undo` reserved history row in `categoryIcons.js` (Lucide `RotateCcw`) |
-| Archive | archive:duotone | `ManageGoalsDialog` archive button |
-| Help | info:duotone | `ParentProfile` "show tips" row (Lucide `Lightbulb`). The `AddRewardModal` "ideas" toggle is not Help and stays as it is |
-| Child switch | user-switch:duotone | None in the current UI. The `ChildView` selector is a list of avatars, not a switch control. Registered for E07 |
+| Edit | pencil:duotone | All 7 Lucide `Pencil`: EditRewardModal:76, RewardCard:48, BehaviorCategoryManager:369, EditChildModal:102, ChildCard:57, ManageGoalsDialog:235, ParentProfile:157. Each is an edit action |
+| Add | plus-circle:duotone | All 7 Lucide `Plus`: RewardCard:102 ("Add to stack"), BehaviorCategoryManager:393, ChildCard:115 (add points), ManageGoalsDialog:139, FamilyLogin:115 (create family), Rewards:116 (new reward). Each starts an add or create action |
+| Archive | archive:duotone | ManageGoalsDialog:239 |
+| Undo | arrow-counter-clockwise:duotone | `undo` reserved history row in `categoryIcons.js` (Lucide `RotateCcw`) |
+| Help | info:duotone | ParentProfile:278 "Need help rewarding behaviour? View parenting tips" (Lucide `Lightbulb`). The AddRewardModal "ideas" toggle is not Help and stays |
+| Schedule | calendar-dots:duotone | ManageGoalsDialog:162, the `Schedule` legend (decorative, before the text) |
+| Complete | check-circle:duotone | TodaysGoalsPanel:138, the **Done mark only**, next to the visible "Done" text |
+| Goals | target:duotone | TodaysGoalsPanel:85 "Manage goals" button (Lucide `Settings2`) |
+| Pause | pause-circle:duotone | No pause control exists. Registered for E05 |
+| Child switch | user-switch:duotone | The "Choose a child" group (TodaysGoalsPanel:88) has no visible label to carry an icon. Adding one is a layout change, which belongs to E05/E07. Registered |
 
-Lucide `Gift`, where it means "rewards / spend" (`ChildCard` Spend, `SpendRewardsModal`, `ChildView`, `Rewards` title, `WelcomeFamilyDialog`, `AddRewardModal`), maps to the Rewards asset gift:duotone. It is the same concept as the approved Rewards context, and leaving it as Lucide would put two different gift drawings on one screen. It is listed explicitly so the owner can veto it.
+Goals-interaction sources:
+- **repeat:duotone** replaces `Repeat2` at ManageGoalsDialog:168. That is the recurring choice.
+- **sparkle:duotone** is a small decorative accent next to the Today's Goals heading.
 
-### 2.3 Behaviours (11) and stored keys
+**Deliberately not changed: TodaysGoalsPanel:127.** Today, a completed goal swaps its tile icon to a check. The register's `completed_goal` rule forbids that ("never replace [the category icon] with the done checkmark"). The fix needs the goal API to return the category `icon_key`, and `todaysGoals.js` does not return it. That is E05 behaviour work. The line keeps its Lucide glyphs and is listed in the guard's exemption with this reason, so E05 cannot miss it.
 
-The server stores one of 16 legacy keys (`server/iconKeys.js`).
+### 2.3 Behaviours: new keys and picker
 
-**New keys.** E03 adds 11 approved keys to **both** `server/iconKeys.js` and `src/lib/categoryIcons.js`: `kindness learning helping chores movement reading routines self-care community creativity sleep`. Each renders its approved Phosphor asset. The existing parity test keeps the client and server lists equal.
+- **New keys.** The 11 approved keys `kindness learning helping chores movement reading routines self-care community creativity sleep` are appended, in the same order, to both `server/iconKeys.js` and `src/lib/categoryIcons.js`. Parity is kept by the existing test, which is updated to expect 27 keys. Each new key draws its approved Phosphor asset.
+- **Legacy keys.** All 16 legacy keys draw exactly what they draw today. There is no swap and no reseed: review B6 and N1 showed that both are inference and that they create duplicate icons.
+- **Picker.** `PICKER_KEYS` holds the 11 approved keys. The edit control cycles through `[current key if it is not approved] + PICKER_KEYS`, so a legacy key can always be returned to. The create form keeps its `'star'` default, shown first in the same way.
+  - Whether new categories should default to an approved key is an owner decision (section 9).
+  - `ICON_KEYS` stays the full list used for parity and validation.
 
-**Legacy keys.**
-- Four legacy keys whose Lucide glyph is the *same named pictogram* as an approved asset render that approved asset: `hand-heart`→Kindness asset hand-heart, `handshake`→Helping asset handshake, `brain`→Learning asset brain, `bed`→Sleep asset bed. This is a style swap of the same drawing, not a new meaning.
-- The other 12 legacy keys (`star heart shield mountain brush book-open palette footprints music check sparkles circle`) keep their current Lucide glyph.
-- Mapping those 12 to approved icons would assign meanings the owner never chose. That mapping is listed as an **owner decision** (section 9), with a proposal.
+### 2.4 Illustrations
 
-**Picker.** `BehaviorCategoryManager` offers the 11 approved icons. If a category's current key is a legacy key, the picker also shows that key, selected, so opening and saving the form never changes it silently.
+These are served as `<img alt="" aria-hidden>` from `public/illustrations/`. Each file is a byte copy, recorded in `design/brand/RUNTIME_ASSETS.json`.
 
-**New-family defaults.** The `routes.js` family-create seed and the `db.js` IMPL-5 seed change only where the default's *name* equals an approved context: Kindness→`kindness` and Chores→`chores`. The other six defaults keep their keys. Existing rows are never updated.
-
-### 2.4 Reward contexts (12)
-
-These are 11 Streamline Plump Duo assets plus phosphor:book-bookmark.
-- They are registered and verified in E03.
-- **They are not rendered in E03.** Rewards display each reward's stored emoji. Assigning context icons to templates or to stored rewards is reward-data work, owned by E06 (plan W5: "never migrate/replace all icons automatically").
-- Showing them in the selectable picker also needs the open picker licence decision (the register's `proposed_engineering_constraints`).
-
-### 2.5 Goals interactions (3 sources)
-
-- **Asset swaps in E03:**
-  - check-circle (Complete);
-  - repeat:duotone, replacing Lucide `Repeat2` in `ManageGoalsDialog`;
-  - sparkle:duotone, decorative, next to the Today's Goals heading, `aria-hidden`.
-- **Behaviour rules, owned by E05:** keep the category icon on a completed goal, show visible "Done" text, show the schedule text. Where the current draft panel already shows text, it is kept.
-
-### 2.6 Illustrations (9 cleared; 1 excluded)
-
-Each is served as an `<img>` from `public/illustrations/`. They are byte copies, so they are covered by the existing whole-`public/` provenance test once added to `design/brand/RUNTIME_ASSETS.json`.
-
-| Moment / element | Asset | Placement | Size |
+| Moment | Asset | Placement | Why this place |
 | --- | --- | --- | --- |
-| Home welcome | stickies star | `HeroCard` no-children state, decorative accent beside the heading; the Fox badge stays | 40 px |
-| Progress milestone | stickies reward | `ChildCard`, only when this week's points have reached the weekly target (data already on the card) | 40 px |
-| Reward redeemed | kameleon party-poppers | `SpendRewardsModal` confirmed-success state only | 120 px |
-| First-run onboarding | kameleon robot | `OnboardingTips` first card | 120 px |
-| Reward creation form | stickies gift-reciept | `AddRewardModal` header | 48 px |
-| Small decorative sticker / celebration burst | same files as Home welcome / Reward redeemed | Covered by the two rows above | |
-| Positive progress badge | stickies medal | **No placement in E03** | |
-| Learning spot art | kameleon chalkboard | **No placement in E03** | |
-| Goals empty state | Freepik #3570506 | **Excluded: licence pending.** The empty state stays text-only, with no substitute art | |
+| Home welcome | stickies star | HeroCard no-children state, beside the heading. The Fox badge stays | It appears once, only before any child exists |
+| First-run onboarding | kameleon robot | OnboardingTips first step, **only when opened from the dashboard first run** (new `firstRun` prop). Settings › tips does not show it | It appears once |
+| Reward creation form | stickies gift-reciept | AddRewardModal title, **replacing** the Lucide `Gift` glyph (no stacking) | It appears once |
 
-All illustrations are decorative (`alt=""`, `aria-hidden`), because the surrounding text carries the meaning. Rule 5 in the stage-1 doc, "one spot art at a time", holds: none of these placements is on the same view at once, except the Home welcome sticker. That sticker appears only when there are no children, and then there are no child cards.
+## 3. What E03 does not build, and why
 
-The two elements with no placement are a **proposed deferral**. The register selects the artwork but names no screen, and adding them now would mean inventing placements. Their placement belongs to E07 screen design. This deferral is put to peer review (R3).
-
-## 3. Rendering
-
-- `src/components/icons/approvedIcons.js` is a **generated** module, written by `scripts/brand/build-approved-icons.mjs` from the register.
-  - Each entry holds: `id`, `viewBox`, `inner` (the SVG's inner markup, verbatim), `source` (repo path), `sha256`, `licence`.
-  - It covers every register asset under nav, controls, behaviors, rewards and the three goals-interaction sources: 41 distinct ids.
-- `<PercyIcon id="phosphor:gift:duotone" className="h-5 w-5" />` renders `<svg viewBox aria-hidden focusable="false" class>` with `inner` set through `dangerouslySetInnerHTML`.
-  - The markup is a build-time constant from checked-in files that the active-content scan has passed. Nothing comes from users or the network.
-  - `title` / `aria-label` are only used when the icon stands alone. Existing call sites already label their buttons.
-- **Phosphor duotone** uses `fill="currentColor"` with a 0.2-opacity layer, so it takes the token text colour.
-- **Streamline** art keeps its original colours. CC BY requires a statement if anything is changed, so nothing is changed.
-- **Unknown id:** the dev build throws; production renders nothing. A test asserts that every id used in `src/` exists.
-
-## 4. Licences and attribution
-
-- **Phosphor (MIT).** The licence text at commit `2b75f3a` is fetched and shipped as `public/licenses/phosphor-MIT.txt`.
-- **Streamline (CC BY 4.0).** Each work needs credit, a licence link and a statement of whether it was changed. Shipped:
-  - `public/licenses/streamline-CC-BY-4.0.txt`, containing the legal code;
-  - a "Credits and licences" section in Settings with **draft text**.
-- **Owner approval:** the draft text is customer-facing, so its exact wording needs owner approval before release. It is a PR blocker. The draft is in section 9.
-- **Verification:** before any file is used, every source file is fetched from its pinned upstream URL and compared byte for byte. The results are recorded in the design's verification record, with sha256 values in the generated module.
-
-## 5. Guards (each with an input that makes it fail)
-
-| Guard | Fails on | Does not cover |
+| Item | Reason | Goes to |
 | --- | --- | --- |
-| Generated module equals a fresh run of the generator over the register (drift) | Hand edit of `approvedIcons.js`; register changed without regenerating | Register content itself being wrong (owner-owned) |
-| Each entry's `sha256` equals its source file's hash, and the source path is the register's `source_file` | One byte changed in `design/assets/...` | Upstream later changing; pinned commits make that moot |
-| Active-content scan on every `inner` (same rules as E01) | `<script>` or an external `href` in a source | (none listed) |
-| Every `<PercyIcon id=...>` literal in `src/` exists in the module | A typo in an id | Ids built from variables. **Rule:** ids must be literals or come from `categoryIcons.js` maps; check-tokens' "built from a variable" rule does not apply to `id`, so a test scans for `id={` on PercyIcon and requires a literal or a known map lookup |
-| Retired-glyph ban: no import of Lucide `Home, User, Activity, Settings, Pencil, Plus, Archive, Repeat2, CheckCircle2, ClipboardCheck, RotateCcw, Gift` anywhere in `src/` (except `categoryIcons.js` legacy draws) | Re-importing Lucide `Pencil` | A mapped context drawn with a *different* Lucide name (e.g. `Edit2`). Partly closed by listing the common aliases `Edit, Edit2, Edit3, PlusCircle, CirclePlus, House` |
-| Server/client key parity (existing test) | A key added only on one side | (none listed) |
-| Legacy keys still render (each of the 16 resolves to some icon), unknown key gives the neutral fallback | Deleting a legacy key from the map | (none listed) |
-| Illustrations: provenance and coverage through the E01 manifest test | A stray or edited file in `public/illustrations` | (none listed) |
-| Freepik exclusion: no file under `public/` hashes to the Freepik PNG, and its name appears nowhere in `src/` | Copying the map into `public/` | A re-encoded copy; the licence gate is documented, and the owner check is the backstop |
+| 12 reward-context icons (11 Streamline + book-bookmark) | No current UI shows them. Template titles in `reward-templates.js` don't match the context names. Rendering them would change reward data or display (W5). The Streamline fills also fail `check-tokens`. **Changes the E03 ledger line "38 mappings"**, so it is flagged as an owner/plan decision | Owner decision 5, then E06 |
+| Reward redeemed (party poppers) | No success state exists. The dialog closes before the toast so Undo can be tapped (SpendRewardsModal:39–48). There is also a second path through stacked redemption. A success view would change the redemption and Undo flow | Owner decision 6 |
+| Progress milestone (reward sticker) | It would show on several child cards at once, which breaks stage-1 rule 5 ("one spot art at a time") | Owner decision 6 |
+| Medal, chalkboard elements | Artwork is selected, but no screen is named | Owner decision 6 / E07 |
+| Small sticker and celebration burst elements | Same files as Home welcome and Reward redeemed; covered by those rows | (none) |
+| Goals empty state (Freepik #3570506) | Licence pending. The empty state stays text-only, with no substitute | Licence gate |
+| Completed-goal icon rule, Done styling, 44 px target with a 24 px glyph | Goal UI behaviour | E05 |
 
-## 6. Edge cases
+## 4. Rendering
+
+- **Generated module.** `scripts/brand/build-approved-icons.mjs` writes `src/components/icons/approvedIcons.js` from the register.
+  - It covers nav, controls, behaviours and the 3 goals sources: 28 Phosphor ids. Reward contexts are excluded, per section 3.
+  - Each entry holds `viewBox`, the root `fill` (Phosphor draws with `currentColor`), `inner` (verbatim markup), `source`, `upstream`, `licence` and `sha256`.
+  - The module starts with a `/*! @license */` Phosphor MIT notice, which esbuild keeps.
+- **`<PercyIcon id className>`** renders `<svg viewBox fill aria-hidden focusable="false">` with the inner markup.
+  - The markup is a constant generated from checked-in, scanned, upstream-verified files; nothing comes from users or the network.
+  - Every current call site already labels its button or sits beside text.
+- **`approvedIcon(id)`** returns a component with the Lucide calling shape (`className`, `aria-hidden`), so `categoryIcons.js` maps can hold both kinds.
+
+## 5. Licences and attribution
+
+Checked in as evidence under `design/brand/licenses/`:
+- `phosphor-MIT.txt`, fetched from core `2b75f3a`;
+- `streamline-vectors-README@52d750c.md`, the upstream licence statement: "CC BY 4.0 … give appropriate credit and provide a link to the Streamline website";
+- `CC-BY-4.0.txt`, from the SPDX license list. creativecommons.org is blocked by this environment's network proxy; sha256 is recorded.
+
+Served under `public/licenses/`:
+- the two licence texts;
+- `CREDITS.txt` (draft).
+
+These are reachable without logging in. The Settings page also gets a "Credits and licences" link row (draft text).
+
+**Owner decision 3:** the exact credits wording is customer-facing, so it needs approval.
+
+## 6. Guards
+
+| Guard | Fails on | Doesn't cover |
+| --- | --- | --- |
+| Drift: committed module == `build()` | Hand edit, or a register change without regenerating | Wrong register content (owner-owned) |
+| Each entry's `sha256` == its source file's hash == the `UPSTREAM_VERIFICATION.json` upstream hash for that id | One byte changed in `design/assets/...` | Re-running the upstream fetch in CI (no network there; the record is the anchor) |
+| Active-content scan on `inner`, plus **no `url(` and no `id=`** in inline entries (duplicate inline ids break) | `<script>`, external href, gradient refs | (none listed) |
+| Every `PercyIcon id="..."` / `approvedIcon('...')` literal exists; a non-literal id fails the scan | A typo in an id; `id={x}` | (none listed) |
+| Per-file Lucide bans: listed names can't be imported in the mapped files (Layout: Home, User, Activity, Gift, Settings; Pencil and Plus anywhere in `src/`; ManageGoalsDialog: Archive, Repeat2; ParentProfile: Lightbulb; TodaysGoalsPanel: Settings2). Common aliases also banned: Edit, Edit2, Edit3, PlusCircle, CirclePlus, SquarePen | Re-importing a retired glyph | The TodaysGoalsPanel:127 exemption is explicit (`Check`, `CheckCircle2`, `ClipboardCheck` allowed there until E05) |
+| Key parity (existing) + 27 keys + order | Key added on one side only | (none listed) |
+| Legacy behaviour: every legacy key draws exactly its previous Lucide component; unknown keys draw `Circle` | A swap sneaking in | (none listed) |
+| Picker round trip: cycling from a legacy key comes back to it; cycling from an approved key never yields a legacy key | Legacy key lost after one tap | UI-level (unit test on the pure cycle function) |
+| Illustrations: each `/illustrations/x.svg` in `src/` is a register `visuals` asset with status `selected`; every `<img src="/illustrations/...">` has `alt=""` | Using the medal, or a pending-licence asset; missing `alt` | (none listed) |
+| Freepik exclusion: no `public/` file hashes to the Freepik PNG; `treasure-map` appears nowhere in `src/` | Copying the map in | A re-encoded copy; the owner check is the backstop |
+| Manifest chain (E01 test, amended): sources may sit in the library, `design/brand/fonts`, `design/brand/licenses` or `design/assets`. A `design/assets` source must have its upstream hash in `UPSTREAM_VERIFICATION.json` | A stray public file; an unverified `design/assets` source | (none listed) |
+
+## 7. Edge cases
 
 | Input | Expected |
 | --- | --- |
-| Category with legacy key `heart` | Lucide Heart, as today. The picker shows the 11 approved icons plus Heart, with Heart selected |
-| Category with `hand-heart` | Approved Phosphor hand-heart. Stored key unchanged |
-| Category with an unknown key `zzz` (old client, bad import) | Neutral fallback circle; key unchanged; picker shows no selection |
-| Older server receives a new key (rollout order) | Server validation rejects keys it doesn't know. This ships as one deploy; client and server are in the same repo and release |
-| Export/import of family data with new keys | Keys are strings and pass through; the export test is unchanged |
-| Child reaches the weekly target exactly (`week_points == weekly_target`) | Milestone sticker shows (`>=`) |
-| `weekly_target` is 0 or null | No milestone sticker (guarded) |
-| Reduced motion | No animation is added anywhere |
-| Phosphor icon inside a `text-primary-foreground` button | Takes `currentColor`, so it is white on purple |
-
-## 7. Abuse cases
-
-- **A malicious SVG lands in `design/assets`:** the active-content scan fails before it reaches the module, and `dangerouslySetInnerHTML` only ever receives generated constants.
-- **Someone swaps an approved asset for an unapproved one:** the source path must equal the register's `source_file`, and the hash must match.
+| Category `heart`, `hand-heart`, `brush` (legacy) | Unchanged Lucide glyphs. Picker cycle starts at the current key and can return to it |
+| Unknown key `zzz` | Circle; key preserved; picker treats it as current |
+| A family picks a new key, then the code is reverted | The older server rejects that key on *edit* with a 422 and draws a circle. No data loss. To keep this clean, the server key list ships in its own commit, which must not be reverted alone (N3) |
+| `todaysGoals` completed tile | Unchanged until E05 (see section 2.2) |
+| Settings tips opened later | No robot (no `firstRun`) |
+| Approved icon in a white-on-purple button | `currentColor` makes it white |
 
 ## 8. Test plan
 
-- New `src/test/approvedIcons.test.js` (the guards in section 5).
-- Updated `categoryIcons.test.js` and server key tests.
-- The E01 `brandAssets` test extends naturally through the manifest.
-- `npm test` with a database, `check:tokens`, `lint`, `build`, and Playwright with axe. axe catches unlabeled icon-only buttons.
-- Before/after screenshots of the same five screens, plus Manage Goals and Settings › Behaviours.
-- **Not covered:** whether the owner agrees with each call-site mapping in 2.2. Screenshots and this table are the evidence for that.
+- New `src/test/approvedIcons.test.js`, covering section 6.
+- Updated `categoryIcons.test.js` (27 keys and the legacy-identity rule).
+- Server tests unchanged: the seed is unchanged.
+- Amended `brandAssets.test.js` manifest chain.
+- Full `npm test` with a database, `check:tokens`, `lint`, `build`, and Playwright with axe.
+- Before and after screenshots: nav, Settings › behaviours (with picker), Manage goals, Today's goals, Add reward, and the first-run tips.
+- **Not covered:** owner agreement on each mapping. The screenshots and section 2.2 are the evidence for that.
 
-## 9. Owner decisions raised (PR blockers, not built as assumptions)
+## 9. Owner decisions raised (PR blockers; none built as assumptions)
 
-1. **Legacy behaviour key mapping (proposal; not applied).**
+1. **Legacy behaviour key mapping.** Proposal: heart→kindness, brush→chores, book-open→reading, palette→creativity, footprints→movement, music→creativity, check→routines, hand-heart/handshake/brain/bed→Kindness/Helping/Learning/Sleep art. `star`, `shield`, `mountain`, `sparkles` and `circle` stay Lucide. Note the clash: default "Caring" is `hand-heart`, so mapping both Kindness and Caring to hand-heart would duplicate the icon.
+2. **Defaults.** Should new families' default categories, and new-category creation, use approved keys? (Today: `heart`, `handshake`, `shield`, `mountain`, `hand-heart`, `brush`, `book-open`, `sparkles`, and `star` for new categories.)
+3. **Credits wording** (draft): "Icons by Phosphor Icons (MIT licence). Illustrations by Streamline, https://streamlinehq.com, licensed CC BY 4.0, used unchanged. Full licence texts: /licenses/".
+4. **Gift and UserPlus.** Should Lucide `Gift` (Spend, reward dialogs) use the approved Rewards gift, and Lucide `UserPlus` (add child) use the approved Add icon? Not built.
+5. **The 12 reward-context icons.** E03 delivers 26 of the 38 contexts' mappings plus 3 goals sources. The 12 reward contexts move to E06, which changes the plan ledger line.
+6. **Placements still needed:** Reward redeemed, Progress milestone, medal, chalkboard.
 
-   | Legacy key | Proposed approved key |
-   | --- | --- |
-   | heart | kindness |
-   | brush | chores (the default "Chores" seed uses it) |
-   | book-open | reading |
-   | palette | creativity |
-   | footprints | movement |
-   | music | creativity |
-   | check | routines |
-
-   Keep Lucide for `star`, `shield`, `mountain`, `sparkles` and `circle`; these have no approved context. If approved, it is a render-only mapping, with no data change.
-2. **Gift-as-Rewards mapping** (section 2.2), so the owner can veto it.
-3. **Credits text (draft, customer-facing):** "Icons from Phosphor Icons (MIT licence). Illustrations and reward icons from Streamline (streamlinehq.com), CC BY 4.0, used unchanged. Licence texts: [links]."
-4. **The two element placements** (medal, chalkboard): deferred to E07 unless the owner names screens now.
-
-Still excluded: Freepik map (licence) and PointsStar (unapproved).
+Still excluded: the Freepik map (licence) and PointsStar (unapproved).
 
 ## 10. Rollout and reversal
 
-- **Rollout:** no deploy. The work goes on a stacked draft PR into PR #51's branch. It contains no migration and no rewrite of stored data.
-- **Server changes:** additive only (new allowed keys, new-family seed for two defaults).
-- **Reversal:** revert the commit.
-  - Families who picked a new key before a revert would hold keys an older server rejects on *edit* but still renders as the fallback.
-  - That is safe (no data loss) and documented.
-  - It is moot while nothing is deployed.
+- **Rollout:** no deploy. The work goes on a stacked draft PR into PR #51's branch. There is no migration and no data rewrite, and no seed changes.
+- **Reversal:** revert the UI commit. The server key-list commit stays (section 7).
+
+## Peer review record
+
+The fresh-context review of v1.0 (2026-11-17) raised 6 blocking and 7 non-blocking findings. I checked the code for each before acting (TodaysGoalsPanel:85–138, SpendRewardsModal:36–50, ManageGoalsDialog:158–170, check-tokens on the module, and all Pencil, Plus and Lightbulb sites).
+
+| # | Finding | Disposition |
+| --- | --- | --- |
+| B1 | Complete mapped onto the forbidden category-icon swap at :127 | Adopted: check-circle only on the Done mark at :138. :127 is exempted and handed to E05 |
+| B2 | Ban list hits headings the design never mapped | Adopted: bans are per file and per name; the page headings are explicitly unchanged |
+| B3 | check-tokens fails on Streamline hex values in the module | Adopted: reward contexts removed from the runtime module (section 3, decision 5) |
+| B4 | Reward redeemed targets a state that doesn't exist | Adopted: deferred to the owner (decision 6) |
+| B5 | The E01 manifest test would reject `design/assets` and licence sources | Adopted: licence sources checked in; the test is amended with an upstream-record chain |
+| B6 | Kindness reseed plus hand-heart swap duplicates icons | Adopted: neither is built; both go to decisions 1–2 |
+| N1 | The 4-key swap is inference | Adopted: dropped, into decision 1 |
+| N2 | Picker cycle loses legacy keys; `'star'` default | Adopted: cycle includes the current key; the default goes to decision 2 |
+| N3 | Server tests, revert risk, no import route | Adopted: seeds untouched; key list in its own commit; the import row is removed |
+| N4 | Schedule legend, Child switch, UserPlus, Goals placement | Schedule and Goals adopted. Child switch answered (no label to carry it). UserPlus goes to decision 4 |
+| N5 | Several milestone stickers at once; robot in Settings; double gift | Adopted: milestone deferred; robot behind `firstRun`; gift-reciept replaces the glyph |
+| N6 | Deferrals are unilateral; Gift built despite §9 | Adopted: reward contexts become decision 5; Gift is not built |
+| N7 | CC BY credit form, MIT in bundle, missing guards | Adopted: Streamline README credit form, public `/licenses`, `/*! @license */`, and the extra guards in section 6 |
+
+## Verification record (2026-11-17, this branch)
+
+| Check | Result |
+| --- | --- |
+| Upstream fetch of all 47 register assets (pinned URLs) | 47 of 47 equal to the checked-in files. Control: a regular and a duotone gift hash differently. Recorded in `design/brand/UPSTREAM_VERIFICATION.json` |
+| Generated module | 28 Phosphor ids. `check-tokens` OK on the file. Drift test green |
+| Mutations, each restored afterwards: Lucide `Pencil` re-imported in Rewards; module viewBox hand-edited; id typo `pencel` in ChildCard; one byte added to `gear.svg`; Freepik PNG copied into `public/` | Each made its own guard fail (drift, upstream equality, id existence, per-file ban, Freepik exclusion) |
+| `npx vitest run` with `TEST_DATABASE_URL` (local Postgres 16) | 27 files, 636 tests passed |
+| `npm run check:tokens` / `npm run lint` / `npm run build` | Tokens OK (74 files) / 0 errors, 5 warnings (baseline) / built; `dist/` holds `illustrations/` and `licenses/` |
+| `npx playwright test` (4 viewports, axe) | 31 passed, 9 skipped (single-viewport specs) |
+| `/licenses/CREDITS.txt` served by the app without login | 200 with the credits text. Before E03 the same path returned the app's fallback page |
+| Screenshots | `docs/engineering/evidence/e03/`, before (PR #51 head `ef21435`) and after, at 390 px |

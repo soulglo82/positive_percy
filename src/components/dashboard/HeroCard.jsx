@@ -24,6 +24,8 @@ export default function HeroCard({ children = [], streak = 0, onAddFirstChild })
           <div className="flex items-center gap-3 min-w-0 mr-auto">
             <span className="shrink-0 rounded-full bg-card h-10 w-10 flex items-center justify-center"><Logo size={30} decorative /></span>
             <h1 className="font-display text-lg sm:text-title font-extrabold">Welcome to Positive Percy</h1>
+            {/* E03: approved Home welcome sticker (Streamline, CC BY 4.0); decorative. */}
+            <img src="/illustrations/stickies-star.svg" alt="" aria-hidden="true" width={40} height={40} className="shrink-0" />
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm">{PERCY.TAGLINE}</p>

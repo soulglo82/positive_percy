@@ -418,6 +418,7 @@ export default function ParentDashboard() {
       <OnboardingTips
         isOpen={showOnboarding && !welcomeCode}
         onClose={() => setShowOnboarding(false)}
+        firstRun
       />
     </div>
   );

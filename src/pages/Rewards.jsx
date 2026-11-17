@@ -4,7 +4,8 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Gift } from "lucide-react";
+import { Gift } from "lucide-react";
+import PercyIcon from "@/components/icons/PercyIcon";
 import { toast } from "sonner";
 
 import Logo from "@/components/brand/Logo";
@@ -113,7 +114,7 @@ export default function Rewards() {
             <p className="text-muted-foreground mt-1">Create rewards your kids can earn 🎁</p>
           </div>
           <Button onClick={() => openRewardForm()}>
-            <Plus className="w-4 h-4" />
+            <PercyIcon id="phosphor:plus-circle:duotone" className="w-4 h-4" />
             New Reward
           </Button>
         </div>

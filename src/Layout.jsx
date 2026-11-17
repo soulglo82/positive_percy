@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { Home, Gift, Activity, Settings, LogOut, User } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { approvedIcon } from '@/components/icons/PercyIcon';
+import { APPROVED_CONTEXTS } from '@/components/icons/approvedIcons';
+
+// E03: the five owner-approved navigation icons (register decisions.nav).
+const NAV_ICONS = Object.fromEntries(Object.entries(APPROVED_CONTEXTS.nav).map(([k, id]) => [k, approvedIcon(id)]));
 import { useAuth } from '@/lib/AuthContext';
 import Logo from '@/components/brand/Logo';
 import useRealtimeSync from '@/lib/useRealtimeSync';
@@ -30,11 +35,11 @@ export default function Layout({ children, currentPageName }) {
   useRealtimeSync(user?.family_code);
 
   const navItems = [
-    { name: 'ParentDashboard', label: 'Home', icon: Home },
-    { name: 'ChildView', label: 'Child', icon: User },
-    { name: 'Activity', label: 'Activity', icon: Activity },
-    { name: 'Rewards', label: 'Rewards', icon: Gift },
-    { name: 'ParentProfile', label: 'Settings', icon: Settings },
+    { name: 'ParentDashboard', label: 'Home', icon: NAV_ICONS.Home },
+    { name: 'ChildView', label: 'Child', icon: NAV_ICONS.Progress },
+    { name: 'Activity', label: 'Activity', icon: NAV_ICONS.Activity },
+    { name: 'Rewards', label: 'Rewards', icon: NAV_ICONS.Rewards },
+    { name: 'ParentProfile', label: 'Settings', icon: NAV_ICONS.Settings },
   ];
 
   const pageTitle = PAGE_TITLES[currentPageName] || '';
@@ -76,7 +81,7 @@ export default function Layout({ children, currentPageName }) {
                         : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                     }`}
                   >
-                    <Icon className="w-[18px] h-[18px]" strokeWidth={1.5} aria-hidden="true" />
+                    <Icon className="w-[18px] h-[18px]" aria-hidden="true" />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -135,7 +140,7 @@ export default function Layout({ children, currentPageName }) {
                 }`}
               >
                 {/* Icon in brand orange (3:1 is enough for an icon); the label stays ink (4.24 in orange). */}
-                <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-primary' : ''}`} strokeWidth={1.5} aria-hidden="true" />
+                <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-primary' : ''}`} aria-hidden="true" />
                 <span className="text-xs">
                   {item.label}
                 </span>

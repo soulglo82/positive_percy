@@ -7,7 +7,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, Save, Copy, Check, Share2, Lightbulb, UserPlus, Users, Home, KeyRound, Download } from "lucide-react";
+import { Settings, Save, Copy, Check, Share2, UserPlus, Users, Home, KeyRound, Download } from "lucide-react";
+import PercyIcon from "@/components/icons/PercyIcon";
 import { toast } from "sonner";
 import { Points } from "@/components/brand/PointsStar";
 import ChildAvatar from "../components/child/ChildAvatar";
@@ -18,7 +19,6 @@ import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import BehaviorCategoryManager from "../components/settings/BehaviorCategoryManager";
 import FamilyTimezone from "../components/settings/FamilyTimezone";
-import { Pencil } from "lucide-react";
 
 export default function ParentProfile() {
   const { user, familyCode, updateUser } = useAuth();
@@ -154,7 +154,7 @@ export default function ParentProfile() {
                         setShowEditChild(true);
                       }}
                     >
-                      <Pencil className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                      <PercyIcon id="phosphor:pencil:duotone" className="w-4 h-4 text-muted-foreground" />
                     </Button>
                   </div>
                 ))}
@@ -275,9 +275,20 @@ export default function ParentProfile() {
           onClick={() => setShowTips(true)}
           className="w-full flex items-center justify-center gap-1 text-center text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Lightbulb className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
+          <PercyIcon id="phosphor:info:duotone" className="w-4 h-4" />
           Need help rewarding behaviour? View parenting tips
         </button>
+
+        {/* E03: CC BY 4.0 / MIT attribution. DRAFT wording, pending owner approval
+            (E03 design, decision 3). The file is public, so it needs no login. */}
+        <a
+          href="/licenses/CREDITS.txt"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex items-center justify-center text-center text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          Credits and licences
+        </a>
       </div>
 
       <OnboardingTips

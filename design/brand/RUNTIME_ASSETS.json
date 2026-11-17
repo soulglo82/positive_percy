@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "issued": "2026-11-15",
   "owner": "Percy v2 engineering",
   "status": "E01 provenance for runtime brand files; not deployed",
@@ -197,6 +197,54 @@
       "source": "design/brand/fonts/poppins-latin-ext-600-normal.woff2",
       "licence": "SIL OFL 1.1, @fontsource/poppins@5.3.0 (tarball sha512-cms1nM7U6SN8epIV1WMVOV8VsA645aSm3wHfzIQnkk188U341ThbJGSl2Sv54V29gnDbT2arMPfLzvVIIVCceQ==)",
       "sha256": "bb1f2d582e7fba586ab70c91ef062d3becaf78b887654953863521b73665d171"
+    },
+    {
+      "runtime": "public/illustrations/stickies-star.svg",
+      "source": "design/assets/streamline/stickies/colors/school-science/star.svg",
+      "licence": "Streamline, CC BY 4.0 (design/brand/licenses/streamline-vectors-README@52d750c.md); register visuals status selected; upstream-verified (design/brand/UPSTREAM_VERIFICATION.json)",
+      "sha256": "9c6a18879baacecceb86d635903132adb3ad43f2ee91741ec4be4e1ee959065a"
+    },
+    {
+      "runtime": "public/illustrations/kameleon-robot.svg",
+      "source": "design/assets/streamline/kameleon/pop/school-science/robot.svg",
+      "licence": "Streamline, CC BY 4.0 (design/brand/licenses/streamline-vectors-README@52d750c.md); register visuals status selected; upstream-verified (design/brand/UPSTREAM_VERIFICATION.json)",
+      "sha256": "5ef88d2b9d70a30c87ec24a7a11d7ef5a7ef72aded5c7d5ca243bdf8eb9063b5"
+    },
+    {
+      "runtime": "public/illustrations/stickies-gift-reciept.svg",
+      "source": "design/assets/streamline/stickies/colors/shopping-shipping/gift-reciept.svg",
+      "licence": "Streamline, CC BY 4.0 (design/brand/licenses/streamline-vectors-README@52d750c.md); register visuals status selected; upstream-verified (design/brand/UPSTREAM_VERIFICATION.json)",
+      "sha256": "450f48f2ac29f1be4db712673398e37a8bee1cb07f530c1cecbcef1e5dd48f9b"
+    },
+    {
+      "runtime": "public/licenses/phosphor-MIT.txt",
+      "source": "design/brand/licenses/phosphor-MIT.txt",
+      "licence": "Licence text (Phosphor core 2b75f3a)",
+      "sha256": "b5b1f1da112d18ea2147decfd48ddc1bf2b5aeb6c265381579340e95b15a2bb2"
+    },
+    {
+      "runtime": "public/licenses/CC-BY-4.0.txt",
+      "source": "design/brand/licenses/CC-BY-4.0.txt",
+      "licence": "Licence text (SPDX copy of CC BY 4.0)",
+      "sha256": "d557539df68e771cc1eedcc91d13f70fca930e508d11eedcafa4b15db49e3744"
+    },
+    {
+      "runtime": "public/licenses/CREDITS.txt",
+      "source": "design/brand/licenses/CREDITS.txt",
+      "licence": "Credits notice, DRAFT pending owner approval of wording",
+      "sha256": "621e1ea19c3c604ce8eb99c33b5c03bde78c9a1c4c86074f9ee6a9510eb72e69"
+    }
+  ],
+  "change_log": [
+    {
+      "version": "1.0",
+      "date": "2026-11-15",
+      "change": "E01 runtime brand files"
+    },
+    {
+      "version": "1.1",
+      "date": "2026-11-17",
+      "change": "E03 illustrations and licence files"
     }
   ]
 }
