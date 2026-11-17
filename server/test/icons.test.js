@@ -31,6 +31,28 @@ describe.skipIf(!runDb)('Batch D PR2: icon_key', () => {
     expect((await cats()).find((c) => c.id === a.json.id).icon_key).toBe('brush');
   });
 
+  // E03: the 11 approved keys are accepted on create and update, round-trip
+  // unchanged, and a legacy key set beside them is not rewritten.
+  it('approved keys round-trip; legacy keys stay as stored', async () => {
+    const approved = ['kindness', 'learning', 'helping', 'chores', 'movement', 'reading', 'routines',
+      'self-care', 'community', 'creativity', 'sleep'];
+    const c = await api(ctx.base, 'POST', '/api/behavior-categories', { token: F.token, body: { name: 'Approved one', icon_key: 'self-care' } });
+    expect(c.status).toBe(200);
+    expect(c.json.icon_key).toBe('self-care');
+    for (const k of approved) {
+      const u = await api(ctx.base, 'PUT', `/api/behavior-categories/${c.json.id}`, { token: F.token, body: { icon_key: k } });
+      expect(u.status, k).toBe(200);
+      expect((await cats()).find((x) => x.id === c.json.id).icon_key).toBe(k);
+    }
+    // Defaults keep their Batch D keys (no reseed in E03).
+    const byName = Object.fromEntries((await cats()).map((x) => [x.name, x.icon_key]));
+    expect(byName.Kindness).toBe('heart');
+    expect(byName.Caring).toBe('hand-heart');
+    for (const near of ['Kindness', 'self_care', 'selfcare', 'sleep ']) {
+      expect((await api(ctx.base, 'PUT', `/api/behavior-categories/${c.json.id}`, { token: F.token, body: { icon_key: near } })).status, near).toBe(422);
+    }
+  });
+
   it('migration 011 maps emoji with and without U+FE0F; unknown stays circle; boot does not change keys', async () => {
     const ins = (name, icon) => ctx.pool.query(
       "INSERT INTO behavior_categories (family_code, name, icon, sort_order, icon_key) VALUES ($1, $2, $3, 99, 'circle') RETURNING id", [F.code, name, icon]);

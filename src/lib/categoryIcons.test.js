@@ -4,9 +4,10 @@ import { ICON_KEYS, ICON_LABELS, iconFor, iconForCategoryName } from './category
 import { ICON_KEYS as SERVER_KEYS } from '../../server/iconKeys.js';
 
 describe('behaviour icons', () => {
-  it('the app and server use the same 16 keys, each with a label', () => {
+  // E03: 16 Batch D keys + 11 owner-approved keys, same order on both sides.
+  it('the app and server use the same 27 keys, each with a label', () => {
     expect(ICON_KEYS).toEqual(SERVER_KEYS);
-    expect(ICON_KEYS).toHaveLength(16);
+    expect(ICON_KEYS).toHaveLength(27);
     for (const k of ICON_KEYS) expect(ICON_LABELS[k]).toBeTruthy();
   });
   it('unknown, empty and old emoji values draw a circle', () => {
