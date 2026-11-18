@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.0 |
+| Version | 1.1 |
 | Issued | 2026-11-18 |
 | Owner | Percy v2 engineering. Branch `claude/percy-v2-e04-goals-server-review`, cut from PR #45 head `264960c` |
 | Status | Review complete; fixes and tests on the branch. Not merged; PR #46 stays on design hold |
@@ -13,6 +13,7 @@
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 2026-11-18 | Review, findings, fixes and test evidence |
+| 1.1 | 2026-11-18 | CI green at `f8e4aa6`. N6 raised from accepted note to E05 must-fix, per the follow-up on PR #53; E05/E07 carry-over list made explicit |
 
 ## 1. Scope and method
 
@@ -59,7 +60,7 @@ Every finding was reproduced with a failing test before it was fixed.
 | N3 | Note | No index on `today_goals(child_id)` or `(category_id)`, so cascades scan the table. The completions `goal_id` index is partial | Child or category delete at scale | Recorded for scale; not needed at current volume |
 | N4 | Note | Migration 013 is reserved but missing. If it lands later it runs after 014 on deployed databases but before 014 on fresh ones | A future 013 | **Owner of 013 must make it order-independent.** Recorded here |
 | N5 | Note | Switching a family from no timezone to a real one can move "today" back one day, so a weekly goal done for the UTC day can be done again for the new local day | First timezone auto-set | Accepted; inherent and one-off |
-| N6 | Note | Editing a weekly goal that started in the past resets `start_date` to today. A past one-off cannot be edited at all | Rename an old routine | Accepted. The #46 client already clamps start date to today (`ManageGoalsDialog` line 80). For **E05**: show this in the UI |
+| N6 | **E05 must-fix** (raised in 1.1) | Editing a weekly goal that started in the past resets `start_date` to today: the #46 client clamps it (`ManageGoalsDialog` `startEditing`) and `PUT` writes it back on every save, so a rename silently moves the routine's original effective date. A past one-off cannot be edited at all | Rename an established routine | **E05**: keep the original `start_date` on title/category-only edits (the API must accept an unchanged past start date when the schedule is unchanged); ask for or state a new effective date only when the schedule actually changes. Tests: rename-only save leaves `start_date` unchanged; a deliberate reschedule sets the new date. If the reset were kept on purpose, it would need explicit owner approval |
 
 ## 4. Changes on the branch
 
@@ -86,9 +87,21 @@ There are no schema changes, no data changes and no client changes. The one user
 - A true 40P01 deadlock is not reproduced in a test. The lock-order change removes the cycle by construction, and the mapping is the backstop.
 - Wall-clock midnight is not simulated. The timezone-change test exercises the same server re-check.
 
-## 6. Before E05
+## 6. Carried into E05 and E07
 
-- [ ] Owner/engineering review of this PR (into #45's branch).
-- [ ] E05 shows the R1 409 message and the N6 start-date behaviour.
-- [ ] E05 returns the category `icon_key` with goals. This is the E03 completed-goal rule (the goal API change belongs in E05).
-- PR #46 stays on design hold.
+These come from this review and from the follow-up comment on PR #53 (2026-11-18), which is a review note, not owner sign-off or merge authorisation.
+
+**E05 (Today's Goals UI in v2), must do:**
+- [ ] Keep the original `start_date` when a weekly goal is renamed or its category changes. Change the effective date only when the schedule changes, and make that explicit. Adjust `PUT /api/todays-goals/:id` as needed. Tests: a rename-only save leaves `start_date` unchanged; a deliberate reschedule is applied (N6).
+- [ ] Show the R1 409 message ("Create a separate goal…") when the parent changes the schedule type of a completed goal.
+- [ ] Return the category `icon_key` with goals, and keep the category icon on completed goals with a separate Done mark (E03 completed-goal rule; the E03 test exemption is removed then).
+- [ ] Make the selected child unmistakable in Today's Goals. In the current screenshots, one child's points card sits directly above a goals panel set to another child.
+
+**E07 (screens):**
+- [ ] Onboarding presents all three Percy use modes (everyday goals, positive behaviours, bigger achievements), instead of leading with screen time.
+
+**Unchanged:** PR #46 stays on design hold. Nothing here authorises a merge or deploy.
+
+## 7. CI
+
+GitHub CI on PR #53 head `f8e4aa6` (run 44267690722): `build-and-test` success, `ui` success.
