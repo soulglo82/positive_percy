@@ -338,6 +338,77 @@ describe.skipIf(!hasDb)('E04: Today\'s Goals server hardening', () => {
     });
   });
 
+  // Findings from the independent E04 review (docs/engineering/E04-GOALS-SERVER-REVIEW.md).
+  describe('review findings', () => {
+    it('R1: a goal completed as weekly cannot be turned into a one-off (its old completions would block it forever)', async () => {
+      const f = await freshChild(T.b, 'R1');
+      const today = (await list(f)).json.date;
+      const g = (await create(f, { ...oneOff(f), schedule_kind: 'weekly', weekdays: [1, 2, 3, 4, 5, 6, 7], scheduled_date: undefined })).json;
+      expect((await complete(f, g.id)).status).toBe(200);
+      // Simulate that completion being from an earlier day.
+      await ctx.pool.query("UPDATE today_goal_completions SET scheduled_for = scheduled_for - 1 WHERE goal_id=$1", [g.id]);
+      const edit = await call(f, 'PUT', `/api/todays-goals/${g.id}`, oneOff(f, today));
+      expect(edit.status).toBe(409);
+      expect(edit.json.error).toMatch(/separate goal/i);
+      // Same kind, new days: still allowed.
+      const keep = await call(f, 'PUT', `/api/todays-goals/${g.id}`, { ...oneOff(f), schedule_kind: 'weekly', weekdays: [1, 3], scheduled_date: undefined, start_date: today });
+      expect(keep.status).toBe(200);
+      // A goal with no completions can still change kind.
+      const fresh = (await create(f, { ...oneOff(f), title: 'Unused', schedule_kind: 'weekly', weekdays: [1], scheduled_date: undefined })).json;
+      expect((await call(f, 'PUT', `/api/todays-goals/${fresh.id}`, oneOff(f, today, { title: 'Unused' }))).status).toBe(200);
+    });
+
+    it('R2: moving a goal to a category that is being deleted gives 404, never a 500', async () => {
+      const f = await freshChild(T.b, 'R2');
+      const today = (await list(f)).json.date;
+      const cat = (await call(f, 'POST', '/api/behavior-categories', { name: 'Going away', icon_key: 'star' })).json;
+      const g = (await create(f, oneOff(f, today))).json;
+      const del = await ctx.pool.connect();
+      try {
+        await del.query('BEGIN');
+        await del.query('DELETE FROM behavior_categories WHERE id=$1', [cat.id]);
+        const pending = call(f, 'PUT', `/api/todays-goals/${g.id}`, oneOff(f, today, { category_id: cat.id }));
+        await new Promise(r => setTimeout(r, 300)); // let the edit reach its lock wait
+        await del.query('COMMIT');
+        const r = await pending;
+        expect(r.status, r.text).toBe(404);
+      } finally { del.release(); }
+      const { rows } = await ctx.pool.query('SELECT category_id FROM today_goals WHERE id=$1', [g.id]);
+      expect(rows[0].category_id).toBe(f.kindness.id);
+    });
+
+    it('R3: a goal completion\'s request id is not replayed as a manual award', async () => {
+      const f = await freshChild(T.b, 'R3');
+      const today = (await list(f)).json.date;
+      const g = (await create(f, oneOff(f, today))).json;
+      const used = rid();
+      const c = await complete(f, g.id, used);
+      expect(c.status).toBe(200);
+      const before = await balance(f.child.id);
+      const r = await call(f, 'POST', `/api/children/${f.child.id}/award`, { points: c.json.event.points, category: c.json.event.category, request_id: used });
+      expect(r.status).toBe(409);
+      expect(await balance(f.child.id)).toBe(before);
+      // A plain award retry still replays.
+      const plain = rid();
+      const a1 = await call(f, 'POST', `/api/children/${f.child.id}/award`, { points: 2, category: 'Kindness', request_id: plain });
+      const a2 = await call(f, 'POST', `/api/children/${f.child.id}/award`, { points: 2, category: 'Kindness', request_id: plain });
+      expect([a1.status, a2.status]).toEqual([200, 200]);
+      expect(a2.json.duplicate).toBe(true);
+    });
+
+    it('R4: upper-case ids are treated like lower-case ids', async () => {
+      const f = await freshChild(T.b, 'R4');
+      const cat = (await call(f, 'POST', '/api/behavior-categories', { name: 'R4 only', icon_key: 'star' })).json;
+      expect((await call(f, 'PUT', `/api/behavior-categories/${cat.id}`, { assigned_children: [f.child.id] })).status).toBe(200);
+      const today = (await list(f)).json.date;
+      const up = oneOff(f, today, { child_id: f.child.id.toUpperCase(), category_id: cat.id.toUpperCase() });
+      const g = await create(f, up);
+      expect(g.status, g.text).toBe(201);
+      const edit = await call(f, 'PUT', `/api/todays-goals/${g.json.id}`, { ...up, title: 'Renamed' });
+      expect(edit.status, edit.text).toBe(200);
+    });
+  });
+
   describe('export', () => {
     it('includes undone completions with their undone marker, and archived goals', async () => {
       const f = await freshChild(T.a, 'Export');
