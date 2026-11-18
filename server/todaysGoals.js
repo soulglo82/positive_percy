@@ -18,6 +18,9 @@ function parseGoal(data) {
   if (!isUuid(data?.child_id) || !isUuid(data?.category_id)) {
     return { error: 'Choose a child and a positive behaviour category.' };
   }
+  // E04 R4: ids are compared as strings below (assigned_children, child
+  // moves), so normalise the case the UUID pattern accepts.
+  data = { ...data, child_id: data.child_id.toLowerCase(), category_id: data.category_id.toLowerCase() };
   const kind = data?.schedule_kind;
   if (kind !== 'one_off' && kind !== 'weekly') return { error: 'Choose a one-off or weekly routine.' };
   if (kind === 'one_off') {
@@ -38,6 +41,20 @@ function parseGoal(data) {
   return { title, child_id: data.child_id, category_id: data.category_id,
     schedule_kind: kind, scheduled_date: null, start_date: data.start_date ?? null,
     weekdays: [...weekdays].sort((a, b) => a - b) };
+}
+
+// E05: weekday sets compared sorted and de-duplicated (the DB allows {1,1}).
+const sameDays = (a, b) => {
+  const norm = (x) => [...new Set((x || []).map(Number))].sort((p, q) => p - q).join(',');
+  return norm(a) === norm(b);
+};
+
+// E04 R2: a category deleted while a goal is being saved (23503), or a
+// deadlock Postgres resolved (40P01), is a conflict, not a server error.
+function conflict(res, err) {
+  if (err?.code === '23503') { res.status(404).json({ error: 'Child or category not found.' }); return true; }
+  if (err?.code === '40P01') { res.status(409).json({ error: 'That changed at the same time. Please try again.' }); return true; }
+  return false;
 }
 
 function fail(res, err, context) {
@@ -73,6 +90,7 @@ const BASE_SELECT = `
     to_char(g.start_date, 'YYYY-MM-DD') AS start_date,
     g.weekdays, g.created_at, g.updated_at, g.archived_at,
     c.name AS child_name, bc.name AS category_name, bc.points AS category_points,
+    bc.icon_key AS category_icon_key,
     x.id AS completion_id, x.point_event_id, x.awarded_points, x.created_at AS completed_at
   FROM today_goals g
   JOIN children c ON c.id = g.child_id AND c.family_code = g.family_code
@@ -131,7 +149,7 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
         goal.schedule_kind, goal.scheduled_date, goal.weekdays, goal.start_date]);
       broadcast(req.familyCode, { type: 'todays_goals_updated' });
       return res.status(201).json(rows[0]);
-    } catch (err) { return fail(res, err, 'Create today goal'); }
+    } catch (err) { return conflict(res, err) || fail(res, err, 'Create today goal'); }
   });
 
   router.put('/:id', async (req, res) => {
@@ -141,21 +159,67 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      const { rows: existing } = await client.query(
-        'SELECT child_id FROM today_goals WHERE id = $1 AND family_code = $2 AND archived_at IS NULL FOR UPDATE',
+      // E04 R2: lock the target category before the goal. Category delete
+      // locks the category and then (ON DELETE SET NULL) its goals, so taking
+      // them in the same order cannot deadlock, and a category deleted
+      // meanwhile is simply not found.
+      const { rowCount: catOk } = await client.query(
+        'SELECT 1 FROM behavior_categories WHERE id = $1 AND family_code = $2 FOR KEY SHARE',
+        [goal.category_id, req.familyCode]);
+      if (!catOk) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Child or category not found.' }); }
+      // E05 B3: one locked read of everything the rules compare against.
+      const { rows: existing } = await client.query(`
+        SELECT child_id, schedule_kind, weekdays,
+          to_char(start_date, 'YYYY-MM-DD') AS start_day,
+          to_char(scheduled_date, 'YYYY-MM-DD') AS scheduled_day
+        FROM today_goals WHERE id = $1 AND family_code = $2 AND archived_at IS NULL FOR UPDATE`,
         [req.params.id, req.familyCode]);
       if (!existing.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Goal not found.' }); }
+      const prev = existing[0];
+      const activeCompletion = async () => (await client.query(
+        'SELECT 1 FROM today_goal_completions WHERE goal_id = $1 AND undone_at IS NULL LIMIT 1', [req.params.id])).rowCount > 0;
+      // E04 R1: a one-off counts any earlier completion as "done", so a goal
+      // with completions must keep its kind. Create a separate goal instead.
+      if (prev.schedule_kind !== goal.schedule_kind && await activeCompletion()) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: 'This goal has been completed before. Create a separate goal for a different schedule.' });
+      }
+      // E05 B2: for the same reason, a completed one-off keeps its date.
+      if (prev.schedule_kind === 'one_off' && goal.schedule_kind === 'one_off' &&
+          goal.scheduled_date !== prev.scheduled_day && await activeCompletion()) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: 'This goal has been completed. Create a separate goal for another date.' });
+      }
       // Changes to the child would detach historical completions from their
       // original owner. Create a different goal instead.
-      if (existing[0].child_id !== goal.child_id) {
+      if (prev.child_id !== goal.child_id) {
         await client.query('ROLLBACK'); return res.status(409).json({ error: 'Create a separate goal for another child.' });
       }
       const choice = await ownedChoice(client, req.familyCode, goal.child_id, goal.category_id);
       if (!choice) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Child or category not found.' }); }
       const today = await localToday(client, req.familyCode);
-      if (goal.schedule_kind === 'weekly') goal.start_date = goal.start_date || today.date;
-      // Editing a weekly schedule must respect the same no-backdating rule as creation.
-      if (goal.start_date < today.date) {
+      // E05 S2 (design section 9): a rename never moves a routine's start or a
+      // one-off's date; a new effective date only when the schedule changes.
+      if (goal.schedule_kind === 'weekly') {
+        const sameSchedule = prev.schedule_kind === 'weekly' && sameDays(prev.weekdays, goal.weekdays);
+        if (sameSchedule && prev.start_day < today.date) {
+          goal.start_date = prev.start_day; // running routine: keep, ignore what the client sent
+        } else if (sameSchedule) {
+          goal.start_date = goal.start_date || prev.start_day;
+          if (goal.start_date < today.date) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'Choose today or a future date.' });
+          }
+        } else {
+          const later = prev.schedule_kind === 'weekly' && prev.start_day > today.date ? prev.start_day : today.date;
+          goal.start_date = goal.start_date || later;
+          if (goal.start_date < today.date) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'Choose today or a future start date for the new schedule.' });
+          }
+        }
+      } else if (!(prev.schedule_kind === 'one_off' && goal.scheduled_date === prev.scheduled_day) &&
+          goal.scheduled_date < today.date) {
         await client.query('ROLLBACK');
         return res.status(400).json({ error: 'Choose today or a future date.' });
       }
@@ -171,7 +235,10 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
       await client.query('COMMIT');
       broadcast(req.familyCode, { type: 'todays_goals_updated' });
       return res.json(rows[0]);
-    } catch (err) { await client.query('ROLLBACK').catch(() => {}); return fail(res, err, 'Edit today goal'); }
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      return conflict(res, err) || fail(res, err, 'Edit today goal');
+    }
     finally { client.release(); }
   });
 
