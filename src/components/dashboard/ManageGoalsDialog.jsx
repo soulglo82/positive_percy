@@ -2,7 +2,7 @@
 // screens "goalsmanage" and "goalform"; docs/engineering/V1-F-DESIGN.md G).
 // The E05 rules are unchanged: a running routine never sends start_date, a
 // completed one-off keeps its date, and the server's R1/B2 409s show inline.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import PercyIcon from "@/components/icons/PercyIcon";
@@ -35,6 +35,15 @@ export default function ManageGoalsDialog({ open, onClose, child: initialChild, 
   const queryClient = useQueryClient();
   const [childId, setChildId] = useState(initialChild?.id);
   const [view, setView] = useState('list'); // 'list' | 'form'
+  // Review of PR #58: swapping views unmounts the focused button, so focus
+  // moves to the new view's title (announced, then Tab continues from there).
+  const titleRef = useRef(null);
+  const shownView = useRef(null);
+  useEffect(() => {
+    if (!open) { shownView.current = null; return; }
+    if (shownView.current !== null && shownView.current !== view) titleRef.current?.focus();
+    shownView.current = view;
+  }, [open, view]);
   const [editingId, setEditingId] = useState(null);
   // E05: the goal as stored when editing began; the start-date rule compares
   // against it (docs/engineering/E05-DESIGN.md section 9).
@@ -162,7 +171,7 @@ export default function ManageGoalsDialog({ open, onClose, child: initialChild, 
           {view === 'list' ? (
             <>
               <DialogHeader>
-                <DialogTitle className="text-title font-extrabold text-primary">Manage {name}'s goals</DialogTitle>
+                <DialogTitle ref={titleRef} tabIndex={-1} className="text-title font-extrabold text-primary focus-visible:outline-none">Manage {name}'s goals</DialogTitle>
                 <DialogDescription>Create routines, update schedules or archive goals safely.</DialogDescription>
               </DialogHeader>
               <DialogBody className="space-y-4">
@@ -219,7 +228,7 @@ export default function ManageGoalsDialog({ open, onClose, child: initialChild, 
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle className="text-title font-extrabold text-primary">{editingId ? 'Edit goal' : 'New goal'}</DialogTitle>
+                <DialogTitle ref={titleRef} tabIndex={-1} className="text-title font-extrabold text-primary focus-visible:outline-none">{editingId ? 'Edit goal' : 'New goal'}</DialogTitle>
                 <DialogDescription>For {name} · earned points are awarded when you mark a goal complete</DialogDescription>
               </DialogHeader>
               <DialogBody>

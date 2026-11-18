@@ -46,7 +46,7 @@ describe('Onboarding (V1-F O)', () => {
 
 describe('Welcome (V1-F W)', () => {
   afterEach(() => vi.unstubAllEnvs());
-  it('approved copy and Add your first child; no map while its gate is open', () => {
+  it('approved copy and Add your first child; no map when the build supplies none (gate coverage: releaseGates.test.js and CI)', () => {
     const onAdd = vi.fn();
     const { container } = render(<WelcomeCard onAddFirstChild={onAdd} />);
     expect(screen.getByRole('heading', { name: 'Every adventure starts with a goal!' })).toBeTruthy();

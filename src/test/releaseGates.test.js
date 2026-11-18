@@ -2,6 +2,7 @@
 // the build adds it only once its gate is cleared, and the dist check fails
 // on a gated file (by hash, so a rename does not dodge it).
 import { describe, it, expect } from 'vitest';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -29,6 +30,10 @@ function tree({ status = 'open', clearance = null, file = 'dist/gated/treasure-m
 
 describe('release gate record', () => {
   it('gates the exact approved map bytes and is open', () => {
+    // The record's hash is the source file's real hash (a re-exported map
+    // would otherwise slip past the hash-based dist check), and it is the
+    // approved bytes (the same as the approved HTML's embedded image).
+    expect(crypto.createHash('sha256').update(fs.readFileSync(SOURCE)).digest('hex')).toBe(gate.sha256);
     expect(gate.sha256).toBe('9f31c75a73e77e4bd19ebe93b09b94f75d30ef1c667a94ec89a541209b9d8ad1');
     expect(gate.status).toBe('open'); // clearing it is the owner's decision, recorded with the change
     expect(readGates(ROOT)).toHaveLength(1);

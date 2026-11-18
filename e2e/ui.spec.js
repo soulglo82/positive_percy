@@ -149,6 +149,8 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await award.getByRole('button', { name: /^Award \d+ points?$/ }).click();
   await expect(award).toHaveCount(0);
   await page.getByRole('button', { name: 'Undo' }).first().click();
+  // The Undo really ran (its toast appears), then clears before the next taps.
+  await expect(page.getByText(/^Undone\./)).toBeVisible();
   await expect(page.getByText(/^Undone\./)).toHaveCount(0, { timeout: 15000 });
 
   // V1-F: Manage goals list and the goal form.

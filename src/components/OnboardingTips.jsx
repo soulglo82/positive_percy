@@ -1,6 +1,6 @@
 // V1 onboarding: "Let's get started", three ways to use Percy (approved design
 // 9de1df2, screen "onboarding"; docs/engineering/V1-F-DESIGN.md O). Opened on
-// first run and from Settings.
+// first run only; Settings opens the parenting tips (ParentingTips.jsx).
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,7 @@ export default function OnboardingTips({ isOpen, onClose }) {
           <DialogDescription>Three ways to help good habits grow.</DialogDescription>
         </DialogHeader>
         {/* Focusable so a keyboard can scroll it on small screens (axe scrollable-region-focusable). */}
-        <DialogBody className="space-y-3" tabIndex={0} role="region" aria-label="Let's get started">
+        <DialogBody className="space-y-3" tabIndex={0} role="region" aria-label="Three ways to help good habits grow.">
           {MODES.map((mode) => (
             <section key={mode.title} className="rounded-lg border border-border bg-card p-4">
               <h3 className="font-display font-bold text-lg text-primary">{mode.title}</h3>

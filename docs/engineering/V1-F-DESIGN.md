@@ -2,10 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.2 |
 | Issued | 2026-11-18 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-f-forms`, stacked on V1-A `claude/percy-v1-a-home`) |
-| Status | Reviewed (fresh-context peer review adopted, v1.1) |
+| Status | Reviewed (design peer review v1.1; code review of PR #58 fixed, v1.2) |
 | Binding inputs | Approved HTML blob `9de1df2` (screens `award`, `goalsmanage`, `goalform`, `welcome`, `onboarding`); `V1-IMPLEMENTATION-PLAN.md` v1.1 (§2 rows Award Points, Manage Goals / Goal form, Welcome, Onboarding; §8.5, §8.6, §8.7); `E05-DESIGN.md` §9 (start-date safeguard), E04 R1/B2 |
 
 ## Change log
@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | 1.0 | 2026-11-18 | First draft |
 | 1.1 | 2026-11-18 | Peer review: 2 blocking and 4 of 5 non-blocking findings adopted, 1 answered (§7). §3 is replaced by a build-time gate. G4 and E14–E16 are added. The Settings tips are kept |
+| 1.2 | 2026-11-18 | Code review of PR #58 (CodeRabbit-style): all 3 actionable and 5 nitpick findings fixed (§8). O corrected: Settings opens the parenting tips, not onboarding |
 
 ## 1. Scope
 
@@ -67,7 +68,7 @@ The design's "Back" maps to the dialog's Close and Cancel. This is recorded as a
 - The Today's Goals empty state ("No goals scheduled…", "Set up goals") is unchanged in V1-F. The approved V1 HTML has no goals-empty screen, and the map is gated in any case.
 
 **Onboarding (O).** "Let's get started", "Three ways to help good habits grow.", three numbered cards with the approved text, and "Explore Percy", which closes and sets `percy_onboarding_done`.
-- The first-run flow and the Settings link both open it.
+- The first-run flow opens it. The Settings link opens the five parenting tips (`ParentingTips.jsx`), unchanged.
 - The kameleon-robot illustration and the stickies-star sticker leave the app, because neither is in the locked V1 design. The E03 placement count drops from 3 to 1 (reward form, until V1-D).
 
 ## 3. Licence gate for the treasure map (v1.1: build-time, replaces the CI-job gate)
@@ -159,3 +160,16 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 | 5 | Capability losses need owner sign-off | **Partly adopted.** The five tips are kept for Settings (no content lost). The removal of free amounts and "Other" follows the locked design; it is listed in the PR for the owner, with the effect that changing a behaviour's points also changes Quick Points and goals. The unused `kameleon-robot.svg` and `stickies-star.svg` stay in `public/` and in the credits until a cleanup decision (harmless; their licences are recorded) |
 | 6 | Weak guards: the clearance string, the gated path compared with itself, an incomplete design-only list | **Adopted.** The gated-path test is gone (the map is never in `public/`; the E03 hash scan stands). Clearance is limited as stated in §3. The list is completed |
 | 7 | The placeholder "What went well?" is new copy | **Answered, not adopted:** it is the approved HTML's own placeholder (`<textarea id="award-note" placeholder="What went well?">`) |
+
+## 8. Code review record (PR #58, v1.2)
+
+| # | Finding | Fix | Test |
+| --- | --- | --- | --- |
+| 1 | Switching between list and form left focus on the dialog container | Focus moves to the new view's title (`tabIndex=-1`) | `ManageGoalsDialog.test.jsx`, mutation-checked |
+| 2 | The E2E Undo check could pass before Undo ran | Waits for the "Undone." toast, then for it to clear | `e2e/ui.spec.js` |
+| 3 | The gate hash was compared with a pasted copy only | The test hashes the source file and compares it with the record | `releaseGates.test.js` |
+| N1 | A Welcome test name overstated its gate coverage | Renamed; the gate coverage is named | (test name) |
+| N2 | Onboarding comment and §2 O said Settings opens it | Corrected (here and in the code) | (none) |
+| N3 | The scroll region repeated the dialog's name | Its label is the approved subtitle | Playwright axe |
+| N4 | `goalScheduleSummary` was unused | Removed with its test | (none) |
+| N5 | Trailing blank line in `ci.yml` | Removed | (none) |

@@ -176,4 +176,17 @@ describe('Goal form (G2, G3)', () => {
     await waitFor(() => expect(saveTodayGoal).toHaveBeenCalledTimes(1));
     expect(saveTodayGoal.mock.calls[0]).toEqual([expect.objectContaining({ category_id: 'k1', child_id: 'c2' }), 'g5']);
   });
+
+  it('switching views moves focus to the new title, not the dialog (review of PR #58)', async () => {
+    const d = open();
+    await within(d).findByText('3 goals for Lara');
+    const add = within(d).getByRole('button', { name: 'Add goal' });
+    add.focus();
+    fireEvent.click(add);
+    expect(document.activeElement).toBe(within(d).getByRole('heading', { name: 'New goal' }));
+    fireEvent.click(within(d).getByRole('button', { name: 'Cancel' }));
+    expect(document.activeElement).toBe(within(d).getByRole('heading', { name: "Manage Lara's goals" }));
+    fireEvent.click(within(d).getByRole('button', { name: 'Edit Finish homework' }));
+    expect(document.activeElement).toBe(within(d).getByRole('heading', { name: 'Edit goal' }));
+  });
 });
