@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { CONFETTI_COLORS } from "@/lib/tokens";
 
+import { childOrder } from "@/lib/childColour";
 import { StreakStrip, FamilyStrip, LittleWins, WorkingTowards, QuickPoints } from "../components/home/HomeSections";
 import AddChildModal from "../components/child/AddChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
@@ -219,7 +220,9 @@ export default function ParentDashboard() {
   const handleQuickAction = (child, action) =>
     applyAward(child, { points: action.points, category: action.category || action.label, note: '' });
 
-  const homeChild = children.find((c) => c.id === homeChildId) || children[0];
+  // Oldest first, as in the approved design (and the colour order).
+  const ordered = [...children].sort(childOrder);
+  const homeChild = ordered.find((c) => c.id === homeChildId) || ordered[0];
   const homeActions = homeChild ? allQuickActions.filter((qa) =>
     !qa.assigned_children || qa.assigned_children.length === 0 || qa.assigned_children.includes(homeChild.id)) : [];
 
@@ -256,7 +259,7 @@ export default function ParentDashboard() {
               <h1 className="font-display font-extrabold text-title text-primary">Welcome back!</h1>
               <p className="text-muted-foreground">Good things are happening, one small step at a time.</p>
             </div>
-            <FamilyStrip children={children} selectedId={homeChild.id} onSelect={setHomeChildId} />
+            <FamilyStrip children={ordered} selectedId={homeChild.id} onSelect={setHomeChildId} />
             {/* Phone: Goals, Little wins, Working towards, Quick Points.
                 Desktop: Goals + Quick Points | Little wins + Working towards. */}
             <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-start">

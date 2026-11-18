@@ -128,7 +128,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await checkScreen(page, 'spend', testInfo);
   await closeDialog(page);
 
-  await page.getByRole('button', { name: / for Sam$/ }).first().click();
+  await page.getByRole('button', { name: /\+\d+ for Sam$/ }).first().click();
   await page.getByRole('button', { name: 'Undo' }).first().waitFor();
   await checkScreen(page, 'undo toast', testInfo);
   await page.getByRole('button', { name: 'Undo' }).first().click();

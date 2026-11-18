@@ -15,7 +15,9 @@ export const CHILD_COLOURS = [
 
 const NEUTRAL = { band: 'bg-border', soft: 'bg-muted', ring: 'ring-border', border: 'border-border' };
 
-function order(a, b) {
+// Oldest first (then id): the order colours are given in, and the V1 Home
+// family strip's order.
+export function childOrder(a, b) {
   const ta = Date.parse(a.created_date || '') || 0;
   const tb = Date.parse(b.created_date || '') || 0;
   if (ta !== tb) return ta - tb;
@@ -29,7 +31,7 @@ export function childColour(childOrId, children = []) {
   if (child && Number.isInteger(child.colour_index) && child.colour_index >= 0) {
     return CHILD_COLOURS[child.colour_index % CHILD_COLOURS.length];
   }
-  const sorted = [...children].sort(order);
+  const sorted = [...children].sort(childOrder);
   const i = sorted.findIndex((c) => c.id === id);
   return i < 0 ? NEUTRAL : CHILD_COLOURS[i % CHILD_COLOURS.length];
 }
