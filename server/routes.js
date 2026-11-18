@@ -106,32 +106,55 @@ function categoryPoints(value, fallback = 1) {
 // family and, if assigned to specific children, include this one. Cost and
 // title always come from here, never from the request.
 async function loadSpendableReward(db, rewardId, childId, familyCode) {
-  if (!isUuid(String(rewardId || ''))) return null;
+  const byId = await loadRewardsById(db, familyCode, [rewardId]);
+  return spendableFrom(byId, rewardId, childId);
+}
+
+// One query for any number of reward ids (review: no per-item queries).
+async function loadRewardsById(db, familyCode, ids) {
+  const wanted = [...new Set(ids.map((id) => String(id || '')).filter(isUuid))];
+  if (wanted.length === 0) return new Map();
   const { rows } = await db.query(
-    'SELECT id, title, cost_points, assigned_child_ids FROM rewards WHERE id = $1 AND family_code = $2',
-    [rewardId, familyCode]
+    'SELECT id, title, cost_points, assigned_child_ids FROM rewards WHERE id = ANY($1::uuid[]) AND family_code = $2',
+    [wanted, familyCode]
   );
-  const r = rows[0];
+  return new Map(rows.map((r) => [r.id, r]));
+}
+
+// The spendability rule, in one place: the reward exists in this family and,
+// if assigned to specific children, includes this one.
+function spendableFrom(byId, rewardId, childId) {
+  const r = byId.get(String(rewardId || ''));
   if (!r) return null;
   const assigned = r.assigned_child_ids || [];
   if (assigned.length > 0 && !assigned.includes(childId)) return null;
   return { id: r.id, title: r.title, cost: r.cost_points };
 }
 
+function priceStackFrom(byId, stack, childId) {
+  const out = [];
+  for (const item of stack || []) {
+    const reward = spendableFrom(byId, item.rewardId, childId);
+    if (reward) out.push({ rewardId: reward.id, name: reward.title, cost: reward.cost });
+  }
+  return out;
+}
+
 const stackTotalOf = (stack) => (stack || []).reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
 
-// V1 (plan v1.1 §8.1): children responses carry week_points and
-// available_points = total_points minus the reward stack's reserved cost,
-// priced here on the server (pricedStack drops rewards that are no longer
-// spendable for the child and uses current costs), so no client has to
-// recompute it from stored stack prices.
+// V1 (plan v1.1 §8.1): children responses carry week_points,
+// reward_stack_priced (the stack at current names and costs, without rewards
+// that are gone or no longer for this child) and available_points =
+// total_points minus that stack's cost. One rewards query for all children.
 async function withBalances(db, familyCode, rows) {
   const out = await withWeekPoints(db, familyCode, rows);
   if (!out) return out;
+  const byId = await loadRewardsById(db, familyCode,
+    out.flatMap((r) => (r.reward_stack || []).map((item) => item.rewardId)));
   for (const r of out) {
     if (r.total_points == null) continue;
-    const reserved = stackTotalOf(await pricedStack(db, r.reward_stack, r.id, familyCode));
-    r.available_points = Math.max(0, r.total_points - reserved);
+    r.reward_stack_priced = priceStackFrom(byId, r.reward_stack, r.id);
+    r.available_points = Math.max(0, r.total_points - stackTotalOf(r.reward_stack_priced));
   }
   return out;
 }
@@ -139,12 +162,8 @@ async function withBalances(db, familyCode, rows) {
 // The stack re-priced from the rewards table, dropping items whose reward is
 // gone or no longer for this child. Saved costs are never trusted.
 async function pricedStack(db, stack, childId, familyCode) {
-  const out = [];
-  for (const item of stack || []) {
-    const reward = await loadSpendableReward(db, item.rewardId, childId, familyCode);
-    if (reward) out.push({ rewardId: reward.id, name: reward.title, cost: reward.cost });
-  }
-  return out;
+  const byId = await loadRewardsById(db, familyCode, (stack || []).map((item) => item.rewardId));
+  return priceStackFrom(byId, stack, childId);
 }
 
 // ─── Input validation helpers ───────────────────────────────────────────────
@@ -649,9 +668,16 @@ export const isReservedCategory = (name) => RESERVED_CATEGORY_NAMES.includes(Str
 // Atomic point adjustment (prevents race conditions)
 // A request_id seen before: same award -> return what happened, unchanged.
 // Anything different under the same id -> 409, never a second award.
+// A replayed award answers with the child as it is now, with balances.
+async function currentChild(familyCode, childId) {
+  const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, familyCode]);
+  return rows[0] ? (await withBalances(pool, familyCode, rows))[0] : null;
+}
+
 function replayAward(res, prior, child, points, category) {
   // Only an award replays as an award (an undo row carries a request id too).
   if (prior.kind !== 'award') return res.status(409).json({ error: 'Invalid request' });
+  if (!child) return res.status(404).json({ error: 'Child not found' });
   const sameChild = prior.child_id === child.id;
   const sameCategory = prior.category === String(category).trim();
   const sameDirection = Math.sign(prior.points) === Math.sign(points);
@@ -710,7 +736,7 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
         [req.familyCode, request_id]);
       await client.query('ROLLBACK');
       if (claim.length && claim[0].endpoint !== 'award') return res.status(409).json({ error: 'Invalid request' });
-      return replayAward(res, prior[0], child, points, category);
+      return replayAward(res, prior[0], await currentChild(req.familyCode, child.id), points, category);
     }
 
     // The same id already used by a spend: never also an award.
@@ -750,7 +776,7 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
         [req.familyCode, request_id]
       );
       if (won.length === 0) return res.status(409).json({ error: 'Invalid request' });
-      return replayAward(res, won[0], child, points, category);
+      return replayAward(res, won[0], await currentChild(req.familyCode, child.id), points, category);
     }
     const { rows: updated } = await client.query(
       `UPDATE children
@@ -762,11 +788,14 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
     const streak = applied > 0 ? await recordStreak(client, req.familyCode) : null;
     // This week, from history (A2 C1). The event just written counts.
     const weekAfter = (await weekPointsFor(client, req.familyCode, [child.id])).get(child.id);
+    // Review (PR #57): the award's child carries available_points too, so Home
+    // does not show a stale "Available now" until the next refetch.
+    const [balanced] = await withBalances(client, req.familyCode, [updated[0]]);
     await client.query('COMMIT');
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
     res.json({
-      event: eventRows[0], child: { ...updated[0], week_points: weekAfter },
+      event: eventRows[0], child: { ...balanced, week_points: weekAfter },
       week_points_before: weekBefore, week_points_after: weekAfter,
       duplicate: false, capped: applied !== points, streak,
     });

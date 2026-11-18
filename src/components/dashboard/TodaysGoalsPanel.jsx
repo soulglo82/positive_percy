@@ -2,11 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PercyIcon from "@/components/icons/PercyIcon";
 import CategoryIcon from '@/components/CategoryIcon';
-import ChildAvatar from '@/components/child/ChildAvatar';
 import { toast } from 'sonner';
 import { getToken } from '@/lib/AuthContext';
-import { cn } from '@/lib/utils';
-import { childColour } from '@/lib/childColour';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { completeTodayGoal, loadTodaysGoals, goalDateShortLine, goalRecurrenceV1, pointsText } from '@/lib/todaysGoals';
@@ -18,24 +15,16 @@ import ManageGoalsDialog from './ManageGoalsDialog';
 // Done mark (register completed_goal); weekly goals show their real days
 // (recurring_indicator); the completion control is the approved check-circle
 // at 24px in a 44px target (control_size_weight). Dates come from the server.
-// V1: selection can be controlled by the Home family strip (selectedChildId);
-// without it the panel keeps its own selection (first child).
-export default function TodaysGoalsPanel({ children = [], categories = [], enabled = false, selectedChildId: controlledId }) {
+// V1: the Home family strip chooses the child (selectedChildId); without one,
+// or for a child no longer in the list, the panel shows the first child.
+export default function TodaysGoalsPanel({ children = [], categories = [], enabled = false, selectedChildId }) {
   const queryClient = useQueryClient();
-  const [selectedChildId, setSelectedChildId] = useState(children[0]?.id || null);
   const [manageOpen, setManageOpen] = useState(false);
   const [pendingIds, setPendingIds] = useState([]);
   const inFlight = useRef(new Set());
-  // One polite announcement, set only when a parent picks a child (design N4).
-  const [announce, setAnnounce] = useState('');
   // After a completion, focus moves to that row's Done label (design N4).
   const doneRefs = useRef({});
   const [focusGoalId, setFocusGoalId] = useState(null);
-
-  useEffect(() => {
-    if (!children.length) { setSelectedChildId(null); return; }
-    if (!children.some(child => child.id === selectedChildId)) setSelectedChildId(children[0].id);
-  }, [children, selectedChildId]);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['todaysGoals'],
@@ -53,7 +42,7 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
 
   if (!children.length) return null;
 
-  const child = children.find(item => item.id === (controlledId || selectedChildId)) || children[0];
+  const child = children.find(item => item.id === selectedChildId) || children[0];
   const goals = (data?.goals || []).filter(goal => goal.child_id === child.id);
   const done = goals.filter(goal => !!goal.completion_id).length;
 
@@ -111,24 +100,6 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
             {data?.date && <span>{goalDateShortLine(data.date)}</span>}
           </div>
 
-          {!controlledId && children.length > 1 && (
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Choose a child">
-              {children.map(item => {
-                const selected = item.id === child.id;
-                const c = childColour(item, children);
-                return (
-                  <button key={item.id} type="button" aria-pressed={selected}
-                    onClick={() => { setSelectedChildId(item.id); setAnnounce('Showing goals for ' + item.name); }}
-                    className={cn('inline-flex items-center gap-2 rounded-full min-h-11 pl-1 pr-3 text-sm max-w-full break-words text-left text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                      selected ? cn('border-2 bg-selected font-semibold', c.border) : 'border border-border bg-card hover:bg-accent')}>
-                    <ChildAvatar name={item.name} url={item.avatar_url} size="sm" colour={c} decorative className="ring-0 ring-offset-0" />
-                    {item.name}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          <p className="sr-only" aria-live="polite">{announce}</p>
 
           {isError ? (
             <div className="space-y-2">

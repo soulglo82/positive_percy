@@ -260,23 +260,23 @@ export default function ParentDashboard() {
               <p className="text-muted-foreground">Good things are happening, one small step at a time.</p>
             </div>
             <FamilyStrip children={ordered} selectedId={homeChild.id} onSelect={setHomeChildId} />
-            {/* Phone: Goals, Little wins, Working towards, Quick Points.
-                Desktop: Goals + Quick Points | Little wins + Working towards. */}
-            <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-start">
-              <div className="contents lg:flex lg:flex-col lg:gap-5">
-                <div className="order-1">
-                  <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} selectedChildId={homeChild.id} />
-                </div>
-                <div className="order-4">
-                  <QuickPoints child={homeChild} actions={homeActions} awarding={awardingIds.includes(homeChild.id)}
-                    onAward={handleQuickAction}
-                    onOpenAward={() => handleAddPoints(homeChild)}
-                    onOpenRewards={() => handleSpendRewards(homeChild)} />
-                </div>
+            {/* The DOM is in reading order (Goals, Little wins, Working towards,
+                Quick Points), so Tab and screen readers follow what phones
+                show. Desktop places the same cards in two columns:
+                Goals + Quick Points | Little wins + Working towards. */}
+            <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+              <div className="lg:col-start-1 lg:row-start-1">
+                <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} selectedChildId={homeChild.id} />
               </div>
-              <div className="contents lg:flex lg:flex-col lg:gap-5">
-                <div className="order-2"><LittleWins child={homeChild} /></div>
-                <div className="order-3"><WorkingTowards child={homeChild} /></div>
+              <div className="flex flex-col gap-5 lg:col-start-2 lg:row-start-1 lg:row-span-2">
+                <LittleWins child={homeChild} />
+                <WorkingTowards child={homeChild} />
+              </div>
+              <div className="lg:col-start-1 lg:row-start-2">
+                <QuickPoints child={homeChild} actions={homeActions} awarding={awardingIds.includes(homeChild.id)}
+                  onAward={handleQuickAction}
+                  onOpenAward={() => handleAddPoints(homeChild)}
+                  onOpenRewards={() => handleSpendRewards(homeChild)} />
               </div>
             </div>
           </>
