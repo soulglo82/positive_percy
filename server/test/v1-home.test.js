@@ -47,6 +47,55 @@ describe.skipIf(!hasDb)('V1-A: Home server contracts', () => {
     });
   });
 
+  describe('reward_stack_priced (review of PR #57)', () => {
+    it('shows the stack at current names and costs and drops deleted rewards, matching available_points', async () => {
+      const c = (await call('POST', '/api/children', { name: 'Priced', total_points: 50 })).json;
+      const r = (await call('POST', '/api/rewards', { title: 'Kite', cost_points: 20, emoji: '🪁', visible_to_child: true })).json;
+      await call('POST', `/api/children/${c.id}/stack/add`, { reward_id: r.id });
+      await call('PUT', `/api/rewards/${r.id}`, { cost_points: 25, title: 'Big kite' });
+      let got = await child(c.id);
+      expect(got.reward_stack_priced).toEqual([{ rewardId: r.id, name: 'Big kite', cost: 25 }]);
+      expect(got.available_points).toBe(50 - 25);
+      expect((await call('DELETE', `/api/rewards/${r.id}`)).status).toBeLessThan(300);
+      got = await child(c.id);
+      expect(got.reward_stack_priced).toEqual([]);
+      expect(got.available_points).toBe(50);
+    });
+
+    it('prices every child with one rewards query, whatever the stack sizes', async () => {
+      const G = await makeFamily(ctx.base, 'Query count');
+      const rewards = [];
+      for (let i = 0; i < 3; i++) rewards.push((await call('POST', '/api/rewards', { title: 'R' + i, cost_points: 1, emoji: '⭐', visible_to_child: true }, G)).json);
+      for (let k = 0; k < 4; k++) {
+        const c = (await call('POST', '/api/children', { name: 'Q' + k, total_points: 100 }, G)).json;
+        for (const r of rewards) await call('POST', `/api/children/${c.id}/stack/add`, { reward_id: r.id }, G);
+      }
+      const seen = [];
+      const orig = ctx.pool.query.bind(ctx.pool);
+      ctx.pool.query = (text, ...rest) => { if (typeof text === 'string' && /FROM rewards/.test(text)) seen.push(text); return orig(text, ...rest); };
+      try {
+        const list = (await call('GET', '/api/children', null, G)).json;
+        expect(list.map((c) => c.available_points)).toEqual([97, 97, 97, 97]);
+      } finally { ctx.pool.query = orig; }
+      expect(seen).toHaveLength(1);
+    });
+
+    it('award responses carry available_points and the priced stack', async () => {
+      const c = (await call('POST', '/api/children', { name: 'Awarded', total_points: 10 })).json;
+      const r = (await call('POST', '/api/rewards', { title: 'Treat', cost_points: 4, emoji: '🍪', visible_to_child: true })).json;
+      await call('POST', `/api/children/${c.id}/stack/add`, { reward_id: r.id });
+      const id = rid();
+      const a = await call('POST', `/api/children/${c.id}/award`, { points: 2, category: 'Kindness', request_id: id });
+      expect(a.status).toBe(200);
+      expect(a.json.child.available_points).toBe(12 - 4);
+      expect(a.json.child.reward_stack_priced).toHaveLength(1);
+      // A replay (first reply lost) answers with the child as it is now.
+      const again = await call('POST', `/api/children/${c.id}/award`, { points: 2, category: 'Kindness', request_id: id });
+      expect(again.json.duplicate).toBe(true);
+      expect(again.json.child.available_points).toBe(8);
+    });
+  });
+
   describe('family streak', () => {
     it('a Today\'s Goal completion starts the streak like an award', async () => {
       const G = await makeFamily(ctx.base, 'Streak goals');

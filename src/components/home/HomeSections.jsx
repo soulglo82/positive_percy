@@ -88,10 +88,12 @@ export function LittleWins({ child }) {
   );
 }
 
-// "What you're working towards": the child's chosen (stacked) rewards from
-// real data. No savings bar or "saved" figures until owner decision D1.
+// "What you're working towards": the child's chosen (stacked) rewards at
+// current names and costs (server reward_stack_priced, the same stack that
+// available_points is computed from). No savings bar or "saved" figures until
+// owner decision D1.
 export function WorkingTowards({ child }) {
-  const stack = child.reward_stack || [];
+  const stack = child.reward_stack_priced ?? [];
   return (
     <Card>
       <CardContent className="p-4 sm:p-5 space-y-3">
@@ -103,12 +105,12 @@ export function WorkingTowards({ child }) {
             </span>
             <div className="min-w-0">
               <p className="font-semibold text-foreground break-words">{item.name}</p>
-              <p className="text-sm text-muted-foreground">{item.cost} points · Ready when a parent agrees</p>
+              <p className="text-sm text-muted-foreground">{item.cost} {item.cost === 1 ? 'point' : 'points'} · Ready when a parent agrees</p>
             </div>
           </div>
         ))}
         <div className="flex justify-end">
-          <Link to={createPageUrl('ChildView')} className="inline-flex items-center min-h-11 text-sm font-semibold text-primary underline-offset-4 hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          <Link to={createPageUrl('ChildView') + '?child=' + encodeURIComponent(child.id)} className="inline-flex items-center min-h-11 text-sm font-semibold text-primary underline-offset-4 hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
             View all goals and rewards
           </Link>
         </div>

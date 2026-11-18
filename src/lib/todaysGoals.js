@@ -90,15 +90,6 @@ export function goalShortDate(ymd) {
 const uniqueDays = (days) => [...new Set((days || []).map(Number))]
   .filter(d => d >= 1 && d <= 7).sort((a, b) => a - b);
 
-// Today's Goals row: "Repeats Mon, Wed, Fri" / "Repeats every day" (register
-// recurring_indicator: the actual scheduled days, never a streak).
-export function goalRepeatText(weekdays) {
-  const days = uniqueDays(weekdays);
-  if (!days.length) return '';
-  if (days.length === 7) return 'Repeats every day';
-  return 'Repeats ' + days.map(d => GOAL_DAYS[d - 1].label).join(', ');
-}
-
 // Manage goals row schedule: "Every day", "Mon–Fri", "Mon, Wed, Fri", "One-off · 16 Nov".
 export function goalScheduleSummary(goal) {
   if (goal.schedule_kind === 'one_off') return 'One-off · ' + goalShortDate(goal.scheduled_date);
