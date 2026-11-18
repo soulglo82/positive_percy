@@ -127,3 +127,19 @@ export function editStartDate(goal, weekdays, today) {
   const value = stored && stored > today ? stored : today;
   return { editable: true, value, hint: stored ? 'newSchedule' : null };
 }
+
+// V1 approved wording (design 18769f7): "Wednesday 18 Nov".
+export function goalDateShortLine(ymd) {
+  const p = parts(ymd);
+  return p ? `${WEEKDAY_NAMES[p.iso - 1]} ${p.d} ${MONTHS[p.mo - 1].slice(0, 3)}` : '';
+}
+
+// V1 approved recurrence text on goal rows: "Today" (one-off due today),
+// "Daily" (all seven days), otherwise the real days ("Mon, Wed, Fri").
+// A one-off on another date shows its date ("16 Nov").
+export function goalRecurrenceV1(goal, today) {
+  if (goal.schedule_kind === 'one_off') return goal.scheduled_date === today ? 'Today' : goalShortDate(goal.scheduled_date);
+  const days = uniqueDays(goal.weekdays);
+  if (days.length === 7) return 'Daily';
+  return days.map(d => GOAL_DAYS[d - 1].label).join(', ');
+}

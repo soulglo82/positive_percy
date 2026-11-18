@@ -120,6 +120,22 @@ async function loadSpendableReward(db, rewardId, childId, familyCode) {
 
 const stackTotalOf = (stack) => (stack || []).reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
 
+// V1 (plan v1.1 §8.1): children responses carry week_points and
+// available_points = total_points minus the reward stack's reserved cost,
+// priced here on the server (pricedStack drops rewards that are no longer
+// spendable for the child and uses current costs), so no client has to
+// recompute it from stored stack prices.
+async function withBalances(db, familyCode, rows) {
+  const out = await withWeekPoints(db, familyCode, rows);
+  if (!out) return out;
+  for (const r of out) {
+    if (r.total_points == null) continue;
+    const reserved = stackTotalOf(await pricedStack(db, r.reward_stack, r.id, familyCode));
+    r.available_points = Math.max(0, r.total_points - reserved);
+  }
+  return out;
+}
+
 // The stack re-priced from the rewards table, dropping items whose reward is
 // gone or no longer for this child. Saved costs are never trusted.
 async function pricedStack(db, stack, childId, familyCode) {
@@ -879,7 +895,7 @@ async function undoReplay(res, client, familyCode, requestId, endpoint, args) {
   // Read on this request's own connection: it holds the child lock, and
   // waiting for a second pool connection here could starve the pool.
   const { rows } = await client.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [prior.replay.child_id, familyCode]);
-  const [child] = await withWeekPoints(client, familyCode, rows);
+  const [child] = await withBalances(client, familyCode, rows);
   return res.json({ ...prior.replay, child, duplicate: true });
 }
 
@@ -1881,7 +1897,7 @@ router.get('/api/:entity', authMiddleware, async (req, res) => {
       `SELECT * FROM ${table} ${where} ORDER BY ${sort} ${limit} ${offset}`,
       values
     );
-    res.json(table === 'children' ? await withWeekPoints(pool, req.familyCode, rows) : rows);
+    res.json(table === 'children' ? await withBalances(pool, req.familyCode, rows) : rows);
   } catch (err) {
     return serverError(res, `List ${req.params.entity} error:`, err);
   }
@@ -1920,7 +1936,7 @@ router.post('/api/:entity/filter', authMiddleware, async (req, res) => {
       `SELECT * FROM ${table} ${where} ORDER BY ${orderBy}`,
       values
     );
-    res.json(table === 'children' ? await withWeekPoints(pool, req.familyCode, rows) : rows);
+    res.json(table === 'children' ? await withBalances(pool, req.familyCode, rows) : rows);
   } catch (err) {
     return serverError(res, `Filter ${req.params.entity} error:`, err);
   }
@@ -2209,7 +2225,7 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
     if (result.status === 404) return res.status(404).json({ error: 'Not found' });
 
     broadcastFn(req.familyCode, { type: `${req.params.entity}_updated`, id: req.params.id });
-    res.json(table === 'children' ? (await withWeekPoints(pool, req.familyCode, [result.row]))[0] : result.row);
+    res.json(table === 'children' ? (await withBalances(pool, req.familyCode, [result.row]))[0] : result.row);
   } catch (err) {
     if (err.status === 400) return res.status(400).json({ error: err.message });
     return serverError(res, `Update ${req.params.entity} error`, err);

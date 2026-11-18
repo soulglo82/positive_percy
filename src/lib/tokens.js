@@ -27,6 +27,10 @@ export const TOKENS = {
   spend: '#594e69',
   earn: '#2a6e33',
   star: '#ffc938',
+  // V1: brand orange, decorative only (progress fills, accents). 2.87:1 on
+  // white, so never text, a border that marks state, or a focus ring
+  // (tokens.test.js asserts it stays below 3:1 and check is by review).
+  sunrise: '#ff6a00',
   selected: '#e5dcea',
   'selected-border': '#4b1d8c',
   warning: '#fff1d1',

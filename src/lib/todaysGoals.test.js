@@ -55,3 +55,14 @@ describe('editStartDate (mirrors the server rule)', () => {
     expect(sameWeekdays([1], [1, 2])).toBe(false);
   });
 });
+
+import { goalDateShortLine, goalRecurrenceV1 } from './todaysGoals';
+describe('V1 goal wording', () => {
+  it('short date line and recurrence', () => {
+    expect(goalDateShortLine('2026-11-18')).toBe('Wednesday 18 Nov');
+    expect(goalRecurrenceV1({ schedule_kind: 'one_off', scheduled_date: '2026-11-18' }, '2026-11-18')).toBe('Today');
+    expect(goalRecurrenceV1({ schedule_kind: 'one_off', scheduled_date: '2026-11-20' }, '2026-11-18')).toBe('20 Nov');
+    expect(goalRecurrenceV1({ schedule_kind: 'weekly', weekdays: [7, 1, 2, 3, 4, 5, 6] }, 'x')).toBe('Daily');
+    expect(goalRecurrenceV1({ schedule_kind: 'weekly', weekdays: [5, 1, 3] }, 'x')).toBe('Mon, Wed, Fri');
+  });
+});

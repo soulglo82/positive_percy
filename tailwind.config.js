@@ -31,6 +31,7 @@ module.exports = {
       spend: c('spend'),
       earn: { DEFAULT: c('earn'), soft: c('earn-soft') },
       star: { DEFAULT: c('star'), soft: c('star-soft') },
+      sunrise: c('sunrise'),
       kid: Object.fromEntries([1, 2, 3, 4, 5, 6].flatMap((n) => [[String(n), c(`kid-${n}`)], [`${n}-soft`, c(`kid-${n}-soft`)]])),
       selected: { DEFAULT: c('selected'), border: c('selected-border') },
       warning: { DEFAULT: c('warning'), border: c('warning-border'), foreground: c('warning-foreground') },

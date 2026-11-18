@@ -7,19 +7,14 @@ import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus, ClipboardList } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import Logo from "@/components/brand/Logo";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
-import { format } from "date-fns";
 import { CONFETTI_COLORS } from "@/lib/tokens";
-import ChildAvatar from "../components/child/ChildAvatar";
-import { childColour } from "@/lib/childColour";
 
-import SectionHeader from "../components/SectionHeader";
-import ChildCard from "../components/child/ChildCard";
+import { StreakStrip, FamilyStrip, LittleWins, WorkingTowards, QuickPoints } from "../components/home/HomeSections";
 import AddChildModal from "../components/child/AddChildModal";
-import EditChildModal from "../components/child/EditChildModal";
 import AddPointsModal from "../components/child/AddPointsModal";
 import SpendRewardsModal from "../components/child/SpendRewardsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
@@ -32,7 +27,6 @@ import ErrorCard from "../components/ErrorCard";
 export default function ParentDashboard() {
   const { user, familyCode } = useAuth();
   const [showAddChild, setShowAddChild] = useState(false);
-  const [showEditChild, setShowEditChild] = useState(false);
   const [showAddPoints, setShowAddPoints] = useState(false);
   const [showSpendRewards, setShowSpendRewards] = useState(false);
   const [selectedChild, setSelectedChild] = useState(null);
@@ -107,19 +101,7 @@ export default function ParentDashboard() {
   // and the card points to Settings (external review, 2026-11-11).
   const allQuickActions = categoryQuickActions;
 
-  // Fetch recent activity feed
-  const { data: recentActivity = [] } = useQuery({
-    queryKey: ['recentActivity'],
-    queryFn: async () => {
-      const token = getToken();
-      const res = await fetch('/api/activity-feed?limit=5&filter=all', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: !!user,
-  });
+  // V1: Recent Activity is no longer on Home (it lives in Activity).
 
   const createChildMutation = useMutation({
     mutationFn: (data) => Child.create(buildChildCreatePayload(data)),
@@ -129,19 +111,13 @@ export default function ParentDashboard() {
     },
   });
 
-  const updateChildMutation = useMutation({
-    mutationFn: ({ id, data }) => Child.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['children'] });
-    },
-  });
-
   // Children with an award in flight. A ref, not state, so a second tap in
   // the same frame sees the first one and is ignored.
   const awarding = useRef(new Set());
-  // Which child's star pops: set only by an award from this device.
-  const [pop, setPop] = useState({ childId: null, n: 0 });
   const [awardingIds, setAwardingIds] = useState([]);
+  // V1: the child selected in the family strip drives Goals, the summary,
+  // Working towards and Quick Points.
+  const [homeChildId, setHomeChildId] = useState(null);
 
   const handleAddPoints = (child) => {
     setSelectedChild(child);
@@ -151,29 +127,6 @@ export default function ParentDashboard() {
   const handleSpendRewards = (child) => {
     setSelectedChild(child);
     setShowSpendRewards(true);
-  };
-
-  const handleEditChild = (child) => {
-    setSelectedChild(child);
-    setShowEditChild(true);
-  };
-
-  const handleEditChildSubmit = async (data) => {
-    await updateChildMutation.mutateAsync({
-      id: selectedChild.id,
-      data: data,
-    });
-    toast.success(`${data.name}'s profile updated.`);
-  };
-
-  const handleDeleteChild = async (child) => {
-    try {
-      await Child.delete(child.id);
-      queryClient.invalidateQueries({ queryKey: ['children'] });
-      toast.success(`${child.name} has been removed`);
-    } catch {
-      toast.error("Failed to delete child");
-    }
   };
 
   const updateStreak = async () => {
@@ -236,7 +189,6 @@ export default function ParentDashboard() {
       queryClient.setQueryData(['children'], (old) => Array.isArray(old)
         ? old.map((c) => (c.id === updated.id ? { ...c, ...updated, week_points: typeof weekAfter === 'number' ? weekAfter : c.week_points } : c))
         : old);
-      if (points > 0) setTimeout(() => setPop((p) => ({ childId: child.id, n: p.n + 1 })), 220);
       toast.success(lines.join(' '), {
         duration: UNDO_TOAST_MS,
         action: { label: 'Undo', onClick: undoAction('award', event.id, queryClient) },
@@ -267,108 +219,65 @@ export default function ParentDashboard() {
   const handleQuickAction = (child, action) =>
     applyAward(child, { points: action.points, category: action.category || action.label, note: '' });
 
+  const homeChild = children.find((c) => c.id === homeChildId) || children[0];
+  const homeActions = homeChild ? allQuickActions.filter((qa) =>
+    !qa.assigned_children || qa.assigned_children.length === 0 || qa.assigned_children.includes(homeChild.id)) : [];
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
-        <HeroCard
-          children={children}
-          streak={streak}
-          onAddFirstChild={() => setShowAddChild(true)}
-        />
-
-        {/* Children Grid */}
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
         {isLoading ? (
           <LoadingSpinner message="Loading your family..." />
         ) : isError ? (
           <ErrorCard message="Couldn't load children" onRetry={refetch} />
         ) : children.length === 0 ? (
-          <Card className="border-2 border-dashed border-input shadow-none">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Logo size={48} decorative className="mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                No children added yet
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Add your first child to start tracking their progress
-              </p>
-              <Button onClick={() => setShowAddChild(true)}>
-                <UserPlus className="w-4 h-4" />
-                Add Your First Child
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className={
-            children.length === 1 ? "grid grid-cols-1 gap-6 max-w-xl"
-              : children.length === 2 ? "grid grid-cols-1 md:grid-cols-2 gap-6"
-              : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          }>
-            {children.map((child) => (
-              <ChildCard
-                key={child.id}
-                child={child}
-                colour={childColour(child, children)}
-                popKey={pop.childId === child.id ? pop.n : 0}
-                onAddPoints={handleAddPoints}
-                onEdit={handleEditChild}
-                onQuickAction={handleQuickAction}
-                awarding={awardingIds.includes(child.id)}
-                onSpendRewards={handleSpendRewards}
-                quickActions={allQuickActions.filter(qa =>
-                  !qa.assigned_children || qa.assigned_children.length === 0 || qa.assigned_children.includes(child.id)
-                )}
-                rewards={rewards.filter(r =>
-                  !r.assigned_child_ids || r.assigned_child_ids.length === 0 || r.assigned_child_ids.includes(child.id)
-                )}
-              />
-            ))}
-          </div>
-        )}
-
-        <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} />
-
-        {/* Recent Activity Preview */}
-        {recentActivity.length > 0 && (
-          <div>
-            <SectionHeader icon={ClipboardList}>Recent activity</SectionHeader>
-            <Card>
-              <CardContent className="p-0">
-                <div className="divide-y divide-border">
-                  {recentActivity.map((event) => {
-                    const isEarn = event.type === 'earn';
-                    const isSpend = event.type === 'spend';
-                    const isUndo = event.type === 'undo';
-                    const isDeduct = !isEarn && !isSpend && !isUndo && event.points < 0;
-                    const colorClass = isEarn ? 'text-earn' : isSpend ? 'text-spend' : 'text-negative';
-                    const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'had an earlier adjustment for' : 'adjusted';
-                    const eventChild = children.find(c => c.id === event.child_id);
-
-                    return (
-                      <div key={`${event.type}-${event.id}`} className="flex items-center gap-3 px-4 py-3">
-                        {/* Child avatar */}
-                        <ChildAvatar name={event.child_name} url={eventChild?.avatar_url} size="sm" colour={childColour(event.child_id, children)} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm leading-snug">
-                            <span className="font-semibold text-foreground">{event.child_name}</span>
-                            {' '}<span className="text-muted-foreground">{action}</span>{' '}
-                            <span className="font-medium text-foreground">{event.label}</span>
-                          </p>
-                          <p className="text-xs text-subtle-foreground mt-0.5">
-                            {format(new Date(event.created_date), "MMM d, h:mm a")}
-                          </p>
-                        </div>
-                        <span className={`text-sm font-semibold tabular-nums shrink-0 ${colorClass} ${event.undone ? 'line-through' : ''}`}>
-                          {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+          <>
+            <HeroCard children={children} streak={streak} onAddFirstChild={() => setShowAddChild(true)} />
+            <Card className="border-2 border-dashed border-input shadow-none">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Logo size={48} decorative className="mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No children added yet
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Add your first child to start tracking their progress
+                </p>
+                <Button onClick={() => setShowAddChild(true)}>
+                  <UserPlus className="w-4 h-4" />
+                  Add Your First Child
+                </Button>
               </CardContent>
             </Card>
-          </div>
+          </>
+        ) : (
+          <>
+            <StreakStrip streak={streak} />
+            <div>
+              <h1 className="font-display font-extrabold text-title text-primary">Welcome back!</h1>
+              <p className="text-muted-foreground">Good things are happening, one small step at a time.</p>
+            </div>
+            <FamilyStrip children={children} selectedId={homeChild.id} onSelect={setHomeChildId} />
+            {/* Phone: Goals, Little wins, Working towards, Quick Points.
+                Desktop: Goals + Quick Points | Little wins + Working towards. */}
+            <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-start">
+              <div className="contents lg:flex lg:flex-col lg:gap-5">
+                <div className="order-1">
+                  <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} selectedChildId={homeChild.id} />
+                </div>
+                <div className="order-4">
+                  <QuickPoints child={homeChild} actions={homeActions} awarding={awardingIds.includes(homeChild.id)}
+                    onAward={handleQuickAction}
+                    onOpenAward={() => handleAddPoints(homeChild)}
+                    onOpenRewards={() => handleSpendRewards(homeChild)} />
+                </div>
+              </div>
+              <div className="contents lg:flex lg:flex-col lg:gap-5">
+                <div className="order-2"><LittleWins child={homeChild} /></div>
+                <div className="order-3"><WorkingTowards child={homeChild} /></div>
+              </div>
+            </div>
+          </>
         )}
-
       </div>
 
       {/* Modals */}
@@ -376,17 +285,6 @@ export default function ParentDashboard() {
         isOpen={showAddChild}
         onClose={() => setShowAddChild(false)}
         onSubmit={(data) => createChildMutation.mutateAsync(data)}
-      />
-
-      <EditChildModal
-        isOpen={showEditChild}
-        onClose={() => {
-          setShowEditChild(false);
-          setSelectedChild(null);
-        }}
-        child={selectedChild}
-        onSubmit={handleEditChildSubmit}
-        onDelete={handleDeleteChild}
       />
 
       <AddPointsModal

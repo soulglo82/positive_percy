@@ -20,7 +20,7 @@ test('parent can add, complete once, edit and archive a dated goal', async ({ pa
 
   await page.goto('/');
   await expect(page.getByRole('heading', { name: "Today's goals" })).toBeVisible();
-  await page.getByRole('button', { name: 'Sam', exact: true }).click();
+  await page.getByRole('button', { name: /^Sam \d+ \/ \d+ this week$/ }).click();
   await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading', { name: 'Manage goals for Sam' })).toBeVisible();
@@ -69,8 +69,8 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
   const title = 'Brush teeth ' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 
   await page.goto('/');
-  await page.getByRole('button', { name: 'Sam', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Sam', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: /^Sam \d+ \/ \d+ this week$/ }).click();
+  await expect(page.getByRole('button', { name: /^Sam \d+ \/ \d+ this week$/ })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Goal', { exact: true }).fill(title);
@@ -87,12 +87,12 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
   await expect(dialog.getByText(/Every day/).first()).toBeVisible();
   await dialog.getByRole('button', { name: 'Done' }).click();
 
-  const completeBtn = page.getByRole('button', { name: new RegExp('^Complete ' + title + ', \\+\\d+ points?$') });
+  const completeBtn = page.getByRole('button', { name: 'Complete ' + title, exact: true });
   await expect(completeBtn).toBeVisible();
   const box = await completeBtn.boundingBox();
   expect(box.height).toBeGreaterThanOrEqual(43.5);
   expect(box.width).toBeGreaterThanOrEqual(43.5);
-  await expect(page.getByText('Repeats every day').first()).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: title }).getByText(/· Daily ·/)).toBeVisible();
 
   const start = await balance();
   await completeBtn.click();
