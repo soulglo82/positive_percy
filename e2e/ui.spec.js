@@ -11,7 +11,8 @@ test.beforeEach(async ({ context }) => {
   await context.addInitScript(([code, token]) => {
     localStorage.setItem('positive_percy_family_code', code);
     localStorage.setItem('positive_percy_token', token);
-    localStorage.setItem('percy_onboarding_done', 'true');
+    // A test that checks first-run onboarding opts out for this tab.
+    if (!sessionStorage.getItem('percy_e2e_show_onboarding')) localStorage.setItem('percy_onboarding_done', 'true');
   }, [family.code, family.token]);
 });
 
@@ -120,6 +121,10 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await expect(sam).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText("Sam's checklist")).toBeVisible();
 
+  await page.getByRole('button', { name: /^Rewards$/ }).last().click();
+  await checkScreen(page, 'spend', testInfo);
+  await closeDialog(page);
+
   // V1-F: "Give Percy Points" - child, behaviour (its own points), note.
   await page.getByRole('button', { name: /^Award points/ }).first().click();
   const award = page.getByRole('dialog');
@@ -131,6 +136,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await award.getByRole('button', { name: /^Award \d+ points?$/ }).click();
   await expect(award).toHaveCount(0);
   await page.getByRole('button', { name: 'Undo' }).first().click();
+  await expect(page.getByText(/^Undone\./)).toHaveCount(0, { timeout: 15000 });
 
   // V1-F: Manage goals list and the goal form.
   await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
@@ -140,10 +146,6 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await manage.getByRole('button', { name: 'Add goal' }).click();
   await expect(manage.getByRole('heading', { name: 'New goal' })).toBeVisible();
   await checkScreen(page, 'goal form', testInfo);
-  await closeDialog(page);
-
-  await page.getByRole('button', { name: /^Rewards$/ }).last().click();
-  await checkScreen(page, 'spend', testInfo);
   await closeDialog(page);
 
   await page.getByRole('button', { name: /\+\d+ for Sam$/ }).first().click();
@@ -156,7 +158,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await page.getByRole('button', { name: 'Cancel' }).click();
 
   // V1-F: first-run onboarding, "Let's get started".
-  await page.evaluate(() => localStorage.removeItem('percy_onboarding_done'));
+  await page.evaluate(() => { sessionStorage.setItem('percy_e2e_show_onboarding', '1'); localStorage.removeItem('percy_onboarding_done'); });
   await go(page, '/');
   const start = page.getByRole('dialog');
   await expect(start.getByRole('heading', { name: "Let's get started" })).toBeVisible();

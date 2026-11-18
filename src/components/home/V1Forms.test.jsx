@@ -37,6 +37,7 @@ describe('Onboarding (V1-F O)', () => {
     expect(d.textContent).toContain('3. Save for something bigger');
     expect(d.textContent).toContain('Enjoy smaller weekly treats, or keep saving points towards bigger adventures.');
     expect(d.querySelector('img')).toBeNull(); // no illustration in the locked design
+    expect(document.activeElement.textContent).toBe('Explore Percy'); // opens on the action, not the list
     fireEvent.click(within(d).getByRole('button', { name: 'Explore Percy' }));
     expect(onClose).toHaveBeenCalled();
     expect(localStorage.getItem('percy_onboarding_done')).toBe('true');

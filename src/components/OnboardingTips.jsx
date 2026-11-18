@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useRef } from 'react';
 import { Button } from "@/components/ui/button";
 
 const MODES = [
@@ -21,6 +22,7 @@ const MODES = [
 const STORAGE_KEY = 'percy_onboarding_done';
 
 export default function OnboardingTips({ isOpen, onClose }) {
+  const explore = useRef(null);
   const handleClose = () => {
     try { localStorage.setItem(STORAGE_KEY, 'true'); } catch {}
     onClose();
@@ -28,12 +30,14 @@ export default function OnboardingTips({ isOpen, onClose }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-md">
+      {/* Start on the one action, not on the scrollable list. */}
+      <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => { e.preventDefault(); explore.current?.focus(); }}>
         <DialogHeader>
           <DialogTitle className="text-title font-extrabold text-primary">Let's get started</DialogTitle>
           <DialogDescription>Three ways to help good habits grow.</DialogDescription>
         </DialogHeader>
-        <DialogBody className="space-y-3">
+        {/* Focusable so a keyboard can scroll it on small screens (axe scrollable-region-focusable). */}
+        <DialogBody className="space-y-3" tabIndex={0} role="region" aria-label="Let's get started">
           {MODES.map((mode) => (
             <section key={mode.title} className="rounded-lg border border-border bg-card p-4">
               <h3 className="font-display font-bold text-lg text-primary">{mode.title}</h3>
@@ -42,7 +46,7 @@ export default function OnboardingTips({ isOpen, onClose }) {
           ))}
         </DialogBody>
         <DialogFooter>
-          <Button onClick={handleClose} className="flex-1">Explore Percy</Button>
+          <Button ref={explore} onClick={handleClose} className="flex-1">Explore Percy</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
