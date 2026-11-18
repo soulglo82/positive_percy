@@ -13,7 +13,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { archiveTodayGoal, GOAL_DAYS, goalSchedule, loadTodaysGoals, saveTodayGoal } from '@/lib/todaysGoals';
+import CategoryIcon from '@/components/CategoryIcon';
+import {
+  archiveTodayGoal, GOAL_DAYS, loadTodaysGoals, saveTodayGoal,
+  editStartDate, goalDateLine, goalScheduleSummary, goalShortDate, pointsText,
+} from '@/lib/todaysGoals';
 
 function allowedCategories(categories, childId) {
   return categories.filter(category =>
@@ -23,6 +27,10 @@ function allowedCategories(categories, childId) {
 export default function ManageGoalsDialog({ open, onClose, child, categories = [], today }) {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null);
+  // E05: the goal as stored when editing began; the start-date rule compares
+  // against it (docs/engineering/E05-DESIGN.md section 9).
+  const [editingGoal, setEditingGoal] = useState(null);
+  const [saveError, setSaveError] = useState('');
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [schedule, setSchedule] = useState('weekly');
@@ -47,6 +55,8 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
 
   const reset = () => {
     setEditingId(null);
+    setEditingGoal(null);
+    setSaveError('');
     setTitle('');
     setSchedule('weekly');
     setScheduledDate(today || data?.date || '');
@@ -58,6 +68,8 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
   useEffect(() => {
     if (open) {
       setEditingId(null);
+      setEditingGoal(null);
+      setSaveError('');
       setTitle('');
       setSchedule('weekly');
       setScheduledDate(today || '');
@@ -69,38 +81,50 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, child?.id, today]);
 
+  const localToday = today || data?.date || '';
   const startEditing = (goal) => {
     setEditingId(goal.id);
+    setEditingGoal(goal);
+    setSaveError('');
     setTitle(goal.title);
     setCategoryId(goal.category_id || '');
     setSchedule(goal.schedule_kind);
-    setScheduledDate(goal.scheduled_date || today || data?.date || '');
-    // Editing a running routine cannot backdate its new start.
-    const localDate = today || data?.date || '';
-    setStartDate(goal.start_date && goal.start_date >= localDate ? goal.start_date : localDate);
-    setWeekdays(goal.weekdays?.length ? goal.weekdays : [1, 2, 3, 4, 5]);
+    setScheduledDate(goal.scheduled_date || localToday);
+    const days = goal.weekdays?.length ? goal.weekdays : [1, 2, 3, 4, 5];
+    setWeekdays(days);
+    // E05 Q6: keep the stored start; the old clamp to today is gone.
+    setStartDate(editStartDate(goal.schedule_kind === 'weekly' ? goal : null, days, localToday).value);
   };
 
-  const toggleDay = (day) => setWeekdays(previous =>
-    previous.includes(day) ? previous.filter(value => value !== day) : [...previous, day].sort());
+  // The start-date state for the current form (mirrors the server rule).
+  const start = editStartDate(editingGoal, weekdays, localToday);
+
+  const toggleDay = (day) => setWeekdays(previous => {
+    const next = previous.includes(day) ? previous.filter(value => value !== day) : [...previous, day].sort();
+    if (editingGoal) setStartDate(editStartDate(editingGoal, next, localToday).value);
+    return next;
+  });
 
   const save = async (event) => {
     event.preventDefault();
     if (!child || saving || !title.trim() || !categoryId || (schedule === 'weekly' && !weekdays.length)) return;
     setSaving(true);
+    setSaveError('');
     try {
       const payload = {
         title: title.trim(), child_id: child.id, category_id: categoryId,
         schedule_kind: schedule,
         ...(schedule === 'one_off' ? { scheduled_date: scheduledDate }
-          : { weekdays, start_date: startDate || today || data?.date }),
+          // A running routine's start is never sent: the server keeps it.
+          : { weekdays, ...(start.editable ? { start_date: startDate || localToday } : {}) }),
       };
       await saveTodayGoal(payload, editingId);
       await queryClient.invalidateQueries({ queryKey: ['todaysGoals'] });
       toast.success(editingId ? 'Goal updated.' : 'Goal added.');
       reset();
     } catch (err) {
-      toast.error(err.message || 'Could not save the goal.');
+      // Shown once, inline, so the form stays open (design N4, E04 R1/B2).
+      setSaveError(err.message || 'Could not save the goal.');
     } finally {
       setSaving(false);
     }
@@ -180,7 +204,9 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
               {schedule === 'one_off' ? (
                 <div className="space-y-2">
                   <Label htmlFor="goal-date">Date</Label>
-                  <Input id="goal-date" type="date" value={scheduledDate} min={today || data?.date || undefined} required
+                  <Input id="goal-date" type="date" value={scheduledDate} required
+                    // A past one-off keeps its own date when renamed.
+                    min={editingGoal?.schedule_kind === 'one_off' && scheduledDate === editingGoal.scheduled_date ? undefined : (localToday || undefined)}
                     onChange={event => setScheduledDate(event.target.value)} />
                 </div>
               ) : (
@@ -198,14 +224,22 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
                   </div>
                   {weekdays.length === 0 && <p className="text-sm text-destructive">Choose at least one day.</p>}
                 </fieldset>
-                <div className="space-y-2">
-                  <Label htmlFor="goal-start-date">Starts on</Label>
-                  <Input id="goal-start-date" type="date" min={today || data?.date || undefined}
-                    value={startDate || today || data?.date || ''} required
-                    onChange={event => setStartDate(event.target.value)} />
-                </div>
+                {start.editable ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="goal-start-date">Starts on</Label>
+                    <Input id="goal-start-date" type="date" min={localToday || undefined}
+                      value={startDate || localToday} required
+                      onChange={event => setStartDate(event.target.value)} />
+                    {start.hint === 'newSchedule' && (
+                      <p className="text-sm text-muted-foreground">The new schedule starts on {goalDateLine(startDate || localToday)}.</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Started {goalShortDate(start.value)}</p>
+                )}
                 </div>
               )}
+              {saveError && <p className="text-sm text-destructive" role="alert">{saveError}</p>}
               <div className="flex flex-wrap gap-2">
                 <Button type="submit" disabled={saving || !categoryId || !title.trim() || (schedule === 'weekly' && weekdays.length === 0)}>
                   {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add goal'}
@@ -227,11 +261,15 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
                 <p className="text-sm text-muted-foreground">No goals yet for {child?.name}.</p>}
               {goals.map(goal => (
                 <div key={goal.id} className="flex flex-wrap items-center gap-2 rounded-md border border-border p-3">
+                  <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
+                    <CategoryIcon iconKey={goal.category_icon_key} className="w-5 h-5" />
+                  </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm text-foreground break-words">{goal.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {goalSchedule(goal)} · {goal.category_name || 'Behaviour unavailable'}
-                      {goal.completion_id ? ' · Completed today' : ''}
+                    <p className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
+                      {goal.schedule_kind === 'weekly' && <PercyIcon id="phosphor:repeat:duotone" className="h-4 w-4" />}
+                      {(goal.category_name || 'Behaviour unavailable') + ' · ' + goalScheduleSummary(goal)
+                        + (goal.category_points ? ' · ' + pointsText(goal.category_points) : '')}
                     </p>
                   </div>
                   <Button type="button" variant="outline" size="icon"

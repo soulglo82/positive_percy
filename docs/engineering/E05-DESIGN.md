@@ -2,11 +2,11 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.0 |
+| Version | 1.1 |
 | Issued | 2026-11-18 |
 | Owner | Percy v2 engineering, branch `claude/percy-v2-e05-todays-goals` |
 | Base | The E03 head (`f09fcf5`, which contains #45, #46 and the E01–E03 stack) merged with the E04 branch (`b9d5b6a`) |
-| Status | Design for peer review |
+| Status | Reviewed design (v1.1); being built |
 | Parent plan | `PERCY_V2_IMPLEMENTATION_PLAN.md` W4, ticket E05 |
 
 ## Change log
@@ -14,6 +14,7 @@
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 2026-11-18 | First design |
+| 1.1 | 2026-11-18 | Peer review adopted (3 blocking, 9 non-blocking). Section 9 supersedes the sections it names |
 
 ## 1. Requirements
 
@@ -72,7 +73,7 @@ Weekday comparison uses sorted arrays (`parseGoal` already sorts them). Date com
 - Category tile: `CategoryIcon` drawn from `category_icon_key`, **identical whether or not the goal is done**.
 - Title.
 - Metadata: "{Category} · +{points} point(s)", and for weekly goals a second line with the repeat icon and "Repeats Mon, Wed, Fri" (or "Repeats every day" when all 7 days are set).
-- Not done: a button with visible text "+{points}", `aria-label="Complete {title}"`, at least 44×44 with a 24 px glyph (plus-circle approved Add icon? No: see §6, it shows text only).
+- Not done: a button with visible text "+{points}", `aria-label="Complete {title}"`, at least 44×44 with a 24 px glyph (superseded by section 9, B1).
 - Done: check-circle plus the "Done" text, `role="status"`.
 
 **Lucide removal.** `CheckCircle2` and `ClipboardCheck` are removed. The E03 exemption test is deleted and the ban applies.
@@ -161,3 +162,95 @@ The date line uses the browser's `en-GB` formatting of the server date. These st
 - **Rollout:** no deploy. The work goes on a stacked draft PR into #52's branch. There is no migration.
 - **Server:** additive (one extra field) plus a relaxed rule (unchanged past dates accepted).
 - **Reversal:** revert the E05 commits. Old clients keep working with the new server, because they always send today or later.
+
+## 9. Amendments in v1.1 (these supersede the sections named)
+
+**§2 S2, rewritten.**
+- **Single locked read.** The `FOR UPDATE` read takes `child_id, schedule_kind, weekdays, to_char(start_date), to_char(scheduled_date)`. A second, unlocked read could compare against stale values.
+- **Check order:**
+  1. 404 if the goal is not found;
+  2. R1 409 if the kind changed on a completed goal;
+  3. **B2 409** if a completed one-off's date changed: "This goal has been completed. Create a separate goal for another date.";
+  4. 409 if the child changed;
+  5. 404 if the category is unavailable;
+  6. 400 for date rules.
+- **Weekday comparison** sorts and de-duplicates both sides. The database allows `{1,1}` (E04 N2).
+
+| Edit | `start_date` result | Past dates |
+| --- | --- | --- |
+| weekly → weekly, weekdays unchanged, stored start in the **past** | **Stored value kept; the client's `start_date` is ignored.** This also neutralises old #46 tabs that send today (N1d) | Allowed (unchanged) |
+| weekly → weekly, weekdays unchanged, stored start today or later | Client value if given, else stored | Must be today or later (400) |
+| weekly → weekly, weekdays changed | Client value, else **the later of today and the stored start** (N1a) | Must be today or later (400 "Choose today or a future start date for the new schedule.") |
+| one_off → one_off, date unchanged | Kept | Allowed (rename) |
+| one_off → one_off, date changed | B2 409 if completed; otherwise the new date | Must be today or later (400) |
+| Kind change | R1 409 if completed; otherwise the creation rules | As for creation |
+
+**§3.1, the goal row.**
+- **B1.** The completion button is the approved Complete control: check-circle at `h-6 w-6` with "+N".
+  - It uses a new Button size, `goal` (`min-h-11 min-w-11`), added to `button.jsx`, because a height class on `<Button>` fails check-tokens (N2).
+  - The Done state is a plain earn-coloured "Done" label with a smaller check-circle and no button chrome. The screenshots must show the two states can be told apart.
+- **N3.** `aria-label="Complete {title}, +{N} point(s)"`, so the visible "+N" is part of the name.
+- **N4, announcements and focus.**
+  - Rows have no `role="status"`. Outcomes are announced by the toast only.
+  - "Showing goals for {Name}" is a single polite region, updated only when the parent clicks a chip.
+  - After completion, focus moves to the row's Done label (`tabIndex=-1`).
+  - After an Undo from the toast, focus stays in the toast region. That is recorded, not built.
+- **N5.** `ChildAvatar` gets `decorative` (`alt=""`, `aria-hidden`), so a chip's name stays "Sam". Colour classes come only from the `childColour()` slots, never from a built string.
+- **N9.** The date line is formatted from fixed weekday and month arrays on the server's `YYYY-MM-DD` string. It never depends on the browser's locale or zone.
+
+**§3.2, the dialog.**
+- **N1b.** The start-date input shows when creating, when the weekdays change, or when the stored start is today or later ("Starts on"). Otherwise a read-only line shows "Started {date}". This is **N8**: "Running since" is dropped, because it reads like a streak.
+- **N4.** The 409 is shown once, inline (`role="alert"`). There is no toast for save errors.
+- Rows lose "Completed today" (N7). Rows show "{Category} · {schedule} · +{N} point(s)".
+
+**§4, text for owner approval (full list, replacing the v1.0 list):**
+1. "{Name} · {done} of {n} complete"
+2. "Showing goals for {Name}" (screen readers)
+3. "Repeats Mon, Wed, Fri" and "Repeats every day"
+4. "Started {date}" and "Starts on"
+5. "The new schedule starts on {date}."
+6. Button "+{N}" and its name "Complete {title}, +{N} point(s)", including the singular "point"
+7. Date line, e.g. "Thursday 12 November"
+8. Dialog row formats: "{Category} · Mon–Fri · +1 point", "One-off · 16 Nov", "Every day"
+9. Removal of the "Completed today" row text
+10. Server: "Choose today or a future start date for the new schedule."
+11. Server: "Choose today or a future date." (existing, unchanged)
+12. Server, E04 R1: "This goal has been completed before. Create a separate goal for a different schedule."
+13. Server, B2: "This goal has been completed. Create a separate goal for another date."
+
+**§5, added rows.**
+- **N1c.** Changing the schedule of a goal completed today (start moved to tomorrow, or today's weekday removed) removes today's Done row from Home. The points and history stay. This is expected and documented.
+- **N1d.** An old #46 tab that sends today with unchanged weekdays is ignored when the stored start is in the past (first table row), so N6 cannot reappear from a stale client.
+
+**§7 and §7a.**
+- **N2.** E2E asserts the completion button is at least 44 px on desktop too.
+- **N6.** The E2E rename check cannot backdate (the API refuses past starts). The past-start rename is proven in the server test, which backdates with SQL. The E2E test only proves the UI keeps the value it was given.
+
+## Peer review record (v1.0 → v1.1)
+
+| # | Finding | Disposition |
+| --- | --- | --- |
+| B1 | Q4's 24 px approved glyph dropped by inference | Adopted: check-circle `h-6 w-6` plus "+N", with distinct Done styling |
+| B2 | A completed one-off moved to a new date can never be completed again | Adopted: 409, plus a test and the message added to §4 |
+| B3 | S2 read and check order unspecified; stale-read risk | Adopted: single locked read, explicit order, deduplicated weekday compare |
+| N1 | Table gaps (a–d) | Adopted (a, b, d); c documented |
+| N2 | 44 px not buildable on `Button`; desktop not checked | Adopted: `goal` size, desktop E2E assertion |
+| N3 | Visible "+N" not in the accessible name | Adopted |
+| N4 | Live-region spam, focus loss, double 409 | Adopted. Undo focus return recorded, not built |
+| N5 | Avatar alt doubles the chip name | Adopted: `decorative` |
+| N6 | E2E rename proves nothing | Adopted: server test is the proof, and this is stated |
+| N7 | Missing customer-facing text | Adopted: §4 is now the full list |
+| N8 | "Running since" reads like a streak | Adopted: "Started {date}", flagged for the owner |
+| N9 | Locale-dependent date | Adopted: fixed arrays |
+
+## Verification record (2026-11-18, this branch)
+
+| Check | Result |
+| --- | --- |
+| E05 server tests before the server change | 8 failed as predicted, 3 already passing |
+| `vitest` with `TEST_DATABASE_URL` (local Postgres 16), after | 31 files, 681 passed |
+| Client helpers under `TZ=Pacific/Kiritimati` and `TZ=Pacific/Pago_Pago` | 10/10 in both |
+| Mutation: done tile swapped to a check icon | Render test failed; restored |
+| `check:tokens` / `lint` | OK (74 files) / 0 errors, 5 warnings (baseline) |
+| `playwright test` (4 viewports, axe; new E05 flow on each) | 35 passed, 9 skipped |
+| Screenshots | `docs/engineering/evidence/e05/`: panel (Ben selected; Ava selected with a done goal) and dialog, at 390, 834 and 1280, before and after |

@@ -118,14 +118,11 @@ const BANS = {
   'src/Layout.jsx': ['Home', 'User', 'Activity', 'Gift', 'Settings'],
   'src/components/dashboard/ManageGoalsDialog.jsx': ['Archive', 'Repeat2', 'Repeat', 'Calendar', 'CalendarDays'],
   'src/pages/ParentProfile.jsx': ['Lightbulb', 'Info'],
-  'src/components/dashboard/TodaysGoalsPanel.jsx': ['Settings2', 'Target', 'Check', 'Sparkles', 'Sparkle'],
+  // E05 removed the exemption: the completed-goal tile keeps its category icon.
+  'src/components/dashboard/TodaysGoalsPanel.jsx': ['Settings2', 'Target', 'Check', 'Sparkles', 'Sparkle', 'CheckCircle2', 'CircleCheck', 'ClipboardCheck'],
   'src/lib/categoryIcons.js': ['RotateCcw', 'Undo', 'Undo2'],
   'src/components/rewards/AddRewardModal.jsx': ['Gift'],
 };
-// E05 exemption, by design (section 2.2): the completed-goal tile keeps these
-// until the goal API returns icon_key. Listed so E05 cannot miss them.
-const E05_EXEMPT = { 'src/components/dashboard/TodaysGoalsPanel.jsx': ['CheckCircle2', 'ClipboardCheck'] };
-
 export function lucideImports(text) {
   return [...text.matchAll(/import\s*\{([^}]*)\}\s*from\s*['"]lucide-react['"]/g)]
     .flatMap((m) => m[1].split(',').map((x) => x.trim().split(/\s+as\s+/)[0]).filter(Boolean));
@@ -136,12 +133,6 @@ describe('retired Lucide glyphs stay retired', () => {
     const names = lucideImports(read(f));
     const banned = [...BANS['*'], ...(BANS[f] || [])];
     expect(names.filter((n) => banned.includes(n))).toEqual([]);
-  });
-  it('the E05 exemption is still needed (remove it when E05 lands)', () => {
-    for (const [f, names] of Object.entries(E05_EXEMPT)) {
-      const got = lucideImports(read(f));
-      for (const n of names) expect(got, `${f} no longer imports ${n}: drop the exemption`).toContain(n);
-    }
   });
   it.each([
     ["import { Pencil } from 'lucide-react';", ['Pencil']],
