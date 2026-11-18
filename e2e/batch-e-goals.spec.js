@@ -31,6 +31,8 @@ test('parent can add, complete once, edit and archive a dated goal', async ({ pa
   await dialog.getByRole('button', { name: 'Create goal' }).click();
   await expect(dialog.getByText(title)).toBeVisible();
   await dialog.getByRole('button', { name: 'Close' }).click();
+  // Wait for the close animation: until then the goal row is in the page twice.
+  await expect(dialog).toHaveCount(0);
 
   await expect(page.getByRole('button', { name: 'Complete ' + title })).toBeVisible();
   await page.getByRole('button', { name: 'Complete ' + title }).click();
@@ -89,6 +91,8 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
   await expect(dialog.getByText(title)).toBeVisible();
   await expect(dialog.getByRole('listitem').filter({ hasText: title }).getByText(/· Daily ·/)).toBeVisible();
   await dialog.getByRole('button', { name: 'Close' }).click();
+  // Wait for the close animation: until then the goal row is in the page twice.
+  await expect(dialog).toHaveCount(0);
 
   const completeBtn = page.getByRole('button', { name: 'Complete ' + title, exact: true });
   await expect(completeBtn).toBeVisible();
