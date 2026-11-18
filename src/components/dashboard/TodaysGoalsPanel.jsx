@@ -192,7 +192,7 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
         </CardContent>
       </Card>
       <ManageGoalsDialog open={manageOpen} onClose={() => setManageOpen(false)}
-        child={child} categories={categories} today={data?.date || ''} />
+        child={child} children={children} categories={categories} today={data?.date || ''} />
     </section>
   );
 }

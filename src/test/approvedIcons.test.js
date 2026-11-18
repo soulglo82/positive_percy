@@ -190,7 +190,9 @@ describe('illustrations', () => {
         expect(selected.get(src), `${m[1]} (${src})`).toBe('selected');
       }
     }
-    expect(refs).toBe(3); // home welcome, first-run onboarding, reward creation form
+    // V1-F: the locked V1 design has no Home sticker and no onboarding
+    // illustration; only the reward creation form remains (until V1-D).
+    expect(refs).toBe(1);
   });
 
   it('every illustration <img> is decorative (alt="")', () => {

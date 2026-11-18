@@ -120,8 +120,26 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await expect(sam).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText("Sam's checklist")).toBeVisible();
 
+  // V1-F: "Give Percy Points" - child, behaviour (its own points), note.
   await page.getByRole('button', { name: /^Award points/ }).first().click();
+  const award = page.getByRole('dialog');
+  await expect(award.getByRole('heading', { name: 'Give Percy Points' })).toBeVisible();
+  await expect(award.getByText('What did Sam do?')).toBeVisible();
   await checkScreen(page, 'add points', testInfo);
+  await award.getByRole('group', { name: /What did Sam do/ }).getByRole('button').first().click();
+  await award.getByLabel('Add a note (optional)').fill('Shared the crayons');
+  await award.getByRole('button', { name: /^Award \d+ points?$/ }).click();
+  await expect(award).toHaveCount(0);
+  await page.getByRole('button', { name: 'Undo' }).first().click();
+
+  // V1-F: Manage goals list and the goal form.
+  await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
+  const manage = page.getByRole('dialog');
+  await expect(manage.getByRole('heading', { name: "Manage Sam's goals" })).toBeVisible();
+  await checkScreen(page, 'manage goals', testInfo);
+  await manage.getByRole('button', { name: 'Add goal' }).click();
+  await expect(manage.getByRole('heading', { name: 'New goal' })).toBeVisible();
+  await checkScreen(page, 'goal form', testInfo);
   await closeDialog(page);
 
   await page.getByRole('button', { name: /^Rewards$/ }).last().click();
@@ -136,6 +154,16 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await page.getByRole('button', { name: 'Sign out' }).first().click();
   await checkScreen(page, 'sign out', testInfo);
   await page.getByRole('button', { name: 'Cancel' }).click();
+
+  // V1-F: first-run onboarding, "Let's get started".
+  await page.evaluate(() => localStorage.removeItem('percy_onboarding_done'));
+  await go(page, '/');
+  const start = page.getByRole('dialog');
+  await expect(start.getByRole('heading', { name: "Let's get started" })).toBeVisible();
+  await checkScreen(page, 'onboarding', testInfo);
+  await start.getByRole('button', { name: 'Explore Percy' }).click();
+  await expect(start).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('percy_onboarding_done'))).toBe('true');
 });
 
 test('child view', async ({ page }, testInfo) => {

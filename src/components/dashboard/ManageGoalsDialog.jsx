@@ -1,31 +1,40 @@
+// V1 "Manage {Name}'s goals" and the goal form (approved design 9de1df2,
+// screens "goalsmanage" and "goalform"; docs/engineering/V1-F-DESIGN.md G).
+// The E05 rules are unchanged: a running routine never sends start_date, a
+// completed one-off keeps its date, and the server's R1/B2 409s show inline.
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import PercyIcon from "@/components/icons/PercyIcon";
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter,
 } from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import CategoryIcon from '@/components/CategoryIcon';
+import { FamilyStrip } from '@/components/home/HomeSections';
+import { childOrder } from '@/lib/childColour';
+import { StepHeading, behavioursFor } from '@/components/home/AwardPointsDialog';
 import {
   archiveTodayGoal, GOAL_DAYS, loadTodaysGoals, saveTodayGoal,
-  editStartDate, goalDateLine, goalScheduleSummary, goalShortDate, pointsText,
+  editStartDate, goalDateLine, goalRecurrenceV1, goalShortDate, pointsText,
 } from '@/lib/todaysGoals';
 
-function allowedCategories(categories, childId) {
-  return categories.filter(category =>
-    !category.assigned_children?.length || category.assigned_children.includes(childId));
-}
+const choiceClass = (on) => cn(
+  'inline-flex items-center justify-center gap-2 min-h-11 rounded-md px-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+  on ? 'border-2 border-selected-border bg-selected' : 'border border-border bg-card hover:bg-accent');
 
-export default function ManageGoalsDialog({ open, onClose, child, categories = [], today }) {
+export default function ManageGoalsDialog({ open, onClose, child: initialChild, children = [], categories = [], today }) {
   const queryClient = useQueryClient();
+  const [childId, setChildId] = useState(initialChild?.id);
+  const [view, setView] = useState('list'); // 'list' | 'form'
   const [editingId, setEditingId] = useState(null);
   // E05: the goal as stored when editing began; the start-date rule compares
   // against it (docs/engineering/E05-DESIGN.md section 9).
@@ -41,59 +50,55 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [archiving, setArchiving] = useState(false);
 
-  const available = allowedCategories(categories, child?.id);
+  const strip = children.length ? [...children].sort(childOrder) : (initialChild ? [initialChild] : []);
+  const child = strip.find((c) => c.id === childId) || initialChild;
+  const available = behavioursFor(categories, child?.id);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['todaysGoals', 'manage'],
     queryFn: () => loadTodaysGoals(true),
     enabled: open && !!child,
     refetchOnWindowFocus: true,
   });
+  const localToday = today || data?.date || '';
 
-  useEffect(() => {
-    if (open && !editingId && !categoryId && available.length) setCategoryId(available[0].id);
-  }, [open, editingId, categoryId, categories, child?.id]);
-
-  const reset = () => {
+  const clearForm = () => {
     setEditingId(null);
     setEditingGoal(null);
     setSaveError('');
     setTitle('');
     setSchedule('weekly');
-    setScheduledDate(today || data?.date || '');
-    setStartDate(today || data?.date || '');
+    setScheduledDate(localToday);
+    setStartDate(localToday);
     setWeekdays([1, 2, 3, 4, 5]);
     setCategoryId(available[0]?.id || '');
   };
 
+  // Each opening starts on the list for the child it was opened for.
   useEffect(() => {
-    if (open) {
-      setEditingId(null);
-      setEditingGoal(null);
-      setSaveError('');
-      setTitle('');
-      setSchedule('weekly');
-      setScheduledDate(today || '');
-      setStartDate(today || '');
-      setWeekdays([1, 2, 3, 4, 5]);
-      setCategoryId(available[0]?.id || '');
-    }
-  // Only reset when the dialog/child changes, not during a form edit.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, child?.id, today]);
+    if (!open) return;
+    setChildId(initialChild?.id);
+    setView('list');
+  }, [open, initialChild?.id]);
 
-  const localToday = today || data?.date || '';
+  const backToList = () => { clearForm(); setView('list'); };
+
+  const startAdding = () => { clearForm(); setView('form'); };
+
   const startEditing = (goal) => {
     setEditingId(goal.id);
     setEditingGoal(goal);
     setSaveError('');
     setTitle(goal.title);
-    setCategoryId(goal.category_id || '');
+    // A behaviour since removed or reassigned cannot be kept: the parent
+    // chooses again (review finding 3); saving waits for that choice.
+    setCategoryId(available.some((c) => c.id === goal.category_id) ? goal.category_id : '');
     setSchedule(goal.schedule_kind);
     setScheduledDate(goal.scheduled_date || localToday);
     const days = goal.weekdays?.length ? goal.weekdays : [1, 2, 3, 4, 5];
     setWeekdays(days);
     // E05 Q6: keep the stored start; the old clamp to today is gone.
     setStartDate(editStartDate(goal.schedule_kind === 'weekly' ? goal : null, days, localToday).value);
+    setView('form');
   };
 
   // The start-date state for the current form (mirrors the server rule).
@@ -121,7 +126,7 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
       await saveTodayGoal(payload, editingId);
       await queryClient.invalidateQueries({ queryKey: ['todaysGoals'] });
       toast.success(editingId ? 'Goal updated.' : 'Goal added.');
-      reset();
+      backToList();
     } catch (err) {
       // Shown once, inline, so the form stays open (design N4, E04 R1/B2).
       setSaveError(err.message || 'Could not save the goal.');
@@ -136,9 +141,9 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
     try {
       await archiveTodayGoal(archiveTarget.id);
       await queryClient.invalidateQueries({ queryKey: ['todaysGoals'] });
-      if (editingId === archiveTarget.id) reset();
       toast.success('Goal archived. Earned points stay in history.');
       setArchiveTarget(null);
+      backToList();
     } catch (err) {
       toast.error(err.message || 'Could not archive the goal.');
     } finally {
@@ -147,146 +152,167 @@ export default function ManageGoalsDialog({ open, onClose, child, categories = [
   };
 
   const goals = (data?.goals || []).filter(goal => goal.child_id === child?.id);
+  const name = child?.name || 'your child';
+  const canSave = !saving && !!categoryId && !!title.trim() && !(schedule === 'weekly' && weekdays.length === 0);
 
   return (
     <>
       <Dialog open={open} onOpenChange={value => { if (!value && !saving) onClose(); }}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Manage goals for {child?.name || 'your child'}</DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              Create a one-off task or a weekly routine. Completing it earns the behaviour's points.
-            </p>
-          </DialogHeader>
-          <DialogBody className="space-y-6">
-            <form id="goal-form" onSubmit={save} className="space-y-4">
-              <h3 className="font-semibold text-foreground flex items-center gap-2">
-                <PercyIcon id="phosphor:plus-circle:duotone" className="w-[18px] h-[18px]" />
-                {editingId ? 'Edit goal' : 'New goal'}
-              </h3>
-              <div className="space-y-2">
-                <Label htmlFor="goal-title">Goal</Label>
-                <Input id="goal-title" value={title} maxLength={100} required
-                  placeholder="e.g. Read for 15 minutes"
-                  onChange={event => setTitle(event.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="goal-category">Behaviour and points</Label>
-                <select id="goal-category" value={categoryId}
-                  onChange={event => setCategoryId(event.target.value)}
-                  className="w-full min-h-11 rounded-md border border-input bg-card px-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  {available.length === 0 && <option value="">No behaviours available</option>}
-                  {available.map(category => (
-                    <option key={category.id} value={category.id}>
-                      {category.name} (+{category.points ?? 1})
-                    </option>
-                  ))}
-                </select>
-                {available.length === 0 &&
-                  <p className="text-sm text-muted-foreground">Add a behaviour in Family settings first.</p>}
-              </div>
-              <fieldset className="space-y-2">
-                <legend className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                  <PercyIcon id="phosphor:calendar-dots:duotone" className="h-4 w-4 text-muted-foreground" />
-                  Schedule
-                </legend>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant={schedule === 'weekly' ? 'default' : 'outline'}
-                    aria-pressed={schedule === 'weekly'} onClick={() => setSchedule('weekly')}>
-                    <PercyIcon id="phosphor:repeat:duotone" className="h-4 w-4" /> Weekly
-                  </Button>
-                  <Button type="button" variant={schedule === 'one_off' ? 'default' : 'outline'}
-                    aria-pressed={schedule === 'one_off'} onClick={() => setSchedule('one_off')}>
-                    One-off
-                  </Button>
-                </div>
-              </fieldset>
-              {schedule === 'one_off' ? (
-                <div className="space-y-2">
-                  <Label htmlFor="goal-date">Date</Label>
-                  <Input id="goal-date" type="date" value={scheduledDate} required
-                    // A past one-off keeps its own date when renamed.
-                    min={editingGoal?.schedule_kind === 'one_off' && scheduledDate === editingGoal.scheduled_date ? undefined : (localToday || undefined)}
-                    onChange={event => setScheduledDate(event.target.value)} />
-                </div>
-              ) : (
-                <div className="space-y-3">
-                <fieldset className="space-y-2">
-                  <legend className="text-sm font-medium text-foreground">Repeat on</legend>
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                    {GOAL_DAYS.map(day => (
-                      <Button key={day.number} type="button" size="sm"
-                        className="px-2 min-w-11"
-                        aria-pressed={weekdays.includes(day.number)}
-                        variant={weekdays.includes(day.number) ? 'default' : 'outline'}
-                        onClick={() => toggleDay(day.number)}>{day.label}</Button>
-                    ))}
+          {view === 'list' ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-title font-extrabold text-primary">Manage {name}'s goals</DialogTitle>
+                <DialogDescription>Create routines, update schedules or archive goals safely.</DialogDescription>
+              </DialogHeader>
+              <DialogBody className="space-y-4">
+                {strip.length > 1 && <FamilyStrip children={strip} selectedId={child?.id} onSelect={setChildId} />}
+                <section className="rounded-lg border border-border bg-card p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-display font-bold text-lg text-primary">Current goals</h3>
+                      {!isLoading && !isError && goals.length > 0 && (
+                        <p className="text-sm text-muted-foreground">{goals.length} {goals.length === 1 ? 'goal' : 'goals'} for {name}</p>
+                      )}
+                    </div>
+                    <Button type="button" onClick={startAdding}>
+                      <PercyIcon id="phosphor:plus-circle:duotone" className="h-5 w-5" /> Add goal
+                    </Button>
                   </div>
-                  {weekdays.length === 0 && <p className="text-sm text-destructive">Choose at least one day.</p>}
-                </fieldset>
-                {start.editable ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="goal-start-date">Starts on</Label>
-                    <Input id="goal-start-date" type="date" min={localToday || undefined}
-                      value={startDate || localToday} required
-                      onChange={event => setStartDate(event.target.value)} />
-                    {start.hint === 'newSchedule' && (
-                      <p className="text-sm text-muted-foreground">The new schedule starts on {goalDateLine(startDate || localToday)}.</p>
+                  {isLoading && <p className="text-sm text-muted-foreground">Loading goals…</p>}
+                  {isError && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-destructive">Could not load goals.</p>
+                      <Button type="button" variant="outline" onClick={() => refetch()}>Try again</Button>
+                    </div>
+                  )}
+                  {!isLoading && !isError && goals.length === 0 &&
+                    <p className="text-sm text-muted-foreground">No goals yet for {name}.</p>}
+                  {goals.length > 0 && (
+                    <ul className="divide-y divide-border border-t border-border">
+                      {goals.map(goal => (
+                        <li key={goal.id} className="flex items-center gap-3 py-3">
+                          <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center text-primary">
+                            <CategoryIcon iconKey={goal.category_icon_key} className="w-6 h-6" />
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm text-foreground break-words">{goal.title}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {[goal.category_name || 'Behaviour unavailable', goalRecurrenceV1(goal, localToday),
+                                goal.category_points ? pointsText(goal.category_points) : null].filter(Boolean).join(' · ')}
+                            </p>
+                          </div>
+                          <Button type="button" variant="outline" size="goal" className="shrink-0 px-5 text-primary"
+                            aria-label={'Edit ' + goal.title} onClick={() => startEditing(goal)}>
+                            Edit
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="border-t border-border pt-3 text-sm text-muted-foreground">
+                    Existing completions and earned points remain safe when a goal is edited or archived.
+                  </p>
+                </section>
+              </DialogBody>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-title font-extrabold text-primary">{editingId ? 'Edit goal' : 'New goal'}</DialogTitle>
+                <DialogDescription>For {name} · earned points are awarded when you mark a goal complete</DialogDescription>
+              </DialogHeader>
+              <DialogBody>
+                <form id="goal-form" onSubmit={save} className="space-y-5">
+                  <section className="space-y-3">
+                    <StepHeading n={1} title="Goal details" hint="Give the goal a name your child understands." />
+                    <div className="space-y-2">
+                      <Label htmlFor="goal-title">Goal name</Label>
+                      <Input id="goal-title" value={title} maxLength={100} required
+                        placeholder="e.g. Read for 15 minutes"
+                        onChange={event => setTitle(event.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="goal-category">Positive behaviour</Label>
+                      <select id="goal-category" value={categoryId}
+                        onChange={event => setCategoryId(event.target.value)}
+                        className="w-full min-h-11 rounded-md border border-input bg-card px-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        {available.length === 0 && <option value="">No behaviours available</option>}
+                        {available.length > 0 && !categoryId && <option value="" disabled>Behaviour unavailable</option>}
+                        {available.map(category => (
+                          <option key={category.id} value={category.id}>{category.name}</option>
+                        ))}
+                      </select>
+                      <p className="text-sm text-muted-foreground">
+                        {available.length === 0 ? 'Add a behaviour in Family settings first.' : 'Point value comes from the selected behaviour.'}
+                      </p>
+                    </div>
+                  </section>
+                  <section className="space-y-3 border-t border-border pt-5">
+                    <StepHeading n={2} title="When should it happen?" hint="Choose a routine or a one-off achievement." />
+                    <div className="grid grid-cols-2 gap-2" role="group" aria-label="Schedule">
+                      <button type="button" className={choiceClass(schedule === 'weekly')}
+                        aria-pressed={schedule === 'weekly'} onClick={() => setSchedule('weekly')}>
+                        <PercyIcon id="phosphor:repeat:duotone" className="h-5 w-5 text-primary" /> Repeat weekly
+                      </button>
+                      <button type="button" className={choiceClass(schedule === 'one_off')}
+                        aria-pressed={schedule === 'one_off'} onClick={() => setSchedule('one_off')}>
+                        <PercyIcon id="phosphor:target:duotone" className="h-5 w-5 text-primary" /> One-off
+                      </button>
+                    </div>
+                    {schedule === 'one_off' ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="goal-date">Date</Label>
+                        <Input id="goal-date" type="date" value={scheduledDate} required
+                          // A past one-off keeps its own date when renamed.
+                          min={editingGoal?.schedule_kind === 'one_off' && scheduledDate === editingGoal.scheduled_date ? undefined : (localToday || undefined)}
+                          onChange={event => setScheduledDate(event.target.value)} />
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-4 xs:grid-cols-7 gap-2" role="group" aria-label="Repeat on">
+                          {GOAL_DAYS.map(day => (
+                            <button key={day.number} type="button"
+                              className={cn(choiceClass(weekdays.includes(day.number)), 'min-w-11 px-1')}
+                              aria-pressed={weekdays.includes(day.number)}
+                              onClick={() => toggleDay(day.number)}>{day.label}</button>
+                          ))}
+                        </div>
+                        {weekdays.length === 0 && <p className="text-sm text-destructive">Choose at least one day.</p>}
+                        {start.editable ? (
+                          <div className="space-y-2">
+                            <Label htmlFor="goal-start-date">Starts on</Label>
+                            <Input id="goal-start-date" type="date" min={localToday || undefined}
+                              value={startDate || localToday} required
+                              onChange={event => setStartDate(event.target.value)} />
+                            {start.hint === 'newSchedule' && (
+                              <p className="text-sm text-muted-foreground">The new schedule starts on {goalDateLine(startDate || localToday)}.</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Started {goalShortDate(start.value)}</p>
+                        )}
+                      </div>
                     )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Started {goalShortDate(start.value)}</p>
-                )}
-                </div>
-              )}
-              {saveError && <p className="text-sm text-destructive" role="alert">{saveError}</p>}
-              <div className="flex flex-wrap gap-2">
-                <Button type="submit" disabled={saving || !categoryId || !title.trim() || (schedule === 'weekly' && weekdays.length === 0)}>
-                  {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add goal'}
+                  </section>
+                  {saveError && <p className="text-sm text-destructive" role="alert">{saveError}</p>}
+                  {editingGoal && (
+                    <div className="border-t border-border pt-4">
+                      <Button type="button" variant="outline" onClick={() => setArchiveTarget(editingGoal)} disabled={saving}>
+                        <PercyIcon id="phosphor:archive:duotone" className="h-4 w-4" /> Archive goal
+                      </Button>
+                    </div>
+                  )}
+                </form>
+              </DialogBody>
+              <DialogFooter>
+                <Button type="button" variant="outline" className="flex-1" onClick={backToList} disabled={saving}>Cancel</Button>
+                <Button type="submit" form="goal-form" className="flex-1" disabled={!canSave}>
+                  {saving ? 'Saving…' : editingId ? 'Save changes' : 'Create goal'}
                 </Button>
-                {editingId && <Button type="button" variant="outline" onClick={reset}>Cancel edit</Button>}
-              </div>
-            </form>
-
-            <div className="border-t border-border pt-4 space-y-3">
-              <h3 className="font-semibold text-foreground">Existing goals</h3>
-              {isLoading && <p className="text-sm text-muted-foreground">Loading goals…</p>}
-              {isError && (
-                <div className="space-y-2">
-                  <p className="text-sm text-destructive">Could not load goals.</p>
-                  <Button type="button" variant="outline" onClick={() => refetch()}>Try again</Button>
-                </div>
-              )}
-              {!isLoading && !isError && goals.length === 0 &&
-                <p className="text-sm text-muted-foreground">No goals yet for {child?.name}.</p>}
-              {goals.map(goal => (
-                <div key={goal.id} className="flex flex-wrap items-center gap-2 rounded-md border border-border p-3">
-                  <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
-                    <CategoryIcon iconKey={goal.category_icon_key} className="w-5 h-5" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-foreground break-words">{goal.title}</p>
-                    <p className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
-                      {goal.schedule_kind === 'weekly' && <PercyIcon id="phosphor:repeat:duotone" className="h-4 w-4" />}
-                      {(goal.category_name || 'Behaviour unavailable') + ' · ' + goalScheduleSummary(goal)
-                        + (goal.category_points ? ' · ' + pointsText(goal.category_points) : '')}
-                    </p>
-                  </div>
-                  <Button type="button" variant="outline" size="icon"
-                    aria-label={'Edit ' + goal.title} onClick={() => startEditing(goal)}>
-                    <PercyIcon id="phosphor:pencil:duotone" className="h-4 w-4" />
-                  </Button>
-                  <Button type="button" variant="outline" size="icon"
-                    aria-label={'Archive ' + goal.title} onClick={() => setArchiveTarget(goal)}>
-                    <PercyIcon id="phosphor:archive:duotone" className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" className="w-full" onClick={onClose} disabled={saving}>Done</Button>
-          </DialogFooter>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

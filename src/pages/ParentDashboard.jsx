@@ -5,10 +5,6 @@ import { buildChildCreatePayload } from "@/lib/childPayload";
 import { useAuth, NEW_FAMILY_WELCOME_KEY } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus } from "lucide-react";
-import Logo from "@/components/brand/Logo";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { CONFETTI_COLORS } from "@/lib/tokens";
@@ -16,11 +12,11 @@ import { CONFETTI_COLORS } from "@/lib/tokens";
 import { childOrder } from "@/lib/childColour";
 import { StreakStrip, FamilyStrip, LittleWins, WorkingTowards, QuickPoints } from "../components/home/HomeSections";
 import AddChildModal from "../components/child/AddChildModal";
-import AddPointsModal from "../components/child/AddPointsModal";
+import AwardPointsDialog from "../components/home/AwardPointsDialog";
+import WelcomeCard from "../components/home/WelcomeCard";
 import SpendRewardsModal from "../components/child/SpendRewardsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
 import WelcomeFamilyDialog from "../components/WelcomeFamilyDialog";
-import HeroCard from "../components/dashboard/HeroCard";
 import TodaysGoalsPanel from "../components/dashboard/TodaysGoalsPanel";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
@@ -215,8 +211,6 @@ export default function ParentDashboard() {
     }
   };
 
-  const handlePointsSubmit = (data) => applyAward(selectedChild, data);
-
   const handleQuickAction = (child, action) =>
     applyAward(child, { points: action.points, category: action.category || action.label, note: '' });
 
@@ -234,24 +228,7 @@ export default function ParentDashboard() {
         ) : isError ? (
           <ErrorCard message="Couldn't load children" onRetry={refetch} />
         ) : children.length === 0 ? (
-          <>
-            <HeroCard children={children} streak={streak} onAddFirstChild={() => setShowAddChild(true)} />
-            <Card className="border-2 border-dashed border-input shadow-none">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Logo size={48} decorative className="mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  No children added yet
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Add your first child to start tracking their progress
-                </p>
-                <Button onClick={() => setShowAddChild(true)}>
-                  <UserPlus className="w-4 h-4" />
-                  Add Your First Child
-                </Button>
-              </CardContent>
-            </Card>
-          </>
+          <WelcomeCard onAddFirstChild={() => setShowAddChild(true)} />
         ) : (
           <>
             <StreakStrip streak={streak} />
@@ -290,14 +267,16 @@ export default function ParentDashboard() {
         onSubmit={(data) => createChildMutation.mutateAsync(data)}
       />
 
-      <AddPointsModal
+      <AwardPointsDialog
         isOpen={showAddPoints}
         onClose={() => {
           setShowAddPoints(false);
           setSelectedChild(null);
         }}
-        child={selectedChild}
-        onSubmit={handlePointsSubmit}
+        children={ordered}
+        categories={behaviorCategories || []}
+        initialChildId={selectedChild?.id}
+        onSubmit={applyAward}
       />
 
       <SpendRewardsModal
@@ -319,7 +298,6 @@ export default function ParentDashboard() {
       <OnboardingTips
         isOpen={showOnboarding && !welcomeCode}
         onClose={() => setShowOnboarding(false)}
-        firstRun
       />
     </div>
   );

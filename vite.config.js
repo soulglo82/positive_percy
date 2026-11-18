@@ -2,10 +2,11 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import path from 'path'
 import tokensPlugin from './scripts/vite-tokens-plugin.js'
+import gatedAssetsPlugin from './scripts/brand/gated-assets.mjs'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tokensPlugin()],
+  plugins: [react(), tokensPlugin(), gatedAssetsPlugin(__dirname)],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
