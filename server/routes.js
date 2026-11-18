@@ -687,7 +687,13 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
       [req.familyCode, request_id]
     );
     if (prior.length > 0) {
+      // E04 R3: an id another endpoint claimed (e.g. a Today's Goal
+      // completion, whose ledger row is also an award) is never replayed here.
+      const { rows: claim } = await client.query(
+        'SELECT endpoint FROM idempotency_keys WHERE family_code = $1 AND request_id = $2',
+        [req.familyCode, request_id]);
       await client.query('ROLLBACK');
+      if (claim.length && claim[0].endpoint !== 'award') return res.status(409).json({ error: 'Invalid request' });
       return replayAward(res, prior[0], child, points, category);
     }
 
