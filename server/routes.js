@@ -8,6 +8,7 @@ import { prepareFamilyExport, MAX_EXPORT_BYTES } from './export.js';
 import { pickAllowedColumns, findMissingRequired } from './columns.js';
 import { uploadIdOf, uploadsAreOwned, releaseUpload, UPLOAD_REF_COLUMNS } from './uploads.js';
 import { weekPointsFor, withWeekPoints, weekStartSql, localDays, validTimezone, isGenericZone, recomputeLastActive } from './week.js';
+import { createTodaysGoalsRouter } from './todaysGoals.js';
 
 const router = Router();
 
@@ -313,6 +314,13 @@ router.get('/api/uploads/:id', async (req, res) => {
     res.status(500).send('Error loading file');
   }
 });
+
+// Goals remain a separate, family-authenticated API and use the established
+// positive point ledger. Keep this mount before generic /api/:table routes.
+router.use('/api/todays-goals', authMiddleware, createTodaysGoalsRouter({
+  pool, broadcast: (...args) => broadcastFn(...args),
+  recordStreak, weekPointsFor,
+}));
 
 // ─── Family auth routes ─────────────────────────────────────────────────────
 
@@ -918,6 +926,12 @@ async function reverseAward(req, res, sameWeek = false) {
       `INSERT INTO point_events (child_id, points, category, child_name, family_code, request_id, kind, reverses_id)
        VALUES ($1, $2, $3, $4, $5, $6, 'undo', $7) RETURNING *`,
       [child.id, -ev.points, ev.category, child.name, req.familyCode, requestId, ev.id]);
+    // A corrected Today's Goal should become eligible again on the same day;
+    // the completion remains in the audit history with an undone marker.
+    await client.query(
+      'UPDATE today_goal_completions SET undone_at = NOW() WHERE point_event_id = $1 AND undone_at IS NULL',
+      [ev.id]
+    );
     const { rows: updated } = await client.query(
       'UPDATE children SET total_points = total_points - $1 WHERE id = $2 AND family_code = $3 RETURNING *',
       [ev.points, child.id, req.familyCode]);

@@ -59,6 +59,22 @@ export async function prepareFamilyExport(pool, familyCode, { includePhotos = tr
              status, created_date
       FROM family_goals WHERE family_code = $1 ORDER BY created_date, id
     `);
+    const todaysGoals = await rows(`
+      SELECT id, child_id, category_id, title, schedule_kind,
+        to_char(scheduled_date, 'YYYY-MM-DD') AS scheduled_date,
+        weekdays, to_char(start_date, 'YYYY-MM-DD') AS start_date,
+        archived_at, created_at, updated_at
+      FROM today_goals WHERE family_code = $1 ORDER BY created_at, id
+    `);
+    const todayGoalCompletions = await rows(`
+      SELECT id, goal_id, child_id,
+        to_char(scheduled_for, 'YYYY-MM-DD') AS scheduled_for,
+        point_event_id, awarded_points, category_name, created_at, undone_at
+      FROM today_goal_completions
+      WHERE family_code = $1
+        AND child_id IN (SELECT id FROM children WHERE family_code = $1)
+      ORDER BY created_at, id
+    `);
     const legacyQuickActions = await rows(`
       SELECT id, label, points, icon, display_order, created_date
       FROM quick_actions WHERE family_code = $1 ORDER BY display_order, id
@@ -110,6 +126,8 @@ export async function prepareFamilyExport(pool, familyCode, { includePhotos = tr
       pointEvents,
       redemptions,
       familyGoals,
+      todaysGoals,
+      todayGoalCompletions,
       legacyQuickActions,
       photos,
       photoInformation: {
