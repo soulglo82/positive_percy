@@ -17,7 +17,7 @@ import { childColour } from '@/lib/childColour';
 export function StreakStrip({ streak }) {
   if (!streak) return null;
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border border-border bg-warning px-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border border-border bg-warning px-3 py-2 text-sm">
       <p className="flex items-center gap-2 font-semibold text-foreground">
         <PercyIcon id="phosphor:sparkle:duotone" className="h-5 w-5 text-primary" />
         {streak}-day family streak
@@ -134,15 +134,16 @@ export function QuickPoints({ child, actions, awarding, onAward, onOpenAward, on
             </Link>
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             {actions.map((action) => (
               <button key={action.id} type="button" disabled={awarding}
                 onClick={() => onAward(child, action)}
                 aria-label={`${action.label} +${action.points} for ${child.name}`}
-                className="disabled:opacity-60 flex items-center gap-2 min-h-11 rounded-md border border-border bg-warning px-3 py-3 text-left text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                className="disabled:opacity-60 flex items-center gap-1.5 min-h-11 rounded-md border border-border bg-warning px-2 py-3 text-left text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                 <span className="text-primary"><CategoryIcon iconKey={action.icon_key} className="h-5 w-5" /></span>
-                <span className="flex-1 min-w-0 break-words">{action.label}</span>
-                <span className="shrink-0 rounded-md bg-star px-2 py-0.5 text-sm font-semibold text-foreground tabular-nums">+{action.points}</span>
+                {/* Wraps only between words; a long single word may shrink the badge gap, never split. */}
+                <span className="flex-1 min-w-0">{action.label}</span>
+                <span className="shrink-0 rounded-md bg-star px-1.5 py-0.5 text-sm font-semibold text-foreground tabular-nums">+{action.points}</span>
               </button>
             ))}
           </div>
