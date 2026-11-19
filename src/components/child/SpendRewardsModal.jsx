@@ -121,6 +121,9 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
                   </li>
                 ))}
               </ul>
+              <p className="text-sm font-semibold text-foreground" data-requests-total>
+                {REQUEST_COPY.total(requests.reduce((n, item) => n + item.cost, 0), child.name)}
+              </p>
               <Button className="w-full" disabled={busy} onClick={agree}>{REQUEST_COPY.agree(requests.length)}</Button>
             </section>
           )}

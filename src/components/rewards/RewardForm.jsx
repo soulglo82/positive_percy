@@ -1,4 +1,4 @@
-// V1-D "Create or edit reward" (approved design 9de1df2, screen "rewardform";
+// V1-D reward form, "Add reward" / "Edit reward" (approved design 9de1df2, screen "rewardform";
 // docs/engineering/V1-D-DESIGN.md §4.2 and §10). Replaces the Add/Edit reward
 // modals. icon_key is only ever set by a parent's tap on an icon (D2: no
 // automatic assignment) and only sent when it changed; a reward's emoji and
@@ -24,6 +24,10 @@ import RewardIcon from './RewardIcon';
 import RewardPicker from './RewardPicker';
 
 const DEFAULT_EMOJI = '🎁';
+
+// C3 (owner-approved): what the reward shows before a picker icon is chosen.
+// A photo is "Current image"; an icon or emoji (or the gift) is "Current icon".
+export const currentArtLabel = (reward) => (reward?.image_url && !reward?.icon_key ? 'Current image' : 'Current icon');
 
 export default function RewardForm({ isOpen, onClose, reward = null, initialTemplate = null, children = [], onSubmit, onDelete }) {
   const editing = !!reward;
@@ -90,8 +94,9 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
       <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-title font-extrabold text-primary">Create or edit reward</DialogTitle>
-            <DialogDescription>Name the reward, choose its points cost and select an icon from the approved library.</DialogDescription>
+            {/* Owner-approved wording C1 and C2 (2026-11-19). */}
+            <DialogTitle className="text-title font-extrabold text-primary">{reward ? 'Edit reward' : 'Add reward'}</DialogTitle>
+            <DialogDescription>Name the reward, set its points cost and choose an icon.</DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-5">
             <section className="space-y-3">
@@ -110,7 +115,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
               <div className="flex items-center gap-3 rounded-lg border border-border bg-warning p-3">
                 <RewardIcon reward={preview} size="md" className="bg-card" />
                 <div className="min-w-0 flex-1">
-                  <p className="font-display font-bold text-foreground">{iconKey ? pickerLabel(iconKey) : 'Current icon'}</p>
+                  <p className="font-display font-bold text-foreground">{iconKey ? pickerLabel(iconKey) : currentArtLabel(reward)}</p>
                   <p className="text-sm text-muted-foreground">Selected reward icon</p>
                 </div>
                 <Button type="button" variant="outline" aria-expanded={pickerOpen} aria-controls="reward-icon-picker" onClick={() => setPickerOpen((o) => !o)}>

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.2 |
+| Version | 1.3 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-d-rewards`, stacked on V1-F `claude/percy-v1-f-forms`) |
 | Status | Reviewed (fresh-context peer review adopted, v1.1; §10 supersedes earlier sections where they conflict) |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.3 | 2026-11-19 | Owner approved the wording C1–C6 (recorded on PR #59); applied and tested (§12) |
 | 1.0 | 2026-11-19 | First draft |
 | 1.1 | 2026-11-19 | Peer review: 5 blocking and 6 non-blocking findings; all blocking adopted, non-blocking adopted or answered (§10) |
 | 1.2 | 2026-11-19 | Code review of PR #59: 3 actionable fixed, 7 nitpicks fixed or answered (§11) |
@@ -238,3 +239,17 @@
 | N5 | Assigned-children badges are gone from the catalogue | **Answered.** The approved tile has none; assignment is visible and editable in the form |
 | N6 | Dead code | **Fixed.** `RewardCard` removed (its axe check now covers the catalogue tile and the picker); `isPickerIcon` removed. The `book-open-text` alias is kept verbatim from the approved HTML (it matches nothing and is harmless) |
 | N7 | The picker opened on Fun & games when editing an icon from another category; Hide/Change had no `aria-controls` | **Fixed.** It opens on the chosen icon's category (test); `aria-controls` added. The one-frame reset flash on reopen is not fixed (cosmetic) |
+
+## 12. Owner-approved wording (2026-11-19)
+
+| Item | Approved wording | Where |
+| --- | --- | --- |
+| C1 | "Add reward" (new, including from a template) / "Edit reward" (existing); description "Name the reward, set its points cost and choose an icon." | `RewardForm` |
+| C2 | No technical Phosphor / 71-icon subtitle (the old description naming the "approved library" is replaced by C1) | `RewardForm` |
+| C3 | "Current image" for a reward with a photo and no picker icon; otherwise "Current icon" (icon, emoji or the gift) | `currentArtLabel` |
+| C4 | "Choose one of the icons shown" (unchanged) | server 422 |
+| C5 | "{Name} asked for"; "Not this time" (removes the request, spends nothing); "Approve 1 reward" / "Approve N rewards"; total "This will spend {total} point(s) from {Name}'s balance."; "The requests changed. Check them again." | `REQUEST_COPY`, `SpendRewardsModal` |
+| C6 | "1 icon matches your search" (unchanged); "No rewards match this filter." | `RewardPicker`, `Rewards` |
+
+The total is the sum of the same priced items the confirmation sends (`expected` with each reward's id, position and cost). A change in price or requests gets a 409 and the parent sees them again; nothing is charged at a different amount (test C6, unchanged since PR #59's review).
+
