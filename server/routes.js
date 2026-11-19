@@ -1333,7 +1333,7 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
   try {
     const familyCode = req.familyCode;
     const tz = `COALESCE((SELECT timezone FROM families WHERE family_code = $1), 'UTC')`;
-    const { rows: [{ week_start: weekStart }] } = await pool.query(`SELECT ${weekStartSql(tz)} AS week_start`, [familyCode]);
+    const { rows: [{ week_start: weekStart, timezone }] } = await pool.query(`SELECT ${weekStartSql(tz)} AS week_start, ${tz} AS timezone`, [familyCode]);
 
     const { rows: childStats } = await pool.query(`
       SELECT
@@ -1388,10 +1388,6 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
       FROM today_goal_completions
       WHERE family_code = $1 AND created_at >= $2 AND undone_at IS NULL
     `, [familyCode, weekStart]);
-
-    // V1-C: the family's zone, so Activity groups days on the same calendar
-    // as the week above (owner, PR #62).
-    const { rows: [{ timezone }] } = await pool.query(`SELECT ${tz} AS timezone`, [familyCode]);
 
     res.json({ weekStart, timezone, childStats, topCategories, categoryBreakdowns, weekEvents, activeDays, goalsCompleted });
   } catch (err) {
@@ -1872,7 +1868,8 @@ router.get('/api/activity-feed', authMiddleware, async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 200);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-    const where = FEED_FILTERS[req.query.filter] || FEED_FILTERS.all;
+    // Own keys only: '?filter=constructor' must not reach the SQL (code review of #62).
+    const where = Object.hasOwn(FEED_FILTERS, req.query.filter) ? FEED_FILTERS[req.query.filter] : FEED_FILTERS.all;
     const childId = req.query.child_id;
     if (childId !== undefined && !isUuid(childId)) return res.status(400).json({ error: 'Invalid child.' });
 

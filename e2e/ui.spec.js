@@ -257,7 +257,10 @@ test('activity, with the log open and the child filter open', async ({ page }, t
   await checkScreen(page, 'activity log', testInfo);
   await page.getByRole('combobox', { name: 'Child' }).click();
   await checkScreen(page, 'activity child select', testInfo);
-  await closeDialog(page);
+  // The child filter is applied on the server (code review of #62).
+  const narrowed = page.waitForRequest((r) => r.url().includes('/api/activity-feed') && r.url().includes('child_id='));
+  await page.getByRole('option', { name: 'Sam' }).click();
+  await narrowed;
 });
 
 test('rewards and its dialogs', async ({ page }, testInfo) => {
