@@ -2,10 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.2 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
-| Status | Reviewed (fresh-context peer review adopted, v1.1; §10 supersedes earlier sections where they conflict). **For owner approval. Nothing in this note is built** |
+| Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
 | Binding inputs | Approved HTML blob `9de1df2`: Home "Saving for something bigger / 120 of 300 points saved / 180 to go"; Children "Saving for something bigger" with Edit, "Saved: 120", "300 points · Bigger achievement"; Child View "90 Ready to use / 120 Saved towards New bike / My next big adventure / 180 points to go"; its own note that the "savings/weekly-pool transfer … is a visual concept until its authorised ledger contract is implemented". Owner direction (2026-11-19): include the real ledger in V1; **D7: bigger goals by explicit designation, never by price**. Plan v1.1 §8.3 (do not reuse `family_goals` or `/contribute`) |
 
 ## Change log
@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | 1.0 | 2026-11-19 | First draft |
 | 1.1 | 2026-11-19 | Peer review: 5 blocking and 7 non-blocking findings, all adopted (§10) |
+| 1.2 | 2026-11-19 | Owner's data-preservation requirements; legacy `family_goals` inspected; migration 016, its rollback and the reconciliation proof built and passing (§11) |
 
 ## 1. What it must do
 
@@ -163,3 +164,80 @@ CREATE INDEX savings_events_child ON savings_events (family_code, child_id, rewa
 | --- | --- | --- |
 | O6 | If a parent un-marks a bigger goal and marks it again before the child's next savings change, should the old savings reappear? | Yes (the read-time filter gives this). The alternative needs multi-child writes on every reward edit |
 | O7 | A bigger goal is redeemed by a parent from the Children page, not requested by the child (B1) | Yes |
+
+## 11. Existing family data: what it holds, and the proof that 016 preserves it (v1.2)
+
+### 11.1 Owner requirements (2026-11-19, issue #56) and their evidence
+
+| Requirement | How it is met | Evidence |
+| --- | --- | --- |
+| Keep every child's points balance unchanged | 016 writes no row. It adds a column with a constant default and an empty table | `server/test/d1-migration.test.js` "016 changes nothing…": every child's `total_points`, `points_spent`, stored requests and history total are identical |
+| Preserve rewards, requests, redemptions and activity | The same check covers every table that existed before 016: each row's every pre-existing column, by hash, plus row counts | The same test; `server/reconcile.js` |
+| Preserve existing savings where they can be verified from records | **No verifiable child savings exist.** The only earlier "goal contribution" data is the legacy `family_goals` counter, which is not child savings (§11.2). It is left exactly as it is | The test "legacy family goals are left exactly as they were…" |
+| New allocations without duplicating points | Savings are a separate pool inside `total_points`: available = total − set aside for requests − saved. Saving moves points between pools and never changes the total | The test "the key rule": +50 saved gives available −50; total, history and spent are unchanged; the database and the API agree |
+| Never assume existing points are newly earned or allocated to a goal | 016 creates no savings rows and marks no goal; its own post-check refuses to finish otherwise | 016's `DO $$` post-check; the test asserts 0 savings and 0 goals |
+| Test migration and rollback against a realistic copy | A realistic fixture (§11.3), plus a tool for a restored copy of real data (§11.4) | The test "rollback restores the exact pre-016 state; 016 then applies again cleanly"; the tool run in §11.4 |
+| The key rule: moving 50 into a goal lowers available by 50, never the total | Read path: `withBalances` subtracts verified savings (towards rewards that are still goals for the child) | The test "the key rule". Un-marking the goal returns the 50 to available |
+
+### 11.2 What legacy `family_goals` actually represent (inspected, not assumed)
+
+- **The data.** A family-level counter: `title`, `target_points`, `current_points` and `status`, with **no `child_id`** (`server/db.js`, the `family_goals` table).
+- **How it changed.** Only `POST /api/family-goals/:id/contribute` changed it. That raises `current_points` by any number the parent typed, capped at the target, and marks the goal completed (`server/routes.js`, the contribute route).
+  - It **never deducted any child's points**, wrote no `point_events` row, and recorded no child.
+  - The removed screen (introduced in commit `9bf766e`, removed in `a746bb6`) offered a free number box, default 10.
+- **Conclusion.** These counters are *not* points anyone saved: no child's balance went down when they rose. They **cannot be migrated as child savings without inventing them**.
+- **What happens to them.** 016 leaves them untouched. They stay in the database, in the family export, and in the reconciliation fingerprint. Whether to show them as history, or offer a parent a way to start a real goal from one, is an owner decision (O8). No points move either way.
+- **Plan §8.3 still holds:** the contribute endpoint is never reused.
+
+### 11.3 The realistic fixture (`server/test/fixtures/legacyFamilies.js`)
+
+Three families, built through the real API, plus direct SQL for shapes only older releases could write:
+- several children, including one at 0 points and one with over 1,000;
+- awards, an undone award and a same-week correction;
+- a Today's Goal completion;
+- spends that were completed, undone (Reversed), and legacy Pending and Denied;
+- pending requests, including one for a reward since deleted and one for a reward reassigned to a sibling;
+- rewards with an emoji, an image, a picker icon, hidden, and assigned to one child;
+- legacy history and redemptions with no `family_code`;
+- legacy family goals with contributions (active, completed, and a family that only ever used them).
+
+The first test asserts that these shapes are really present, and that every child's history adds up to their balance (rule A2 C4) before 016.
+
+### 11.4 Running the same proof on a copy of real data
+
+- **The command:** `node scripts/d1-reconcile.mjs --database-url <restored copy> --i-confirm-this-is-a-copy`.
+- **What it does:** fingerprint, apply 016, compare, roll back, compare, apply again, compare. It writes `d1-reconcile-report.json` and exits 1 on any change.
+- **Guard rails:** it refuses to run without the copy flag, and refuses a copy that already has 016.
+- **Engineering run (2026-11-19), on a pre-016 copy built from the fixture:**
+  - "apply 016", "roll 016 back" and "apply 016 again" all ok;
+  - 3 families, 4 children, 0 children with history drift;
+  - legacy family goals: 3, all with contributions, 230 contributed in total, across 2 families.
+- **Owner action (D2 item: production data access):** run it on a restored backup of production before 016 ships, or provide an anonymised copy for engineering to run it on.
+
+### 11.5 The check can fail (counter-examples, each in a rolled-back transaction)
+
+The test "the check catches: …" proves the reconciliation reports each of these:
+- a changed balance;
+- points auto-allocated to a goal;
+- a reset family-goal contribution;
+- a deleted history row;
+- a dropped request;
+- a rewritten redemption status.
+
+### 11.6 Rollback
+
+- **The script:** `server/rollbacks/016_savings_ledger_down.sql` drops only what 016 added. In production it is applied as the next forward migration, after the server code is rolled back. The new code reads the savings table, so it fails without it; the test hit exactly this and seeds before rolling back.
+- **The proof:** after rollback, the fingerprint equals the pre-016 state exactly. Re-applying 016 is clean, and a second boot changes nothing.
+
+### 11.7 What is built and what is not
+
+- **Built:**
+  - migration 016;
+  - the rollback;
+  - the reconciliation module, its tests and the copy tool;
+  - the read path (`available_points` subtracts verified savings; children responses carry `saved_total` and `goals[]`).
+- **Not built until the owner confirms this proof:** the savings endpoints (save, move back, undo), redeeming a goal from savings, the "Bigger goal" switch, and the Home, Children and Child View screens.
+
+| # | Owner question (added) | Engineering recommendation |
+| --- | --- | --- |
+| O8 | Legacy family goals: leave them as stored data only, show them read-only as history, or offer "start a real goal from this"? | Leave them stored and exported only for V1; revisit after launch. They never held child points |

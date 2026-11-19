@@ -116,7 +116,7 @@ async function loadRewardsById(db, familyCode, ids) {
   const wanted = [...new Set(ids.map((id) => String(id || '')).filter(isUuid))];
   if (wanted.length === 0) return new Map();
   const { rows } = await db.query(
-    'SELECT id, title, cost_points, assigned_child_ids, icon_key, emoji, image_url FROM rewards WHERE id = ANY($1::uuid[]) AND family_code = $2',
+    'SELECT id, title, cost_points, assigned_child_ids, icon_key, emoji, image_url, is_bigger_goal FROM rewards WHERE id = ANY($1::uuid[]) AND family_code = $2',
     [wanted, familyCode]
   );
   return new Map(rows.map((r) => [r.id, r]));
@@ -157,12 +157,31 @@ const stackTotalOf = (stack) => (stack || []).reduce((sum, item) => sum + (Numbe
 async function withBalances(db, familyCode, rows) {
   const out = await withWeekPoints(db, familyCode, rows);
   if (!out) return out;
-  const byId = await loadRewardsById(db, familyCode,
-    out.flatMap((r) => (r.reward_stack || []).map((item) => item.rewardId)));
+  const ids = out.map((r) => r.id).filter(Boolean);
+  // D1: savings per child and goal (one query). Only savings towards a reward
+  // that still exists, is a bigger goal and is for this child count (the
+  // read-time filter, design v1.1 B5); the rest is back in available.
+  const { rows: sums } = ids.length ? await db.query(
+    `SELECT child_id, reward_id, SUM(delta)::int AS saved FROM savings_events
+     WHERE family_code = $1 AND child_id = ANY($2::uuid[]) GROUP BY child_id, reward_id HAVING SUM(delta) <> 0`,
+    [familyCode, ids]) : { rows: [] };
+  const byId = await loadRewardsById(db, familyCode, [
+    ...out.flatMap((r) => (r.reward_stack || []).map((item) => item.rewardId)),
+    ...sums.map((x) => x.reward_id),
+  ]);
   for (const r of out) {
     if (r.total_points == null) continue;
     r.reward_stack_priced = priceStackFrom(byId, r.reward_stack, r.id);
-    r.available_points = Math.max(0, r.total_points - stackTotalOf(r.reward_stack_priced));
+    r.goals = sums.filter((x) => x.child_id === r.id).flatMap((x) => {
+      const reward = spendableFrom(byId, x.reward_id, r.id);
+      const goal = byId.get(String(x.reward_id));
+      if (!reward || !goal?.is_bigger_goal) return [];
+      return [{ rewardId: reward.id, name: reward.title, cost: reward.cost, saved: x.saved, to_go: Math.max(0, reward.cost - x.saved), icon_key: reward.icon_key, emoji: reward.emoji, image_url: reward.image_url }];
+    });
+    r.saved_total = r.goals.reduce((n, g) => n + g.saved, 0);
+    // Available now = total - set aside for requests - saved towards goals.
+    // Moving points into a goal lowers this, never total_points.
+    r.available_points = Math.max(0, r.total_points - stackTotalOf(r.reward_stack_priced) - r.saved_total);
   }
   return out;
 }
