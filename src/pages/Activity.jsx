@@ -1,3 +1,8 @@
+// V1-C Activity (approved design 9de1df2, screen "activity";
+// docs/engineering/V1-C-DESIGN.md). Every row comes from /api/activity-feed;
+// the four filters are server projections of "All" (goal rows are tagged by
+// the completion join). Correct (this week's awards) and the undone marking
+// are kept from A2.
 import { useState } from 'react';
 import { Child } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
@@ -19,23 +24,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Activity as ActivityIcon, ChevronDown, ChevronUp, ClipboardList } from "lucide-react";
-import ChildAvatar from "../components/child/ChildAvatar";
-import { childColour } from "@/lib/childColour";
+import PercyIcon from "@/components/icons/PercyIcon";
+import { cn } from "@/lib/utils";
 import Logo from "@/components/brand/Logo";
-import { format, isToday, isYesterday, isSameWeek } from "date-fns";
-import { PERCY } from "@/constants/terminology";
+import { format, isSameDay, subDays } from "date-fns";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
 const PAGE_SIZE = 50;
+export const FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'earned', label: 'Earned' },
+  { key: 'goals', label: 'Goals' },
+  { key: 'spent', label: 'Spent' },
+];
 
-function getDateGroup(dateStr) {
+// "Today · Wednesday 18 November", "Yesterday · Tuesday 17 November", and
+// "Monday 16 November" for older days (owner item A1).
+export function dayLabel(dateStr, now = new Date()) {
   const date = new Date(dateStr);
-  if (isToday(date)) return 'Today';
-  if (isYesterday(date)) return 'Yesterday';
-  if (isSameWeek(date, new Date(), { weekStartsOn: 1 })) return 'This Week';
-  return 'Earlier';
+  const day = format(date, 'EEEE d MMMM');
+  if (isSameDay(date, now)) return 'Today · ' + day;
+  if (isSameDay(date, subDays(now, 1))) return 'Yesterday · ' + day;
+  return day;
 }
 
 export default function Activity() {
@@ -45,11 +56,9 @@ export default function Activity() {
   const [correcting, setCorrecting] = useState(false);
   const [selectedChildId, setSelectedChildId] = useState("all");
   const [activeFilter, setActiveFilter] = useState("all");
-  const [allEvents, setAllEvents] = useState([]);
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  const [extra, setExtra] = useState([]);
+  const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [feedExpanded, setFeedExpanded] = useState(false);
 
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
@@ -62,84 +71,63 @@ export default function Activity() {
     queryKey: ['weeklySummary'],
     refetchOnWindowFocus: true,
     queryFn: async () => {
-      const token = getToken();
-      const res = await fetch('/api/summary', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+      const res = await fetch('/api/summary', { headers: { 'Authorization': `Bearer ${getToken()}` } });
       if (!res.ok) return null;
       return res.json();
     },
     enabled: !!user,
   });
 
-  const fetchFeed = async (filter, offsetVal = 0) => {
-    const token = getToken();
-    const params = new URLSearchParams({
-      filter,
-      limit: PAGE_SIZE,
-      offset: offsetVal,
-    });
-    const res = await fetch(`/api/activity-feed?${params}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
+  const fetchFeed = async (offsetVal) => {
+    const params = new URLSearchParams({ filter: activeFilter, limit: PAGE_SIZE, offset: offsetVal });
+    if (selectedChildId !== 'all') params.set('child_id', selectedChildId);
+    const res = await fetch(`/api/activity-feed?${params}`, { headers: { 'Authorization': `Bearer ${getToken()}` } });
     if (!res.ok) throw new Error('Failed to load activity');
     return res.json();
   };
 
-  const { isLoading, isError, refetch } = useQuery({
-    queryKey: ['activityFeed', activeFilter],
+  // First page per filter and child; earlier pages are appended below it.
+  const { data: firstPage = [], isLoading, isError, refetch } = useQuery({
+    queryKey: ['activityFeed', activeFilter, selectedChildId],
     queryFn: async () => {
-      const events = await fetchFeed(activeFilter);
-      setAllEvents(events);
-      setOffset(PAGE_SIZE);
-      setHasMore(events.length === PAGE_SIZE);
+      const events = await fetchFeed(0);
+      setExtra([]); // a refreshed first page starts the list again
       return events;
     },
+    // Keep the page on screen while another filter or child loads.
+    placeholderData: (previous) => previous,
     enabled: !!user,
   });
+  const allEvents = [...firstPage, ...extra];
+  // Before any earlier page is loaded, a full first page means there may be more.
+  const canLoadMore = extra.length ? hasMore : firstPage.length === PAGE_SIZE;
 
   const loadMore = async () => {
     setLoadingMore(true);
     try {
-      const moreEvents = await fetchFeed(activeFilter, offset);
-      setAllEvents(prev => [...prev, ...moreEvents]);
-      setOffset(prev => prev + PAGE_SIZE);
-      setHasMore(moreEvents.length === PAGE_SIZE);
+      const more = await fetchFeed(allEvents.length);
+      setExtra((prev) => [...prev, ...more]);
+      setHasMore(more.length === PAGE_SIZE);
     } catch {
-      // Silently fail
+      toast.error("Couldn't load activity");
     }
     setLoadingMore(false);
   };
 
-  const handleFilterChange = (filter) => {
-    setActiveFilter(filter);
-    setOffset(0);
-    setAllEvents([]);
-  };
-
-  if (isLoading) return <div className="min-h-screen p-6"><LoadingSpinner message="Loading activity..." /></div>;
+  if (isLoading && !firstPage.length) return <div className="min-h-screen p-6"><LoadingSpinner message="Loading activity..." /></div>;
   if (isError) return <div className="min-h-screen p-6"><ErrorCard message="Couldn't load activity" onRetry={refetch} /></div>;
 
-  const filteredEvents = selectedChildId === "all"
-    ? allEvents
-    : allEvents.filter(e => e.child_id === selectedChildId);
-
-  // Group events by date label
-  const groupedEvents = [];
-  let lastGroup = null;
-  for (const event of filteredEvents) {
-    const group = getDateGroup(event.created_date);
-    if (group !== lastGroup) {
-      groupedEvents.push({ type: 'header', label: group });
-      lastGroup = group;
-    }
-    groupedEvents.push({ type: 'event', event });
+  // Group events by day, newest first.
+  const groups = [];
+  for (const event of allEvents) {
+    const label = dayLabel(event.created_date);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.events.push(event);
+    else groups.push({ label, events: [event] });
   }
 
-  // Compute weekly summary stats
-  const totalWeeklyPoints = summary?.childStats?.reduce((sum, c) => sum + c.week_points, 0) || 0;
-  const activeDays = summary?.activeDays ?? 0;
-  const topCategories = summary?.topCategories?.slice(0, 3) || [];
+  const pointsEarned = summary?.childStats?.reduce((sum, c) => sum + c.week_points, 0) || 0;
+  const goalsCompleted = summary?.goalsCompleted ?? 0;
 
   const canCorrect = (event) => event.type === 'earn' && !event.undone &&
     !!summary?.weekStart && new Date(event.created_date) >= new Date(summary.weekStart);
@@ -161,143 +149,94 @@ export default function Activity() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
         <div>
-          <h1 className="font-display text-title font-extrabold text-foreground flex items-center gap-3">
-            <ActivityIcon className="w-6 h-6 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
-            Activity
-          </h1>
+          <h1 className="font-display font-extrabold text-title text-primary">Activity</h1>
+          <p className="text-muted-foreground">Every point has a story. This is your family's history.</p>
         </div>
 
-        {/* Weekly Summary — primary view */}
         <Card>
-          <CardContent className="p-5">
-            <h2 className="text-base font-semibold text-foreground mb-3">This Week</h2>
-            {/* Two equal boxes, number and label centred in each. */}
-            <div className="grid grid-cols-2 gap-4 mb-4 max-w-sm">
-              <div className="bg-earn-soft rounded-md px-4 py-3 flex flex-col items-center justify-center text-center">
-                <div className="text-title font-semibold text-earn tabular-nums">+{totalWeeklyPoints}</div>
-                <div className="text-xs text-muted-foreground">{PERCY.POINTS} earned</div>
+          <CardContent className="p-4 sm:p-5 space-y-3">
+            <h2 className="font-display font-bold text-lg text-primary">This week</h2>
+            <div className="grid grid-cols-2 gap-3 max-w-md" data-week-boxes>
+              <div className="rounded-md border border-border p-3 text-center">
+                <p className="font-display font-extrabold text-title text-foreground tabular-nums">{pointsEarned}</p>
+                <p className="text-sm font-medium text-muted-foreground">Points earned</p>
               </div>
-              <div className="bg-star-soft rounded-md px-4 py-3 flex flex-col items-center justify-center text-center">
-                <div className="text-title font-semibold text-foreground tabular-nums">{activeDays}</div>
-                <div className="text-xs text-muted-foreground">active day{activeDays !== 1 ? 's' : ''}</div>
+              <div className="rounded-md border border-border p-3 text-center">
+                <p className="font-display font-extrabold text-title text-foreground tabular-nums">{goalsCompleted}</p>
+                <p className="text-sm font-medium text-muted-foreground">Goals completed</p>
               </div>
             </div>
-            {topCategories.length > 0 && (
-              <div>
-                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Top categories</h3>
-                <div className="space-y-1">
-                  {topCategories.map((cat) => (
-                    <div key={cat.category} className="flex items-center justify-between text-sm">
-                      <span className="text-foreground">{cat.category}</span>
-                      <span className="font-semibold text-earn tabular-nums">+{cat.total_points}</span>
-                    </div>
-                  ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 sm:p-5 space-y-4">
+            <h2 className="font-display font-bold text-lg text-primary">Activity log</h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Show activity">
+                {FILTERS.map(({ key, label }) => (
+                  <button key={key} type="button" aria-pressed={activeFilter === key} onClick={() => { setExtra([]); setActiveFilter(key); }}
+                    className={cn('min-h-11 rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                      activeFilter === key ? 'border-2 border-selected-border bg-selected text-primary' : 'border border-border bg-card text-foreground hover:bg-accent')}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {children.length > 1 && (
+                <div className="w-44">
+                  <Select value={selectedChildId} onValueChange={(v) => { setExtra([]); setSelectedChildId(v); }}>
+                    <SelectTrigger aria-label="Child">
+                      <SelectValue placeholder="All Children" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Children</SelectItem>
+                      {children.map((child) => (
+                        <SelectItem key={child.id} value={child.id}>{child.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+              )}
+            </div>
+
+            {groups.length === 0 ? (
+              <div className="py-12 flex flex-col items-center gap-3 text-center text-muted-foreground">
+                <Logo size={48} decorative />
+                No activity found
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {groups.map((group) => (
+                  <section key={group.label} aria-label={group.label}>
+                    <h3 className="text-sm font-semibold text-muted-foreground mb-2">{group.label}</h3>
+                    <div className="rounded-lg border border-border">
+                      {group.events.map((event) => (
+                        <NarrativeItem key={`${event.type}-${event.id}`} event={event}
+                          canCorrect={canCorrect(event)} onCorrect={() => setCorrectionTarget(event)} />
+                      ))}
+                    </div>
+                  </section>
+                ))}
               </div>
             )}
-            {totalWeeklyPoints === 0 && topCategories.length === 0 && (
-              <p className="text-sm text-muted-foreground">No activity yet this week. Award some points to get started!</p>
+            {canLoadMore && (
+              <div className="flex justify-center">
+                <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? 'Loading...' : 'Load earlier activity'}
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Raw Feed — collapsed by default */}
-        <div>
-          <h2 className="mb-3">
-            <button
-              onClick={() => setFeedExpanded(!feedExpanded)}
-              aria-expanded={feedExpanded}
-              className="flex items-center gap-2 w-full min-h-11 text-left text-base font-semibold text-foreground rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <ClipboardList className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
-              Activity log
-              <span className="text-muted-foreground ml-auto">
-                {feedExpanded ? <ChevronUp className="w-5 h-5" aria-hidden="true" /> : <ChevronDown className="w-5 h-5" aria-hidden="true" />}
-              </span>
-            </button>
-          </h2>
-
-          {feedExpanded && (
-            <>
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                <div className="flex gap-2">
-                  {[
-                    { key: 'all', label: 'All' },
-                    { key: 'earned', label: 'Earned' },
-                    { key: 'spent', label: 'Spent' },
-                  ].map(({ key, label }) => (
-                    <Button
-                      key={key}
-                      variant={activeFilter === key ? 'default' : 'outline'}
-                      size="sm"
-                      aria-pressed={activeFilter === key}
-                      onClick={() => handleFilterChange(key)}
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-
-                {children.length > 1 && (
-                  <div className="w-44">
-                    <Select value={selectedChildId} onValueChange={setSelectedChildId}>
-                      <SelectTrigger aria-label="Child">
-                        <SelectValue placeholder="All Children" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Children</SelectItem>
-                        {children.map((child) => (
-                          <SelectItem key={child.id} value={child.id}>
-                            {child.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-
-              <Card>
-                <CardContent className="p-0">
-                  {groupedEvents.length === 0 ? (
-                    <div className="py-12 flex flex-col items-center gap-3 text-center text-muted-foreground">
-                      <Logo size={48} decorative />
-                      No activity found
-                    </div>
-                  ) : (
-                    <div>
-                      {groupedEvents.map((item) => {
-                        if (item.type === 'header') {
-                          return (
-                            <div key={`header-${item.label}`} className="px-4 py-2 bg-muted border-b border-border">
-                              <span className="text-xs font-semibold text-muted-foreground">
-                                {item.label}
-                              </span>
-                            </div>
-                          );
-                        }
-                        return <NarrativeItem key={`${item.event.type}-${item.event.id}`} event={item.event} colour={childColour(item.event.child_id, children)} canCorrect={canCorrect(item.event)} onCorrect={() => setCorrectionTarget(item.event)} />;
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-                {hasMore && (
-                  <div className="p-4 border-t border-border flex justify-center">
-                    <Button
-                      variant="outline"
-                      onClick={loadMore}
-                      disabled={loadingMore}
-                    >
-                      {loadingMore ? 'Loading...' : 'Load More'}
-                    </Button>
-                  </div>
-                )}
-              </Card>
-            </>
-          )}
-        </div>
+        <Card>
+          <CardContent className="p-4 sm:p-5 space-y-1">
+            <h2 className="font-display font-bold text-lg text-primary">Corrections and Undo</h2>
+            <p className="text-sm text-muted-foreground">Historical entries remain visible when a parent corrects a mistaken award or reverses an eligible action.</p>
+          </CardContent>
+        </Card>
       </div>
       <AlertDialog open={!!correctionTarget} onOpenChange={(open) => { if (!open && !correcting) setCorrectionTarget(null); }}>
         <AlertDialogContent>
@@ -318,57 +257,70 @@ export default function Activity() {
   );
 }
 
-function NarrativeItem({ event, colour, canCorrect, onCorrect }) {
+// The approved row icons: a tick for a goal, a heart for an award, a gift for
+// a spend (approved icon set). Other kinds: Undo's arrow, or the info mark.
+// Literal ids only (release gate: no computed PercyIcon ids).
+export function rowIconKind(event) {
+  if (event.type === 'earn') return event.goal_completion_id ? 'goal' : 'earn';
+  if (event.type === 'spend') return 'spend';
+  if (event.type === 'undo') return 'undo';
+  return 'other';
+}
+function RowIcon({ event }) {
+  const cls = 'h-6 w-6 shrink-0 text-primary';
+  switch (rowIconKind(event)) {
+    case 'goal': return <PercyIcon id="phosphor:check-circle:duotone" className={cls} />;
+    case 'earn': return <PercyIcon id="phosphor:hand-heart:duotone" className={cls} />;
+    case 'spend': return <PercyIcon id="phosphor:gift:duotone" className={cls} />;
+    case 'undo': return <PercyIcon id="phosphor:arrow-counter-clockwise:duotone" className={cls} />;
+    default: return <PercyIcon id="phosphor:info:duotone" className={cls} />;
+  }
+}
+
+// One row: the approved line shapes (design §2). Other kinds keep their
+// shipped wording.
+export function rowText(event) {
+  const time = format(new Date(event.created_date), 'h:mm a');
+  if (event.type === 'earn' && event.goal_completion_id) {
+    return { lead: 'completed', what: `“${event.goal_title}”`, sub: `Today’s Goal · ${event.label} · ${time}` };
+  }
+  if (event.type === 'earn') {
+    const swap = event.label === 'Other' && event.note;
+    const what = swap ? event.note : event.label;
+    const note = swap ? null : event.note;
+    return { lead: 'earned', what, sub: note ? `${note} · ${time}` : time };
+  }
+  if (event.type === 'spend') return { lead: 'redeemed', what: event.label, sub: `Parent-confirmed reward · ${time}` };
+  const lead = event.type === 'undo' ? 'undo:' : event.type === 'starting' ? 'started with'
+    : event.type === 'correction' ? 'had a one-off' : event.points < 0 ? 'had an earlier adjustment for' : 'adjusted';
+  return { lead, what: event.label, sub: time };
+}
+
+function NarrativeItem({ event, canCorrect, onCorrect }) {
   const isEarn = event.type === 'earn';
   const isSpend = event.type === 'spend';
-
-  const isStarting = event.type === 'starting';
-  const isCorrection = event.type === 'correction';
-  const isUndo = event.type === 'undo';
-  const isDeduct = !isEarn && !isSpend && !isStarting && !isCorrection && !isUndo && event.points < 0;
   // Earned in green; spends in muted ink; deductions, undo and corrections in
   // ink. Each number also carries its sign, so colour is never the only cue.
-  const colorClass = isEarn
-    ? 'text-earn'
-    : isSpend
-      ? 'text-spend'
-      : 'text-negative';
-
-  const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'had an earlier adjustment for'
-    : isStarting ? 'started with' : isCorrection ? 'had a one-off' : 'adjusted';
-  // An undone award or spend and its undo row are both shown, struck through,
-  // so the list still adds up to the balance.
+  const colorClass = isEarn ? 'text-earn' : isSpend ? 'text-spend' : 'text-negative';
+  // An undone award or spend and its undo row are both shown, the amount
+  // struck through, so the list still adds up to the balance.
   const undone = !!event.undone;
-
-  // Use note as primary label when category is "Other"
-  const displayLabel = event.label === 'Other' && event.note
-    ? event.note
-    : event.label;
-  const displayNote = event.label === 'Other' && event.note
-    ? null
-    : event.note;
+  const { lead, what, sub } = rowText(event);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-b-0">
-      <ChildAvatar name={event.child_name} size="sm" colour={colour} />
-
+    <div className="flex items-center gap-3 px-3 py-3 border-b border-border last:border-b-0">
+      <RowIcon event={event} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm leading-snug">
+        <p className="text-sm leading-snug break-words">
           <span className="font-semibold text-foreground">{event.child_name}</span>
-          {' '}<span className="text-muted-foreground">{action}</span>{' '}
-          <span className="font-medium text-foreground">
-            {isSpend ? displayLabel : displayLabel}
-          </span>
+          {' '}<span className="text-muted-foreground">{lead}</span>{' '}
+          <span className="font-medium text-foreground">{what}</span>
         </p>
-        {displayNote && !isSpend && (
-          <p className="text-xs text-subtle-foreground mt-0.5 truncate">{displayNote}</p>
-        )}
-        <p className="text-xs text-subtle-foreground mt-0.5">
-          {format(new Date(event.created_date), "MMM d, h:mm a")}
-          {undone && !isUndo && ' · undone'}
+        <p className="text-xs text-subtle-foreground mt-0.5 break-words">
+          {sub}
+          {undone && event.type !== 'undo' && ' · undone'}
         </p>
       </div>
-
       <div className="flex flex-col items-end gap-1 shrink-0">
         <span className={`text-sm font-semibold tabular-nums ${colorClass} ${undone ? 'line-through' : ''}`}>
           {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}

@@ -235,11 +235,18 @@ test('activity, with the log open and the child filter open', async ({ page }, t
   await go(page, '/activity');
   await checkScreen(page, 'activity', testInfo);
   // The two "This week" boxes: number and label centred in each (Nael, 16:04).
-  const offsets = await page.evaluate(() => [...document.querySelectorAll('.bg-earn-soft > div, .bg-star-soft > div')]
+  const offsets = await page.evaluate(() => [...document.querySelectorAll('[data-week-boxes] > div > p')]
     .map((d) => { const r = d.getBoundingClientRect(), p = d.parentElement.getBoundingClientRect(); return Math.abs((r.left + r.width / 2) - (p.left + p.width / 2)); }));
   expect(offsets.length).toBe(4);
   for (const o of offsets) expect(o).toBeLessThan(1.5);
-  await page.getByRole('button', { name: /Activity log/ }).click();
+  // V1-C: the log is open; the four approved filters ask the server.
+  await expect(page.getByRole('heading', { name: 'Activity log' })).toBeVisible();
+  await expect(page.getByText('Points earned')).toBeVisible();
+  await expect(page.getByText('Goals completed')).toBeVisible();
+  for (const name of ['Earned', 'Goals', 'Spent', 'All']) {
+    await page.getByRole('group', { name: 'Show activity' }).getByRole('button', { name }).click();
+    await expect(page.getByRole('group', { name: 'Show activity' }).getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true');
+  }
   await checkScreen(page, 'activity log', testInfo);
   await page.getByRole('combobox', { name: 'Child' }).click();
   await checkScreen(page, 'activity child select', testInfo);
