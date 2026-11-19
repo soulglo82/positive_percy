@@ -332,6 +332,60 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     expect(differences(after, after)).toEqual([]);
   });
 
+  it('code review of 3722728: a legacy assignment in capitals is the same child everywhere; reassigning still expires savings', async () => {
+    const { B } = seed;
+    const call = (method, path, body) => api(ctx.base, method, path, { token: B.token, body: body ?? undefined });
+    const kid = (await call('POST', '/api/children', { name: 'Legacy' })).json;
+    const sib = (await call('POST', '/api/children', { name: 'Sibling' })).json;
+    await call('POST', `/api/children/${kid.id}/award`, { points: 100, category: 'Kindness', request_id: crypto.randomUUID() });
+    // Written before the app lower-cased assignments: capitals, straight into the table.
+    const { rows: [bike] } = await ctx.pool.query(
+      "INSERT INTO rewards (family_code, title, cost_points, assigned_child_ids, is_bigger_goal) VALUES ($1, 'Legacy bike', 300, $2, false) RETURNING id, title",
+      [B.code, [kid.id.toUpperCase()]]);
+    await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [bike.id]);
+    await ledger(B, kid, bike, 60);
+    expect((await agree(B, kid.id))).toMatchObject({ saved_total: 60, available_points: 40 }); // app and reconciliation agree
+    // Away to the sibling and back: the savings stay expired (O6).
+    await ctx.pool.query('UPDATE rewards SET assigned_child_ids = $2 WHERE id = $1', [bike.id, [sib.id]]);
+    await ctx.pool.query('UPDATE rewards SET assigned_child_ids = $2 WHERE id = $1', [bike.id, [kid.id.toUpperCase()]]);
+    expect((await agree(B, kid.id))).toMatchObject({ saved_total: 0, available_points: 100 });
+    // Reward ids in capitals reach the same reward (body and query).
+    const toy = (await call('POST', '/api/rewards', { title: 'Legacy toy', cost_points: 5 })).json;
+    expect((await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: toy.id.toUpperCase() })).status).toBe(200);
+    const confirm = await call('POST', `/api/children/${kid.id}/stack/confirm`, {
+      request_id: crypto.randomUUID(), expected: [{ reward_id: toy.id.toUpperCase(), stack_index: 0, cost: 5 }] });
+    expect(confirm.status).toBe(200);
+  });
+
+  it('code review of 3722728: a data-only restore keeps generations when the restore flag is set', async () => {
+    const { B } = seed;
+    const client = await ctx.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query("SET LOCAL percy.restoring = 'on'");
+      const { rows } = await client.query(
+        "INSERT INTO rewards (family_code, title, cost_points, is_bigger_goal, goal_epoch, goal_child_epochs) VALUES ($1, 'Restored', 10, true, 3, '{\"a\": 1}') RETURNING goal_epoch, goal_child_epochs",
+        [B.code]);
+      expect(rows[0]).toEqual({ goal_epoch: 3, goal_child_epochs: { a: 1 } });
+      await client.query('ROLLBACK');
+    } finally { client.release(); }
+  });
+
+  it("code review of 3722728: Today's Goals routes see the id in lower case too", async () => {
+    const { B } = seed;
+    const call = (method, path, body) => api(ctx.base, method, path, { token: B.token, body: body ?? undefined });
+    const kid = (await call('POST', '/api/children', { name: 'Goalie' })).json;
+    const cat = (await call('GET', '/api/behavior-categories')).json[0];
+    const today = (await call('GET', '/api/todays-goals')).json.date;
+    const goal = (await call('POST', '/api/todays-goals', { title: 'Tidy', child_id: kid.id, category_id: cat.id, schedule_kind: 'one_off', scheduled_date: today })).json;
+    const id = (goal.goal || goal).id;
+    const rq = crypto.randomUUID();
+    const first = await call('POST', `/api/todays-goals/${id.toUpperCase()}/complete`, { request_id: rq });
+    expect(first.status).toBe(200);
+    const again = await call('POST', `/api/todays-goals/${id}/complete`, { request_id: rq });
+    expect(again.status).toBe(200); // the same request replays, whatever the spelling
+  });
+
   it('the schema refuses ledger rows of the wrong shape', async () => {
     const { A } = seed;
     const kid = seed.children.lara.id;

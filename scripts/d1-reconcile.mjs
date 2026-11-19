@@ -56,6 +56,11 @@ try {
   report.children = Object.keys(before.children).length;
   report.legacy_family_goals = await legacyFamilyGoals(pool);
   report.history_drift_before = Object.values(before.children).filter((c) => c.history !== c.total_points).length;
+  // Pre-flight (code review of 3722728): assignments stored with capitals
+  // before the app lower-cased them. Compared case-insensitively everywhere;
+  // counted so the owner sees how many exist.
+  report.rewards_with_mixed_case_assignments = (await pool.query(
+    "SELECT count(*)::int n FROM rewards WHERE EXISTS (SELECT 1 FROM unnest(assigned_child_ids) x WHERE x <> lower(x))")).rows[0].n;
 
   await runMigrations(pool, { log: () => {} });
   const after = await fingerprint(pool, before);

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.5 |
+| Version | 1.6 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | 1.0 | 2026-11-19 | First draft |
 | 1.1 | 2026-11-19 | Peer review: 5 blocking and 7 non-blocking findings, all adopted (§10) |
+| 1.6 | 2026-11-19 | Post-build code review of `3722728` (§15): legacy capital assignments compared case-insensitively in the trigger and the reconciliation (Major: savings could revive); Today's Goals sub-router lower-cases ids; reward ids lower-cased; restore flag for the insert trigger; reconciliation pre-flight count |
 | 1.5 | 2026-11-19 | Adversarial review of O6 at `392ad16` (§14): one blocking bug fixed (a child id in capitals skipped that child's savings and requests: over-commit reproduced, now canonical). Insert trigger, over-commit finding in the reconciliation, lock order for the save endpoints, restore runbook rule |
 | 1.4 | 2026-11-19 | Owner review of PR #60 (head `a11e890`): synthetic proof accepted as a credible fixture proof, not as sign-off to ship 016. **O6 reversed**: savings never revive (allocation generations, §13). The scratch rollback refuses once savings exist; a marked-copy token proves the target is a copy (§13) |
 | 1.3 | 2026-11-19 | Adversarial review of the proof: 2 blocking (read path counted a requested goal twice and let a negative sum add points; write paths ignored savings) and 5 non-blocking, all fixed (§12) |
@@ -329,4 +330,15 @@ A fresh-context reviewer attacked the generation design on a throwaway database.
 | R6 | `assigned_child_ids` were stored as written (capitals, or another family's ids). A child given in capitals lost the goal and their epoch moved on: savings ended, not revived (safe, but surprising) | Non-blocking | Lower-cased on create and update (test). An id from another family never matches a child, so it has no effect. Rejecting such ids outright is left to the D1 feature's reward form |
 
 **Not covered by any test:** two save requests from two devices racing a real un-mark. These are tested once the save endpoint exists, under the R3 lock order.
+
+## 15. Post-build code review of `3722728` (v1.6)
+
+| # | Finding | Severity | Resolution |
+| --- | --- | --- | --- |
+| C1 | The trigger and the reconciliation still compared assignments in exact case. Rewards written before the app lower-cased assignments can hold capitals. In the reviewer's probe, the app showed saved 60 while the reconciliation showed 0; a reassignment away and back did not move the child's epoch, so the 60 came back (O6 broken) | Major | Both compare `lower(...)` of the stored ids. Test with a legacy capital assignment written straight into the table: the app and the reconciliation agree, and away-and-back expires the savings. Mutations (either side reverted) fail it. The reconciliation CLI reports `rewards_with_mixed_case_assignments` as a pre-flight count. Client-side assignment checks are made case-insensitive in V1-E (top of the stack) |
+| C2 | `router.param` does not reach the Today's Goals sub-router | Minor | The sub-router lower-cases its own `:id`. Test: a completion with the id in capitals replays under the lower-case id. Mutation fails it |
+| C3 | Reward ids in a body or query were compared in exact case (fail-safe 404/409) | Minor | Lower-cased where read: redeem, `stack/add`, stack remove, `stack/confirm` `expected`. Test (add and confirm in capitals). Mutation fails it |
+| C4 | A data-only restore (COPY) fires the insert trigger and would reset every generation, dropping all current savings | Minor | The trigger keeps restored values when the session sets `percy.restoring = 'on'` (the app never does). **Restore runbook:** a data-only restore of `rewards` sets that flag or uses `--disable-triggers`; a full `pg_dump`/`pg_restore` is unaffected. Test. Mutation fails it |
+| C5 | The over-commit line adds a label, not a new detection; children that only appear were skipped | Nit | Comment corrected; appearing children are checked too |
+| C6 | Each half of the `:id` fix alone passes the capitals test | Nit | Recorded: two layers on purpose (route and rule); the test fails only when both go |
 

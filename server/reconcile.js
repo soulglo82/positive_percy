@@ -84,7 +84,8 @@ async function childFacts(db) {
   const savings = await hasTable(db, 'savings_events');
   const goalCol = await hasColumn(db, 'rewards', 'is_bigger_goal');
   const spendable = `r.family_code IS NOT DISTINCT FROM c.family_code
-        AND (COALESCE(cardinality(r.assigned_child_ids), 0) = 0 OR c.id::text = ANY (r.assigned_child_ids::text[]))`;
+        AND (COALESCE(cardinality(r.assigned_child_ids), 0) = 0
+             OR c.id::text = ANY (SELECT lower(x) FROM unnest(r.assigned_child_ids::text[]) AS x))`;
   const rows = await q(db, `
     WITH items AS (
       SELECT c.id AS child_id, r.id AS reward_id, r.cost_points AS cost
@@ -172,11 +173,15 @@ export function differences(before, after, { allowMigrations = [] } = {}) {
     for (const k of ['total_points', 'points_spent', 'stack', 'history', 'reserved', 'saved', 'committed', 'available']) {
       if (a[k] !== b[k]) out.push(`child ${id}: ${k} ${b[k]} -> ${a[k]}`);
     }
-    // available is clamped at 0, so a comparison alone would not show points
-    // promised twice (O6 review #4): a child newly over-committed is a finding.
+    // The field comparison above already reports the change; this names it
+    // plainly when a child is newly promised more than they have.
     if (overCommitted(a) && !overCommitted(b)) out.push(`child ${id}: committed ${a.committed} is more than total ${a.total_points}`);
   }
-  for (const id of Object.keys(after.children)) if (!before.children[id]) out.push(`child ${id} appeared`);
+  for (const id of Object.keys(after.children)) {
+    if (before.children[id]) continue;
+    out.push(`child ${id} appeared`);
+    if (overCommitted(after.children[id])) out.push(`child ${id}: committed ${after.children[id].committed} is more than total ${after.children[id].total_points}`);
+  }
   return out;
 }
 

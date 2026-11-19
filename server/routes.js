@@ -16,7 +16,10 @@ const router = Router();
 // One spelling of every id from here on (O6 review #1). Postgres accepts a
 // UUID in any letter case, but ids are compared as text in JavaScript (the
 // balance rule, generations, assignments), so a capitalised :id would miss
-// the child's own savings and requests. Every :id route sees the lower case.
+// the child's own savings and requests. Every :id route on this router sees
+// the lower case (the Today's Goals sub-router has its own); reward ids from
+// a body or query are lower-cased where they are read.
+const lowerId = (v) => (typeof v === 'string' ? v.toLowerCase() : v);
 router.param('id', (req, _res, next, id) => {
   if (typeof id === 'string') req.params.id = id.toLowerCase();
   next();
@@ -902,7 +905,7 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
 router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { reward_id } = req.body || {};
+    const reward_id = lowerId(req.body?.reward_id);
     const childId = req.params.id;
     if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
     const rq = spendRequestId(req.body);
@@ -1193,7 +1196,7 @@ async function replayAfterRace(res, familyCode, requestId, endpoint, args, child
 router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { reward_id } = req.body || {};
+    const reward_id = lowerId(req.body?.reward_id);
     const childId = req.params.id;
     if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
 
@@ -1279,7 +1282,7 @@ router.delete('/api/children/:id/stack/:index', authMiddleware, async (req, res)
     const stack = childRows[0].reward_stack || [];
     // V1-D: the caller names the reward it means; if the stack changed since
     // it looked, nothing is removed (409) rather than the wrong item.
-    const expected = req.query.reward_id;
+    const expected = lowerId(req.query.reward_id);
     if (typeof expected !== 'string' || !isUuid(expected)) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Invalid request' });
@@ -1316,7 +1319,9 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     // V1-D: the parent agrees to exactly the requests they saw
     // ([{reward_id, stack_index}], in stack order). Anything else changed in
     // between is refused (409), never charged.
-    const expected = req.body?.expected;
+    const expected = Array.isArray(req.body?.expected)
+      ? req.body.expected.map((e) => (e && typeof e === 'object' ? { ...e, reward_id: lowerId(e.reward_id) } : e))
+      : req.body?.expected;
     const validExpected = Array.isArray(expected) && expected.length >= 1 && expected.length <= 100
       && expected.every((e) => e && typeof e.reward_id === 'string' && isUuid(e.reward_id)
         && Number.isInteger(e.stack_index) && e.stack_index >= 0

@@ -30,8 +30,12 @@ BEGIN
   NEW.goal_epoch := OLD.goal_epoch + CASE WHEN NEW.is_bigger_goal IS DISTINCT FROM OLD.is_bigger_goal THEN 1 ELSE 0 END;
   IF NEW.assigned_child_ids IS DISTINCT FROM OLD.assigned_child_ids THEN
     FOR kid IN SELECT id FROM children WHERE family_code IS NOT DISTINCT FROM NEW.family_code LOOP
-      IF (COALESCE(cardinality(OLD.assigned_child_ids), 0) = 0 OR kid.id::text = ANY (OLD.assigned_child_ids))
-         AND NOT (COALESCE(cardinality(NEW.assigned_child_ids), 0) = 0 OR kid.id::text = ANY (NEW.assigned_child_ids)) THEN
+      -- Ids compared in lower case: rows written before the app lower-cased
+      -- assignments may hold capitals (code review of 3722728).
+      IF (COALESCE(cardinality(OLD.assigned_child_ids), 0) = 0
+            OR kid.id::text = ANY (SELECT lower(x) FROM unnest(OLD.assigned_child_ids) AS x))
+         AND NOT (COALESCE(cardinality(NEW.assigned_child_ids), 0) = 0
+            OR kid.id::text = ANY (SELECT lower(x) FROM unnest(NEW.assigned_child_ids) AS x)) THEN
         epochs := jsonb_set(epochs, ARRAY[kid.id::text], to_jsonb(COALESCE((epochs->>kid.id::text)::int, 0) + 1));
       END IF;
     END LOOP;
@@ -46,8 +50,13 @@ CREATE TRIGGER rewards_goal_generation BEFORE UPDATE ON rewards
 
 -- A new reward row starts at generation 0:0, whatever the INSERT says, so a
 -- re-inserted id can never bring back an old generation (O6 review #2).
+-- A data-only restore (COPY, pg_dump --data-only) fires this trigger too and
+-- would reset every generation: the restore runbook sets the session flag
+-- percy.restoring = 'on' (or uses --disable-triggers), which keeps the
+-- restored values. The app never sets it.
 CREATE OR REPLACE FUNCTION rewards_goal_generation_insert() RETURNS trigger AS $$
 BEGIN
+  IF current_setting('percy.restoring', true) = 'on' THEN RETURN NEW; END IF;
   NEW.goal_epoch := 0;
   NEW.goal_child_epochs := '{}'::jsonb;
   RETURN NEW;
