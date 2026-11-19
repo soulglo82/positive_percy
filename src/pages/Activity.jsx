@@ -27,7 +27,6 @@ import {
 import PercyIcon from "@/components/icons/PercyIcon";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/brand/Logo";
-import { format, isSameDay, subDays } from "date-fns";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
@@ -39,14 +38,44 @@ export const FILTERS = [
   { key: 'spent', label: 'Spent' },
 ];
 
-// "Today · Wednesday 18 November", "Yesterday · Tuesday 17 November", and
-// "Monday 16 November" for older days (owner item A1).
-export function dayLabel(dateStr, now = new Date()) {
-  const date = new Date(dateStr);
-  const day = format(date, 'EEEE d MMMM');
-  if (isSameDay(date, now)) return 'Today · ' + day;
-  if (isSameDay(date, subDays(now, 1))) return 'Yesterday · ' + day;
-  return day;
+// Calendar parts of an instant in the family's zone (owner, PR #62: days,
+// Today/Yesterday and times use the same zone as the weekly totals). With no
+// zone yet, the browser's.
+function partsIn(date, timeZone) {
+  const f = new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+  const p = Object.fromEntries(f.formatToParts(date).map((x) => [x.type, x.value]));
+  const n = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
+    .formatToParts(date).map((x) => [x.type, x.value]));
+  return { key: `${n.year}-${n.month}-${n.day}`, year: p.year, text: `${p.weekday} ${p.day} ${p.month}` };
+}
+const dayBefore = (key) => {
+  const d = new Date(key + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+};
+
+// "Today · Wednesday 18 November", "Yesterday · Tuesday 17 November", then
+// "Monday 16 November", with the year when it is not this year (A1).
+export function dayLabel(dateStr, now = new Date(), timeZone = undefined) {
+  const day = partsIn(new Date(dateStr), timeZone);
+  const today = partsIn(now, timeZone);
+  if (day.key === today.key) return 'Today · ' + day.text;
+  if (day.key === dayBefore(today.key)) return 'Yesterday · ' + day.text;
+  return day.year === today.year ? day.text : `${day.text} ${day.year}`;
+}
+
+export function timeIn(dateStr, timeZone = undefined) {
+  return new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(dateStr));
+}
+
+// The goal's name when it was completed: the completion writes it into the
+// award's note ("Today’s Goal: {title}", server/todaysGoals.js). Only for an
+// award linked to a completion; otherwise nothing is invented (A4).
+const GOAL_NOTE = 'Today’s Goal: ';
+export function goalTitleOf(event) {
+  if (!event.goal_completion_id || typeof event.note !== 'string' || !event.note.startsWith(GOAL_NOTE)) return null;
+  const title = event.note.slice(GOAL_NOTE.length).trim();
+  return title || null;
 }
 
 export default function Activity() {
@@ -117,10 +146,11 @@ export default function Activity() {
   if (isLoading && !firstPage.length) return <div className="min-h-screen p-6"><LoadingSpinner message="Loading activity..." /></div>;
   if (isError) return <div className="min-h-screen p-6"><ErrorCard message="Couldn't load activity" onRetry={refetch} /></div>;
 
-  // Group events by day, newest first.
+  const timeZone = summary?.timezone || undefined;
+  // Group events by day in the family's zone, newest first.
   const groups = [];
   for (const event of allEvents) {
-    const label = dayLabel(event.created_date);
+    const label = dayLabel(event.created_date, new Date(), timeZone);
     const last = groups[groups.length - 1];
     if (last && last.label === label) last.events.push(event);
     else groups.push({ label, events: [event] });
@@ -213,7 +243,7 @@ export default function Activity() {
                     <h3 className="text-sm font-semibold text-muted-foreground mb-2">{group.label}</h3>
                     <div className="rounded-lg border border-border">
                       {group.events.map((event) => (
-                        <NarrativeItem key={`${event.type}-${event.id}`} event={event}
+                        <NarrativeItem key={`${event.type}-${event.id}`} event={event} timeZone={timeZone}
                           canCorrect={canCorrect(event)} onCorrect={() => setCorrectionTarget(event)} />
                       ))}
                     </div>
@@ -279,10 +309,11 @@ function RowIcon({ event }) {
 
 // One row: the approved line shapes (design §2). Other kinds keep their
 // shipped wording.
-export function rowText(event) {
-  const time = format(new Date(event.created_date), 'h:mm a');
+export function rowText(event, timeZone = undefined) {
+  const time = timeIn(event.created_date, timeZone);
   if (event.type === 'earn' && event.goal_completion_id) {
-    return { lead: 'completed', what: `“${event.goal_title}”`, sub: `Today’s Goal · ${event.label} · ${time}` };
+    const title = goalTitleOf(event);
+    return { lead: 'completed', what: title ? `“${title}”` : 'a goal', sub: `Today’s Goal · ${event.label} · ${time}` };
   }
   if (event.type === 'earn') {
     const swap = event.label === 'Other' && event.note;
@@ -290,13 +321,15 @@ export function rowText(event) {
     const note = swap ? null : event.note;
     return { lead: 'earned', what, sub: note ? `${note} · ${time}` : time };
   }
-  if (event.type === 'spend') return { lead: 'redeemed', what: event.label, sub: `Parent-confirmed reward · ${time}` };
+  // No parent confirmation is recorded on a redemption (and before V1 a child
+  // could redeem directly), so no row claims one (A2).
+  if (event.type === 'spend') return { lead: 'redeemed', what: event.label, sub: `Reward redeemed · ${time}` };
   const lead = event.type === 'undo' ? 'undo:' : event.type === 'starting' ? 'started with'
     : event.type === 'correction' ? 'had a one-off' : event.points < 0 ? 'had an earlier adjustment for' : 'adjusted';
   return { lead, what: event.label, sub: time };
 }
 
-function NarrativeItem({ event, canCorrect, onCorrect }) {
+function NarrativeItem({ event, timeZone, canCorrect, onCorrect }) {
   const isEarn = event.type === 'earn';
   const isSpend = event.type === 'spend';
   // Earned in green; spends in muted ink; deductions, undo and corrections in
@@ -305,7 +338,7 @@ function NarrativeItem({ event, canCorrect, onCorrect }) {
   // An undone award or spend and its undo row are both shown, the amount
   // struck through, so the list still adds up to the balance.
   const undone = !!event.undone;
-  const { lead, what, sub } = rowText(event);
+  const { lead, what, sub } = rowText(event, timeZone);
 
   return (
     <div className="flex items-center gap-3 px-3 py-3 border-b border-border last:border-b-0">

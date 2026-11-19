@@ -8,15 +8,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 vi.mock('@/api/entities', () => ({ Child: { list: vi.fn(async () => kids) } }));
 vi.mock('@/lib/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u' } }), getToken: () => 't' }));
 
-import Activity, { dayLabel, rowText, rowIconKind } from './Activity';
+import Activity, { dayLabel, rowText, rowIconKind, goalTitleOf } from './Activity';
 
 const kids = [{ id: 'c1', name: 'Lara' }, { id: 'c2', name: 'Omar' }];
 const now = new Date();
 const at = (h, m, daysAgo = 0) => { const d = new Date(now); d.setDate(d.getDate() - daysAgo); d.setHours(h, m, 0, 0); return d.toISOString(); };
 const ROWS = [
-  { id: 'e1', child_id: 'c1', child_name: 'Lara', points: 1, label: 'Learning', note: null, type: 'earn', created_date: at(0, 15), undone: false, goal_completion_id: 'x1', goal_title: 'Finish homework' },
-  { id: 'e2', child_id: 'c2', child_name: 'Omar', points: 1, label: 'Kindness', note: 'Helped a friend', type: 'earn', created_date: at(0, 10), undone: false, goal_completion_id: null, goal_title: null },
-  { id: 'r1', child_id: 'c1', child_name: 'Lara', points: -25, label: 'Movie night', note: null, type: 'spend', created_date: at(19, 10, 1), undone: false, goal_completion_id: null, goal_title: null },
+  { id: 'e1', child_id: 'c1', child_name: 'Lara', points: 1, label: 'Learning', note: 'Today’s Goal: Finish homework', type: 'earn', created_date: at(0, 15), undone: false, goal_completion_id: 'x1' },
+  { id: 'e2', child_id: 'c2', child_name: 'Omar', points: 1, label: 'Kindness', note: 'Helped a friend', type: 'earn', created_date: at(0, 10), undone: false, goal_completion_id: null },
+  { id: 'r1', child_id: 'c1', child_name: 'Lara', points: -25, label: 'Movie night', note: null, type: 'spend', created_date: at(19, 10, 1), undone: false, goal_completion_id: null },
 ];
 let feedCalls;
 
@@ -61,7 +61,8 @@ describe('Activity screen', () => {
     expect(text).toContain('Omar earned Kindness');
     expect(text).toMatch(/Helped a friend · 12:10 AM/);
     expect(text).toContain('Lara redeemed Movie night');
-    expect(text).toMatch(/Parent-confirmed reward · 7:10 PM/);
+    expect(text).toMatch(/Reward redeemed · 7:10 PM/);
+    expect(text).not.toContain('Parent-confirmed');
     expect(screen.getByRole('heading', { name: /^Today · / })).toBeTruthy();
     expect(screen.getByRole('heading', { name: /^Yesterday · / })).toBeTruthy();
   });
@@ -76,6 +77,19 @@ describe('Activity screen', () => {
       expect(screen.getByRole('button', { name: label }).getAttribute('aria-pressed')).toBe('true');
     }
     expect(feedCalls.every((p) => !p.has('child_id'))).toBe(true);
+  });
+
+  it('groups days in the family zone from the summary', async () => {
+    const nowSg = new Date();
+    const ev = new Date(nowSg.getTime() - 60 * 1000).toISOString();
+    global.fetch = vi.fn(async (url) => {
+      if (url.startsWith('/api/summary')) return { ok: true, json: async () => ({ timezone: 'Pacific/Kiritimati', childStats: [], goalsCompleted: 0 }) };
+      return { ok: true, json: async () => [{ ...ROWS[1], created_date: ev }] };
+    });
+    mount();
+    const want = 'Today · ' + new Intl.DateTimeFormat('en-GB', { timeZone: 'Pacific/Kiritimati', weekday: 'long', day: 'numeric', month: 'long' })
+      .formatToParts(nowSg).filter((p) => p.type !== 'literal').map((p) => p.value).join(' ');
+    expect(await screen.findByRole('heading', { name: want })).toBeTruthy();
   });
 
   it('Load earlier activity appears only after a full page and asks for the next offset', async () => {
@@ -95,11 +109,32 @@ describe('Activity screen', () => {
 });
 
 describe('row text and day labels', () => {
-  it('day labels: Today, Yesterday, then the plain day (A1)', () => {
-    const ref = new Date(2026, 10, 18, 12);
-    expect(dayLabel(new Date(2026, 10, 18, 9).toISOString(), ref)).toBe('Today · Wednesday 18 November');
-    expect(dayLabel(new Date(2026, 10, 17, 9).toISOString(), ref)).toBe('Yesterday · Tuesday 17 November');
-    expect(dayLabel(new Date(2026, 10, 16, 9).toISOString(), ref)).toBe('Monday 16 November');
+  it('day labels: Today, Yesterday, the plain day, and the year when not this year (A1)', () => {
+    const ref = new Date('2026-11-18T04:00:00Z');
+    const z = 'Europe/London';
+    expect(dayLabel('2026-11-18T09:00:00Z', ref, z)).toBe('Today · Wednesday 18 November');
+    expect(dayLabel('2026-11-17T09:00:00Z', ref, z)).toBe('Yesterday · Tuesday 17 November');
+    expect(dayLabel('2026-11-16T09:00:00Z', ref, z)).toBe('Monday 16 November');
+    expect(dayLabel('2025-12-31T09:00:00Z', ref, z)).toBe('Wednesday 31 December 2025');
+    // Yesterday across a month and a year boundary.
+    expect(dayLabel('2026-12-31T12:00:00Z', new Date('2027-01-01T12:00:00Z'), z)).toBe('Yesterday · Thursday 31 December');
+  });
+  it('near midnight the family zone decides the day, not the device (owner, PR #62)', () => {
+    // 16:30 UTC on 18 Nov is 00:30 on 19 Nov in Singapore and still 18 Nov in London.
+    const ev = '2026-11-18T16:30:00Z';
+    const now = new Date('2026-11-19T02:00:00Z');
+    expect(dayLabel(ev, now, 'Asia/Singapore')).toBe('Today · Thursday 19 November');
+    expect(dayLabel(ev, now, 'Europe/London')).toBe('Yesterday · Wednesday 18 November');
+    expect(rowText({ type: 'spend', label: 'Movie night', created_date: ev }, 'Asia/Singapore').sub).toBe('Reward redeemed · 12:30 AM');
+  });
+  it('a goal row names the goal as it was when completed; never invented (A4)', () => {
+    const base = { type: 'earn', label: 'Learning', created_date: '2026-11-18T09:00:00Z', goal_completion_id: 'x' };
+    expect(goalTitleOf({ ...base, note: 'Today’s Goal: Old name' })).toBe('Old name');
+    expect(rowText({ ...base, note: 'Today’s Goal: Old name' }, 'UTC').what).toBe('“Old name”');
+    expect(rowText({ ...base, note: null }, 'UTC').what).toBe('a goal');
+    expect(rowText({ ...base, note: 'Today’s Goal: ' }, 'UTC').what).toBe('a goal');
+    // Not linked to a completion: the note is just a note.
+    expect(goalTitleOf({ ...base, goal_completion_id: null, note: 'Today’s Goal: Fake' })).toBeNull();
   });
   it('an award with no note shows only the time; "Other" shows its note', () => {
     const base = { type: 'earn', created_date: new Date(2026, 10, 18, 16, 15).toISOString(), goal_completion_id: null };

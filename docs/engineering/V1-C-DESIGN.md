@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.2 |
+| Version | 1.3 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-c-activity`, stacked on V1-B `claude/percy-v1-b-children`) |
 | Status | Reviewed (§8); build may start |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.3 | 2026-11-19 | Owner review of PR #62 (§9): A1 accepted with the year when not this year; A2 changed to "Reward redeemed"; A3 kept; A4 changed to the title at completion (from the award's note, linked rows only, "a goal" otherwise); days, Today/Yesterday and times in the family's zone |
 | 1.2 | 2026-11-19 | Build: approved row icons (tick, heart, gift; Undo arrow or info for other kinds); "This week" numbers stay centred (owner's earlier direction); feed `limit` capped at 200 |
 | 1.1 | 2026-11-19 | Peer review (§8): filters follow the approved design and the C7 rule (Earned and Goals are separate and exclude undone awards; Spent is redemptions only); query shape fixed; legacy category rows classified; child filter on the server; factual fixes |
 | 1.0 | 2026-11-19 | First draft |
@@ -145,4 +146,16 @@
 | 9 | Empty-week line, "Other" swap, meaning of Points earned | Non-blocking | Line dropped; swap kept; net `week_points` kept (as shipped) |
 | 10 | The child filter runs on pages already cut | Non-blocking | `child_id` on the server (§3.1) |
 | 11 | Drop `goal_category`; current vs completion title; e2e selectors | Non-blocking | `label` used; A4; e2e noted (§6) |
+
+## 9. Owner review of PR #62 (v1.3)
+
+| # | Owner decision | Built |
+| --- | --- | --- |
+| A1 | Accept, adding the year when necessary | "Monday 16 November"; "Wednesday 31 December 2025" when not this year (in the family's zone) |
+| A2 | Change: not "Parent-confirmed reward" for every redemption; "Reward redeemed" unless a confirmation is recorded | Every spend row reads "Reward redeemed · {time}". Verified: no redemption records a parent confirmation (both `redeem` and `stack/confirm` insert the same columns; the request-replay cache is not an audit record). Recording one would need a new column: not built |
+| A3 | Keep the child filter | Kept (server-side, §3.1) |
+| A4 | Change: the goal's name when it was completed | The completion writes `Today’s Goal: {title}` into the award's note (server/todaysGoals.js, verified). The title is read from it **only** for an award linked to a completion; otherwise the row reads "{Child} completed a goal" (no invented title). The current-title join is removed |
+| TZ | Use the family's zone for day groups, Today/Yesterday and times | `/api/summary` returns `timezone` (the family's, `UTC` when unset); days and times are formatted in it with `Intl`. Test: 16:30 UTC is "Today · Thursday 19 November" in Singapore and "Yesterday · Wednesday 18 November" in London. Mutations (zone ignored; note trusted without a completion link) fail tests |
+
+New copy introduced by these decisions: "Reward redeemed" (owner's wording) and the neutral "a goal" (owner asked for a neutral description; this exact wording is for approval).
 

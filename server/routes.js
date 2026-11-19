@@ -1389,7 +1389,11 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
       WHERE family_code = $1 AND created_at >= $2 AND undone_at IS NULL
     `, [familyCode, weekStart]);
 
-    res.json({ weekStart, childStats, topCategories, categoryBreakdowns, weekEvents, activeDays, goalsCompleted });
+    // V1-C: the family's zone, so Activity groups days on the same calendar
+    // as the week above (owner, PR #62).
+    const { rows: [{ timezone }] } = await pool.query(`SELECT ${tz} AS timezone`, [familyCode]);
+
+    res.json({ weekStart, timezone, childStats, topCategories, categoryBreakdowns, weekEvents, activeDays, goalsCompleted });
   } catch (err) {
     return serverError(res, 'Summary error:', err);
   }
@@ -1885,19 +1889,18 @@ router.get('/api/activity-feed', authMiddleware, async (req, res) => {
                WHEN p.kind = 'undo' OR lower(trim(p.category)) = 'undo' THEN 'undo'
                WHEN p.points > 0 THEN 'earn' ELSE 'adjust' END as type, p.created_date,
           (p.kind = 'undo' OR EXISTS (SELECT 1 FROM point_events u WHERE u.reverses_id = p.id)) as undone,
-          x.id as goal_completion_id, g.title as goal_title
+          x.id as goal_completion_id
          FROM point_events p
          LEFT JOIN today_goal_completions x ON x.point_event_id = p.id
-         LEFT JOIN today_goals g ON g.id = x.goal_id
          WHERE p.family_code = $1)
         UNION ALL
         (SELECT id, child_id, child_name, -reward_cost as points, reward_title as label, NULL::text as note, 'spend' as type, created_date,
-          (status = 'Reversed') as undone, NULL::uuid as goal_completion_id, NULL::text as goal_title
+          (status = 'Reversed') as undone, NULL::uuid as goal_completion_id
          FROM redemptions
          WHERE family_code = $1 AND status IN ('Completed', 'Reversed'))
         UNION ALL
         (SELECT id, child_id, child_name, reward_cost as points, reward_title as label, NULL::text as note, 'undo' as type,
-          COALESCE(reversed_at, created_date) as created_date, true as undone, NULL::uuid as goal_completion_id, NULL::text as goal_title
+          COALESCE(reversed_at, created_date) as created_date, true as undone, NULL::uuid as goal_completion_id
          FROM redemptions
          WHERE family_code = $1 AND status = 'Reversed')
       ) f

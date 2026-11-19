@@ -69,10 +69,11 @@ describe.skipIf(!hasDb)('V1-C: activity feed and weekly goals count', () => {
   it('the goal tag comes from the completion join, not the note (E4)', async () => {
     const all = mine(await feed('all'));
     const goal = all.find((r) => r.id === ev.goal.id);
-    expect(goal).toMatchObject({ type: 'earn', goal_title: 'Finish homework', label: 'Kindness' });
+    // The title as it was at completion is the note the completion wrote (A4).
+    expect(goal).toMatchObject({ type: 'earn', note: 'Today’s Goal: Finish homework', label: 'Kindness' });
     expect(goal.goal_completion_id).toBeTruthy();
     expect(all.find((r) => r.id === ev.lookalike.id).goal_completion_id).toBeNull();
-    expect(all.find((r) => r.type === 'spend' && r.id === ev.spend.id).goal_title).toBeNull();
+    expect(all.find((r) => r.type === 'spend' && r.id === ev.spend.id).goal_completion_id).toBeNull();
   });
 
   it('All keeps undone rows marked; a legacy starting-points award is never earned (E1c)', async () => {
@@ -100,6 +101,13 @@ describe.skipIf(!hasDb)('V1-C: activity feed and weekly goals count', () => {
       if (rows.length < 2) break;
     }
     expect(paged.map((r) => r.type + r.id)).toEqual(full.map((r) => r.type + r.id));
+  });
+
+  it('the summary names the family time zone for day grouping', async () => {
+    await ctx.pool.query("UPDATE families SET timezone = 'Asia/Singapore' WHERE family_code = $1", [F.code]);
+    expect((await call('GET', '/api/summary')).json.timezone).toBe('Asia/Singapore');
+    await ctx.pool.query('UPDATE families SET timezone = NULL WHERE family_code = $1', [F.code]);
+    expect((await call('GET', '/api/summary')).json.timezone).toBe('UTC');
   });
 
   it('Goals completed counts this week, not undone ones (E1, E9)', async () => {
