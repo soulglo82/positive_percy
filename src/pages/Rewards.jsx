@@ -146,9 +146,13 @@ export default function Rewards() {
                   </button>
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {shown.map((reward) => <RewardTile key={reward.id} reward={reward} onEdit={openEdit} />)}
-              </div>
+              {shown.length === 0 ? (
+                <p className="text-muted-foreground">No rewards match this filter.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {shown.map((reward) => <RewardTile key={reward.id} reward={reward} onEdit={openEdit} />)}
+                </div>
+              )}
               <div className="flex justify-end">
                 <Button asChild variant="outline">
                   <Link to={createPageUrl('ChildView')}>View child reward choices</Link>
