@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.2 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-b-children`, stacked on V1-D `claude/percy-v1-d-rewards`) |
 | Status | Reviewed (§8); build may start. Owner items in §7 |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.2 | 2026-11-19 | Owner decisions: B1 approved for now (full milestone wording restored when D1 lands); B3 approved ("Ask a parent"; after pressing, "Ready when a parent agrees"; nothing charged until a parent confirms) |
 | 1.1 | 2026-11-19 | Fresh-context peer review (§8): 3 blocking and 7 non-blocking findings adopted. The request button label becomes an owner item; the lock is held until fresh data arrives; contract corrected; requested rewards win over affordability; reached state kept as approved ("0 to reach") |
 | 1.0 | 2026-11-19 | First draft |
 
@@ -109,9 +110,9 @@
 
 | # | Item |
 | --- | --- |
-| B1 | "Next milestone" ships without its approved subtitle "Weekly target and bigger goal" until D1 (no bigger goal yet) |
+| B1 | **Approved (owner, 2026-11-19).** "Next milestone" ships without "Weekly target and bigger goal" until D1. **When D1 is integrated, the full milestone (weekly target and bigger goal) is restored**: a D1 acceptance item, not a permanent simplification |
 | B2 | (Withdrawn in v1.1: the approved code already shows "0 to reach…", which is kept) |
-| B3 | Request button label "Ask a parent" (new copy: the approved design has the caption but no control). Layout differs from the reference tile by that one button |
+| B3 | **Approved (owner, 2026-11-19).** Request button label "Ask a parent"; once pressed the reward shows "Ready when a parent agrees" and no points are charged until a parent confirms. Was: (new copy: the approved design has the caption but no control). Layout differs from the reference tile by that one button |
 
 ## 8. Peer review (fresh context, v1.0)
 
