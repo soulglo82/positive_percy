@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.2 |
+| Version | 1.3 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | 1.0 | 2026-11-19 | First draft |
 | 1.1 | 2026-11-19 | Peer review: 5 blocking and 7 non-blocking findings, all adopted (§10) |
+| 1.3 | 2026-11-19 | Adversarial review of the proof: 2 blocking (read path counted a requested goal twice and let a negative sum add points; write paths ignored savings) and 5 non-blocking, all fixed (§12) |
 | 1.2 | 2026-11-19 | Owner's data-preservation requirements; legacy `family_goals` inspected; migration 016, its rollback and the reconciliation proof built and passing (§11) |
 
 ## 1. What it must do
@@ -182,7 +183,10 @@ CREATE INDEX savings_events_child ON savings_events (family_code, child_id, rewa
 ### 11.2 What legacy `family_goals` actually represent (inspected, not assumed)
 
 - **The data.** A family-level counter: `title`, `target_points`, `current_points` and `status`, with **no `child_id`** (`server/db.js`, the `family_goals` table).
-- **How it changed.** Only `POST /api/family-goals/:id/contribute` changed it. That raises `current_points` by any number the parent typed, capped at the target, and marks the goal completed (`server/routes.js`, the contribute route).
+- **How it changed.** Two ways:
+  - `POST /api/family-goals/:id/contribute` raises `current_points` by any number the parent typed, capped at the target, and marks the goal completed.
+  - The generic create and update routes for `family_goals` can also set `current_points` and `status` (correction in v1.3: they are whitelisted in `server/columns.js`).
+  - Neither touches a child.
   - It **never deducted any child's points**, wrote no `point_events` row, and recorded no child.
   - The removed screen (introduced in commit `9bf766e`, removed in `a746bb6`) offered a free number box, default 10.
 - **Conclusion.** These counters are *not* points anyone saved: no child's balance went down when they rose. They **cannot be migrated as child savings without inventing them**.
@@ -241,3 +245,18 @@ The test "the check catches: …" proves the reconciliation reports each of thes
 | # | Owner question (added) | Engineering recommendation |
 | --- | --- | --- |
 | O8 | Legacy family goals: leave them as stored data only, show them read-only as history, or offer "start a real goal from this"? | Leave them stored and exported only for V1; revisit after launch. They never held child points |
+
+## 12. Adversarial review of the proof (v1.3)
+
+- **The reviewer could not make the migration proof lie about data.** 016 writes no rows, and every change made to existing rows was caught.
+- **The read path that ships with 016** (no write endpoint behind it yet) had two real bugs, and the write paths ignored savings. All are fixed, with one balance rule in one place (`balanceOf` / `balanceFor` in `server/routes.js`).
+
+| # | Finding | Fix | Test |
+| --- | --- | --- | --- |
+| 1 | **Blocking.** A goal that was also requested was counted twice: shown 610, where 660 was right. A negative ledger sum *raised* available (shown 690) | Savings count only positive sums, and only towards a reward that is still a goal for the child. A goal that is also requested commits `max(stacked, saved)`, never the sum | "review: a goal that is also requested is counted once, and a negative sum never adds points"; the app and the SQL reconciliation compared after every ledger change |
+| 2 | **Blocking.** The write paths ignored savings, so saved points could be spent twice | Request (`stack/add`), spend (`redeem`), award undo (`reverseAward`) and confirm all use the same committed figure as the read path. A bigger goal cannot be requested (B1). A reward that has savings cannot be spent or confirmed directly: it is redeemed through its goal (that flow comes with the feature) | "review: every write path respects savings" |
+| 3 | The fingerprint did not cover the schema, or schemas other than `public`, or `schema_migrations`; `string_agg` over large uploads could reach Postgres's 1 GB limit | It now covers every non-system schema; every constraint, index, trigger, column type, default and nullability; and the migration records (016 the only allowed addition). Rows are hashed one by one, then combined | The rollback leaves no object behind. The rolled-back schema equals a database built from 001–015 that **never had 016** |
+| 4 | Fixture gaps | Added: a NULL stack, an object-shaped stack, stack ids that are not UUIDs or are upper-case or belong to another family, NULL `points_spent`, a reward with no family code, an upload and a user. The app now treats a non-array stack as empty instead of failing | The fixture test asserts each shape is present |
+| 5 | The copy tool's safety | It refuses Railway URLs and the app's own `DATABASE_URL`, and requires that 016 is the only pending migration. Rollback and record removal run in one transaction. It checks that 016's objects exist after re-apply and reports anything left behind | Run 2026-11-19 on the richer copy: every step ok; Railway URL refused (exit 2) |
+| 6 | Tests compared values with their own source | The reconciliation now applies the same written savings rule in SQL (independently of the JavaScript), and the tests compare app and SQL after every ledger change. The fixture's hand-set starting points are a deliberate legacy shape (imported balances), not a check | (above) |
+| 7 | The note said only contribute changed `family_goals` | Corrected in §11.2; the conclusion is unchanged | (none) |

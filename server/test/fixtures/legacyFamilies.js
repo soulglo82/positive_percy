@@ -90,5 +90,22 @@ export async function seedLegacyFamilies(ctx) {
   const fg = await must(call(C, 'POST', '/api/family_goals', { title: 'Camping', target_points: 200 }), 'family goal C');
   await must(call(C, 'POST', `/api/family-goals/${fg.id}/contribute`, { points: 60 }), 'contribute C');
 
+  // ── Shapes only older releases could write (reward_stack was once
+  // client-writable; family_code was once unstamped) ────────────────────────
+  const { rows: [ghost] } = await ctx.pool.query(
+    "INSERT INTO children (name, total_points, weekly_target, family_code, reward_stack, points_spent) VALUES ('Legacy NULL stack', 12, 20, $1, NULL, NULL) RETURNING id", [B.code]);
+  await ctx.pool.query("INSERT INTO point_events (child_id, points, category, child_name, family_code, kind) VALUES ($1, 12, 'Starting points', 'Legacy NULL stack', $2, 'award')", [ghost.id, B.code]);
+  const { rows: [odd] } = await ctx.pool.query(
+    `INSERT INTO children (name, total_points, weekly_target, family_code, reward_stack) VALUES ('Legacy odd stack', 9, 20, $1, $2::jsonb) RETURNING id`,
+    [B.code, JSON.stringify({ rewardId: book.id, cost: 1 })]); // an object, not an array
+  await ctx.pool.query("INSERT INTO point_events (child_id, points, category, child_name, family_code, kind) VALUES ($1, 9, 'Starting points', 'Legacy odd stack', $2, 'award')", [odd.id, B.code]);
+  // Stack items naming a non-UUID id, an upper-case id, and another family's reward.
+  await ctx.pool.query("UPDATE children SET reward_stack = reward_stack || $2::jsonb WHERE id = $1",
+    [sam.id, JSON.stringify([{ rewardId: 'not-a-uuid', name: 'X', cost: 1 }, { rewardId: book.id.toUpperCase(), name: 'Book', cost: 40 }, { rewardId: movie.id, name: 'Movie night', cost: 25 }])]);
+  // A reward with no family_code, an upload and a user row.
+  await ctx.pool.query("INSERT INTO rewards (title, cost_points, emoji, family_code) VALUES ('Orphan reward', 5, '🎈', NULL)");
+  await ctx.pool.query("INSERT INTO uploads (data, content_type) VALUES ($1, 'image/png')", ['iVBORw0KGgo' + 'A'.repeat(4000)]);
+  await ctx.pool.query("INSERT INTO users (email, full_name, family_code) VALUES ('legacy-parent@example.invalid', 'Legacy Parent', $1)", [A.code]);
+
   return { A, B, C, children: { lara, omar, joud, sam }, rewards: { movie, icecream, bike, secret, laraOnly, book, mountainBike } };
 }

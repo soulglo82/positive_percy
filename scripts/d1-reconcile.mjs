@@ -13,7 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { runMigrations } from '../server/migrate.js';
-import { fingerprint, differences, legacyFamilyGoals } from '../server/reconcile.js';
+import { fingerprint, differences, addedSchema, legacyFamilyGoals } from '../server/reconcile.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : undefined; };
@@ -23,6 +23,10 @@ if (!url || !process.argv.includes('--i-confirm-this-is-a-copy')) {
   process.exit(2);
 }
 
+// Belt and braces against pointing this at the live database.
+if (/railway|rlwy/i.test(url)) { console.error('Refusing a Railway URL: run this on a restored copy only.'); process.exit(2); }
+if (process.env.DATABASE_URL && process.env.DATABASE_URL === url) { console.error('Refusing the app\'s own DATABASE_URL: run this on a restored copy only.'); process.exit(2); }
+
 const pool = new pg.Pool({ connectionString: url });
 const DOWN = fs.readFileSync(path.join(ROOT, 'server/rollbacks/016_savings_ledger_down.sql'), 'utf8');
 const report = { steps: [] };
@@ -31,6 +35,11 @@ const step = (name, diffs, extra = {}) => { report.steps.push({ name, changed: d
 try {
   const applied = (await pool.query("SELECT name FROM schema_migrations WHERE name = '016_savings_ledger.sql'").catch(() => ({ rows: [] }))).rows.length > 0;
   if (applied) throw new Error('This copy already has migration 016. Restore a copy taken before 016.');
+  // Only 016 may be pending, so the run proves 016 and nothing else.
+  const files = fs.readdirSync(path.join(ROOT, 'server/migrations')).filter((f) => /^\d{3}_.+\.(sql|js)$/.test(f));
+  const done = new Set((await pool.query('SELECT name FROM schema_migrations')).rows.map((r) => r.name));
+  const pending = files.filter((f) => !done.has(f));
+  if (pending.join() !== '016_savings_ledger.sql') throw new Error(`Expected only 016 pending, found: ${pending.join(', ') || 'none'}`);
   const before = await fingerprint(pool);
   report.families = (await pool.query('SELECT count(*)::int n FROM families')).rows[0].n;
   report.children = Object.keys(before.children).length;
@@ -41,15 +50,28 @@ try {
   const after = await fingerprint(pool, before);
   const saved = (await pool.query('SELECT count(*)::int n FROM savings_events')).rows[0].n;
   const goals = (await pool.query('SELECT count(*)::int n FROM rewards WHERE is_bigger_goal')).rows[0].n;
-  step('apply 016', differences(before, after), { added: after.added, savings_rows: saved, goals_designated: goals });
+  const allow = { allowMigrations: ['016_savings_ledger.sql'] };
+  const strayAdded = addedSchema(before, after).filter((o) => !/savings_events|public\.rewards\.is_bigger_goal/.test(o));
+  step('apply 016', [...differences(before, after, allow), ...strayAdded.map((o) => `unexpected new schema object: ${o}`)],
+    { added: after.added, savings_rows: saved, goals_designated: goals });
   if (saved || goals) step('016 created savings or goals', [`savings rows ${saved}, goals ${goals}`]);
 
-  await pool.query(DOWN);
-  await pool.query("DELETE FROM schema_migrations WHERE name = '016_savings_ledger.sql'");
-  step('roll 016 back', differences(before, await fingerprint(pool, before)));
+  // Rollback and its record removal succeed or fail together.
+  const c = await pool.connect();
+  try {
+    await c.query('BEGIN');
+    await c.query(DOWN);
+    await c.query("DELETE FROM schema_migrations WHERE name = '016_savings_ledger.sql'");
+    await c.query('COMMIT');
+  } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
+  const rolled = await fingerprint(pool, before);
+  const leftover = addedSchema(before, rolled);
+  step('roll 016 back', [...differences(before, rolled), ...leftover.map((o) => `left behind: ${o}`)]);
 
   await runMigrations(pool, { log: () => {} });
-  step('apply 016 again', differences(before, await fingerprint(pool, before)));
+  const again = await fingerprint(pool, before);
+  const present = (await pool.query("SELECT to_regclass('public.savings_events') IS NOT NULL AS t, EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'rewards' AND column_name = 'is_bigger_goal') AS c")).rows[0];
+  step('apply 016 again', [...differences(before, again, allow), ...(present.t && present.c ? [] : ['016 objects missing after re-apply'])]);
 } catch (err) {
   report.error = err.message;
   console.error('ERROR', err.message);
