@@ -7,14 +7,13 @@ import { Child } from "@/api/entities";
 import { buildChildCreatePayload } from "@/lib/childPayload";
 import { useAuth, getToken } from "@/lib/AuthContext";
 import { downloadFamilyReport } from "@/lib/familyReport";
-import { loadTodaysGoals } from "@/lib/todaysGoals";
 import { childOrder, childColour } from "@/lib/childColour";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody,
 } from "@/components/ui/dialog";
 import { Save, Copy, Check, Share2, UserPlus } from "lucide-react";
 import PercyIcon from "@/components/icons/PercyIcon";
@@ -60,12 +59,13 @@ function Group({ title, children }) {
   );
 }
 
-function RowDialog({ open, onClose, title, children }) {
+function RowDialog({ open, onClose, title, description, children }) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-title font-extrabold text-primary">{title}</DialogTitle>
+          {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <DialogBody>{children}</DialogBody>
       </DialogContent>
@@ -74,7 +74,7 @@ function RowDialog({ open, onClose, title, children }) {
 }
 
 export default function ParentProfile() {
-  const { user, familyCode, refreshUser } = useAuth();
+  const { user, familyCode, refreshUser, setFamilyName: showFamilyName } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(null); // which row dialog is open
   const [reporting, setReporting] = useState(false);
@@ -99,14 +99,10 @@ export default function ParentProfile() {
     },
     enabled: !!user,
   });
-  const { data: goalsData } = useQuery({
-    queryKey: ['todaysGoals', 'manage'],
-    queryFn: () => loadTodaysGoals(true),
-    enabled: !!user && open === 'goals',
-  });
 
   const ordered = [...children].sort(childOrder);
-  const currentName = user?.family?.family_name || user?.full_name || '';
+  // The family's own name only (owner: one source for Settings and the report).
+  const currentName = user?.family?.family_name || '';
   const close = () => setOpen(null);
 
   const openFamilyName = () => { setFamilyName(currentName); setOpen('name'); };
@@ -122,7 +118,8 @@ export default function ParentProfile() {
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || 'Failed to update');
-      await refreshUser();
+      showFamilyName(body.family_name);
+      refreshUser(); // best effort; never signs out
       toast.success("Family name updated.");
       close();
     } catch (error) {
@@ -202,7 +199,7 @@ export default function ParentProfile() {
 
         <Group title="Reports & privacy">
           <SettingsRow title="Family Report (PDF)" subtitle="Printable achievements and recent history"
-            action={reporting ? 'Creating your report…' : 'Download'} actionLabel="Download Family Report (PDF)"
+            action={reporting ? 'Creating your report…' : 'Download'} actionLabel={reporting ? undefined : 'Download Family Report (PDF)'}
             onAction={handleDownloadReport} disabled={reporting} />
           <SettingsRow title="Privacy & account controls" subtitle="Release only after legal and restore gates" status="Review" />
         </Group>
@@ -228,17 +225,17 @@ export default function ParentProfile() {
         </a>
       </div>
 
-      <RowDialog open={open === 'behaviours'} onClose={close} title="Positive behaviour categories">
+      <RowDialog open={open === 'behaviours'} onClose={close} title="Positive behaviour categories" description="Names, point values and approved icons">
         <BehaviorCategoryManager embedded />
       </RowDialog>
-      <RowDialog open={open === 'quick'} onClose={close} title="Quick Points">
+      <RowDialog open={open === 'quick'} onClose={close} title="Quick Points" description="Choose your quick award buttons for Home">
         <BehaviorCategoryManager embedded mode="quick" />
       </RowDialog>
-      <RowDialog open={open === 'timezone'} onClose={close} title="Family timezone">
+      <RowDialog open={open === 'timezone'} onClose={close} title="Family timezone" description="Determines today’s date and weekly schedule">
         <FamilyTimezone embedded />
       </RowDialog>
 
-      <RowDialog open={open === 'children'} onClose={close} title="Children">
+      <RowDialog open={open === 'children'} onClose={close} title="Children" description="Profiles, avatars and weekly targets">
         <div className="space-y-2">
           {ordered.length === 0 ? (
             <p className="text-sm text-muted-foreground py-2 text-center">No children added yet.</p>
@@ -265,13 +262,14 @@ export default function ParentProfile() {
         </div>
       </RowDialog>
 
-      <RowDialog open={open === 'name'} onClose={close} title="Family name">
+      <RowDialog open={open === 'name'} onClose={close} title="Family name" description="How your family appears in Percy">
         <form onSubmit={saveFamilyName} className="flex gap-2">
           <Input
             aria-label="Family name"
             value={familyName}
             onChange={(e) => setFamilyName(e.target.value)}
             placeholder="e.g., The Smiths"
+            maxLength={100}
             className="flex-1"
           />
           <Button type="submit" disabled={savingName}>
@@ -281,7 +279,7 @@ export default function ParentProfile() {
         </form>
       </RowDialog>
 
-      <RowDialog open={open === 'invite'} onClose={close} title="Invite parent">
+      <RowDialog open={open === 'invite'} onClose={close} title="Invite parent" description="Available with existing family invitation flow">
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="text-title font-mono font-semibold text-foreground bg-muted rounded-md px-4 py-2 border border-border">
@@ -310,7 +308,7 @@ export default function ParentProfile() {
 
       {ordered.length > 0 && (
         <ManageGoalsDialog open={open === 'goals'} onClose={close} child={ordered[0]} children={children}
-          categories={behaviorCategories} today={goalsData?.date || ''} />
+          categories={behaviorCategories} />
       )}
 
       <ParentingTips isOpen={showTips} onClose={() => setShowTips(false)} />

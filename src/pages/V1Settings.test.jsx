@@ -8,11 +8,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const state = { children: [] };
 const refreshUser = vi.fn(async () => true);
+const setFamilyName = vi.fn();
 vi.mock('@/api/entities', () => ({
   Child: { list: vi.fn(async () => state.children), update: vi.fn(), create: vi.fn(), delete: vi.fn() },
 }));
 vi.mock('@/lib/AuthContext', () => ({
-  useAuth: () => ({ user: { id: 'u', full_name: 'Old user name', family: { family_name: 'The Smiths' } }, familyCode: 'ABC123', refreshUser }),
+  useAuth: () => ({ user: { id: 'u', full_name: 'Old user name', family: { family_name: 'The Smiths' } }, familyCode: 'ABC123', refreshUser, setFamilyName }),
   getToken: () => 't',
 }));
 const toastSuccess = vi.fn();
@@ -95,7 +96,8 @@ describe('Family name', () => {
     expect(input.value).toBe('The Smiths'); // not the user record's name
     fireEvent.change(input, { target: { value: 'The Joneses' } });
     fireEvent.click(within(d).getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(refreshUser).toHaveBeenCalled());
+    await waitFor(() => expect(setFamilyName).toHaveBeenCalledWith('The Joneses')); // shown at once, from the reply
+    expect(refreshUser).toHaveBeenCalled();
     const put = calls.find(([u]) => u === '/api/family/name');
     expect(put[1].method).toBe('PUT');
     expect(JSON.parse(put[1].body)).toEqual({ family_name: 'The Joneses' });

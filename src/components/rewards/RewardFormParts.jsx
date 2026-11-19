@@ -13,7 +13,7 @@ export function ChildAssignList({ children, selectedIds, onToggle }) {
         >
           <Checkbox
             id={`child-${child.id}`}
-            checked={selectedIds.includes(child.id)}
+            checked={selectedIds.some((id) => String(id).toLowerCase() === String(child.id).toLowerCase())}
             onCheckedChange={() => onToggle(child.id)}
           />
           <span className="text-sm font-medium text-foreground">{child.name}</span>

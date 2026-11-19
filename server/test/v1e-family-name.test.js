@@ -43,6 +43,13 @@ describe.skipIf(!hasDb)('V1-E: family name', () => {
     expect((await nameOf(F)).length).toBe(100);
   });
 
+  it('cuts by characters, never splitting an emoji', async () => {
+    const name = 'a'.repeat(99) + '🦊🦊';
+    const r = await put(F, { family_name: name });
+    expect(r.status).toBe(200);
+    expect(await nameOf(F)).toBe('a'.repeat(99) + '🦊');
+  });
+
   it('refuses empty, blank and non-string names, changing nothing (E1)', async () => {
     await put(F, { family_name: 'Kept' });
     for (const body of [{ family_name: '' }, { family_name: '   ' }, { family_name: 42 }, { family_name: ['a'] }, {}]) {

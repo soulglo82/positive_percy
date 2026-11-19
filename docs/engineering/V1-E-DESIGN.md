@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.2 |
+| Version | 1.3 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-e-settings`, stacked on V1-C `claude/percy-v1-c-activity`) |
 | Status | Reviewed (§8); build may start |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.3 | 2026-11-19 | Post-build code review (§10): a failed refresh after a rename silently signed the user out (Major, fixed); server and form assignment checks case-insensitive; quick-mode empty state; busy name; exact dialog checks in e2e |
 | 1.2 | 2026-11-19 | Owner review (§9): family name in `families` only (as built); Quick Points opens straight to its controls (`mode="quick"`); status labels confirmed. Build notes |
 | 1.1 | 2026-11-19 | Peer review (§8): the family name is written to `families` only and refreshed through a new `refreshUser`; distinct accessible names for every row action; broken e2e specs listed; Today's Goals wiring; embedded category manager; route order; copy corrections |
 | 1.0 | 2026-11-19 | First draft |
@@ -143,4 +144,18 @@
 | E2 Shared carers, Privacy | Not shown as completed features | Status labels "Planned" and "Review", not buttons. Test |
 
 Also in this branch: reward assignment checks on the client compare ids case-insensitively (`lib/assignment.js`), carrying the PR #60 code-review finding C1 to the screens.
+
+## 10. Post-build code review (fresh context, PR #63 at `62a0be9`)
+
+| # | Finding | Severity | Resolution |
+| --- | --- | --- | --- |
+| 1 | `refreshUser` reused `loadUser`, which deletes the stored login on any failure: a 5xx after a successful rename signed the parent out on the next reload (probe) | Major | `refreshUser` has its own fetch and never touches storage; the new name is shown at once from the rename's reply (`setFamilyName`). Test: a 500 and a network error keep the stored login, the session and the shown name; it fails on the old code |
+| 2 | Client assignment checks ignored case, the server's did not on this branch; the reward form's child boxes too | Minor | `spendableFrom` made case-insensitive here exactly as in PR #60 (same line, so the merge is clean); the form's boxes compare in lower case |
+| 3 | Quick mode's empty state pointed to a hidden button; an empty span | Minor | Quick mode shows "No categories yet." (the shipped wording's first sentence); the span is a hidden spacer |
+| 4 | The Download button's name hid its busy text | Minor | While the report is being made, the visible "Creating your report…" is the name |
+| 5 | e2e closed dialogs with up to three Escapes, hiding regressions | Minor | Each Escape is checked: the nested dialog goes and the row's dialog (with its heading) stays; a final Escape leaves none |
+| 6 | The timezone route's comment sat above the new route | Nit | Moved back |
+| 7 | No length limit on the input; `slice` could split an emoji; a parent's name could prefill | Nit | `maxLength={100}`; the server cuts by characters (test with emoji); the prefill uses the family's name only |
+| 8 | Row dialogs had no description | Nit | The row's approved subtitle is the dialog description |
+| 9 | Duplicate goals query | Nit | Removed; the dialog loads its own |
 

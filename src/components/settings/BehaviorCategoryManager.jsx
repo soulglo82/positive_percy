@@ -230,7 +230,7 @@ export default function BehaviorCategoryManager({ embedded = false, mode = 'all'
       <Frame embedded={embedded}>
           {/* Quick action counter */}
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs text-muted-foreground">{quickOnly ? '' : 'Tap a row to edit details'}</span>
+            {quickOnly ? <span aria-hidden="true" /> : <span className="text-xs text-muted-foreground">Tap a row to edit details</span>}
             <span className="text-xs font-medium text-muted-foreground">
               Quick actions: <span className={`font-semibold tabular-nums ${quickActionCount >= MAX_QUICK_ACTIONS ? 'px-1.5 rounded-sm bg-warning border border-warning-border text-warning-foreground' : 'text-foreground'}`}>{quickActionCount}/{MAX_QUICK_ACTIONS}</span>
             </span>
@@ -238,7 +238,7 @@ export default function BehaviorCategoryManager({ embedded = false, mode = 'all'
 
           {categories.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No categories yet. Add your first one below.
+              {quickOnly ? 'No categories yet.' : 'No categories yet. Add your first one below.'}
             </p>
           ) : (
             <div className="border border-border rounded-md overflow-hidden">

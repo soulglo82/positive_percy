@@ -127,8 +127,8 @@ async function loadRewardsById(db, familyCode, ids) {
 function spendableFrom(byId, rewardId, childId) {
   const r = byId.get(String(rewardId || ''));
   if (!r) return null;
-  const assigned = r.assigned_child_ids || [];
-  if (assigned.length > 0 && !assigned.includes(childId)) return null;
+  const assigned = (r.assigned_child_ids || []).map((x) => String(x).toLowerCase());
+  if (assigned.length > 0 && !assigned.includes(String(childId).toLowerCase())) return null;
   return { id: r.id, title: r.title, cost: r.cost_points, icon_key: r.icon_key ?? null, emoji: r.emoji ?? null, image_url: r.image_url ?? null };
 }
 
@@ -485,16 +485,14 @@ router.get('/api/family/timezone', authMiddleware, async (req, res) => {
   }
 });
 
-// { timezone, auto }: auto (sent by the app on load) only fills a family
-// that has none and never from a generic zone like UTC; without auto it is
-// the parent choosing in Settings. Any change recomputes the streak date.
 // V1-E (docs/engineering/V1-E-DESIGN.md §3): the family's own name, the one
 // the Family Report and auth/me show. Only the caller's family (from the
 // token). Same rule as creation: trimmed, at most 100 characters, required.
 // Registered before the generic PUT /api/:entity/:id, which would match it.
 router.put('/api/family/name', authMiddleware, async (req, res) => {
   const raw = req.body?.family_name;
-  const family_name = typeof raw === 'string' ? raw.trim().slice(0, 100) : '';
+  // Cut by characters, not UTF-16 units, so an emoji is never split.
+  const family_name = typeof raw === 'string' ? Array.from(raw.trim()).slice(0, 100).join('').trim() : '';
   if (!family_name) return res.status(400).json({ error: 'Family name is required' });
   try {
     const { rows } = await pool.query(
@@ -507,6 +505,9 @@ router.put('/api/family/name', authMiddleware, async (req, res) => {
   }
 });
 
+// { timezone, auto }: auto (sent by the app on load) only fills a family
+// that has none and never from a generic zone like UTC; without auto it is
+// the parent choosing in Settings. Any change recomputes the streak date.
 router.put('/api/family/timezone', authMiddleware, async (req, res) => {
   const auto = req.body?.auto === true;
   // Validate before taking any lock; the app's on-load call for a family

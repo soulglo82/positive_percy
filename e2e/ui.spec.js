@@ -309,12 +309,21 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   const rowDialog = () => page.getByRole('dialog').first();
   // Escape closes the top dialog; after a nested dialog closes, one more
   // Escape closes the row's dialog.
+  // One Escape closes exactly the top dialog (code review of #63). While a
+  // nested dialog is open the row's dialog underneath is hidden from the
+  // accessibility tree, so the check is: the nested one is gone and the row's
+  // dialog, with its heading, is back.
   const closeRow = async () => {
-    for (let i = 0; i < 3 && (await page.getByRole('dialog').count()) > 0; i++) {
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(200);
-    }
+    await expect(page.getByRole('dialog')).toHaveCount(1);
+    await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
+  };
+  const closeNested = async (rowTitle, nested) => {
+    await expect(nested).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(nested).toHaveCount(0);
+    await expect(page.getByRole('dialog')).toHaveCount(1);
+    await expect(page.getByRole('dialog').getByRole('heading', { name: rowTitle, exact: true })).toBeVisible();
   };
 
   // V1-E: each control is reached through its row's dialog.
@@ -323,6 +332,7 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await checkScreen(page, 'timezone select', testInfo);
   await page.keyboard.press('Escape'); // closes the list, the dialog stays
   await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(1);
   await closeRow();
 
   await page.getByRole('button', { name: 'Edit Positive behaviour categories' }).click();
@@ -331,6 +341,7 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await checkScreen(page, 'behaviour assign select', testInfo);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(1);
   await rowDialog().getByRole('button', { name: /^Tidy room/ }).first().click();
   await rowDialog().getByRole('button', { name: /^Delete$/ }).first().click();
   await checkScreen(page, 'delete behaviour', testInfo);
@@ -338,7 +349,8 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
   await rowDialog().getByRole('button', { name: /Add behaviour/ }).click();
   await checkScreen(page, 'new behaviour', testInfo);
-  await closeRow(); // the new-behaviour dialog, then the row's
+  await closeNested('Positive behaviour categories', page.getByRole('dialog').filter({ hasNotText: 'Names, point values' }));
+  await closeRow();
 
   // Quick Points opens straight to the quick-button controls (owner review).
   await page.getByRole('button', { name: 'Edit Quick Points' }).click();
@@ -350,8 +362,7 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await page.getByRole('button', { name: 'Edit Children' }).click();
   await rowDialog().getByRole('button', { name: /^Add child/ }).click();
   await checkScreen(page, 'add child', testInfo);
-  await page.keyboard.press('Escape'); // Add child; the Children dialog stays
-  await expect(page.getByRole('heading', { name: 'Children' })).toBeVisible();
+  await closeNested('Children', page.getByRole('dialog').filter({ hasNotText: 'Profiles, avatars' }));
   await page.getByRole('button', { name: /^Edit Alexandra/ }).first().click();
   await checkScreen(page, 'edit child', testInfo);
   await page.getByRole('button', { name: 'Delete Child' }).click();
