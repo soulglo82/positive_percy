@@ -50,7 +50,11 @@ function Frame({ embedded, children }) {
 
 // `embedded` (V1-E): shown inside a Settings dialog, without its own
 // section header and card.
-export default function BehaviorCategoryManager({ embedded = false }) {
+// `mode` (V1-E, owner review): 'quick' shows only the Quick Points controls
+// (each behaviour with its quick-button box and the n/m count), so Settings'
+// "Quick Points" Edit opens straight to them; 'all' is the full manager.
+export default function BehaviorCategoryManager({ embedded = false, mode = 'all' }) {
+  const quickOnly = mode === 'quick';
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
@@ -226,7 +230,7 @@ export default function BehaviorCategoryManager({ embedded = false }) {
       <Frame embedded={embedded}>
           {/* Quick action counter */}
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs text-muted-foreground">Tap a row to edit details</span>
+            <span className="text-xs text-muted-foreground">{quickOnly ? '' : 'Tap a row to edit details'}</span>
             <span className="text-xs font-medium text-muted-foreground">
               Quick actions: <span className={`font-semibold tabular-nums ${quickActionCount >= MAX_QUICK_ACTIONS ? 'px-1.5 rounded-sm bg-warning border border-warning-border text-warning-foreground' : 'text-foreground'}`}>{quickActionCount}/{MAX_QUICK_ACTIONS}</span>
             </span>
@@ -249,6 +253,13 @@ export default function BehaviorCategoryManager({ embedded = false }) {
                         opens with a real button, the quick-action box is its
                         own labelled checkbox. Both work by keyboard. */}
                     <div className={`flex items-center gap-1 pr-2 transition-colors ${isExpanded ? 'bg-muted' : ''}`}>
+                      {quickOnly ? (
+                        <div className="flex flex-1 min-w-0 min-h-11 items-center gap-3 px-3 py-2.5">
+                          <span className="shrink-0 w-7 flex justify-center text-muted-foreground"><CategoryIcon iconKey={cat.icon_key} className="w-5 h-5" /></span>
+                          <span className="font-medium text-foreground flex-1 min-w-0 truncate text-sm">{cat.name}</span>
+                          <span className="text-sm text-earn font-semibold tabular-nums shrink-0 w-14 text-right">{formatPointsBadge(cat.points ?? 1)}</span>
+                        </div>
+                      ) : (
                       <button
                         type="button"
                         aria-expanded={isExpanded}
@@ -264,6 +275,7 @@ export default function BehaviorCategoryManager({ embedded = false }) {
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </span>
                       </button>
+                      )}
                       <label className="shrink-0 flex min-h-11 items-center gap-1.5 px-1 cursor-pointer">
                         <Checkbox
                           checked={cat.is_quick_action}
@@ -276,7 +288,7 @@ export default function BehaviorCategoryManager({ embedded = false }) {
                     </div>
 
                     {/* Expanded detail panel */}
-                    {isExpanded && (
+                    {isExpanded && !quickOnly && (
                       <div id={`category-panel-${cat.id}`} className="px-3 pb-3 pt-1 bg-muted border-t border-border">
                         {isEditing ? (
                           <div className="space-y-3">
@@ -396,10 +408,10 @@ export default function BehaviorCategoryManager({ embedded = false }) {
             </div>
           )}
 
-          <Button variant="outline" className="w-full mt-3" onClick={() => setShowAddModal(true)}>
+          {!quickOnly && <Button variant="outline" className="w-full mt-3" onClick={() => setShowAddModal(true)}>
             <PercyIcon id="phosphor:plus-circle:duotone" className="w-4 h-4" />
             Add behaviour
-          </Button>
+          </Button>}
       </Frame>
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>

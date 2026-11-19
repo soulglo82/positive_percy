@@ -232,7 +232,7 @@ export default function ParentProfile() {
         <BehaviorCategoryManager embedded />
       </RowDialog>
       <RowDialog open={open === 'quick'} onClose={close} title="Quick Points">
-        <BehaviorCategoryManager embedded />
+        <BehaviorCategoryManager embedded mode="quick" />
       </RowDialog>
       <RowDialog open={open === 'timezone'} onClose={close} title="Family timezone">
         <FamilyTimezone embedded />

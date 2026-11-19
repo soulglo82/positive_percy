@@ -304,41 +304,77 @@ test('rewards and its dialogs', async ({ page }, testInfo) => {
 
 test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await go(page, '/parentprofile');
+  await expect(page.getByRole('heading', { name: 'Family settings' })).toBeVisible();
   await checkScreen(page, 'settings', testInfo);
+  const rowDialog = () => page.getByRole('dialog').first();
+  // Escape closes the top dialog; after a nested dialog closes, one more
+  // Escape closes the row's dialog.
+  const closeRow = async () => {
+    for (let i = 0; i < 3 && (await page.getByRole('dialog').count()) > 0; i++) {
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(200);
+    }
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  };
 
-  await page.getByRole('combobox', { name: 'Timezone' }).click();
+  // V1-E: each control is reached through its row's dialog.
+  await page.getByRole('button', { name: 'Edit Family timezone' }).click();
+  await rowDialog().getByRole('combobox', { name: 'Timezone' }).click();
   await checkScreen(page, 'timezone select', testInfo);
-  await closeDialog(page);
+  await page.keyboard.press('Escape'); // closes the list, the dialog stays
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await closeRow();
 
-  await page.getByRole('button', { name: /^Kindness/ }).first().click();
-  await page.getByRole('combobox').filter({ hasText: /children|only/ }).first().click();
+  await page.getByRole('button', { name: 'Edit Positive behaviour categories' }).click();
+  await rowDialog().getByRole('button', { name: /^Kindness/ }).first().click();
+  await rowDialog().getByRole('combobox').filter({ hasText: /children|only/ }).first().click();
   await checkScreen(page, 'behaviour assign select', testInfo);
-  await closeDialog(page);
-
-  await page.getByRole('button', { name: /^Kindness/ }).first().click();
-  await page.getByRole('button', { name: /^Tidy room/ }).first().click();
-  await page.getByRole('button', { name: /^Delete$/ }).first().click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await rowDialog().getByRole('button', { name: /^Tidy room/ }).first().click();
+  await rowDialog().getByRole('button', { name: /^Delete$/ }).first().click();
   await checkScreen(page, 'delete behaviour', testInfo);
   await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
-
-  await page.getByRole('button', { name: /Add behaviour/ }).click();
+  await rowDialog().getByRole('button', { name: /Add behaviour/ }).click();
   await checkScreen(page, 'new behaviour', testInfo);
-  await closeDialog(page);
+  await closeRow(); // the new-behaviour dialog, then the row's
 
-  await page.getByRole('button', { name: /^Add child/ }).click();
+  // Quick Points opens straight to the quick-button controls (owner review).
+  await page.getByRole('button', { name: 'Edit Quick Points' }).click();
+  await expect(rowDialog().getByRole('checkbox', { name: 'Kindness quick action' })).toBeVisible();
+  await expect(rowDialog().getByRole('button', { name: /Add behaviour/ })).toHaveCount(0);
+  await checkScreen(page, 'quick points', testInfo);
+  await closeRow();
+
+  await page.getByRole('button', { name: 'Edit Children' }).click();
+  await rowDialog().getByRole('button', { name: /^Add child/ }).click();
   await checkScreen(page, 'add child', testInfo);
-  await closeDialog(page);
-
-  // Child edit and delete moved from Home cards to Settings in V1.
+  await page.keyboard.press('Escape'); // Add child; the Children dialog stays
+  await expect(page.getByRole('heading', { name: 'Children' })).toBeVisible();
   await page.getByRole('button', { name: /^Edit Alexandra/ }).first().click();
   await checkScreen(page, 'edit child', testInfo);
   await page.getByRole('button', { name: 'Delete Child' }).click();
   await checkScreen(page, 'delete child', testInfo);
   await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
-  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('dialog').filter({ hasText: 'Edit Child' }).getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('dialog').filter({ hasText: 'Edit Child' })).toHaveCount(0);
+  await closeRow();
+
+  await page.getByRole('button', { name: 'Edit Family name' }).click();
+  await expect(rowDialog().getByLabel('Family name')).toHaveValue('The Fixture Family');
+  await checkScreen(page, 'family name', testInfo);
+  await closeRow();
+
+  await page.getByRole('button', { name: 'View Invite parent' }).click();
+  await expect(rowDialog().getByText(family.code)).toBeVisible();
+  await checkScreen(page, 'invite parent', testInfo);
+  await closeRow();
+
+  await page.getByRole('button', { name: 'Edit Today’s Goals' }).click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: /^Manage .+'s goals$/ })).toBeVisible();
+  await closeRow();
 
   await page.getByRole('button', { name: /parenting tips/i }).click();
   await checkScreen(page, 'tips', testInfo);
@@ -351,7 +387,8 @@ test('timezone: a refused save goes back to what is stored', async ({ page }) =>
     return route.fulfill({ status: 400, json: { error: 'Unknown timezone' } });
   });
   await go(page, '/parentprofile');
-  const trigger = page.getByRole('combobox', { name: 'Timezone' });
+  await page.getByRole('button', { name: 'Edit Family timezone' }).click(); // V1-E: in its row's dialog
+  const trigger = page.getByRole('dialog').getByRole('combobox', { name: 'Timezone' });
   await expect(trigger).toHaveText(/Choose your timezone/);
   await trigger.click();
   await page.getByRole('option', { name: 'Europe/London' }).click();

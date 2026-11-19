@@ -4,7 +4,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 
 const family = JSON.parse(process.env.PERCY_E2E_FAMILY || '{}');
 
-test('Family settings downloads a multi-page A4 PDF and still offers technical JSON', async ({ page }, testInfo) => {
+test('Family settings downloads a multi-page A4 PDF', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'phone-390-touch', 'One mobile browser covers generation');
   await page.addInitScript(([code, token]) => {
     localStorage.setItem('positive_percy_family_code', code);
@@ -13,7 +13,6 @@ test('Family settings downloads a multi-page A4 PDF and still offers technical J
   }, [family.code, family.token]);
 
   await page.goto('/parentprofile');
-  await expect(page.getByRole('button', { name: 'Download technical data (JSON)' })).toBeVisible();
   const report = page.getByRole('button', { name: 'Download Family Report (PDF)' });
   await expect(report).toBeVisible();
   const pendingDownload = page.waitForEvent('download', { timeout: 90000 });
@@ -36,5 +35,5 @@ test('Family settings downloads a multi-page A4 PDF and still offers technical J
   // Only the throwaway fixture family's data is used here.
   await mkdir('test-results', { recursive: true });
   await writeFile('test-results/sample-family-report.pdf', buffer);
-  await expect(page.getByRole('button', { name: 'Download technical data (JSON)' })).toBeEnabled();
+  await expect(report).toBeEnabled();
 });

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { isAssignedTo } from "@/lib/assignment";
 import { Child, Reward } from "@/api/entities";
 import { awardPoints, refreshPoints, undoAction, UNDO_TOAST_MS } from "@/lib/points";
 import { buildChildCreatePayload } from "@/lib/childPayload";
@@ -286,9 +287,7 @@ export default function ParentDashboard() {
           setSelectedChild(null);
         }}
         child={ordered.find((c) => c.id === selectedChild?.id) || selectedChild}
-        rewards={rewards.filter(r =>
-          !selectedChild || !r.assigned_child_ids || r.assigned_child_ids.length === 0 || r.assigned_child_ids.includes(selectedChild.id)
-        )}
+        rewards={rewards.filter(r => !selectedChild || isAssignedTo(r, selectedChild.id))}
       />
 
       <WelcomeFamilyDialog

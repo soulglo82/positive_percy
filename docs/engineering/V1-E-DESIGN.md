@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.2 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-e-settings`, stacked on V1-C `claude/percy-v1-c-activity`) |
 | Status | Reviewed (§8); build may start |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.2 | 2026-11-19 | Owner review (§9): family name in `families` only (as built); Quick Points opens straight to its controls (`mode="quick"`); status labels confirmed. Build notes |
 | 1.1 | 2026-11-19 | Peer review (§8): the family name is written to `families` only and refreshed through a new `refreshUser`; distinct accessible names for every row action; broken e2e specs listed; Today's Goals wiring; embedded category manager; route order; copy corrections |
 | 1.0 | 2026-11-19 | First draft |
 
@@ -26,7 +27,7 @@
 - **Header:** "Family settings" and "Make Percy work for your family."
 - **Behaviours & Quick Points:**
   - "Positive behaviour categories", "Names, point values and approved icons", **Edit**. Opens a dialog holding the shipped `BehaviorCategoryManager` (names, points, icons, reorder, per-child assignment, quick toggle). A new `embedded` prop drops its own "Behaviours" header and card inside the dialog. Its "Quick actions: n/m" line is shipped wording, kept (owner item E1).
-  - "Quick Points", "Choose your quick award buttons for Home", **Edit**. Opens the same manager. Its quick-button toggle is where Quick Points are chosen (owner item E1).
+  - "Quick Points", "Choose your quick award buttons for Home", **Edit**. Opens the manager in a quick-only mode (owner review, §9): each behaviour with its icon, points and quick-button box, and the shipped "Quick actions: n/m" count; no row editing and no "Add behaviour".
   - "Point defaults", "New behaviours and Quick Points start at 1 point". **No action** (D6: read-only; the server default is 1, `categoryPoints`).
 - **Children & goals:**
   - "Children", "Profiles, avatars and weekly targets", **Edit**. Opens a dialog with the shipped child list (avatar, name, Edit → `EditChildModal` with photo upload and delete, "Add child").
@@ -131,4 +132,15 @@
 | 8 | E7 copy wrong | Non-blocking | Corrected (§5) |
 | 9 | Nested headers and focus return | Non-blocking | `embedded` prop; focus rules (§2) |
 | 10 | "Quick actions" wording inside "Quick Points"; Planned/Review styling | Non-blocking | Shipped wording kept under E1; status text (§2) |
+
+## 9. Owner review (2026-11-19) and build
+
+| Item | Owner direction | Built |
+| --- | --- | --- |
+| Family name | Update `families.family_name` only; Settings and the PDF read the same source | `PUT /api/family/name` writes `families` only; Settings reads `user.family.family_name` after `refreshUser()`; the report reads the export's `family.family_name`. Test: `PUT /api/auth/me` cannot set it |
+| E1 Quick Points | Open directly to the Quick Points controls | `BehaviorCategoryManager mode="quick"`. Test: quick boxes shown, no Add behaviour or row editing; mutation (mode ignored) fails it |
+| D6, E3, JSON tile | Keep defaults read-only; keep tips and credits; remove the tile, keep the capability | As designed; e2e checks the export endpoint by request and that no JSON button shows |
+| E2 Shared carers, Privacy | Not shown as completed features | Status labels "Planned" and "Review", not buttons. Test |
+
+Also in this branch: reward assignment checks on the client compare ids case-insensitively (`lib/assignment.js`), carrying the PR #60 code-review finding C1 to the screens.
 
