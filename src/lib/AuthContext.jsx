@@ -115,6 +115,13 @@ export const AuthProvider = ({ children }) => {
     return updated;
   };
 
+  // V1-E: read the user and family again (e.g. after the family is renamed);
+  // updateUser's reply has no `family`, so it cannot be used for that.
+  const refreshUser = async () => {
+    if (!familyCode) return false;
+    return loadUser(familyCode, getToken());
+  };
+
   const logout = () => {
     localStorage.removeItem(FAMILY_CODE_KEY);
     localStorage.removeItem(TOKEN_KEY);
@@ -132,6 +139,7 @@ export const AuthProvider = ({ children }) => {
       createFamily,
       joinFamily,
       updateUser,
+      refreshUser,
       logout,
     }}>
       {children}

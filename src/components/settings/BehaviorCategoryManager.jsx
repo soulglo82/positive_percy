@@ -43,7 +43,14 @@ import { formatPointsBadge } from "@/constants/terminology";
 
 const MAX_QUICK_ACTIONS = 4;
 
-export default function BehaviorCategoryManager() {
+function Frame({ embedded, children }) {
+  if (embedded) return <div>{children}</div>;
+  return <Card><CardContent className="pt-4 pb-3 px-3 sm:px-6">{children}</CardContent></Card>;
+}
+
+// `embedded` (V1-E): shown inside a Settings dialog, without its own
+// section header and card.
+export default function BehaviorCategoryManager({ embedded = false }) {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
@@ -215,9 +222,8 @@ export default function BehaviorCategoryManager() {
 
   return (
     <div>
-      <SectionHeader icon={ListChecks}>Behaviours</SectionHeader>
-      <Card>
-        <CardContent className="pt-4 pb-3 px-3 sm:px-6">
+      {!embedded && <SectionHeader icon={ListChecks}>Behaviours</SectionHeader>}
+      <Frame embedded={embedded}>
           {/* Quick action counter */}
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs text-muted-foreground">Tap a row to edit details</span>
@@ -394,8 +400,7 @@ export default function BehaviorCategoryManager() {
             <PercyIcon id="phosphor:plus-circle:duotone" className="w-4 h-4" />
             Add behaviour
           </Button>
-        </CardContent>
-      </Card>
+      </Frame>
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
         <AlertDialogContent>
