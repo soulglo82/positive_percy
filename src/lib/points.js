@@ -208,7 +208,8 @@ export async function requestReward(childId, rewardId) {
   });
   const result = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(result.error || 'Could not request');
+    // No raw fallback text: callers show the shipped wording when there is no message.
+    const err = new Error(result.error || '');
     err.status = res.status;
     throw err;
   }

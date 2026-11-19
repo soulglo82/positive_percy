@@ -23,7 +23,7 @@ import AddChildModal from '../components/child/AddChildModal';
 import EditChildModal from '../components/child/EditChildModal';
 import ManageGoalsDialog from '../components/dashboard/ManageGoalsDialog';
 import RewardForm from '../components/rewards/RewardForm';
-import { RewardTile } from './Rewards';
+import RewardTile from '../components/rewards/RewardTile';
 import { buildChildCreatePayload } from '@/lib/childPayload';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorCard from '../components/ErrorCard';
@@ -63,7 +63,7 @@ export default function Children() {
     enabled: !!user,
     refetchOnWindowFocus: true,
   });
-  const { data: rewards = [] } = useQuery({
+  const { data: rewards = [], isLoading: rewardsLoading, isError: rewardsError, refetch: refetchRewards } = useQuery({
     queryKey: ['rewards'],
     queryFn: () => Reward.list(),
     enabled: !!user,
@@ -166,7 +166,11 @@ export default function Children() {
           <SectionHead title="Weekly treats to choose from">
             <Link to={createPageUrl('Rewards')} className={linkClass}>All rewards</Link>
           </SectionHead>
-          {treats.length === 0 ? (
+          {rewardsLoading ? (
+            <LoadingSpinner message="Loading rewards..." />
+          ) : rewardsError ? (
+            <ErrorCard message="Couldn't load rewards" onRetry={refetchRewards} />
+          ) : treats.length === 0 ? (
             <p className="text-muted-foreground">No rewards created yet.</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.2 |
+| Version | 1.3 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-b-children`, stacked on V1-D `claude/percy-v1-d-rewards`) |
 | Status | Reviewed (§8); build may start. Owner items in §7 |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.3 | 2026-11-19 | Post-build code review (§9): New goal used the previous child's behaviour (Major, fixed); focus, refresh, loading and lock fixes |
 | 1.2 | 2026-11-19 | Owner decisions: B1 approved for now (full milestone wording restored when D1 lands); B3 approved ("Ask a parent"; after pressing, "Ready when a parent agrees"; nothing charged until a parent confirms) |
 | 1.1 | 2026-11-19 | Fresh-context peer review (§8): 3 blocking and 7 non-blocking findings adopted. The request button label becomes an owner item; the lock is held until fresh data arrives; contract corrected; requested rewards win over affordability; reached state kept as approved ("0 to reach") |
 | 1.0 | 2026-11-19 | First draft |
@@ -80,7 +81,7 @@
 | E2 | `?child=` of another family or an unknown id | The first child (oldest) |
 | E3 | Week target reached (25/25 or above) | "0 to reach this week's target", "0 weekly points to go" (as approved) |
 | E4 | Two taps while the POST is in flight, **and** a tap after it resolves but before the refetch | One `stack/add` in both |
-| E4b | Switching child while a request is in flight | The sibling's same reward is not locked; the toast names the right child |
+| E4b | Switching child while a request is in flight | The sibling's same reward is not locked; an error toast uses the shipped wording (no toast names a child; a success is announced in the status line) |
 | E4c | Requested reward then hidden by a parent | Still shown as requested in Child View |
 | E4d | `available_points` missing on the row | Falls back to `total_points` |
 | E5 | `available_points` 20, reward 25 | "Need 5 more", disabled |
@@ -129,4 +130,20 @@
 | N6 | Reward mutations live in Rewards.jsx | Non-blocking | Shared `useRewardMutations` hook (§2) |
 | N7 | Approved code shows a reached state (`Math.max(0, …)`); motivation endpoint unmentioned | Non-blocking | Kept as approved; B2 withdrawn; endpoint retained unused (§1, §2) |
 | D5/D8 | Guard should also cover `SpendRewardsModal` | Non-blocking | Added (§4, §6) |
+
+## 9. Post-build code review (fresh context, PR #61 at `2a868ea`)
+
+| # | Finding | Severity | Resolution |
+| --- | --- | --- | --- |
+| 1 | New goal (Children) filled the behaviour of the child the dialog last showed; the server refused the save while the form looked valid (probe) | Major | Fixed: the add path uses the opened child's behaviours, like the edit path. The "Add goal" button also passed its click event as the behaviour list: fixed. Regression test fails on the old code |
+| 2 | No test checked the behaviours used by Edit | Minor | Covered by the same test (a goal whose behaviour is not the child's opens unset) |
+| 3 | Focus lost after "Ask a parent" (the button is replaced) | Minor | Focus moves to the row's caption; one `role="status"` line announces "{reward}: Ready when a parent agrees" (approved words). Test |
+| 4 | Child View never refreshed | Minor | `refetchOnWindowFocus: true` on its children query |
+| 5 | A rewards load failure looked like an empty catalogue | Minor | Spinner and the shipped "Couldn't load rewards" error card on both pages. Test |
+| 6 | A failed refresh released the lock: window for a duplicate request | Minor | The row stays locked until the next successful load. Test; mutation (check removed) fails it |
+| 7 | A live region on every caption | Nit | Removed; one status line (3) |
+| 8 | E4b said a toast names the child | Nit | Design corrected (§5) |
+| 9 | Raw "Could not request" could reach a toast | Nit | Empty message: callers show the shipped wording |
+| 10 | Test hygiene: an empty assertion, no RTL cleanup, e2e cleanup not in `finally` | Nit | Fixed |
+| 11 | Children imported `RewardTile` from the Rewards page | Nit | Moved to `components/rewards/RewardTile.jsx` (Rewards re-exports it) |
 
