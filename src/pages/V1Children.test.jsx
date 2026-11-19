@@ -3,7 +3,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { render, screen, within, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -90,11 +90,10 @@ describe('Children page (§2)', () => {
 
   it('treats: hidden ones shown tagged, other children\'s left out; Edit opens the reward form', async () => {
     mount(Children);
-    const tiles = (await screen.findByRole('heading', { name: 'Weekly treats to choose from' })).closest('div.p-4, div[class*="p-4"]');
+    await screen.findByRole('heading', { name: 'Weekly treats to choose from' });
     expect(screen.getByText('Secret')).toBeTruthy();
     expect(screen.getByText('Hidden from children')).toBeTruthy();
     expect(screen.queryByText('Omar only')).toBeNull();
-    expect(tiles).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Edit Movie night' }));
     expect(await screen.findByRole('heading', { name: 'Create or edit reward' })).toBeTruthy();
   });
@@ -138,7 +137,7 @@ describe('Children page (§2)', () => {
 });
 
 function cleanupAndMount(url) {
-  document.body.innerHTML = '';
+  cleanup();
   mount(Children, url);
 }
 
@@ -192,6 +191,43 @@ describe('Child View page (§3)', () => {
     expect(requestReward).toHaveBeenCalledTimes(1);
     await act(async () => { resolveRefetch(); });
     await waitFor(() => expect(btn.disabled).toBe(false));
+  });
+
+  it('after a request, focus moves to the row and one status line announces it (code review of #61)', async () => {
+    requestReward.mockResolvedValue({ reward_stack: [] });
+    const client = mount(ChildView);
+    const btn = await screen.findByRole('button', { name: 'Ask a parent for Gaming time' });
+    btn.focus();
+    vi.spyOn(client, 'refetchQueries').mockImplementation(async () => {
+      // The fresh data the refetch would bring: Gaming time is now requested.
+      client.setQueryData(['children'], [omar, { ...lara, reward_stack_priced: [{ rewardId: 'r2', name: 'Gaming time', cost: 20, stackIndex: 0 }] }]);
+    });
+    fireEvent.click(btn);
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Gaming time: Ready when a parent agrees'));
+    await waitFor(() => expect(document.activeElement.textContent).toBe('20 points · Ready when a parent agrees'));
+    expect(document.querySelectorAll('[aria-live]').length).toBe(0);
+  });
+
+  it('a failed refresh keeps the row locked until data loads again (code review of #61)', async () => {
+    requestReward.mockResolvedValue({ reward_stack: [] });
+    const client = mount(ChildView);
+    const btn = await screen.findByRole('button', { name: 'Ask a parent for Gaming time' });
+    vi.spyOn(client, 'refetchQueries').mockResolvedValue(undefined);
+    vi.spyOn(client, 'getQueryState').mockReturnValue({ status: 'error' });
+    fireEvent.click(btn);
+    await waitFor(() => expect(requestReward).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r, 10));
+    expect(btn.disabled).toBe(true);
+    fireEvent.click(btn);
+    expect(requestReward).toHaveBeenCalledTimes(1);
+  });
+
+  it('a rewards load failure is not shown as an empty catalogue', async () => {
+    const { Reward } = await import('@/api/entities');
+    Reward.list.mockRejectedValueOnce(new Error('down'));
+    mount(ChildView);
+    expect(await screen.findByText("Couldn't load rewards")).toBeTruthy();
+    expect(screen.queryByText('No rewards created yet.')).toBeNull();
   });
 
   it('E4b: a sibling\'s same reward is not locked by a request in flight', async () => {

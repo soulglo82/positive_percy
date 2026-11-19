@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import Logo from "@/components/brand/Logo";
 import { sortRewardsForParent } from "@/lib/rewardOrder";
 import { REWARD_TEMPLATES } from "@/data/reward-templates";
-import RewardIcon from "../components/rewards/RewardIcon";
+import RewardTile from "../components/rewards/RewardTile";
 import RewardForm from "../components/rewards/RewardForm";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
@@ -29,25 +29,9 @@ const FILTERS = [
   { key: 'visible', label: 'Visible', keep: (r) => r.visible_to_child !== false },
   { key: 'hidden', label: 'Hidden', keep: (r) => r.visible_to_child === false },
 ];
-const pointsWord = (n) => (n === 1 ? 'point' : 'points');
 
-export function RewardTile({ reward, onEdit }) {
-  const visible = reward.visible_to_child !== false;
-  return (
-    <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-card p-3">
-      <RewardIcon reward={reward} size="lg" />
-      <p className="break-words font-display font-bold text-foreground">{reward.title}</p>
-      <p className="text-sm text-muted-foreground tabular-nums">{reward.cost_points} {pointsWord(reward.cost_points)}</p>
-      <span className={cn('self-start rounded-md border px-2 py-0.5 text-xs font-semibold',
-        visible ? 'border-border bg-muted text-primary' : 'border-border bg-card text-muted-foreground')}>
-        {visible ? 'Visible to children' : 'Hidden from children'}
-      </span>
-      <Button variant="outline" className="mt-auto w-full text-primary" aria-label={`Edit ${reward.title}`} onClick={() => onEdit(reward)}>
-        Edit
-      </Button>
-    </div>
-  );
-}
+// Moved to components (code review of #61); re-exported for existing imports.
+export { RewardTile };
 
 export default function Rewards() {
   const { user } = useAuth();

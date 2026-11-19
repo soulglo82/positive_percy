@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Child } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { correctAward, refreshPoints } from "@/lib/points";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,6 +41,12 @@ export const FILTERS = [
 // Calendar parts of an instant in the family's zone (owner, PR #62: days,
 // Today/Yesterday and times use the same zone as the weekly totals). With no
 // zone yet, the browser's.
+// A zone this browser does not know falls back to the browser's own (code
+// review of #62: an older browser must not fail to draw the page).
+export function safeZone(timeZone) {
+  if (!timeZone) return undefined;
+  try { new Intl.DateTimeFormat('en-GB', { timeZone }); return timeZone; } catch { return undefined; }
+}
 function partsIn(date, timeZone) {
   const f = new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
   const p = Object.fromEntries(f.formatToParts(date).map((x) => [x.type, x.value]));
@@ -85,9 +91,6 @@ export default function Activity() {
   const [correcting, setCorrecting] = useState(false);
   const [selectedChildId, setSelectedChildId] = useState("all");
   const [activeFilter, setActiveFilter] = useState("all");
-  const [extra, setExtra] = useState([]);
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
 
   const { data: children = [] } = useQuery({
     queryKey: ['children'],
@@ -96,12 +99,14 @@ export default function Activity() {
   });
 
   // Weekly summary. The server works out the week in the family's timezone.
-  const { data: summary } = useQuery({
+  // The week's figures and the family's zone. The log waits for it, so days
+  // are grouped in the family's zone from the first render.
+  const { data: summary, isLoading: summaryLoading, isError: summaryError, refetch: refetchSummary } = useQuery({
     queryKey: ['weeklySummary'],
     refetchOnWindowFocus: true,
     queryFn: async () => {
       const res = await fetch('/api/summary', { headers: { 'Authorization': `Bearer ${getToken()}` } });
-      if (!res.ok) return null;
+      if (!res.ok) throw new Error('Failed to load summary');
       return res.json();
     },
     enabled: !!user,
@@ -115,38 +120,33 @@ export default function Activity() {
     return res.json();
   };
 
-  // First page per filter and child; earlier pages are appended below it.
-  const { data: firstPage = [], isLoading, isError, refetch } = useQuery({
+  // Pages per filter and child (code review of #62). A refresh (Correct, Undo,
+  // another parent) reloads every loaded page, so the list never collapses or
+  // skips rows; rows are de-duplicated by kind and id across pages.
+  const feed = useInfiniteQuery({
     queryKey: ['activityFeed', activeFilter, selectedChildId],
-    queryFn: async () => {
-      const events = await fetchFeed(0);
-      setExtra([]); // a refreshed first page starts the list again
-      return events;
-    },
-    // Keep the page on screen while another filter or child loads.
+    queryFn: ({ pageParam }) => fetchFeed(pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (last, pages) => (last.length === PAGE_SIZE ? pages.reduce((n, p) => n + p.length, 0) : undefined),
+    // Keep the list on screen while another filter or child loads (dimmed).
     placeholderData: (previous) => previous,
     enabled: !!user,
   });
-  const allEvents = [...firstPage, ...extra];
-  // Before any earlier page is loaded, a full first page means there may be more.
-  const canLoadMore = extra.length ? hasMore : firstPage.length === PAGE_SIZE;
+  const seen = new Set();
+  const allEvents = (feed.data?.pages || []).flat().filter((e) => {
+    const key = e.type + '-' + e.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
-  const loadMore = async () => {
-    setLoadingMore(true);
-    try {
-      const more = await fetchFeed(allEvents.length);
-      setExtra((prev) => [...prev, ...more]);
-      setHasMore(more.length === PAGE_SIZE);
-    } catch {
-      toast.error("Couldn't load activity");
-    }
-    setLoadingMore(false);
-  };
+  if ((feed.isLoading && !allEvents.length) || summaryLoading) {
+    return <div className="min-h-screen p-6"><LoadingSpinner message="Loading activity..." /></div>;
+  }
+  if (feed.isError) return <div className="min-h-screen p-6"><ErrorCard message="Couldn't load activity" onRetry={feed.refetch} /></div>;
+  if (summaryError) return <div className="min-h-screen p-6"><ErrorCard message="Couldn't load activity" onRetry={refetchSummary} /></div>;
 
-  if (isLoading && !firstPage.length) return <div className="min-h-screen p-6"><LoadingSpinner message="Loading activity..." /></div>;
-  if (isError) return <div className="min-h-screen p-6"><ErrorCard message="Couldn't load activity" onRetry={refetch} /></div>;
-
-  const timeZone = summary?.timezone || undefined;
+  const timeZone = safeZone(summary?.timezone);
   // Group events by day in the family's zone, newest first.
   const groups = [];
   for (const event of allEvents) {
@@ -207,7 +207,7 @@ export default function Activity() {
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex flex-wrap gap-2" role="group" aria-label="Show activity">
                 {FILTERS.map(({ key, label }) => (
-                  <button key={key} type="button" aria-pressed={activeFilter === key} onClick={() => { setExtra([]); setActiveFilter(key); }}
+                  <button key={key} type="button" aria-pressed={activeFilter === key} onClick={() => setActiveFilter(key)}
                     className={cn('min-h-11 rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                       activeFilter === key ? 'border-2 border-selected-border bg-selected text-primary' : 'border border-border bg-card text-foreground hover:bg-accent')}>
                     {label}
@@ -216,7 +216,7 @@ export default function Activity() {
               </div>
               {children.length > 1 && (
                 <div className="w-44">
-                  <Select value={selectedChildId} onValueChange={(v) => { setExtra([]); setSelectedChildId(v); }}>
+                  <Select value={selectedChildId} onValueChange={setSelectedChildId}>
                     <SelectTrigger aria-label="Child">
                       <SelectValue placeholder="All Children" />
                     </SelectTrigger>
@@ -231,6 +231,7 @@ export default function Activity() {
               )}
             </div>
 
+            <div aria-busy={feed.isPlaceholderData} className={feed.isPlaceholderData ? 'rounded-lg bg-muted' : undefined}>
             {groups.length === 0 ? (
               <div className="py-12 flex flex-col items-center gap-3 text-center text-muted-foreground">
                 <Logo size={48} decorative />
@@ -251,10 +252,11 @@ export default function Activity() {
                 ))}
               </div>
             )}
-            {canLoadMore && (
+            </div>
+            {feed.hasNextPage && (
               <div className="flex justify-center">
-                <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
-                  {loadingMore ? 'Loading...' : 'Load earlier activity'}
+                <Button variant="outline" onClick={() => feed.fetchNextPage().catch(() => toast.error("Couldn't load activity"))} disabled={feed.isFetchingNextPage}>
+                  {feed.isFetchingNextPage ? 'Loading...' : 'Load earlier activity'}
                 </Button>
               </div>
             )}
@@ -341,7 +343,7 @@ function NarrativeItem({ event, timeZone, canCorrect, onCorrect }) {
   const { lead, what, sub } = rowText(event, timeZone);
 
   return (
-    <div className="flex items-center gap-3 px-3 py-3 border-b border-border last:border-b-0">
+    <div data-row-key={`${event.type}-${event.id}`} className="flex items-center gap-3 px-3 py-3 border-b border-border last:border-b-0">
       <RowIcon event={event} />
       <div className="flex-1 min-w-0">
         <p className="text-sm leading-snug break-words">

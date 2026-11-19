@@ -220,15 +220,22 @@ test('child view: choosing a reward is a request, never a spend', async ({ page 
   await expect(page.getByRole('button', { name: /^Spend|^Edit/ })).toHaveCount(0);
   await checkScreen(page, 'child view', testInfo);
   const before = (await (await page.request.get('/api/children', { headers })).json()).find((c) => /^Alexandra/.test(c.name));
-  await page.getByRole('button', { name: 'Ask a parent for Screen time, 30 minutes' }).click();
-  await expect(page.getByText('20 points · Ready when a parent agrees')).toBeVisible();
-  const after = (await (await page.request.get('/api/children', { headers })).json()).find((c) => c.id === before.id);
-  expect(after.total_points).toBe(before.total_points); // nothing was spent
-  expect(after.available_points).toBe(before.available_points - 20);
-  await checkScreen(page, 'child view requested', testInfo);
-  // Leave the family as it was for the other screens.
-  const item = after.reward_stack_priced.find((i) => i.name === 'Screen time, 30 minutes');
-  await page.request.delete(`/api/children/${after.id}/stack/${item.stackIndex}?reward_id=${item.rewardId}`, { headers });
+  try {
+    await page.getByRole('button', { name: 'Ask a parent for Screen time, 30 minutes' }).click();
+    await expect(page.getByText('20 points · Ready when a parent agrees')).toBeVisible();
+    const after = (await (await page.request.get('/api/children', { headers })).json()).find((c) => c.id === before.id);
+    expect(after.total_points).toBe(before.total_points); // nothing was spent
+    expect(after.available_points).toBe(before.available_points - 20);
+    await checkScreen(page, 'child view requested', testInfo);
+  } finally {
+    // Leave the family as it was for the other screens, even after a failure.
+    const now = (await (await page.request.get('/api/children', { headers })).json()).find((c) => c.id === before.id);
+    for (const item of [...(now.reward_stack_priced || [])].reverse()) {
+      if (item.name === 'Screen time, 30 minutes') {
+        await page.request.delete(`/api/children/${now.id}/stack/${item.stackIndex}?reward_id=${item.rewardId}`, { headers });
+      }
+    }
+  }
 });
 
 test('activity, with the log open and the child filter open', async ({ page }, testInfo) => {
@@ -250,7 +257,10 @@ test('activity, with the log open and the child filter open', async ({ page }, t
   await checkScreen(page, 'activity log', testInfo);
   await page.getByRole('combobox', { name: 'Child' }).click();
   await checkScreen(page, 'activity child select', testInfo);
-  await closeDialog(page);
+  // The child filter is applied on the server (code review of #62).
+  const narrowed = page.waitForRequest((r) => r.url().includes('/api/activity-feed') && r.url().includes('child_id='));
+  await page.getByRole('option', { name: 'Sam' }).click();
+  await narrowed;
 });
 
 test('rewards and its dialogs', async ({ page }, testInfo) => {

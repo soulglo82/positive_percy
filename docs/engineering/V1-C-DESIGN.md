@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.3 |
+| Version | 1.4 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-c-activity`, stacked on V1-B `claude/percy-v1-b-children`) |
 | Status | Reviewed (§8); build may start |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.4 | 2026-11-19 | Post-build code review (§10); §2, §3.1 and §6 brought in line with §9 |
 | 1.3 | 2026-11-19 | Owner review of PR #62 (§9): A1 accepted with the year when not this year; A2 changed to "Reward redeemed"; A3 kept; A4 changed to the title at completion (from the award's note, linked rows only, "a goal" otherwise); days, Today/Yesterday and times in the family's zone |
 | 1.2 | 2026-11-19 | Build: approved row icons (tick, heart, gift; Undo arrow or info for other kinds); "This week" numbers stay centred (owner's earlier direction); feed `limit` capped at 200 |
 | 1.1 | 2026-11-19 | Peer review (§8): filters follow the approved design and the C7 rule (Earned and Goals are separate and exclude undone awards; Spent is redemptions only); query shape fixed; legacy category rows classified; child filter on the server; factual fixes |
@@ -41,10 +42,10 @@
 | --- | --- | --- | --- |
 | A goal completion (award with a completion) | `{Child} completed “{goal title}”` | `Today’s Goal · {category} · {time}` | `+n` |
 | Other award | `{Child} earned {category}` | `{note} · {time}`, or `{time}` when there is no note | `+n` |
-| Spend | `{Child} redeemed {reward}` | `Parent-confirmed reward · {time}` (owner item A2) | `−n` |
+| Spend | `{Child} redeemed {reward}` | `Reward redeemed · {time}` (A2, §9) | `−n` |
 | Starting, correction, undo, deduction | The shipped wording ("started with", "had a one-off", "undo:", "had an earlier adjustment for", "adjusted") | `{time}` | Signed |
 
-  - Time is `h:mm a` in the browser's zone (a change from the shipped "MMM d, h:mm a": the date is now in the group header, as approved).
+  - Time is `h:mm a` in the family's zone (§9; a change from the shipped "MMM d, h:mm a": the date is now in the group header, as approved).
   - An undone row's amount is struck through, with " · undone" after the time (shipped).
   - An award in the category "Other" with a note reads "{Child} earned {note}" (shipped swap kept).
 - **Corrections:** "Correct" on eligible awards (this week, not undone) stays, with its shipped dialog.
@@ -66,7 +67,7 @@
   - **C7 is kept:** an undone award never appears as earned (server/test/undo.test.js "C7" stays green, unchanged). The plan's "keep the undone flag" concern is met because the filtered lists never contain undone rows, and All keeps the flag.
   - **Legacy rows:** `kind = 'award'` rows whose category is 'starting points', 'balance correction' or 'undo' (the rows `effective_point_events` excludes, migration 009) are typed 'starting', 'correction' and 'undo', so they are never 'earn'.
 - **Child:** an optional `child_id` (UUID) narrows the set on the server, so a page is never cut before the child filter (review 10).
-- **Goal fields** on point-event rows come from a `LEFT JOIN today_goal_completions x ON x.point_event_id = p.id`, then `LEFT JOIN today_goals g ON g.id = x.goal_id`. They are `goal_completion_id` and `goal_title` (the goal's current title; the title at completion is not stored). The category is the row's existing `label`, which the completion wrote. Redemption rows carry NULLs.
+- **Goal fields** on point-event rows come from a `LEFT JOIN today_goal_completions x ON x.point_event_id = p.id`, then `LEFT JOIN today_goals g ON g.id = x.goal_id`. The field is `goal_completion_id` (a `LEFT JOIN today_goal_completions` only; no join to `today_goals`). The title shown is the one saved at completion in the award's note (§9). The category is the row's existing `label`, which the completion wrote. Redemption rows carry NULLs.
   - An undone completion still tags its award, which is also undone: under All it shows as a goal completion with its amount struck through.
   - The join is unique: `today_goal_completions(point_event_id)` has a partial unique index (migration 014), so a row can never be duplicated.
 - An unknown filter value is treated as "all" (unchanged).
@@ -120,7 +121,7 @@
   - No design-only lines.
 - **E2E:** the existing Activity test is updated: the log is open by default (no "Activity log" button click), and the centring check uses the new boxes instead of `.bg-earn-soft`/`.bg-star-soft`. Axe and 44 px checks at 4 sizes.
 - **Evidence:** reference vs React at 390/834/1280.
-- **One class not covered:** time-zone differences between the browser and the family (rows use the browser zone, the week uses the family zone; unchanged from today).
+- **One class not covered:** a family zone the browser does not know: the page falls back to the browser's zone (tested), so days may then differ from the weekly totals.
 
 ## 7. Owner items
 
@@ -158,4 +159,17 @@
 | TZ | Use the family's zone for day groups, Today/Yesterday and times | `/api/summary` returns `timezone` (the family's, `UTC` when unset); days and times are formatted in it with `Intl`. Test: 16:30 UTC is "Today · Thursday 19 November" in Singapore and "Yesterday · Wednesday 18 November" in London. Mutations (zone ignored; note trusted without a completion link) fail tests |
 
 New copy introduced by these decisions: "Reward redeemed" (owner's wording) and the neutral "a goal" (owner asked for a neutral description; this exact wording is for approval).
+
+## 10. Post-build code review (fresh context, PR #62 at `9741ca3`)
+
+| # | Finding | Severity | Resolution |
+| --- | --- | --- | --- |
+| 1 | `?filter=constructor` (or `__proto__`, `toString`, `hasOwnProperty`) read an inherited property into the SQL: 500 | Minor | Own keys only (`Object.hasOwn`); unknown values are All. Test (4 values) |
+| 2 | A refresh (Correct, Undo, another parent) collapsed loaded pages; a load during a refresh could skip rows | Minor | `useInfiniteQuery`: a refresh reloads every loaded page. Test fails on the old code |
+| 3 | Offset paging could show a row twice | Minor | Rows de-duplicated by kind and id across pages. Test fails on the old code |
+| 4 | The old filter's rows showed under the new chip while loading | Minor | Shown on a muted background with `aria-busy` while placeholder data shows (no opacity on content: token rule) |
+| 5 | A zone the browser does not know crashed the page | Minor | `safeZone` falls back to the browser's zone. Test |
+| 6 | Tests that pass with the feature broken: look-alike note prefix, child filter never selected, Correct untested | Minor | Real prefix; e2e selects a child and waits for `child_id` in the request; Correct render test (mutation `canCorrect = false` fails it) |
+| 7 | Device zone before the summary loads; a failed summary showed zeros | Nit | The page waits for the summary; its failure shows the shipped "Couldn't load activity" card. Test |
+| 8 | Stale design text; an extra round trip for the zone | Nit | §2, §3.1, §6 corrected; the zone comes with the week-start query |
 

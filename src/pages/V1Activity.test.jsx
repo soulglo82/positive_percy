@@ -1,14 +1,14 @@
 // V1-C (docs/engineering/V1-C-DESIGN.md §2): approved copy, row shapes, day
 // labels, the four server filters, the child filter and paging.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('@/api/entities', () => ({ Child: { list: vi.fn(async () => kids) } }));
 vi.mock('@/lib/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u' } }), getToken: () => 't' }));
 
-import Activity, { dayLabel, rowText, rowIconKind, goalTitleOf } from './Activity';
+import Activity, { dayLabel, rowText, rowIconKind, goalTitleOf, safeZone } from './Activity';
 
 const kids = [{ id: 'c1', name: 'Lara' }, { id: 'c2', name: 'Omar' }];
 const now = new Date();
@@ -23,6 +23,16 @@ let feedCalls;
 function mount() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={client}><MemoryRouter><Activity /></MemoryRouter></QueryClientProvider>);
+  return client;
+}
+// A feed of `n` rows on the first page and `second` on the next.
+function pagedFeed(first, second, summary = { childStats: [], goalsCompleted: 0 }) {
+  global.fetch = vi.fn(async (url) => {
+    if (url.startsWith('/api/summary')) return { ok: true, json: async () => summary };
+    const p = new URL(url, 'http://x').searchParams;
+    feedCalls.push(p);
+    return { ok: true, json: async () => (p.get('offset') === '0' ? first() : second()) };
+  });
 }
 
 beforeEach(() => {
@@ -108,7 +118,55 @@ describe('Activity screen', () => {
   });
 });
 
+describe('paging and refresh (code review of #62)', () => {
+  const full = () => Array.from({ length: 50 }, (_, i) => ({ ...ROWS[1], id: 'p' + i }));
+  it('a refresh keeps every loaded page (no collapse back to the first page)', async () => {
+    pagedFeed(full, () => [ROWS[2]]);
+    const client = mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Load earlier activity' }));
+    expect(await screen.findByText('Movie night')).toBeTruthy();
+    await act(async () => { await client.invalidateQueries({ queryKey: ['activityFeed'] }); });
+    await waitFor(() => expect(feedCalls.filter((p) => p.get('offset') === '50').length).toBe(2));
+    expect(screen.getByText('Movie night')).toBeTruthy();
+  });
+  it('a row that moved onto the next page is shown once', async () => {
+    pagedFeed(full, () => [{ ...ROWS[1], id: 'p49' }, ROWS[2]]);
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Load earlier activity' }));
+    await screen.findByText('Movie night');
+    expect(document.querySelectorAll('[data-row-key="earn-p49"]').length).toBe(1);
+  });
+  it('a failed summary shows the error card, not zeros', async () => {
+    global.fetch = vi.fn(async (url) => (url.startsWith('/api/summary') ? { ok: false, json: async () => ({}) } : { ok: true, json: async () => ROWS }));
+    mount();
+    expect(await screen.findByText("Couldn't load activity")).toBeTruthy();
+    expect(screen.queryByText('Points earned')).toBeNull();
+  });
+});
+
+describe('Correct (A2 history)', () => {
+  it('offered on this week\'s awards and goal awards, not on undone, spends or older rows', async () => {
+    const week = at(0, 0, 6);
+    pagedFeed(() => [
+      { ...ROWS[0] },
+      { ...ROWS[1] },
+      { ...ROWS[1], id: 'u1', undone: true, child_name: 'Undone' },
+      { ...ROWS[1], id: 'o1', child_name: 'Old', created_date: at(9, 0, 9) },
+      { ...ROWS[2] },
+    ], () => [], { weekStart: week, childStats: [], goalsCompleted: 0 });
+    mount();
+    await screen.findByText('Movie night');
+    const names = screen.getAllByRole('button', { name: /^Correct / }).map((b) => b.getAttribute('aria-label'));
+    expect(names).toEqual(['Correct Lara award of 1 points', 'Correct Omar award of 1 points']);
+  });
+});
+
 describe('row text and day labels', () => {
+  it('an unknown zone falls back to the browser\'s', () => {
+    expect(safeZone('Europe/London')).toBe('Europe/London');
+    expect(safeZone('Mars/Olympus')).toBeUndefined();
+    expect(safeZone(undefined)).toBeUndefined();
+  });
   it('day labels: Today, Yesterday, the plain day, and the year when not this year (A1)', () => {
     const ref = new Date('2026-11-18T04:00:00Z');
     const z = 'Europe/London';

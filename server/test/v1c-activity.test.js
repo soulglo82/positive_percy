@@ -31,7 +31,7 @@ describe.skipIf(!hasDb)('V1-C: activity feed and weekly goals count', () => {
     ev.goal = done.event;
     ev.plain = await award(kid, 3, 'Kindness', 'Helped a friend');
     // A plain award whose note looks like a goal must not be tagged (E4).
-    ev.lookalike = await award(kid, 2, 'Kindness', 'Today’s Goal · Finish homework');
+    ev.lookalike = await award(kid, 2, 'Kindness', 'Today’s Goal: Finish homework'); // the real prefix
     ev.undone = await award(kid, 9);
     await call('POST', `/api/point-events/${ev.undone.id}/undo`, { request_id: rid() });
     const reward = (await call('POST', '/api/rewards', { title: 'Movie night', cost_points: 2 })).json;
@@ -90,6 +90,15 @@ describe.skipIf(!hasDb)('V1-C: activity feed and weekly goals count', () => {
     const page = await (await call('GET', `/api/activity-feed?filter=earned&limit=1&offset=0&child_id=${sib.id}`)).json;
     expect(page.map((r) => r.child_id)).toEqual([sib.id]);
     expect((await call('GET', '/api/activity-feed?child_id=nope')).status).toBe(400);
+  });
+
+  it('a filter naming a built-in property is treated as All, not an error (code review of #62)', async () => {
+    const all = (await call('GET', '/api/activity-feed?filter=all&limit=5')).json;
+    for (const f of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+      const r = await call('GET', `/api/activity-feed?filter=${f}&limit=5`);
+      expect(r.status, f).toBe(200);
+      expect(r.json.map((x) => x.id)).toEqual(all.map((x) => x.id));
+    }
   });
 
   it('paging follows the filtered set in a stable order (E7)', async () => {
