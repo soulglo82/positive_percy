@@ -40,7 +40,7 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     for (const bad of ['phosphor:gear:duotone', 'gift', '', 42, [GIFT], 'phosphor:gift:regular', ' phosphor:gift:duotone']) {
       const r = await reward({ title: 'Bad ' + JSON.stringify(bad), icon_key: bad });
       expect(r.status, JSON.stringify(bad)).toBe(422);
-      expect(r.json.error).toBe('Choose one of the icons shown'); // the shipped icon message
+      expect(r.json.error).toBe('Choose one of the icons shown.'); // owner-approved C4
     }
     expect((await call('GET', '/api/rewards')).json.length).toBe(before);
   });
@@ -140,7 +140,7 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     expect(after.reward_stack).toEqual([]);
   });
 
-  it('C4: "Not now" uses the stored position, and refuses if the stack changed', async () => {
+  it('C4: "Not this time" uses the stored position, and refuses if the stack changed', async () => {
     const kid = (await call('POST', '/api/children', { name: 'Shifter', total_points: 50 })).json;
     const gone = (await reward({ title: 'Gone', cost_points: 1 })).json;
     const keep = (await reward({ title: 'Keep', cost_points: 2 })).json;

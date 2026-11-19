@@ -242,12 +242,16 @@
 
 ## 12. Owner-approved wording (2026-11-19)
 
+**This section supersedes every earlier wording in this note** (§4 and §10–§11 mention "Create or edit reward", the library description, "Not now" and "Agree to {n} reward(s)"; they are history).
+
+Post-build code review of the wording commit: C4's full stop added; the total is the Approve button's description (`aria-describedby`) and is announced when it changes; C3 follows RewardIcon's precedence for an unknown icon key; a template still says "Add reward" (test).
+
 | Item | Approved wording | Where |
 | --- | --- | --- |
 | C1 | "Add reward" (new, including from a template) / "Edit reward" (existing); description "Name the reward, set its points cost and choose an icon." | `RewardForm` |
 | C2 | No technical Phosphor / 71-icon subtitle (the old description naming the "approved library" is replaced by C1) | `RewardForm` |
 | C3 | "Current image" for a reward with a photo and no picker icon; otherwise "Current icon" (icon, emoji or the gift) | `currentArtLabel` |
-| C4 | "Choose one of the icons shown" (unchanged) | server 422 |
+| C4 | "Choose one of the icons shown." (full stop added, as approved; shared with behaviour icons) | server 422 |
 | C5 | "{Name} asked for"; "Not this time" (removes the request, spends nothing); "Approve 1 reward" / "Approve N rewards"; total "This will spend {total} point(s) from {Name}'s balance."; "The requests changed. Check them again." | `REQUEST_COPY`, `SpendRewardsModal` |
 | C6 | "1 icon matches your search" (unchanged); "No rewards match this filter." | `RewardPicker`, `Rewards` |
 
