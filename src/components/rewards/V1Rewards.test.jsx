@@ -74,7 +74,7 @@ describe('RewardForm', () => {
     const { d } = openForm();
     expect(within(d).getByRole('heading', { name: 'Add reward' })).toBeTruthy();
     expect(d.textContent).toContain('Name the reward, set its points cost and choose an icon.');
-    expect(d.textContent).not.toMatch(/approved library|Phosphor|71/);
+    expect(d.textContent).not.toMatch(/approved library|Phosphor|71-icon/);
     expect(d.textContent).toContain('The reward');
     expect(d.textContent).toContain('Set the name and point cost.');
     expect(within(d).getByLabelText('Reward name').getAttribute('placeholder')).toBe('e.g. Choose a movie');
@@ -152,6 +152,10 @@ describe('Picker opens where the chosen icon is', () => {
 });
 
 describe('Approved wording C1 and C3', () => {
+  it('a reward started from a template is still "Add reward"', () => {
+    const { d } = openForm({ initialTemplate: { title: 'Extra Screen Time', cost_points: 10, emoji: '📱' } });
+    expect(within(d).getByRole('heading', { name: 'Add reward' })).toBeTruthy();
+  });
   it('editing an existing reward says "Edit reward"', () => {
     const { d } = openForm({ reward: { id: 'r1', title: 'Cinema', cost_points: 8, icon_key: null, emoji: '🎬' } });
     expect(within(d).getByRole('heading', { name: 'Edit reward' })).toBeTruthy();
@@ -161,6 +165,8 @@ describe('Approved wording C1 and C3', () => {
     expect(currentArtLabel({ image_url: '/u/a.png', icon_key: 'phosphor:pizza:duotone' })).toBe('Current icon');
     expect(currentArtLabel({ emoji: '🍕' })).toBe('Current icon');
     expect(currentArtLabel(null)).toBe('Current icon');
+    // An unknown icon key draws the photo (RewardIcon's precedence), so it is the image.
+    expect(currentArtLabel({ image_url: '/u/a.png', icon_key: 'phosphor:not-real:duotone' })).toBe('Current image');
     const { d } = openForm({ reward: { id: 'r2', title: 'Photo', cost_points: 3, image_url: '/u/p.png' } });
     expect(d.textContent).toContain('Current image');
   });
@@ -204,6 +210,8 @@ describe('Parent confirmation of requests (D5, R4)', () => {
     expect(within(d).getByRole('heading', { name: 'Lara asked for' })).toBeTruthy();
     // 5 + 8: the same items and prices the confirmation sends.
     expect(d.querySelector('[data-requests-total]').textContent.trim()).toBe("This will spend 13 points from Lara's balance.");
+    // The total is read with the Approve button.
+    expect(within(d).getByRole('button', { name: 'Approve 2 rewards' }).getAttribute('aria-describedby')).toBe('requests-total');
     fireEvent.click(within(d).getByRole('button', { name: 'Approve 2 rewards' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0];

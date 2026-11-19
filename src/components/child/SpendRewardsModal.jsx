@@ -27,7 +27,7 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
 
   // V1-D: points not already set aside for the child's requests (server value).
   const available = child.available_points ?? child.total_points;
-  // The child's requests, priced by the server; only a parent's "Agree" spends them (D5).
+  // The child's requests, priced by the server; only a parent's "Approve" spends them (D5).
   const requests = child.reward_stack_priced || [];
 
   const agree = async () => {
@@ -121,10 +121,10 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
                   </li>
                 ))}
               </ul>
-              <p className="text-sm font-semibold text-foreground" data-requests-total>
+              <p id="requests-total" className="text-sm font-semibold text-foreground" data-requests-total aria-live="polite">
                 {REQUEST_COPY.total(requests.reduce((n, item) => n + item.cost, 0), child.name)}
               </p>
-              <Button className="w-full" disabled={busy} onClick={agree}>{REQUEST_COPY.agree(requests.length)}</Button>
+              <Button className="w-full" disabled={busy} onClick={agree} aria-describedby="requests-total">{REQUEST_COPY.agree(requests.length)}</Button>
             </section>
           )}
           {availableRewards.length === 0 ? (
