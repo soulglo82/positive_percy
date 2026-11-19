@@ -2,10 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.0 |
+| Version | 1.1 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
-| Status | Draft, for fresh-context peer review, then owner approval. **Nothing in this note is built** |
+| Status | Reviewed (fresh-context peer review adopted, v1.1; §10 supersedes earlier sections where they conflict). **For owner approval. Nothing in this note is built** |
 | Binding inputs | Approved HTML blob `9de1df2`: Home "Saving for something bigger / 120 of 300 points saved / 180 to go"; Children "Saving for something bigger" with Edit, "Saved: 120", "300 points · Bigger achievement"; Child View "90 Ready to use / 120 Saved towards New bike / My next big adventure / 180 points to go"; its own note that the "savings/weekly-pool transfer … is a visual concept until its authorised ledger contract is implemented". Owner direction (2026-11-19): include the real ledger in V1; **D7: bigger goals by explicit designation, never by price**. Plan v1.1 §8.3 (do not reuse `family_goals` or `/contribute`) |
 
 ## Change log
@@ -13,6 +13,7 @@
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 2026-11-19 | First draft |
+| 1.1 | 2026-11-19 | Peer review: 5 blocking and 7 non-blocking findings, all adopted (§10) |
 
 ## 1. What it must do
 
@@ -136,3 +137,29 @@ CREATE INDEX savings_events_child ON savings_events (family_code, child_id, rewa
 | O3 | May a child ask to save (a request a parent approves)? | After launch |
 | O4 | Copy for: "Save N points", "Move N back", the "Bigger goal" switch, the Activity rows, the error messages | Engineering proposes; the owner approves |
 | O5 | Can a child save towards more than one bigger goal at once? | Yes. The design supports several; Home shows the one with the most saved |
+
+## 10. Amendments in v1.1 (peer review; these supersede §2–§8 where they conflict)
+
+**Writers that must run the savings check** (listed from the code by the reviewer): `stack/add`, redeem, `stack/confirm`, `reverseAward` (so also Today's Goals undo), and redemption undo. Award, Today's Goals completion and stack remove only add points or free them.
+
+| # | Finding | Ruling |
+| --- | --- | --- |
+| B1 | **Blocking.** A goal that is both saved for and requested would be counted twice | **A bigger goal cannot be requested through the reward stack.** `stack/add` refuses it. It is redeemed only by a parent, through "Redeem" on the Children page goal, and only when `saved + available ≥ cost`. There is no double reservation and no stack-path savings rule. Child View shows "Saved towards" and "to go" for it, not a request button |
+| B2 | **Blocking.** One request id cannot cover several derived events, and nothing links a `spend` to its redemption | `savings_events.request_id` is **nullable**, unique per family only when set. `save`, `release` and their undos carry it, claimed through `idempotency_keys` (the existing `priorRequest`/`rememberRequest`, extended beyond `point_events`). Derived events (`spend`, `undo` of a spend) have no request id and carry `redemption_id UUID REFERENCES redemptions(id)`. Redemption undo finds its `spend` through that |
+| B3 | **Blocking.** An undo could restore savings to a goal that no longer qualifies | Redemption undo restores savings **only if** the reward is still a spendable bigger goal for that child; otherwise the points return to available. The savings undo endpoint undoes only `save` and `release`, with the same I4 check; `spend`, `reward_removed` and `undo` cannot be undone |
+| B4 | **Blocking.** I2 is not a stored invariant: a cost rise breaks it without any write | I2 is restated as a **write-time rule**: every write that lowers available points checks `stack + saved ≤ total` under the child lock. Reads clamp `available_points` at 0, as today. When the clamp applies, Home and Child View show 0 available; requests stay pending; and confirm re-checks (and refuses with the existing message). A property test asserts the write-time rule, not a stored one |
+| B5 | **Blocking.** Lock ordering and deadlock risk from multi-child `reward_removed` writes | **Read-time filtering instead of writes.** A child's *effective* savings count only rewards that still exist, are bigger goals and are spendable for that child (the same filter as `pricedStack`). Deleting, un-designating or reassigning a reward writes **no** savings rows and locks no children. On that child's next locked savings write, the stale savings are swept with a `reward_removed` event (inside the single child lock). `save` locks the child first, then reads the reward. Cost: if a parent re-designates a goal before any sweep, its old savings reappear; that is the owner's call (O6) |
+| N6 | Several routes return child rows without `available_points` | Every child response goes through `withBalances`: redeem, confirm, redemption undo, `reverseAward`, replays. It gains `saved_total` and `goals[]` ({reward, saved, cost, to_go}). Still one savings query per family read; a test counts the queries |
+| N7 | Gaps against the screens | Home shows the **selected child's** goal with the most saved. Children: "{cost} points · Bigger achievement" for goals (approved wording); "Next milestone: Weekly target and bigger goal" with the weekly points still to go and the goal's "to go". Child View lists a goal only if it is visible to children. `is_bigger_goal` joins the rewards whitelist. **Plan §8.4's D7 price rule is superseded** by the owner's direction (explicit designation) |
+| N8 | Cost lowered below saved left an orphan excess | On redeem, the excess over cost is released in the same transaction (`release`, linked to the redemption) |
+| N9 | Schema details | `CREATE TABLE IF NOT EXISTS`. Index `(family_code, child_id) INCLUDE (reward_id, delta)`. Family scope for `reward_id` is enforced in code (no FK, so history outlives a deleted reward). Savings go with the child by `ON DELETE CASCADE` (a test proves it). `savings_events` joins the export |
+| N10 | No cached balance | Kept. A grouped SUM, tested as one query |
+| N11 | The reversal statement was incomplete | Reversal is a **new forward migration (017)**, because `migrate.js` only goes forward. Server code is rolled back first. Bigger-goal designations are lost. No points are lost: savings never change `total_points`, and every `spend` was charged to it. A goal redeemed shortly before rollback and undone after it gets no savings back (harmless: the points go to available) |
+| N12 | Simpler option for removal | Adopted as B5 |
+
+**Owner questions added:**
+
+| # | Question | Engineering recommendation |
+| --- | --- | --- |
+| O6 | If a parent un-marks a bigger goal and marks it again before the child's next savings change, should the old savings reappear? | Yes (the read-time filter gives this). The alternative needs multi-child writes on every reward edit |
+| O7 | A bigger goal is redeemed by a parent from the Children page, not requested by the child (B1) | Yes |
