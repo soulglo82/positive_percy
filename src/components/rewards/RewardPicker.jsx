@@ -18,8 +18,9 @@ export function countLine(n, category, searching) {
   return searching ? `${n} ${noun} ${n === 1 ? 'matches' : 'match'} your search` : `${n} ${noun} in ${category}`;
 }
 
-export default function RewardPicker({ value, onChange }) {
-  const [category, setCategory] = useState(PICKER_CATEGORIES[0].name);
+export default function RewardPicker({ value, onChange, id }) {
+  // Opens on the chosen icon's category, so its pressed tile is in view.
+  const [category, setCategory] = useState(() => (PICKER_CATEGORIES.find((c) => c.icons.includes(value)) || PICKER_CATEGORIES[0]).name);
   const [term, setTerm] = useState('');
   const searchId = useId();
   const searching = term.trim().length > 0;
@@ -27,7 +28,7 @@ export default function RewardPicker({ value, onChange }) {
   const accentFor = (id) => (searching ? accentOf(id) : PICKER_CATEGORIES.find((c) => c.name === category).accent);
 
   return (
-    <div className="picker-container space-y-3">
+    <div id={id} className="picker-container space-y-3">
       <div className="space-y-2">
         <Label htmlFor={searchId}>Find an icon</Label>
         <Input id={searchId} type="search" value={term} autoComplete="off"

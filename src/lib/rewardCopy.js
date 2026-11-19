@@ -7,4 +7,5 @@ export const REQUEST_COPY = {
   notNow: 'Not now',
   agree: (n) => `Agree to ${n} ${rewards(n)}`,
   agreed: (name, n) => `${name} can enjoy ${n} ${rewards(n)}.`,
+  changed: 'The requests changed. Check them again.',
 };

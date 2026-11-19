@@ -46,7 +46,6 @@ export function pickerLabel(assetId) {
 
 // The 71 distinct icons, in first-placement order.
 export const PICKER_ICONS = [...new Set(PICKER_CATEGORIES.flatMap((c) => c.icons))];
-export const isPickerIcon = (value) => typeof value === 'string' && PICKER_ICONS.includes(value);
 
 // Approved pickerItems: an empty term shows the category; a term searches
 // every category in order, each icon once, by its name and its aliases.

@@ -151,12 +151,12 @@ export async function spendReward(childId, rewardId, requestId = newRequestId())
   return result; // { child, redemption, duplicate }
 }
 
-// V1-D (D5): a parent agrees to exactly the requests they saw. `items` are
-// the server's priced stack items ({ rewardId, stackIndex }). Same retry
+// V1-D (D5): a parent agrees to exactly the requests they saw, at the prices
+// they saw. `items` are the server's priced stack items ({ rewardId, stackIndex, cost }). Same retry
 // rule as a spend: one request id, reused once. A 409 means the requests
 // changed meanwhile; nothing was charged.
 export async function confirmRequests(childId, items, requestId = newRequestId()) {
-  const body = JSON.stringify({ request_id: requestId, expected: items.map((i) => ({ reward_id: i.rewardId, stack_index: i.stackIndex })) });
+  const body = JSON.stringify({ request_id: requestId, expected: items.map((i) => ({ reward_id: i.rewardId, stack_index: i.stackIndex, cost: i.cost })) });
   const send = () => fetch(`/api/children/${childId}/stack/confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },

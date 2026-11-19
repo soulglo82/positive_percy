@@ -210,7 +210,7 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
       [JSON.stringify([{ rewardId: big.json.id, name: 'Big', cost: 1 }, { rewardId: rid(), name: 'Gone', cost: 1 }]), c.id]);
     // V1-D: the parent confirms what they saw (the gone item is not shown).
     const r = await api(ctx.base, 'POST', `/api/children/${c.id}/stack/confirm`, { token: F.token,
-      body: { expected: [{ reward_id: big.json.id, stack_index: 0 }] } });
+      body: { expected: [{ reward_id: big.json.id, stack_index: 0, cost: 80 }] } });
     expect(r.status).toBe(200);
     expect((await balance(c.id)).total_points).toBe(20);
     expect(await historyTotal(c.id)).toBe(20);
@@ -229,7 +229,7 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
       await api(ctx.base, 'POST', `/api/children/${c.id}/stack/add`, { token: F.token, body: { reward_id: t.json.id } });
       const [conf, rem] = await Promise.all([
         api(ctx.base, 'POST', `/api/children/${c.id}/stack/confirm`, { token: F.token,
-          body: { expected: [{ reward_id: t.json.id, stack_index: 0 }, { reward_id: t.json.id, stack_index: 1 }] } }),
+          body: { expected: [{ reward_id: t.json.id, stack_index: 0, cost: 10 }, { reward_id: t.json.id, stack_index: 1, cost: 10 }] } }),
         api(ctx.base, 'DELETE', `/api/children/${c.id}/stack/0?reward_id=${t.json.id}`, { token: F.token }),
       ]);
       const { rows } = await ctx.pool.query('SELECT reward_stack FROM children WHERE id = $1', [c.id]);

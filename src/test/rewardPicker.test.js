@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { REWARD_ICON_KEYS } from '../../server/rewardIcons.js';
 import {
-  PICKER_CATEGORIES, PICKER_ICONS, PICKER_ALIASES, pickerItems, pickerLabel, accentOf, isPickerIcon,
+  PICKER_CATEGORIES, PICKER_ICONS, PICKER_ALIASES, pickerItems, pickerLabel, accentOf,
 } from '../lib/rewardPicker.js';
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -32,10 +32,6 @@ describe('one approved icon set', () => {
   it('category accents are the owner-approved mapping', () => {
     const mapping = REGISTER.ux_choices.category_colour_mapping.per_category;
     for (const c of PICKER_CATEGORIES) expect(c.accent, c.name).toBe(mapping[c.name]);
-  });
-  it('isPickerIcon refuses near-misses', () => {
-    expect(isPickerIcon('phosphor:gift:duotone')).toBe(true);
-    for (const bad of ['gift', 'phosphor:gift:regular', 'phosphor:gear:duotone', '', null, 42]) expect(isPickerIcon(bad), String(bad)).toBe(false);
   });
 });
 

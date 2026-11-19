@@ -130,7 +130,7 @@ describe.skipIf(!runDb)('A2 step 3: guards', () => {
       expect((await api(ctx.base, 'POST', `/api/children/${c.id}/stack/add`, { token: F.token, body: { reward_id: r.id } })).status).toBe(200);
     }
     const id = rid();
-    const expected = [{ reward_id: r1.id, stack_index: 0 }, { reward_id: r2.id, stack_index: 1 }];
+    const expected = [{ reward_id: r1.id, stack_index: 0, cost: 10 }, { reward_id: r2.id, stack_index: 1, cost: 7 }];
     const first = await api(ctx.base, 'POST', `/api/children/${c.id}/stack/confirm`, { token: F.token, body: { request_id: id, expected } });
     expect(first.status).toBe(200);
     expect(first.json.points_deducted).toBe(17);

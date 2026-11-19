@@ -166,7 +166,10 @@ export default function Rewards() {
         initialTemplate={starterTemplate}
         children={children}
         onSubmit={submit}
-        onDelete={async (reward) => { await deleteMutation.mutateAsync(reward.id); close(); }}
+        onDelete={async (reward) => {
+          try { await deleteMutation.mutateAsync(reward.id); close(); }
+          catch (err) { toast.error(err?.message || "Couldn't delete the reward."); }
+        }}
       />
     </div>
   );

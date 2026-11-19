@@ -113,7 +113,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
                   <p className="font-display font-bold text-foreground">{iconKey ? pickerLabel(iconKey) : 'Current icon'}</p>
                   <p className="text-sm text-muted-foreground">Selected reward icon</p>
                 </div>
-                <Button type="button" variant="outline" aria-expanded={pickerOpen} onClick={() => setPickerOpen((o) => !o)}>
+                <Button type="button" variant="outline" aria-expanded={pickerOpen} aria-controls="reward-icon-picker" onClick={() => setPickerOpen((o) => !o)}>
                   {pickerOpen ? 'Hide' : 'Change'}
                 </Button>
               </div>
@@ -137,7 +137,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
             {pickerOpen && (
               <section className="space-y-3 border-t border-border pt-5">
                 <StepHeading n={2} title="Choose an icon" />
-                <RewardPicker value={iconKey} onChange={choose} />
+                <RewardPicker id="reward-icon-picker" value={iconKey} onChange={choose} />
               </section>
             )}
             {editing && onDelete && (

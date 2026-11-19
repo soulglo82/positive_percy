@@ -141,6 +141,14 @@ describe('RewardForm', () => {
   });
 });
 
+describe('Picker opens where the chosen icon is', () => {
+  it('editing a reward with an icon opens on that icon\'s category', () => {
+    render(<RewardPicker value={PIZZA} onChange={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Treats & food' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Pizza' }).getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
 describe('Catalogue tile', () => {
   it('shows icon, title, points (singular), visibility and a named Edit; no subtitle', () => {
     const onEdit = vi.fn();
@@ -182,7 +190,7 @@ describe('Parent confirmation of requests (D5, R4)', () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('/api/children/c1/stack/confirm');
     const body = JSON.parse(init.body);
-    expect(body.expected).toEqual([{ reward_id: 'a', stack_index: 1 }, { reward_id: 'b', stack_index: 2 }]);
+    expect(body.expected).toEqual([{ reward_id: 'a', stack_index: 1, cost: 5 }, { reward_id: 'b', stack_index: 2, cost: 8 }]);
     expect(body.request_id).toMatch(/^[0-9a-f-]{36}$/);
   });
   it('"Not now" removes that request by its stored position and names it', async () => {

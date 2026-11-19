@@ -1191,13 +1191,11 @@ router.delete('/api/children/:id/stack/:index', authMiddleware, async (req, res)
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Invalid request' });
     }
-    if (stack[index]?.rewardId !== expected) {
+    // Out of range or a different reward there: the stack changed since the
+    // caller looked. Nothing is removed.
+    if (index >= stack.length || stack[index].rewardId !== expected) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Invalid request' });
-    }
-    if (index >= stack.length) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Invalid stack index' });
     }
     stack.splice(index, 1);
     await client.query(
@@ -1228,9 +1226,11 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     const expected = req.body?.expected;
     const validExpected = Array.isArray(expected) && expected.length >= 1 && expected.length <= 100
       && expected.every((e) => e && typeof e.reward_id === 'string' && isUuid(e.reward_id)
-        && Number.isInteger(e.stack_index) && e.stack_index >= 0);
+        && Number.isInteger(e.stack_index) && e.stack_index >= 0
+        && Number.isInteger(e.cost) && e.cost >= 1);
     if (!validExpected) return res.status(400).json({ error: 'Invalid request' });
-    const args = { child_id: childId, expected: expected.map((e) => [e.reward_id, e.stack_index]) };
+    // The price the parent saw is part of it: a reward repriced meanwhile is refused, not charged (review of PR #59).
+    const args = { child_id: childId, expected: expected.map((e) => [e.reward_id, e.stack_index, e.cost]) };
     req.spend = { rq, args };
 
     await client.query('BEGIN');
@@ -1268,7 +1268,7 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     // Price every item from the rewards table now. Items whose reward is gone
     // or no longer for this child are dropped, never charged.
     const priced = await pricedStack(client, stack, childId, req.familyCode);
-    const seen = JSON.stringify(priced.map((p) => [p.rewardId, p.stackIndex]));
+    const seen = JSON.stringify(priced.map((p) => [p.rewardId, p.stackIndex, p.cost]));
     if (seen !== JSON.stringify(args.expected)) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Invalid request' });

@@ -125,7 +125,7 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: b.id });
     expect((await call('DELETE', `/api/children/${kid.id}/stack/0?reward_id=${a.id}`)).status).toBe(200);
     const id = rid();
-    const expected = [{ reward_id: b.id, stack_index: 0 }];
+    const expected = [{ reward_id: b.id, stack_index: 0, cost: 8 }];
     const ok = await call('POST', `/api/children/${kid.id}/stack/confirm`, { request_id: id, expected });
     expect(ok.status).toBe(200);
     expect(ok.json).toMatchObject({ confirmed_count: 1, points_deducted: 8 });
@@ -166,13 +166,26 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     const a = (await reward({ title: 'A1', cost_points: 5 })).json;
     const b = (await reward({ title: 'B1', cost_points: 6 })).json;
     await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: a.id });
-    const saw = [{ reward_id: a.id, stack_index: 0 }];
+    const saw = [{ reward_id: a.id, stack_index: 0, cost: 5 }];
     await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: b.id }); // added while the dialog was open
     const r = await call('POST', `/api/children/${kid.id}/stack/confirm`, { request_id: rid(), expected: saw });
     expect(r.status).toBe(409);
     expect((await call('GET', '/api/children')).json.find((c) => c.id === kid.id).total_points).toBe(50);
-    for (const bad of [undefined, [], [{ reward_id: 'x', stack_index: 0 }], [{ reward_id: a.id, stack_index: -1 }]]) {
+    for (const bad of [undefined, [], [{ reward_id: 'x', stack_index: 0, cost: 5 }], [{ reward_id: a.id, stack_index: -1, cost: 5 }], [{ reward_id: a.id, stack_index: 0 }]]) {
       expect((await call('POST', `/api/children/${kid.id}/stack/confirm`, { request_id: rid(), expected: bad })).status, JSON.stringify(bad)).toBe(400);
     }
+  });
+
+  it('C6: a reward repriced while the parent looked is refused, not charged (review of PR #59)', async () => {
+    const kid = (await call('POST', '/api/children', { name: 'Repriced', total_points: 100 })).json;
+    const r = (await reward({ title: 'Cheap', cost_points: 5 })).json;
+    await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: r.id });
+    const saw = [{ reward_id: r.id, stack_index: 0, cost: 5 }];
+    await call('PUT', `/api/rewards/${r.id}`, { cost_points: 60 }); // another parent edits it
+    const res = await call('POST', `/api/children/${kid.id}/stack/confirm`, { request_id: rid(), expected: saw });
+    expect(res.status).toBe(409);
+    expect((await call('GET', '/api/children')).json.find((c) => c.id === kid.id).total_points).toBe(100);
+    // An out-of-range remove is a stale view too: 409, nothing removed.
+    expect((await call('DELETE', `/api/children/${kid.id}/stack/5?reward_id=${r.id}`)).status).toBe(409);
   });
 });

@@ -40,7 +40,7 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
       toast.success(REQUEST_COPY.agreed(child.name, r.confirmed_count));
     } catch (e) {
       // 409: the requests changed while this was open; show them as they are now.
-      if (e.status === 409) refreshPoints(queryClient);
+      if (e.status === 409) { refreshPoints(queryClient); toast.info(REQUEST_COPY.changed); }
       else toast.error(e.message || 'Failed to redeem reward');
     } finally {
       setBusy(false);
@@ -53,7 +53,8 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
     try {
       await removeRequest(child.id, item);
     } catch (e) {
-      if (e.status !== 409) toast.error(e.message || 'Failed to redeem reward');
+      if (e.status === 409) toast.info(REQUEST_COPY.changed);
+      else toast.error("Couldn't update points. Please try again.");
     } finally {
       refreshPoints(queryClient);
       setBusy(false);

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.2 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-d-rewards`, stacked on V1-F `claude/percy-v1-f-forms`) |
 | Status | Reviewed (fresh-context peer review adopted, v1.1; §10 supersedes earlier sections where they conflict) |
@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | 1.0 | 2026-11-19 | First draft |
 | 1.1 | 2026-11-19 | Peer review: 5 blocking and 6 non-blocking findings; all blocking adopted, non-blocking adopted or answered (§10) |
+| 1.2 | 2026-11-19 | Code review of PR #59: 3 actionable fixed, 7 nitpicks fixed or answered (§11) |
 
 ## 1. Owner decisions this note implements
 
@@ -222,3 +223,18 @@
 - the generic create/update routes now pass a validation 422 through (they passed only 400);
 - the stack and confirm contracts above;
 - 202/202 server tests pass.
+
+## 11. Code review record (PR #59, v1.2)
+
+| # | Finding | Ruling |
+| --- | --- | --- |
+| A1 | **Major.** Confirm checked ids and positions, not prices. A reward repriced while the dialog was open was charged at the new price (the reviewer's probe: shown 5, charged 60) | **Fixed.** `expected` items carry `cost`, which is in the idempotency arguments and the comparison. A repriced reward gives 409 and nothing is charged. Test C6, mutation-checked |
+| A2 | A failed reward delete was silent, with an unhandled rejection | **Fixed.** Caught; toast "Couldn't delete the reward." (existing wording pattern); the form stays open |
+| A3 | The out-of-range 400 branch on stack remove could not be reached | **Fixed.** Out of range or a different reward gives one 409 (a stale view); the dead branch is removed. Test in C6 |
+| N1 | A 409 on Agree changed the list without a word | **Fixed.** Toast "The requests changed. Check them again.", added to owner item C5 |
+| N2 | "Not now" errors said "redeem" | **Fixed.** Uses the shipped "Couldn't update points. Please try again." |
+| N3 | A stack holding only deleted rewards cannot be cleared by confirm | **Answered.** Harmless: those items are never shown or charged, and available points ignore them. `stack/add` compacts them away. A sweep on reward delete belongs with D1's reward-removal handling |
+| N4 | Visible/Hidden filters with no matches show an empty grid | **Answered.** An empty-state line needs new copy; listed for the owner with C1–C6 |
+| N5 | Assigned-children badges are gone from the catalogue | **Answered.** The approved tile has none; assignment is visible and editable in the form |
+| N6 | Dead code | **Fixed.** `RewardCard` removed (its axe check now covers the catalogue tile and the picker); `isPickerIcon` removed. The `book-open-text` alias is kept verbatim from the approved HTML (it matches nothing and is harmless) |
+| N7 | The picker opened on Fun & games when editing an icon from another category; Hide/Change had no `aria-controls` | **Fixed.** It opens on the chosen icon's category (test); `aria-controls` added. The one-frame reset flash on reopen is not fixed (cosmetic) |
