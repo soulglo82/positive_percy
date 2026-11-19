@@ -1,0 +1,74 @@
+// V1-D reward icon picker (docs/engineering/V1-D-DESIGN.md §4.2). Data from
+// the owner approval register (picker.categories: 12 categories, 84
+// placements, 71 icons; ux_choices.category_colour_mapping) and the approved
+// V1 HTML (blob 9de1df2: APPROVED_PICKER_ICON_ALIASES, pickerItems,
+// pickerLabel). src/test/rewardPicker.test.js keeps this equal to the
+// register, server/rewardIcons.js and migration 015.
+
+export const PICKER_CATEGORIES = [
+  { name: "Fun & games", accent: "orange", icons: ['phosphor:game-controller:duotone', 'phosphor:dice-five:duotone', 'phosphor:balloon:duotone', 'phosphor:basketball:duotone', 'phosphor:football:duotone', 'phosphor:bowling-ball:duotone', 'phosphor:puzzle-piece:duotone'] },
+  { name: "Treats & food", accent: "orange", icons: ['phosphor:ice-cream:duotone', 'phosphor:cake:duotone', 'phosphor:cookie:duotone', 'phosphor:popcorn:duotone', 'phosphor:pizza:duotone', 'phosphor:hamburger:duotone'] },
+  { name: "Outings", accent: "sunshine", icons: ['phosphor:mountains:duotone', 'phosphor:car:duotone', 'phosphor:airplane:duotone', 'phosphor:tent:duotone', 'phosphor:train:duotone', 'phosphor:bus:duotone', 'phosphor:bicycle:duotone', 'phosphor:ticket:duotone', 'phosphor:sun:duotone', 'phosphor:fire:duotone'] },
+  { name: "Learning & growth", accent: "purple", icons: ['phosphor:music-notes:duotone', 'phosphor:lightbulb:duotone', 'phosphor:palette:duotone', 'phosphor:paint-brush:duotone', 'phosphor:notebook:duotone', 'phosphor:graduation-cap:duotone', 'phosphor:pencil:duotone', 'phosphor:books:duotone', 'phosphor:guitar:duotone', 'phosphor:microscope:duotone'] },
+  { name: "Family & kindness", accent: "purple", icons: ['phosphor:smiley:duotone', 'phosphor:hands-clapping:duotone', 'phosphor:handshake:duotone', 'phosphor:medal:duotone', 'phosphor:hand-heart:duotone', 'phosphor:gift:duotone'] },
+  { name: "Creative time", accent: "sunshine", icons: ['phosphor:paint-brush:duotone', 'phosphor:piano-keys:duotone', 'phosphor:film-slate:duotone', 'phosphor:music-notes:duotone', 'phosphor:scissors:duotone', 'phosphor:microphone:duotone', 'phosphor:pen:duotone'] },
+  { name: "Tech & media", accent: "purple", icons: ['phosphor:game-controller:duotone', 'phosphor:watch:duotone', 'phosphor:television:duotone', 'phosphor:device-mobile:duotone'] },
+  { name: "Things & pocket money", accent: "orange", icons: ['phosphor:backpack:duotone', 'phosphor:t-shirt:duotone', 'phosphor:piggy-bank:duotone', 'phosphor:money:duotone', 'phosphor:ticket:duotone'] },
+  { name: "Nature & outdoors", accent: "sunshine", icons: ['phosphor:tree:duotone', 'phosphor:sun:duotone', 'phosphor:moon-stars:duotone', 'phosphor:paw-print:duotone', 'phosphor:butterfly:duotone', 'phosphor:fish:duotone', 'phosphor:mountains:duotone'] },
+  { name: "Sports & movement", accent: "orange", icons: ['phosphor:basketball:duotone', 'phosphor:football:duotone', 'phosphor:soccer-ball:duotone', 'phosphor:bicycle:duotone', 'phosphor:tennis-ball:duotone', 'phosphor:person-simple-run:duotone', 'phosphor:ping-pong:duotone', 'phosphor:swimming-pool:duotone'] },
+  { name: "Celebrations", accent: "sunshine", icons: ['phosphor:confetti:duotone', 'phosphor:sparkle:duotone', 'phosphor:crown:duotone', 'phosphor:medal:duotone', 'phosphor:trophy:duotone', 'phosphor:cake:duotone', 'phosphor:smiley-wink:duotone'] },
+  { name: "Animals & pets", accent: "purple", icons: ['phosphor:cat:duotone', 'phosphor:dog:duotone', 'phosphor:fish:duotone', 'phosphor:butterfly:duotone', 'phosphor:rabbit:duotone', 'phosphor:bug:duotone', 'phosphor:cow:duotone'] },
+];
+
+// Everyday words that also find an icon (approved HTML, verbatim).
+export const PICKER_ALIASES = {
+  'game-controller': 'game gaming controller xbox playstation',
+  'film-slate': 'movie cinema film night',
+  'ice-cream': 'ice cream dessert treat',
+  'book-open-text': 'reading books story',
+  'books': 'book reading library',
+  'bicycle': 'bike cycling ride',
+  'piggy-bank': 'money savings pocket money',
+  'paw-print': 'pet dog cat animal',
+  'mountains': 'adventure outing hiking',
+  'ticket': 'outing show cinema day out',
+  'cake': 'birthday celebration treat',
+  'palette': 'drawing painting creative art',
+  'paint-brush': 'drawing painting creativity art',
+};
+
+const shortId = (assetId) => assetId.split(':')[1];
+
+// "phosphor:game-controller:duotone" -> "Game Controller" (approved pickerLabel).
+export function pickerLabel(assetId) {
+  return shortId(assetId).split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+// The 71 distinct icons, in first-placement order.
+export const PICKER_ICONS = [...new Set(PICKER_CATEGORIES.flatMap((c) => c.icons))];
+export const isPickerIcon = (value) => typeof value === 'string' && PICKER_ICONS.includes(value);
+
+// Approved pickerItems: an empty term shows the category; a term searches
+// every category in order, each icon once, by its name and its aliases.
+export function pickerItems(category, term) {
+  const t = String(term || '').trim().toLowerCase();
+  if (!t) return PICKER_CATEGORIES.find((c) => c.name === category)?.icons || [];
+  const seen = new Set();
+  return PICKER_CATEGORIES.flatMap((c) => c.icons).filter((id) => {
+    if (seen.has(id)) return false;
+    seen.add(id);
+    const s = shortId(id);
+    return (s.replace(/-/g, ' ') + ' ' + (PICKER_ALIASES[s] || '')).includes(t);
+  });
+}
+
+// Owner-approved container breakpoints (ux_choices.responsive_breakpoints):
+// under 520px 3 columns, 520-759px 5, from 760px 6. Width is the picker
+// grid's own container, not the viewport.
+export function columnsForWidth(width) {
+  if (width >= 760) return 6;
+  if (width >= 520) return 5;
+  return 3;
+}
+
+export const accentOf = (assetId) => PICKER_CATEGORIES.find((c) => c.icons.includes(assetId))?.accent || 'purple';

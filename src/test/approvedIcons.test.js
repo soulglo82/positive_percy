@@ -34,9 +34,17 @@ describe('generated approved-icon module', () => {
     expect(read(OUT).startsWith('/*! @license Phosphor Icons, MIT License')).toBe(true);
   });
 
-  it('holds exactly the register nav, controls, behaviours and goals sources, all Phosphor', async () => {
+  it('holds exactly the register nav, controls, behaviours, goals and reward-picker sources, all Phosphor', async () => {
     const { APPROVED_ICONS, APPROVED_CONTEXTS } = await import('../components/icons/approvedIcons.js');
-    expect(Object.keys(APPROVED_CONTEXTS).sort()).toEqual(['behaviors', 'controls', 'goals', 'nav']);
+    expect(Object.keys(APPROVED_CONTEXTS).sort()).toEqual(['behaviors', 'controls', 'goals', 'nav', 'picker']);
+    // V1-D: the owner's launch library is 12 categories, 84 placements, 71
+    // icons (register picker.ux_choices.launch_library), numbers fixed here
+    // so a register edit that silently adds icons fails.
+    const picker = APPROVED_CONTEXTS.picker;
+    expect(Object.keys(picker)).toHaveLength(12);
+    expect(Object.values(picker).flat()).toHaveLength(84);
+    expect(new Set(Object.values(picker).flat()).size).toBe(71);
+    for (const id of Object.values(picker).flat()) expect(APPROVED_ICONS[id], id).toBeTruthy();
     for (const g of ['nav', 'controls', 'behaviors']) {
       expect(Object.keys(APPROVED_CONTEXTS[g]).sort()).toEqual(Object.keys(REGISTER.decisions[g]).sort());
     }

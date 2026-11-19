@@ -40,10 +40,129 @@ export const APPROVED_CONTEXTS = {
     "completed_goal": "phosphor:check-circle:duotone",
     "recurring_indicator": "phosphor:repeat:duotone",
     "header_accent": "phosphor:sparkle:duotone"
+  },
+  "picker": {
+    "Fun & games": [
+      "phosphor:game-controller:duotone",
+      "phosphor:dice-five:duotone",
+      "phosphor:balloon:duotone",
+      "phosphor:basketball:duotone",
+      "phosphor:football:duotone",
+      "phosphor:bowling-ball:duotone",
+      "phosphor:puzzle-piece:duotone"
+    ],
+    "Treats & food": [
+      "phosphor:ice-cream:duotone",
+      "phosphor:cake:duotone",
+      "phosphor:cookie:duotone",
+      "phosphor:popcorn:duotone",
+      "phosphor:pizza:duotone",
+      "phosphor:hamburger:duotone"
+    ],
+    "Outings": [
+      "phosphor:mountains:duotone",
+      "phosphor:car:duotone",
+      "phosphor:airplane:duotone",
+      "phosphor:tent:duotone",
+      "phosphor:train:duotone",
+      "phosphor:bus:duotone",
+      "phosphor:bicycle:duotone",
+      "phosphor:ticket:duotone",
+      "phosphor:sun:duotone",
+      "phosphor:fire:duotone"
+    ],
+    "Learning & growth": [
+      "phosphor:music-notes:duotone",
+      "phosphor:lightbulb:duotone",
+      "phosphor:palette:duotone",
+      "phosphor:paint-brush:duotone",
+      "phosphor:notebook:duotone",
+      "phosphor:graduation-cap:duotone",
+      "phosphor:pencil:duotone",
+      "phosphor:books:duotone",
+      "phosphor:guitar:duotone",
+      "phosphor:microscope:duotone"
+    ],
+    "Family & kindness": [
+      "phosphor:smiley:duotone",
+      "phosphor:hands-clapping:duotone",
+      "phosphor:handshake:duotone",
+      "phosphor:medal:duotone",
+      "phosphor:hand-heart:duotone",
+      "phosphor:gift:duotone"
+    ],
+    "Creative time": [
+      "phosphor:paint-brush:duotone",
+      "phosphor:piano-keys:duotone",
+      "phosphor:film-slate:duotone",
+      "phosphor:music-notes:duotone",
+      "phosphor:scissors:duotone",
+      "phosphor:microphone:duotone",
+      "phosphor:pen:duotone"
+    ],
+    "Tech & media": [
+      "phosphor:game-controller:duotone",
+      "phosphor:watch:duotone",
+      "phosphor:television:duotone",
+      "phosphor:device-mobile:duotone"
+    ],
+    "Things & pocket money": [
+      "phosphor:backpack:duotone",
+      "phosphor:t-shirt:duotone",
+      "phosphor:piggy-bank:duotone",
+      "phosphor:money:duotone",
+      "phosphor:ticket:duotone"
+    ],
+    "Nature & outdoors": [
+      "phosphor:tree:duotone",
+      "phosphor:sun:duotone",
+      "phosphor:moon-stars:duotone",
+      "phosphor:paw-print:duotone",
+      "phosphor:butterfly:duotone",
+      "phosphor:fish:duotone",
+      "phosphor:mountains:duotone"
+    ],
+    "Sports & movement": [
+      "phosphor:basketball:duotone",
+      "phosphor:football:duotone",
+      "phosphor:soccer-ball:duotone",
+      "phosphor:bicycle:duotone",
+      "phosphor:tennis-ball:duotone",
+      "phosphor:person-simple-run:duotone",
+      "phosphor:ping-pong:duotone",
+      "phosphor:swimming-pool:duotone"
+    ],
+    "Celebrations": [
+      "phosphor:confetti:duotone",
+      "phosphor:sparkle:duotone",
+      "phosphor:crown:duotone",
+      "phosphor:medal:duotone",
+      "phosphor:trophy:duotone",
+      "phosphor:cake:duotone",
+      "phosphor:smiley-wink:duotone"
+    ],
+    "Animals & pets": [
+      "phosphor:cat:duotone",
+      "phosphor:dog:duotone",
+      "phosphor:fish:duotone",
+      "phosphor:butterfly:duotone",
+      "phosphor:rabbit:duotone",
+      "phosphor:bug:duotone",
+      "phosphor:cow:duotone"
+    ]
   }
 };
 
 export const APPROVED_ICONS = {
+  "phosphor:airplane:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M152,152v32l16,16v32l-40-16L88,232V200l16-16V152L24,168V136l80-40V48a24,24,0,0,1,48,0V96l80,40v32Z\" opacity=\"0.2\"/><path d=\"M235.58,128.84,160,91.06V48a32,32,0,0,0-64,0V91.06L20.42,128.84A8,8,0,0,0,16,136v32a8,8,0,0,0,9.57,7.84L96,161.76v18.93L82.34,194.34A8,8,0,0,0,80,200v32a8,8,0,0,0,11,7.43l37-14.81,37,14.81A8,8,0,0,0,176,232V200a8,8,0,0,0-2.34-5.66L160,180.69V161.76l70.43,14.08A8,8,0,0,0,240,168V136A8,8,0,0,0,235.58,128.84ZM224,158.24l-70.43-14.08A8,8,0,0,0,144,152v32a8,8,0,0,0,2.34,5.66L160,203.31v16.87l-29-11.61a8,8,0,0,0-5.94,0L96,220.18V203.31l13.66-13.65A8,8,0,0,0,112,184V152a8,8,0,0,0-9.57-7.84L32,158.24v-17.3l75.58-37.78A8,8,0,0,0,112,96V48a16,16,0,0,1,32,0V96a8,8,0,0,0,4.42,7.16L224,140.94Z\"/>",
+    "source": "design/assets/phosphor/duotone/airplane.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/airplane-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "d884c809a59d317ed296679bb3039504b7af0b78d69d3c2cac7006e2bbbae35b"
+  },
   "phosphor:archive:duotone": {
     "viewBox": "0 0 256 256",
     "fill": "currentColor",
@@ -61,6 +180,33 @@ export const APPROVED_ICONS = {
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/arrow-counter-clockwise-duotone.svg",
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "7f8253410467897776eff66017822f3b9b44f15a317d9d19b9a0ba07e277118e"
+  },
+  "phosphor:backpack:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M208,96V216a8,8,0,0,1-8,8H176V152a16,16,0,0,0-16-16H96a16,16,0,0,0-16,16v72H56a8,8,0,0,1-8-8V96A48,48,0,0,1,96,48h64A48,48,0,0,1,208,96Z\" opacity=\"0.2\"/><path d=\"M168,40.58V32A24,24,0,0,0,144,8H112A24,24,0,0,0,88,32v8.58A56.09,56.09,0,0,0,40,96V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V96A56.09,56.09,0,0,0,168,40.58ZM112,24h32a8,8,0,0,1,8,8v8H104V32A8,8,0,0,1,112,24Zm56,136H88v-8a8,8,0,0,1,8-8h64a8,8,0,0,1,8,8ZM88,176h48v8a8,8,0,0,0,16,0v-8h16v40H88Zm112,40H184V152a24,24,0,0,0-24-24H96a24,24,0,0,0-24,24v64H56V96A40,40,0,0,1,96,56h64a40,40,0,0,1,40,40V216ZM152,88a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,88Z\"/>",
+    "source": "design/assets/phosphor/duotone/backpack.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/backpack-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "267ccffb2d05588b462e52b8942d40f26903ef284bafd0f3aa8c57b395759c2a"
+  },
+  "phosphor:balloon:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M137.89,199.13h0L152,232H104l14.09-32.87h0C78.59,192.18,48,144.83,48,104a80,80,0,0,1,160,0C208,144.83,177.41,192.18,137.89,199.13Z\" opacity=\"0.2\"/><path d=\"M128,16a88.1,88.1,0,0,0-88,88c0,23.43,9.4,49.42,25.13,69.5,12.08,15.41,26.5,26,41.91,31.09L96.65,228.85A8,8,0,0,0,104,240h48a8,8,0,0,0,7.35-11.15L149,204.59c15.4-5.07,29.83-15.68,41.91-31.09C206.6,153.42,216,127.43,216,104A88.1,88.1,0,0,0,128,16Zm11.87,208H116.13l6.94-16.19c1.64.12,3.28.19,4.93.19s3.29-.07,4.93-.19Zm38.4-60.37C163.94,181.93,146.09,192,128,192s-35.94-10.07-50.27-28.37C64.12,146.27,56,124,56,104a72,72,0,0,1,144,0C200,124,191.88,146.27,178.27,163.63Zm-1-59.74A8.52,8.52,0,0,1,176,104a8,8,0,0,1-7.88-6.68,41.29,41.29,0,0,0-33.43-33.43,8,8,0,1,1,2.64-15.78,57.5,57.5,0,0,1,46.57,46.57A8,8,0,0,1,177.32,103.89Z\"/>",
+    "source": "design/assets/phosphor/duotone/balloon.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/balloon-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "296586621d30e8c6cb27c3eee3234f3c754c1fd676bb12a0a1c375d374e144c4"
+  },
+  "phosphor:basketball:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M60,195.88h0l.12.12ZM60,60h0a96.43,96.43,0,0,0,0,135.88,96.09,96.09,0,0,0,28-67.94A96.09,96.09,0,0,0,60,60Zm136,0h0a96.43,96.43,0,0,0,0,135.88A96.43,96.43,0,0,0,196,60Zm0,135.88.12.12-.12-.12Z\" opacity=\"0.2\"/><path d=\"M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM40.37,136H79.63A87.2,87.2,0,0,1,60,183.83,87.54,87.54,0,0,1,40.37,136ZM136,120V40.37a87.59,87.59,0,0,1,48.68,20.37A103.06,103.06,0,0,0,160.3,120Zm-16,0H95.7A103.06,103.06,0,0,0,71.32,60.74,87.59,87.59,0,0,1,120,40.37Zm-40.37,0H40.37A87.54,87.54,0,0,1,60,72.17,87.2,87.2,0,0,1,79.63,120ZM95.7,136H120v79.63a87.59,87.59,0,0,1-48.68-20.37A103.09,103.09,0,0,0,95.7,136Zm40.3,0h24.3a103.09,103.09,0,0,0,24.38,59.26A87.59,87.59,0,0,1,136,215.63Zm40.37,0h39.26A87.54,87.54,0,0,1,196,183.83,87.2,87.2,0,0,1,176.37,136Zm0-16A87.2,87.2,0,0,1,196,72.17,87.54,87.54,0,0,1,215.63,120Z\"/>",
+    "source": "design/assets/phosphor/duotone/basketball.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/basketball-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "352ebcf721c40a259cf73d2e55e2f38dd9a11887ebf80ce975040af508539511"
   },
   "phosphor:bathtub:duotone": {
     "viewBox": "0 0 256 256",
@@ -86,7 +232,7 @@ export const APPROVED_ICONS = {
     "inner": "<path d=\"M248,160a40,40,0,1,1-40-40A40,40,0,0,1,248,160ZM48,120a40,40,0,1,0,40,40A40,40,0,0,0,48,120Z\" opacity=\"0.2\"/><path d=\"M208,112a47.81,47.81,0,0,0-16.93,3.09L165.93,72H192a8,8,0,0,1,8,8,8,8,0,0,0,16,0,24,24,0,0,0-24-24H152a8,8,0,0,0-6.91,12l11.65,20H99.26L82.91,60A8,8,0,0,0,76,56H48a8,8,0,0,0,0,16H71.41L85.12,95.51,69.41,117.06a48.13,48.13,0,1,0,12.92,9.44l11.59-15.9L125.09,164A8,8,0,1,0,138.91,156l-30.32-52h57.48l11.19,19.17A48,48,0,1,0,208,112ZM80,160a32,32,0,1,1-20.21-29.74l-18.25,25a8,8,0,1,0,12.92,9.42l18.25-25A31.88,31.88,0,0,1,80,160Zm128,32a32,32,0,0,1-22.51-54.72L201.09,164A8,8,0,1,0,214.91,156L199.3,129.21A32,32,0,1,1,208,192Z\"/>",
     "source": "design/assets/phosphor/duotone/bicycle.svg",
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bicycle-duotone.svg",
-    "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+    "licence": "MIT — Phosphor",
     "sha256": "f99f21cc07a6ae8ad32cdf5b986888e293f9f572c039912d60a4a6efb30a4ccf"
   },
   "phosphor:book-open-text:duotone": {
@@ -97,6 +243,24 @@ export const APPROVED_ICONS = {
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/book-open-text-duotone.svg",
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "523066f01683f1879bbc20219bfcfb1cb4452fb26c0e074a3f8da4e06a75b60a"
+  },
+  "phosphor:books:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M48,72h64V184H48ZM190.64,38.39a8,8,0,0,0-9.5-6.21l-46.81,10a8.07,8.07,0,0,0-6.15,9.57L139.79,107l62.46-13.42Z\" opacity=\"0.2\"/><path d=\"M231.65,194.55,198.46,36.75a16,16,0,0,0-19-12.39L132.65,34.42a16.08,16.08,0,0,0-12.3,19l33.19,157.8A16,16,0,0,0,169.16,224a16.25,16.25,0,0,0,3.38-.36l46.81-10.06A16.09,16.09,0,0,0,231.65,194.55ZM136,50.15c0-.06,0-.09,0-.09l46.8-10,3.33,15.87L139.33,66Zm6.62,31.47,46.82-10.05,3.34,15.9L146,97.53Zm6.64,31.57,46.82-10.06,13.3,63.24-46.82,10.06ZM216,197.94l-46.8,10-3.33-15.87L212.67,182,216,197.85C216,197.91,216,197.94,216,197.94ZM104,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V48A16,16,0,0,0,104,32ZM56,48h48V64H56Zm0,32h48v96H56Zm48,128H56V192h48v16Z\"/>",
+    "source": "design/assets/phosphor/duotone/books.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/books-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "7898d95403db718d42cd3e4d8b9785a2c295076d500d4adbc174bd817167a303"
+  },
+  "phosphor:bowling-ball:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z\" opacity=\"0.2\"/><path d=\"M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-100a12,12,0,1,1-12-12A12,12,0,0,1,144,116Zm20-12a12,12,0,1,1,12-12A12,12,0,0,1,164,104Zm20,28a12,12,0,1,1-12-12A12,12,0,0,1,184,132Z\"/>",
+    "source": "design/assets/phosphor/duotone/bowling-ball.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bowling-ball-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "92a1f3f449b33c97b3d785ec3bb0440158d9f1b4a62202a83d5283ca16fbbcf6"
   },
   "phosphor:brain:duotone": {
     "viewBox": "0 0 256 256",
@@ -116,6 +280,42 @@ export const APPROVED_ICONS = {
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "6c9eb5de6e40c538e3e9c67fe438cbcd2d1caf5ee3f531e77ef2eb092049aae3"
   },
+  "phosphor:bug:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M208,128v16a80,80,0,0,1-160,0V128Z\" opacity=\"0.2\"/><path d=\"M144,92a12,12,0,1,1,12,12A12,12,0,0,1,144,92ZM100,80a12,12,0,1,0,12,12A12,12,0,0,0,100,80Zm116,64A87.76,87.76,0,0,1,213,167l22.24,9.72A8,8,0,0,1,232,192a7.89,7.89,0,0,1-3.2-.67L207.38,182a88,88,0,0,1-158.76,0L27.2,191.33A7.89,7.89,0,0,1,24,192a8,8,0,0,1-3.2-15.33L43,167A87.76,87.76,0,0,1,40,144v-8H16a8,8,0,0,1,0-16H40v-8a87.76,87.76,0,0,1,3-23L20.8,79.33a8,8,0,1,1,6.4-14.66L48.62,74a88,88,0,0,1,158.76,0l21.42-9.36a8,8,0,0,1,6.4,14.66L213,89.05a87.76,87.76,0,0,1,3,23v8h24a8,8,0,0,1,0,16H216ZM56,120H200v-8a72,72,0,0,0-144,0Zm64,95.54V136H56v8A72.08,72.08,0,0,0,120,215.54ZM200,144v-8H136v79.54A72.08,72.08,0,0,0,200,144Z\"/>",
+    "source": "design/assets/phosphor/duotone/bug.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bug-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "cdcb8c9b604c6c3d5fa6ff8b31ca8a9520570415cc30035cb39cb7cb9c10d1aa"
+  },
+  "phosphor:bus:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M48,184H88v24a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8Zm120,24a8,8,0,0,0,8,8h24a8,8,0,0,0,8-8V184H168ZM48,72v40H208V72Z\" opacity=\"0.2\"/><path d=\"M184,32H72A32,32,0,0,0,40,64V208a16,16,0,0,0,16,16H80a16,16,0,0,0,16-16V192h64v16a16,16,0,0,0,16,16h24a16,16,0,0,0,16-16V64A32,32,0,0,0,184,32ZM56,176V120H200v56Zm0-96H200v24H56ZM72,48H184a16,16,0,0,1,16,16H56A16,16,0,0,1,72,48Zm8,160H56V192H80Zm96,0V192h24v16Zm-72-60a12,12,0,1,1-12-12A12,12,0,0,1,104,148Zm72,0a12,12,0,1,1-12-12A12,12,0,0,1,176,148Zm72-68v24a8,8,0,0,1-16,0V80a8,8,0,0,1,16,0ZM24,80v24a8,8,0,0,1-16,0V80a8,8,0,0,1,16,0Z\"/>",
+    "source": "design/assets/phosphor/duotone/bus.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bus-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "f7ee5d9f259fcd118d183329b4df9a2c64bf261b7b4b6399cb9d4f4fa6384ffb"
+  },
+  "phosphor:butterfly:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M225.12,119.71c-7.86,30.94-29.31,32.71-37.36,32.23h-1A36,36,0,1,1,128,180a36,36,0,1,1-58.72-28.06h-1c-8,.48-29.5-1.29-37.36-32.23C22.79,87.84,15.78,48,47.07,48S128,95.8,128,127.67C128,95.8,177.64,48,208.93,48S233.21,87.84,225.12,119.71Z\" opacity=\"0.2\"/><path d=\"M232.7,50.48C229,45.7,221.84,40,209,40c-16.85,0-38.46,11.28-57.81,30.16A140.07,140.07,0,0,0,136,87.53V56a8,8,0,0,0-16,0V87.53a140.07,140.07,0,0,0-15.15-17.37C85.49,51.28,63.88,40,47,40,34.16,40,27,45.7,23.3,50.48c-6.82,8.77-12.18,24.08-.21,71.2,6.05,23.83,19.51,33,30.63,36.42A44,44,0,0,0,128,205.27a44,44,0,0,0,74.28-47.17c11.12-3.4,24.57-12.59,30.63-36.42C239.63,95.24,244.85,66.1,232.7,50.48ZM92,208A28.12,28.12,0,0,1,88.86,152a8,8,0,1,0-1.76-15.9A43.64,43.64,0,0,0,66.36,144c-8.43.09-22-3.57-27.76-26.26C35.72,106.39,27,71.86,35.94,60.3,37.37,58.46,40.09,56,47,56c27.27,0,73,44.88,73,71.67V180A28,28,0,0,1,92,208ZM217.4,117.74c-5.77,22.69-19.33,26.34-27.77,26.26a43.6,43.6,0,0,0-20.74-7.95,8,8,0,1,0-1.76,15.9A28.11,28.11,0,1,1,136,180V127.67C136,100.88,181.69,56,209,56c6.95,0,9.66,2.46,11.1,4.3C229.05,71.86,220.28,106.39,217.4,117.74Z\"/>",
+    "source": "design/assets/phosphor/duotone/butterfly.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/butterfly-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "2596f0016e8b5be06c1b53e39cc7bad6d36c3c4d7249f684c26670c4710f3eb2"
+  },
+  "phosphor:cake:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M104,48c0-24,24-40,24-40s24,16,24,40a24,24,0,0,1-48,0ZM208,96H48a16,16,0,0,0-16,16v23.33c0,17.44,13.67,32.18,31.1,32.66A32,32,0,0,0,96,136a32,32,0,0,0,64,0,32,32,0,0,0,32.9,32c17.43-.48,31.1-15.22,31.1-32.66V112A16,16,0,0,0,208,96Z\" opacity=\"0.2\"/><path d=\"M232,112a24,24,0,0,0-24-24H136V79a32.06,32.06,0,0,0,24-31c0-28-26.44-45.91-27.56-46.66a8,8,0,0,0-8.88,0C122.44,2.09,96,20,96,48a32.06,32.06,0,0,0,24,31v9H48a24,24,0,0,0-24,24v23.33a40.84,40.84,0,0,0,8,24.24V200a24,24,0,0,0,24,24H200a24,24,0,0,0,24-24V159.57a40.84,40.84,0,0,0,8-24.24ZM112,48c0-13.57,10-24.46,16-29.79,6,5.33,16,16.22,16,29.79a16,16,0,0,1-32,0ZM40,112a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8v23.33c0,13.25-10.46,24.31-23.32,24.66A24,24,0,0,1,168,136a8,8,0,0,0-16,0,24,24,0,0,1-48,0,8,8,0,0,0-16,0,24,24,0,0,1-24.68,24C50.46,159.64,40,148.58,40,135.33Zm160,96H56a8,8,0,0,1-8-8V172.56A38.77,38.77,0,0,0,62.88,176a39.69,39.69,0,0,0,29-11.31A40.36,40.36,0,0,0,96,160a40,40,0,0,0,64,0,40.36,40.36,0,0,0,4.13,4.67A39.67,39.67,0,0,0,192,176c.38,0,.76,0,1.14,0A38.77,38.77,0,0,0,208,172.56V200A8,8,0,0,1,200,208Z\"/>",
+    "source": "design/assets/phosphor/duotone/cake.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/cake-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "61f646f195b19d3bedd422b35baeb441cf68525b45ed8e3f8f47abbdfa9536a3"
+  },
   "phosphor:calendar-dots:duotone": {
     "viewBox": "0 0 256 256",
     "fill": "currentColor",
@@ -124,6 +324,24 @@ export const APPROVED_ICONS = {
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/calendar-dots-duotone.svg",
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "72b4bb72b7b180840bb6f5b86ad94987fc8b1b0fdb49caab09c7a2790a93c707"
+  },
+  "phosphor:car:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M184,176h40v24a8,8,0,0,1-8,8H192a8,8,0,0,1-8-8ZM32,200a8,8,0,0,0,8,8H64a8,8,0,0,0,8-8V176H32ZM194.11,44.75A8,8,0,0,0,186.8,40H69.2a8,8,0,0,0-7.31,4.75L32,112H224Z\" opacity=\"0.2\"/><path d=\"M240,104H229.2L201.42,41.5A16,16,0,0,0,186.8,32H69.2a16,16,0,0,0-14.62,9.5L26.8,104H16a8,8,0,0,0,0,16h8v80a16,16,0,0,0,16,16H64a16,16,0,0,0,16-16V184h96v16a16,16,0,0,0,16,16h24a16,16,0,0,0,16-16V120h8a8,8,0,0,0,0-16ZM69.2,48H186.8l24.89,56H44.31ZM64,200H40V184H64Zm128,0V184h24v16Zm24-32H40V120H216ZM56,144a8,8,0,0,1,8-8H80a8,8,0,0,1,0,16H64A8,8,0,0,1,56,144Zm112,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H176A8,8,0,0,1,168,144Z\"/>",
+    "source": "design/assets/phosphor/duotone/car.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/car-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "e479dc66d99f4f4b2b478250212237a0bbc46b6d693ff58c6da3072b37d33307"
+  },
+  "phosphor:cat:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M224,48v88c0,48.6-43,88-96,88s-96-39.4-96-88V48a8,8,0,0,1,13.66-5.66L67.6,67.6h0a102.87,102.87,0,0,1,120.8,0h0l21.94-25.24A8,8,0,0,1,224,48Z\" opacity=\"0.2\"/><path d=\"M96,140a12,12,0,1,1-12-12A12,12,0,0,1,96,140Zm76-12a12,12,0,1,0,12,12A12,12,0,0,0,172,128Zm60-80v88c0,52.93-46.65,96-104,96S24,188.93,24,136V48A16,16,0,0,1,51.31,36.69c.14.14.26.27.38.41L69,57a111.22,111.22,0,0,1,118.1,0L204.31,37.1c.12-.14.24-.27.38-.41A16,16,0,0,1,232,48Zm-16,0-21.56,24.8A8,8,0,0,1,183.63,74,88.86,88.86,0,0,0,168,64.75V88a8,8,0,1,1-16,0V59.05a97.43,97.43,0,0,0-16-2.72V88a8,8,0,1,1-16,0V56.33a97.43,97.43,0,0,0-16,2.72V88a8,8,0,1,1-16,0V64.75A88.86,88.86,0,0,0,72.37,74a8,8,0,0,1-10.81-1.17L40,48v88c0,41.66,35.21,76,80,79.67V195.31l-13.66-13.66a8,8,0,0,1,11.32-11.31L128,180.68l10.34-10.34a8,8,0,0,1,11.32,11.31L136,195.31v20.36c44.79-3.69,80-38,80-79.67Z\"/>",
+    "source": "design/assets/phosphor/duotone/cat.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/cat-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "8462e1aca5a4be2a2a28178f65b91e4f51756aeae36648d94550fa706431844a"
   },
   "phosphor:chart-line-up:duotone": {
     "viewBox": "0 0 256 256",
@@ -143,6 +361,114 @@ export const APPROVED_ICONS = {
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "d9c7016e83a81c8ef1a250a307acc6d29d5c492fc46066ab5e5e7446a65b48f6"
   },
+  "phosphor:confetti:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M58.89,154.89l42.22,42.22-50.63,18.4a7.79,7.79,0,0,1-10-10Zm138.82-4.72L105.83,58.29A7.79,7.79,0,0,0,93,61.14l-14.9,41,75.82,75.82,41-14.9A7.79,7.79,0,0,0,197.71,150.17Z\" opacity=\"0.2\"/><path d=\"M111.49,52.63a15.8,15.8,0,0,0-26,5.77L33,202.78A15.83,15.83,0,0,0,47.76,224a16,16,0,0,0,5.46-1l144.37-52.5a15.8,15.8,0,0,0,5.78-26Zm-8.33,135.21-35-35,13.16-36.21,58.05,58.05Zm-55,20,14-38.41,24.45,24.45ZM156,168.64,87.36,100l13-35.87,91.43,91.43ZM160,72a37.8,37.8,0,0,1,3.84-15.58C169.14,45.83,179.14,40,192,40c6.7,0,11-2.29,13.65-7.21A22,22,0,0,0,208,23.94,8,8,0,0,1,224,24c0,12.86-8.52,32-32,32-6.7,0-11,2.29-13.65,7.21A22,22,0,0,0,176,72.06,8,8,0,0,1,160,72ZM136,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm101.66,82.34a8,8,0,1,1-11.32,11.31l-16-16a8,8,0,0,1,11.32-11.32Zm4.87-42.75-24,8a8,8,0,0,1-5.06-15.18l24-8a8,8,0,0,1,5.06,15.18Z\"/>",
+    "source": "design/assets/phosphor/duotone/confetti.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/confetti-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "635f8554d2f230cc11459700d7a85b9437818dda1460d89743308e476c37bec9"
+  },
+  "phosphor:cookie:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M224,128a96,96,0,1,1-96-96,48,48,0,0,0,48,48A48,48,0,0,0,224,128Z\" opacity=\"0.2\"/><path d=\"M164.49,163.51a12,12,0,1,1-17,0A12,12,0,0,1,164.49,163.51Zm-81-8a12,12,0,1,0,17,0A12,12,0,0,0,83.51,155.51Zm9-39a12,12,0,1,0-17,0A12,12,0,0,0,92.49,116.49Zm48-1a12,12,0,1,0,0,17A12,12,0,0,0,140.49,115.51ZM232,128A104,104,0,1,1,128,24a8,8,0,0,1,8,8,40,40,0,0,0,40,40,8,8,0,0,1,8,8,40,40,0,0,0,40,40A8,8,0,0,1,232,128Zm-16.31,7.39A56.13,56.13,0,0,1,168.5,87.5a56.13,56.13,0,0,1-47.89-47.19,88,88,0,1,0,95.08,95.08Z\"/>",
+    "source": "design/assets/phosphor/duotone/cookie.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/cookie-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "729e6471866add93214d65f372dada21c81b20a0cf252b79ac06bca020f89dd0"
+  },
+  "phosphor:cow:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M208,192h0a32,32,0,0,1-32,32H80a32,32,0,0,1-32-32h0a32,32,0,0,1,32-32h96A32,32,0,0,1,208,192ZM64,104A32,32,0,0,1,96,72H63.22a48,48,0,0,0-47.07,38.53A8,8,0,0,0,24,120H64Zm175.85,6.53A48,48,0,0,0,192.78,72H160a32,32,0,0,1,32,32v16h40A8,8,0,0,0,239.85,110.53Z\" opacity=\"0.2\"/><path d=\"M104,192a8,8,0,0,1-8,8H80a8,8,0,0,1,0-16H96A8,8,0,0,1,104,192Zm72-8H160a8,8,0,0,0,0,16h16a8,8,0,0,0,0-16Zm-76-72a12,12,0,1,0,12,12A12,12,0,0,0,100,112Zm56,0a12,12,0,1,0,12,12A12,12,0,0,0,156,112Zm88.39,10.12A16,16,0,0,1,232,128H200v32a40,40,0,0,1-24,72H80a40,40,0,0,1-24-72V128H24A16,16,0,0,1,8.31,109,56.13,56.13,0,0,1,63.22,64h1.64A55.83,55.83,0,0,1,48,24a8,8,0,0,1,16,0,40,40,0,0,0,40,40h48a40,40,0,0,0,40-40,8,8,0,0,1,16,0,55.83,55.83,0,0,1-16.86,40h1.64a56.13,56.13,0,0,1,54.91,45A15.82,15.82,0,0,1,244.39,122.12ZM56,112v-8a39.81,39.81,0,0,1,8-24h-.8A40.09,40.09,0,0,0,24,112Zm144,80a24,24,0,0,0-24-24H80a24,24,0,0,0,0,48h96A24,24,0,0,0,200,192Zm-16-39.2V104a24,24,0,0,0-24-24H96a24,24,0,0,0-24,24v48.8a40.57,40.57,0,0,1,8-.8h96A40.57,40.57,0,0,1,184,152.8ZM232,112a40.08,40.08,0,0,0-39.2-32H192a39.81,39.81,0,0,1,8,24v8Z\"/>",
+    "source": "design/assets/phosphor/duotone/cow.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/cow-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "6ebaa8c42fb6a5c888c3634e257a672664eab835e206fe658541bb8798a63df0"
+  },
+  "phosphor:crown:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M216.71,99.73l-15.6,93.59a8,8,0,0,1-7.89,6.68H62.78a8,8,0,0,1-7.89-6.68L39.29,99.73l.08,0a19.82,19.82,0,0,0,9.22-4.16h0L88,144l32-73.65h0a20,20,0,0,0,15.92,0h0L168,144l39.39-48.48h0a19.82,19.82,0,0,0,9.22,4.16Z\" opacity=\"0.2\"/><path d=\"M248,80a28,28,0,1,0-51.12,15.77l-26.79,33L146,73.4a28,28,0,1,0-36.06,0L85.91,128.74l-26.79-33a28,28,0,1,0-26.6,12L47,194.63A16,16,0,0,0,62.78,208H193.22A16,16,0,0,0,209,194.63l14.47-86.85A28,28,0,0,0,248,80ZM128,40a12,12,0,1,1-12,12A12,12,0,0,1,128,40ZM24,80A12,12,0,1,1,36,92,12,12,0,0,1,24,80ZM193.22,192H62.78L48.86,108.52,81.79,149A8,8,0,0,0,88,152a7.83,7.83,0,0,0,1.08-.07,8,8,0,0,0,6.26-4.74l29.3-67.4a27,27,0,0,0,6.72,0l29.3,67.4a8,8,0,0,0,6.26,4.74A7.83,7.83,0,0,0,168,152a8,8,0,0,0,6.21-3l32.93-40.52ZM220,92a12,12,0,1,1,12-12A12,12,0,0,1,220,92Z\"/>",
+    "source": "design/assets/phosphor/duotone/crown.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/crown-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "0a5e35f6dc830d6bc593876df2fefc2fd02434ac0ce802ccd1a15307c9ebcc04"
+  },
+  "phosphor:device-mobile:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M192,56V200H64V56Z\" opacity=\"0.2\"/><path d=\"M176,16H80A24,24,0,0,0,56,40V216a24,24,0,0,0,24,24h96a24,24,0,0,0,24-24V40A24,24,0,0,0,176,16ZM72,64H184V192H72Zm8-32h96a8,8,0,0,1,8,8v8H72V40A8,8,0,0,1,80,32Zm96,192H80a8,8,0,0,1-8-8v-8H184v8A8,8,0,0,1,176,224Z\"/>",
+    "source": "design/assets/phosphor/duotone/device-mobile.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/device-mobile-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "dd1f130cc18a988d9e606f5253fb96f2c2b9502f1153b3685a4dd49628995b87"
+  },
+  "phosphor:dice-five:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M216,64V192a24,24,0,0,1-24,24H64a24,24,0,0,1-24-24V64A24,24,0,0,1,64,40H192A24,24,0,0,1,216,64Z\" opacity=\"0.2\"/><path d=\"M192,32H64A32,32,0,0,0,32,64V192a32,32,0,0,0,32,32H192a32,32,0,0,0,32-32V64A32,32,0,0,0,192,32Zm16,160a16,16,0,0,1-16,16H64a16,16,0,0,1-16-16V64A16,16,0,0,1,64,48H192a16,16,0,0,1,16,16ZM104,92A12,12,0,1,1,92,80,12,12,0,0,1,104,92Zm72,0a12,12,0,1,1-12-12A12,12,0,0,1,176,92Zm-72,72a12,12,0,1,1-12-12A12,12,0,0,1,104,164Zm36-36a12,12,0,1,1-12-12A12,12,0,0,1,140,128Zm36,36a12,12,0,1,1-12-12A12,12,0,0,1,176,164Z\"/>",
+    "source": "design/assets/phosphor/duotone/dice-five.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/dice-five-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "99d41cb228da4157ecc6a3599a304b86ca4646b217537f26c1b840c8be27d379"
+  },
+  "phosphor:dog:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M208,120.38V184a32,32,0,0,1-32,32H80a32,32,0,0,1-32-32V120.38L104,48h48Z\" opacity=\"0.2\"/><path d=\"M239.71,125l-16.42-88a16,16,0,0,0-19.61-12.58l-.31.09L150.85,40h-45.7L52.63,24.56l-.31-.09A16,16,0,0,0,32.71,37.05L16.29,125a15.77,15.77,0,0,0,9.12,17.52A16.26,16.26,0,0,0,32.12,144,15.48,15.48,0,0,0,40,141.84V184a40,40,0,0,0,40,40h96a40,40,0,0,0,40-40V141.85a15.5,15.5,0,0,0,7.87,2.16,16.31,16.31,0,0,0,6.72-1.47A15.77,15.77,0,0,0,239.71,125ZM32,128h0L48.43,40,90.5,52.37Zm144,80H136V195.31l13.66-13.65a8,8,0,0,0-11.32-11.32L128,180.69l-10.34-10.35a8,8,0,0,0-11.32,11.32L120,195.31V208H80a24,24,0,0,1-24-24V123.11L107.93,56h40.14L200,123.11V184A24,24,0,0,1,176,208Zm48-80L165.5,52.37,207.57,40,224,128ZM104,140a12,12,0,1,1-12-12A12,12,0,0,1,104,140Zm72,0a12,12,0,1,1-12-12A12,12,0,0,1,176,140Z\"/>",
+    "source": "design/assets/phosphor/duotone/dog.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/dog-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "f3344516c755ddee756a856c809892f6d51ccac3bfa3b7d00ec0eb3616d07782"
+  },
+  "phosphor:film-slate:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M67.71,64.59l47.79,27.6L40.43,112,32.27,82a7.76,7.76,0,0,1,5.58-9.52ZM199.84,37.76a7.9,7.9,0,0,0-9.66-5.49L126.61,49.05,174.4,76.64,208,67.77Z\" opacity=\"0.2\"/><path d=\"M216,104H102.09L210,75.51a8,8,0,0,0,5.68-9.84l-8.16-30a15.93,15.93,0,0,0-19.42-11.13L35.81,64.74a15.75,15.75,0,0,0-9.7,7.4,15.51,15.51,0,0,0-1.55,12L32,111.56c0,.14,0,.29,0,.44v88a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V112A8,8,0,0,0,216,104ZM192.16,40l6,22.07-22.62,6L147.42,51.83Zm-66.69,17.6,28.12,16.24-36.94,9.75L88.53,67.37Zm-79.4,44.62-6-22.08,26.5-7L94.69,89.4ZM208,200H48V120H208v80Z\"/>",
+    "source": "design/assets/phosphor/duotone/film-slate.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/film-slate-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "409f17cfc2b5113d9dcc27caf0bdcd89a7fcc32746a0179c110897c98ac0cb75"
+  },
+  "phosphor:fire:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M208,144a80,80,0,0,1-160,0c0-30.57,14.42-58.26,31-80l33,32,26.27-72C159.86,41.92,208,88.15,208,144Z\" opacity=\"0.2\"/><path d=\"M183.89,153.34a57.6,57.6,0,0,1-46.56,46.55A8.75,8.75,0,0,1,136,200a8,8,0,0,1-1.32-15.89c16.57-2.79,30.63-16.85,33.44-33.45a8,8,0,0,1,15.78,2.68ZM216,144a88,88,0,0,1-176,0c0-27.92,11-56.47,32.66-84.85a8,8,0,0,1,11.93-.89l24.12,23.41,22-60.41a8,8,0,0,1,12.63-3.41C165.21,36,216,84.55,216,144Zm-16,0c0-46.09-35.79-85.92-58.21-106.33L119.52,98.74a8,8,0,0,1-13.09,3L80.06,76.16C64.09,99.21,56,122,56,144a72,72,0,0,0,144,0Z\"/>",
+    "source": "design/assets/phosphor/duotone/fire.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/fire-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "f1346a9ca22fbf7a384920ffa9991549f0e37de320dd7425de705bcfe5b9c980"
+  },
+  "phosphor:fish:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M185.81,167.62c-18,13.9-44.17,23.41-81.68,24.31L80.09,248l-16-56.07L8,175.87l56.07-24c.9-37.49,10.41-63.61,24.31-81.65A44,44,0,0,0,136.2,119.8a44,44,0,0,0,49.61,47.82Z\" opacity=\"0.2\"/><path d=\"M168,76a12,12,0,1,1-12-12A12,12,0,0,1,168,76Zm48.72,67.64c-19.37,34.9-55.44,53.76-107.24,56.1l-22,51.41A8,8,0,0,1,80.1,256l-.51,0a8,8,0,0,1-7.19-5.78L57.6,198.39,5.8,183.56a8,8,0,0,1-1-15.05l51.41-22c2.35-51.78,21.21-87.84,56.09-107.22,24.75-13.74,52.74-15.84,71.88-15.18,18.64.64,36,4.27,38.86,6a8,8,0,0,1,2.83,2.83c1.69,2.85,5.33,20.21,6,38.85C232.55,90.89,230.46,118.89,216.72,143.64Zm-55.18,29a52.11,52.11,0,0,1-33.4-44.78A52.09,52.09,0,0,1,83.37,94.47q-10.45,23.79-11.3,57.59a8,8,0,0,1-4.85,7.17L31.83,174.37l34.45,9.86a8,8,0,0,1,5.49,5.5l9.84,34.44,15.16-35.4a8,8,0,0,1,7.17-4.84Q137.71,183.12,161.54,172.64ZM212.42,43.57c-14.15-3-64.1-11-100.3,14.75a81.21,81.21,0,0,0-16,15.07,36,36,0,0,0,39.35,38.44,8,8,0,0,1,8.73,8.73,36,36,0,0,0,38.47,39.34,80.81,80.81,0,0,0,15-16C223.42,107.73,215.42,57.74,212.42,43.57Z\"/>",
+    "source": "design/assets/phosphor/duotone/fish.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/fish-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "b3de2e6bcd4e1a4d29a621efdad3ffdd28bf6a2ae7aeeac66f95093b27fe9219"
+  },
+  "phosphor:football:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M222.5,110.56c-3.32,25.23-13,53-36,75.95s-50.72,32.67-75.95,36h0L33.5,145.44h0c3.32-25.23,13-53,36-75.95s50.72-32.67,76-36l77.06,77.06Z\" opacity=\"0.2\"/><path d=\"M229.06,53.89a32.92,32.92,0,0,0-26.95-26.95c-32.37-5.49-93.39-8-138.27,36.9s-42.39,105.9-36.9,138.27a32.92,32.92,0,0,0,27,26.95A206.58,206.58,0,0,0,88.27,232c32.09,0,72.05-8,103.89-39.84C237.05,147.28,234.55,86.26,229.06,53.89Zm-61.61-14a192,192,0,0,1,32,2.8A16.94,16.94,0,0,1,213.3,56.56,188.59,188.59,0,0,1,216,92.78L163.21,40C164.61,39.92,166,39.9,167.45,39.9ZM56.56,213.3A16.94,16.94,0,0,1,42.7,199.44,188.59,188.59,0,0,1,40,163.22L92.78,216A187.79,187.79,0,0,1,56.56,213.3Zm124.3-32.44c-11.61,11.6-33.27,27.73-67.37,33.27L41.87,142.51c5.54-34.1,21.67-55.76,33.27-67.37S108.4,47.4,142.5,41.86l71.63,71.63C208.59,147.59,192.46,169.25,180.86,180.86Zm-15.22-90.5a8,8,0,0,1,0,11.31L151.3,116l6.34,6.34a8,8,0,1,1-11.31,11.3L140,127.31,127.31,140l6.34,6.34a8,8,0,1,1-11.3,11.31L116,151.3l-14.34,14.34a8,8,0,1,1-11.31-11.31L104.7,140l-6.34-6.34a8,8,0,0,1,11.31-11.3l6.34,6.34L128.69,116l-6.34-6.34a8,8,0,0,1,11.3-11.31L140,104.7l14.34-14.34A8,8,0,0,1,165.64,90.36Z\"/>",
+    "source": "design/assets/phosphor/duotone/football.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/football-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "4682cdf378723b4fe6f8967d72ac76d2739fa1f69bcfbbb635f2765106974b77"
+  },
+  "phosphor:game-controller:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M216.86,207.57a28,28,0,0,1-24.66-7.77L150.09,152H172a51.94,51.94,0,0,0,51.2-61h0l16.36,84.17A28,28,0,0,1,216.86,207.57Z\" opacity=\"0.2\"/><path d=\"M176,112H152a8,8,0,0,1,0-16h24a8,8,0,0,1,0,16ZM104,96H96V88a8,8,0,0,0-16,0v8H72a8,8,0,0,0,0,16h8v8a8,8,0,0,0,16,0v-8h8a8,8,0,0,0,0-16ZM241.48,200.65a36,36,0,0,1-54.94,4.81c-.12-.12-.24-.24-.35-.37L146.48,160h-37L69.81,205.09l-.35.37A36.08,36.08,0,0,1,44,216,36,36,0,0,1,8.56,173.75a.68.68,0,0,1,0-.14L24.93,89.52A59.88,59.88,0,0,1,83.89,40H172a60.08,60.08,0,0,1,59,49.25c0,.06,0,.12,0,.18l16.37,84.17a.68.68,0,0,1,0,.14A35.74,35.74,0,0,1,241.48,200.65ZM172,144a44,44,0,0,0,0-88H83.89A43.9,43.9,0,0,0,40.68,92.37l0,.13L24.3,176.59A20,20,0,0,0,58,194.3l41.92-47.59a8,8,0,0,1,6-2.71Zm59.7,32.59-8.74-45A60,60,0,0,1,172,160h-4.2L198,194.31a20.09,20.09,0,0,0,17.46,5.39,20,20,0,0,0,16.23-23.11Z\"/>",
+    "source": "design/assets/phosphor/duotone/game-controller.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/game-controller-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "0ea6d7fd6dc328b3e2e1041b3575639e61a9546082553c0f4ca6101ee8f9f6b3"
+  },
   "phosphor:gear:duotone": {
     "viewBox": "0 0 256 256",
     "fill": "currentColor",
@@ -158,8 +484,35 @@ export const APPROVED_ICONS = {
     "inner": "<path d=\"M208,128v72a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V128Z\" opacity=\"0.2\"/><path d=\"M216,72H180.92c.39-.33.79-.65,1.17-1A29.53,29.53,0,0,0,192,49.57,32.62,32.62,0,0,0,158.44,16,29.53,29.53,0,0,0,137,25.91a54.94,54.94,0,0,0-9,14.48,54.94,54.94,0,0,0-9-14.48A29.53,29.53,0,0,0,97.56,16,32.62,32.62,0,0,0,64,49.57,29.53,29.53,0,0,0,73.91,71c.38.33.78.65,1.17,1H40A16,16,0,0,0,24,88v32a16,16,0,0,0,16,16v64a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V136a16,16,0,0,0,16-16V88A16,16,0,0,0,216,72ZM149,36.51a13.69,13.69,0,0,1,10-4.5h.49A16.62,16.62,0,0,1,176,49.08a13.69,13.69,0,0,1-4.5,10c-9.49,8.4-25.24,11.36-35,12.4C137.7,60.89,141,45.5,149,36.51Zm-64.09.36A16.63,16.63,0,0,1,96.59,32h.49a13.69,13.69,0,0,1,10,4.5c8.39,9.48,11.35,25.2,12.39,34.92-9.72-1-25.44-4-34.92-12.39a13.69,13.69,0,0,1-4.5-10A16.6,16.6,0,0,1,84.87,36.87ZM40,88h80v32H40Zm16,48h64v64H56Zm144,64H136V136h64Zm16-80H136V88h80v32Z\"/>",
     "source": "design/assets/phosphor/duotone/gift.svg",
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/gift-duotone.svg",
-    "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+    "licence": "MIT — Phosphor",
     "sha256": "8d1c765396fa149ee4d709be754945860dd1b034dab8572fa51a95c074f7a3bb"
+  },
+  "phosphor:graduation-cap:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M216,113.07v53.22a8,8,0,0,1-2,5.31c-11.3,12.59-38.9,36.4-86,36.4s-74.68-23.81-86-36.4a8,8,0,0,1-2-5.31V113.07L128,160Z\" opacity=\"0.2\"/><path d=\"M251.76,88.94l-120-64a8,8,0,0,0-7.52,0l-120,64a8,8,0,0,0,0,14.12L32,117.87v48.42a15.91,15.91,0,0,0,4.06,10.65C49.16,191.53,78.51,216,128,216a130,130,0,0,0,48-8.76V240a8,8,0,0,0,16,0V199.51a115.63,115.63,0,0,0,27.94-22.57A15.91,15.91,0,0,0,224,166.29V117.87l27.76-14.81a8,8,0,0,0,0-14.12ZM128,200c-43.27,0-68.72-21.14-80-33.71V126.4l76.24,40.66a8,8,0,0,0,7.52,0L176,143.47v46.34C163.4,195.69,147.52,200,128,200Zm80-33.75a97.83,97.83,0,0,1-16,14.25V134.93l16-8.53ZM188,118.94l-.22-.13-56-29.87a8,8,0,0,0-7.52,14.12L171,128l-43,22.93L25,96,128,41.07,231,96Z\"/>",
+    "source": "design/assets/phosphor/duotone/graduation-cap.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/graduation-cap-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "83f2327ca5d41d02b601b41a7d127961890c4495e7dfd1c5ccdd77c5c3eee5f2"
+  },
+  "phosphor:guitar:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M155.2,100.8c-23-23-55.57-27.63-72.8-10.4a34.21,34.21,0,0,0-7.61,11.66,16.23,16.23,0,0,1-14.72,10C48,112.44,37,116.61,28.8,124.8,7.6,146,13.33,186.12,41.6,214.4s68.39,34,89.6,12.8C139.39,219,143.56,208,144,195.93a16.23,16.23,0,0,1,10-14.72,34.21,34.21,0,0,0,11.66-7.61C182.83,156.37,178.17,123.78,155.2,100.8ZM112,168a24,24,0,1,1,24-24A24,24,0,0,1,112,168Z\" opacity=\"0.2\"/><path d=\"M249.66,46.34l-40-40a8,8,0,0,0-11.31,11.32L200.69,20,140.52,80.16C117.73,68.3,92.21,69.29,76.75,84.74a42.27,42.27,0,0,0-9.39,14.37A8.24,8.24,0,0,1,59.81,104c-14.59.49-27.26,5.72-36.65,15.11C11.08,131.22,6,148.6,8.74,168.07,11.4,186.7,21.07,205.15,36,220s33.34,24.56,52,27.22A71.13,71.13,0,0,0,98.1,248c15.32,0,28.83-5.23,38.76-15.16,9.39-9.39,14.62-22.06,15.11-36.65a8.24,8.24,0,0,1,4.92-7.55,42.12,42.12,0,0,0,14.37-9.39c15.45-15.46,16.44-41,4.58-63.77L236,55.31l2.34,2.34a8,8,0,1,0,11.32-11.31ZM160,167.93a26.12,26.12,0,0,1-8.95,5.83,24.24,24.24,0,0,0-15,21.89c-.36,10.46-4,19.41-10.43,25.88-8.44,8.43-21,11.95-35.36,9.89C75,229.25,59.73,221.19,47.27,208.73S26.75,181,24.58,165.81c-2-14.37,1.46-26.92,9.89-35.36C40.94,124,49.89,120.37,60.35,120h0a24.22,24.22,0,0,0,21.89-15,26.12,26.12,0,0,1,5.83-9c5.49-5.49,13-8.13,21.38-8.13a49.38,49.38,0,0,1,19.13,4.19L108.5,112.19a32,32,0,1,0,35.31,35.31l20.08-20.08C170.41,142.71,169.47,158.41,160,167.93Zm-10.4-61.48a72.9,72.9,0,0,1,5.93,6.75l-15.42,15.42a32.22,32.22,0,0,0-12.68-12.68l15.42-15.43A73,73,0,0,1,149.55,106.45ZM112,128a16,16,0,0,1,16,16h0a16,16,0,1,1-16-16Zm48.85-32.85a86.94,86.94,0,0,0-6.68-6L176,67.31,188.69,80l-21.83,21.82A86.94,86.94,0,0,0,160.86,95.14ZM200,68.68,187.32,56,212,31.31,224.69,44ZM93.66,194.33a8,8,0,0,1-11.31,11.32l-32-32a8,8,0,0,1,11.32-11.31Z\"/>",
+    "source": "design/assets/phosphor/duotone/guitar.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/guitar-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "cea1baf9ec6a944ffb8235381bff46fdd834727cf2f835473ce0c75db5da0aac"
+  },
+  "phosphor:hamburger:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M188,176l20-7.27V184a32,32,0,0,1-32,32H80a32,32,0,0,1-32-32V167.27L68,160l40,16,40-16Zm27.82-89.72C209.32,55.55,172.48,32,128,32S46.68,55.55,40.18,86.28A8,8,0,0,0,48.07,96H207.93A8,8,0,0,0,215.82,86.28Z\" opacity=\"0.2\"/><path d=\"M48.07,104H207.93a16,16,0,0,0,15.72-19.38C216.22,49.5,176,24,128,24S39.78,49.5,32.35,84.62A16,16,0,0,0,48.07,104ZM128,40c39.82,0,74.21,20.61,79.93,48H48.07L48,87.93C53.79,60.61,88.18,40,128,40ZM229.26,152.48l-41.13,15L151,152.57a8,8,0,0,0-5.94,0l-37,14.81L71,152.57a8,8,0,0,0-5.7-.09l-44,16a8,8,0,0,0,5.47,15L40,178.69V184a40,40,0,0,0,40,40h96a40,40,0,0,0,40-40v-9.67l18.73-6.81a8,8,0,1,0-5.47-15ZM200,184a24,24,0,0,1-24,24H80a24,24,0,0,1-24-24V172.88l11.87-4.32L105,183.43a8,8,0,0,0,5.94,0l37-14.81,37,14.81a8,8,0,0,0,5.7.09l9.27-3.37ZM16,128a8,8,0,0,1,8-8H232a8,8,0,0,1,0,16H24A8,8,0,0,1,16,128Z\"/>",
+    "source": "design/assets/phosphor/duotone/hamburger.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/hamburger-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "820d43ebfd3a3e0e7d1cc8b1f3b858fab89b838161d3f72f380599766e24a0ef"
   },
   "phosphor:hand-heart:duotone": {
     "viewBox": "0 0 256 256",
@@ -167,7 +520,7 @@ export const APPROVED_ICONS = {
     "inner": "<path d=\"M16,152H48v56H16a8,8,0,0,1-8-8V160A8,8,0,0,1,16,152ZM192.54,40A39.12,39.12,0,0,0,156,64a39.12,39.12,0,0,0-36.54-24C97.67,40,80,58.31,80,80c0,14.56,7,27.71,16.73,40H140a20,20,0,0,1,0,40h4l37.78-8.68C203.82,135.07,232,109.23,232,80,232,58.31,214.33,40,192.54,40Z\" opacity=\"0.2\"/><path d=\"M230.33,141.06a24.34,24.34,0,0,0-18.61-4.77C230.5,117.33,240,98.48,240,80c0-26.47-21.29-48-47.46-48A47.58,47.58,0,0,0,156,48.75,47.58,47.58,0,0,0,119.46,32C93.29,32,72,53.53,72,80c0,11,3.24,21.69,10.06,33a31.87,31.87,0,0,0-14.75,8.4L44.69,144H16A16,16,0,0,0,0,160v40a16,16,0,0,0,16,16H120a7.93,7.93,0,0,0,1.94-.24l64-16a6.94,6.94,0,0,0,1.19-.4L226,182.82l.44-.2a24.6,24.6,0,0,0,3.93-41.56ZM119.46,48A31.15,31.15,0,0,1,148.6,67a8,8,0,0,0,14.8,0,31.15,31.15,0,0,1,29.14-19C209.59,48,224,62.65,224,80c0,19.51-15.79,41.58-45.66,63.9l-11.09,2.55A28,28,0,0,0,140,112H100.68C92.05,100.36,88,90.12,88,80,88,62.65,102.41,48,119.46,48ZM16,160H40v40H16Zm203.43,8.21-38,16.18L119,200H56V155.31l22.63-22.62A15.86,15.86,0,0,1,89.94,128H140a12,12,0,0,1,0,24H112a8,8,0,0,0,0,16h32a8.32,8.32,0,0,0,1.79-.2l67-15.41.31-.08a8.6,8.6,0,0,1,6.3,15.9Z\"/>",
     "source": "design/assets/phosphor/duotone/hand-heart.svg",
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/hand-heart-duotone.svg",
-    "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+    "licence": "MIT — Phosphor",
     "sha256": "58773db78b71504d7b74eb25caa788d7ac2cb9f16bfdd985fc2c46e97fe55b9b"
   },
   "phosphor:hands-clapping:duotone": {
@@ -176,7 +529,7 @@ export const APPROVED_ICONS = {
     "inner": "<path d=\"M199,187.76h0A71.67,71.67,0,0,0,190.34,140l-20.2-35a18,18,0,0,0-31.55,17.26L114.71,81A18,18,0,1,0,83.54,99L77.81,89,65.1,67A18,18,0,1,1,96.28,49L102,59a18,18,0,1,1,31.17-18l24.23,42a18,18,0,0,1,31.2-18l21.11,36.57A72,72,0,0,1,199,187.76Z\" opacity=\"0.2\"/><path d=\"M160.22,24V8a8,8,0,0,1,16,0V24a8,8,0,0,1-16,0ZM196.1,41a7.91,7.91,0,0,0,4.17,1.17,8,8,0,0,0,6.84-3.83l8-13.11a8,8,0,0,0-13.68-8.33l-8,13.1A8,8,0,0,0,196.1,41Zm47.51,12.59a8,8,0,0,0-10.08-5.16l-15.06,4.85a8,8,0,0,0,2.46,15.62,8.15,8.15,0,0,0,2.46-.39l15.05-4.85A8,8,0,0,0,243.61,53.55ZM217,97.58a80.22,80.22,0,0,1-10.22,94c-.34,1.73-.72,3.46-1.19,5.18A80.17,80.17,0,0,1,58.77,216L23.5,155a26,26,0,0,1,19.24-38.79l-3-5.2a26,26,0,0,1,19.2-38.78L58.24,71A26,26,0,0,1,95.47,36.53,26.06,26.06,0,0,1,140.3,37l12.26,21.2A26.07,26.07,0,0,1,195.81,61ZM109.07,55l0,0h0l25,43.17a26,26,0,0,1,17.33-10L126.42,45a10,10,0,1,0-17.35,10ZM72.12,63l6.46,11.17a26.05,26.05,0,0,1,17.32-10L89.45,53A10,10,0,1,0,72.12,63Zm111.54,81-20.22-35a10,10,0,0,0-17.74,9.25L158.3,140a8,8,0,0,1-13.87,8l-36.5-63A10,10,0,1,0,90.58,95l26.05,45a8,8,0,0,1-13.87,8L71,93h0l0,0a10,10,0,0,0-17.33,10l35.22,61A8,8,0,0,1,75,172L54.72,137a10,10,0,0,0-17.34,10l35.27,61a64.12,64.12,0,0,0,117.42-15.44A63.52,63.52,0,0,0,183.66,144Zm19.41-38.42L181.93,69A10,10,0,0,0,164.55,79l33,57.05A80.2,80.2,0,0,1,207,161.51,64.23,64.23,0,0,0,203.07,105.58Z\"/>",
     "source": "design/assets/phosphor/duotone/hands-clapping.svg",
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/hands-clapping-duotone.svg",
-    "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+    "licence": "MIT — Phosphor",
     "sha256": "ec06f6fd5f5b8800cf1e12961259ad81ae1693712759c978cc66c3e35bb9c9ee"
   },
   "phosphor:handshake:duotone": {
@@ -185,7 +538,7 @@ export const APPROVED_ICONS = {
     "inner": "<path d=\"M200,152l-40,40L96,176,40,136,72.68,70.63,128,56l55.32,14.63L183.6,72H144L98.34,116.29a8,8,0,0,0,1.38,12.42C117.23,139.9,141,139.13,160,120Z\" opacity=\"0.2\"/><path d=\"M254.3,107.91,228.78,56.85a16,16,0,0,0-21.47-7.15L182.44,62.13,130.05,48.27a8.14,8.14,0,0,0-4.1,0L73.56,62.13,48.69,49.7a16,16,0,0,0-21.47,7.15L1.7,107.9a16,16,0,0,0,7.15,21.47l27,13.51,55.49,39.63a8.06,8.06,0,0,0,2.71,1.25l64,16a8,8,0,0,0,7.6-2.1l55.07-55.08,26.42-13.21a16,16,0,0,0,7.15-21.46Zm-54.89,33.37L165,113.72a8,8,0,0,0-10.68.61C136.51,132.27,116.66,130,104,122L147.24,80h31.81l27.21,54.41ZM41.53,64,62,74.22,36.43,125.27,16,115.06Zm116,119.13L99.42,168.61l-49.2-35.14,28-56L128,64.28l9.8,2.59-45,43.68-.08.09a16,16,0,0,0,2.72,24.81c20.56,13.13,45.37,11,64.91-5L188,152.66Zm62-57.87-25.52-51L214.47,64,240,115.06Zm-87.75,92.67a8,8,0,0,1-7.75,6.06,8.13,8.13,0,0,1-1.95-.24L80.41,213.33a7.89,7.89,0,0,1-2.71-1.25L51.35,193.26a8,8,0,0,1,9.3-13l25.11,17.94L126,208.24A8,8,0,0,1,131.82,217.94Z\"/>",
     "source": "design/assets/phosphor/duotone/handshake.svg",
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/handshake-duotone.svg",
-    "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+    "licence": "MIT — Phosphor",
     "sha256": "4f8827d067f5b777902e4e6e0f1e6ccc6b60c5d34605d65ecb8020137072ebb9"
   },
   "phosphor:house-line:duotone": {
@@ -197,6 +550,15 @@ export const APPROVED_ICONS = {
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "c4a8e60acc0a98d65c01c210d9e6ac1cbc302d9e3df9ceffbbf9d9ff06f8dba4"
   },
+  "phosphor:ice-cream:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M216,120a16,16,0,0,1-16,16H56a16,16,0,0,1,0-32V96a72,72,0,0,1,144,0v8A16,16,0,0,1,216,120Z\" opacity=\"0.2\"/><path d=\"M208,97.37V96A80,80,0,0,0,48,96v1.37A24,24,0,0,0,56,144h3.29l54.82,95.94a16,16,0,0,0,27.78,0L196.71,144H200a24,24,0,0,0,8-46.63ZM77.71,144H97.07l40.61,71.06L128,232Zm57.08,0,21.75,38.06-9.65,16.88L115.5,144Zm31,21.94L153.21,144h25.08ZM200,128H56a8,8,0,0,1,0-16,8,8,0,0,0,8-8V96a64,64,0,0,1,128,0v8a8,8,0,0,0,8,8,8,8,0,0,1,0,16Z\"/>",
+    "source": "design/assets/phosphor/duotone/ice-cream.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/ice-cream-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "f9cee8928ee15cc593cb068b4bf39c41e47c4fbf7f62a77a344c24f933dce98e"
+  },
   "phosphor:info:duotone": {
     "viewBox": "0 0 256 256",
     "fill": "currentColor",
@@ -205,6 +567,15 @@ export const APPROVED_ICONS = {
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/info-duotone.svg",
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "dec9ea1394c618d6d576ba43e0f08eea265eaf20046e98bc3da19eb4b8da73e8"
+  },
+  "phosphor:lightbulb:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M208,104a79.86,79.86,0,0,1-30.59,62.92A24.29,24.29,0,0,0,168,186v6a8,8,0,0,1-8,8H96a8,8,0,0,1-8-8v-6a24.11,24.11,0,0,0-9.3-19A79.87,79.87,0,0,1,48,104.45C47.76,61.09,82.72,25,126.07,24A80,80,0,0,1,208,104Z\" opacity=\"0.2\"/><path d=\"M176,232a8,8,0,0,1-8,8H88a8,8,0,0,1,0-16h80A8,8,0,0,1,176,232Zm40-128a87.55,87.55,0,0,1-33.64,69.21A16.24,16.24,0,0,0,176,186v6a16,16,0,0,1-16,16H96a16,16,0,0,1-16-16v-6a16,16,0,0,0-6.23-12.66A87.59,87.59,0,0,1,40,104.49C39.74,56.83,78.26,17.14,125.88,16A88,88,0,0,1,216,104Zm-16,0a72,72,0,0,0-73.74-72c-39,.92-70.47,33.39-70.26,72.39a71.65,71.65,0,0,0,27.64,56.3A32,32,0,0,1,96,186v6h64v-6a32.15,32.15,0,0,1,12.47-25.35A71.65,71.65,0,0,0,200,104Zm-16.11-9.34a57.6,57.6,0,0,0-46.56-46.55,8,8,0,0,0-2.66,15.78c16.57,2.79,30.63,16.85,33.44,33.45A8,8,0,0,0,176,104a9,9,0,0,0,1.35-.11A8,8,0,0,0,183.89,94.66Z\"/>",
+    "source": "design/assets/phosphor/duotone/lightbulb.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/lightbulb-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "498e42a870d662fd36e7dba9b53fc82c3cdbe05452ad0534f3de8033dd07a2a6"
   },
   "phosphor:list-checks:duotone": {
     "viewBox": "0 0 256 256",
@@ -215,14 +586,95 @@ export const APPROVED_ICONS = {
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "aa71967b96fc44f2e40fabf3b297e333925c994cc22a2da2177980b7eea5a55e"
   },
+  "phosphor:medal:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M176,96a48,48,0,1,1-48-48A48,48,0,0,1,176,96Z\" opacity=\"0.2\"/><path d=\"M216,96A88,88,0,1,0,72,163.83V240a8,8,0,0,0,11.58,7.16L128,225l44.43,22.21A8.07,8.07,0,0,0,176,248a8,8,0,0,0,8-8V163.83A87.85,87.85,0,0,0,216,96ZM56,96a72,72,0,1,1,72,72A72.08,72.08,0,0,1,56,96ZM168,227.06l-36.43-18.21a8,8,0,0,0-7.16,0L88,227.06V174.37a87.89,87.89,0,0,0,80,0ZM128,152A56,56,0,1,0,72,96,56.06,56.06,0,0,0,128,152Zm0-96A40,40,0,1,1,88,96,40,40,0,0,1,128,56Z\"/>",
+    "source": "design/assets/phosphor/duotone/medal.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/medal-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "df7265d7a889dd2016051d1c508ca9d10f49ccba7bd7236c1bbf3b34febde58e"
+  },
+  "phosphor:microphone:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M168,64v64a40,40,0,0,1-40,40h0a40,40,0,0,1-40-40V64a40,40,0,0,1,40-40h0A40,40,0,0,1,168,64Z\" opacity=\"0.2\"/><path d=\"M128,176a48.05,48.05,0,0,0,48-48V64a48,48,0,0,0-96,0v64A48.05,48.05,0,0,0,128,176ZM96,64a32,32,0,0,1,64,0v64a32,32,0,0,1-64,0Zm40,143.6V240a8,8,0,0,1-16,0V207.6A80.11,80.11,0,0,1,48,128a8,8,0,0,1,16,0,64,64,0,0,0,128,0,8,8,0,0,1,16,0A80.11,80.11,0,0,1,136,207.6Z\"/>",
+    "source": "design/assets/phosphor/duotone/microphone.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/microphone-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "c1bd548c24ecfaaa07054cefd93885537c518234691f9614e144e52aa19eedce"
+  },
+  "phosphor:microscope:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M136,32V136a8,8,0,0,1-8,8H80a8,8,0,0,1-8-8V32a8,8,0,0,1,8-8h48A8,8,0,0,1,136,32Z\" opacity=\"0.2\"/><path d=\"M224,208H203.94A88.05,88.05,0,0,0,144,64.37V32a16,16,0,0,0-16-16H80A16,16,0,0,0,64,32V136a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V80.46A72,72,0,0,1,181.25,208H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16Zm-96-72H80V32h48V136ZM72,184a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Z\"/>",
+    "source": "design/assets/phosphor/duotone/microscope.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/microscope-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "66226f0451c5de04bc3d900994fd4fd1c502f3e98f53e41d62b5ee165cfea0c1"
+  },
+  "phosphor:money:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M160,128a32,32,0,1,1-32-32A32,32,0,0,1,160,128Zm40-64a48.85,48.85,0,0,0,40,40V64Zm0,128h40V152A48.85,48.85,0,0,0,200,192ZM16,152v40H56A48.85,48.85,0,0,0,16,152Zm0-48A48.85,48.85,0,0,0,56,64H16Z\" opacity=\"0.2\"/><path d=\"M128,88a40,40,0,1,0,40,40A40,40,0,0,0,128,88Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,152ZM240,56H16a8,8,0,0,0-8,8V192a8,8,0,0,0,8,8H240a8,8,0,0,0,8-8V64A8,8,0,0,0,240,56ZM24,72H45.37A40.81,40.81,0,0,1,24,93.37Zm0,112V162.63A40.81,40.81,0,0,1,45.37,184Zm208,0H210.63A40.81,40.81,0,0,1,232,162.63Zm0-38.35A56.78,56.78,0,0,0,193.65,184H62.35A56.78,56.78,0,0,0,24,145.65v-35.3A56.78,56.78,0,0,0,62.35,72h131.3A56.78,56.78,0,0,0,232,110.35Zm0-52.28A40.81,40.81,0,0,1,210.63,72H232Z\"/>",
+    "source": "design/assets/phosphor/duotone/money.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/money-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "4cf293632438f3e67c15e57181c9fb2ec2ad4f7d16d4e23e3fe8ef9f3af7dbc2"
+  },
+  "phosphor:moon-stars:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M210.69,158.18A88,88,0,1,1,97.82,45.31,96.08,96.08,0,0,0,192,160,96.78,96.78,0,0,0,210.69,158.18Z\" opacity=\"0.2\"/><path d=\"M240,96a8,8,0,0,1-8,8H216v16a8,8,0,0,1-16,0V104H184a8,8,0,0,1,0-16h16V72a8,8,0,0,1,16,0V88h16A8,8,0,0,1,240,96ZM144,56h8v8a8,8,0,0,0,16,0V56h8a8,8,0,0,0,0-16h-8V32a8,8,0,0,0-16,0v8h-8a8,8,0,0,0,0,16Zm72.77,97a8,8,0,0,1,1.43,8A96,96,0,1,1,95.07,37.8a8,8,0,0,1,10.6,9.06A88.07,88.07,0,0,0,209.14,150.33,8,8,0,0,1,216.77,153Zm-19.39,14.88c-1.79.09-3.59.14-5.38.14A104.11,104.11,0,0,1,88,64c0-1.79,0-3.59.14-5.38A80,80,0,1,0,197.38,167.86Z\"/>",
+    "source": "design/assets/phosphor/duotone/moon-stars.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/moon-stars-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "05463280716f6ec28485c0ef4c25417f5d0f857ba635c3e011daabaa358f0984"
+  },
+  "phosphor:mountains:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M144,52a20,20,0,1,1,20,20A20,20,0,0,1,144,52Zm49.44,55.92a8,8,0,0,0-13.77,0l-33,55.75-21-35.67H50.35L8,200H248Z\" opacity=\"0.2\"/><path d=\"M164,80a28,28,0,1,0-28-28A28,28,0,0,0,164,80Zm0-40a12,12,0,1,1-12,12A12,12,0,0,1,164,40Zm90.88,155.92-54.56-92.08A15.87,15.87,0,0,0,186.55,96h0a15.85,15.85,0,0,0-13.76,7.84L146.63,148l-44.84-76.1a16,16,0,0,0-27.58,0L1.11,195.94A8,8,0,0,0,8,208H248a8,8,0,0,0,6.88-12.08ZM88,80l23.57,40H64.43ZM22,192l33-56h66l33,56Zm150.57,0-16.66-28.28L186.55,112,234,192Z\"/>",
+    "source": "design/assets/phosphor/duotone/mountains.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/mountains-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "6fae82b105c1af7bff054c4ccba8a31fc06c3e63205ea604aa48ab71bb08bd25"
+  },
+  "phosphor:music-notes:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M208,164a28,28,0,1,1-28-28A28,28,0,0,1,208,164ZM52,168a28,28,0,1,0,28,28A28,28,0,0,0,52,168Z\" opacity=\"0.2\"/><path d=\"M212.92,17.69a8,8,0,0,0-6.86-1.45l-128,32A8,8,0,0,0,72,56V166.08A36,36,0,1,0,88,196V110.25l112-28v51.83A36,36,0,1,0,216,164V24A8,8,0,0,0,212.92,17.69ZM52,216a20,20,0,1,1,20-20A20,20,0,0,1,52,216ZM88,93.75V62.25l112-28v31.5ZM180,184a20,20,0,1,1,20-20A20,20,0,0,1,180,184Z\"/>",
+    "source": "design/assets/phosphor/duotone/music-notes.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/music-notes-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "3bef98ba3b52c89aa02fa9e77d76aae93cebe71f116afa1eb5df57ff21d17d02"
+  },
+  "phosphor:notebook:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M80,40V216H48a8,8,0,0,1-8-8V48a8,8,0,0,1,8-8Z\" opacity=\"0.2\"/><path d=\"M184,112a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h64A8,8,0,0,1,184,112Zm-8,24H112a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16Zm48-88V208a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32H208A16,16,0,0,1,224,48ZM48,208H72V48H48Zm160,0V48H88V208H208Z\"/>",
+    "source": "design/assets/phosphor/duotone/notebook.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/notebook-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "909853345ec23bad2a2266140eb18666dac70824651a350a8af38fefe46367e2"
+  },
   "phosphor:paint-brush:duotone": {
     "viewBox": "0 0 256 256",
     "fill": "currentColor",
     "inner": "<path d=\"M224,32c0,32.81-31.64,67.43-58.64,91.05A84.39,84.39,0,0,0,133,90.64C156.57,63.64,191.19,32,224,32Z\" opacity=\"0.2\"/><path d=\"M232,32a8,8,0,0,0-8-8c-44.08,0-89.31,49.71-114.43,82.63A60,60,0,0,0,32,164c0,30.88-19.54,44.73-20.47,45.37A8,8,0,0,0,16,224H92a60,60,0,0,0,57.37-77.57C182.3,121.31,232,76.08,232,32ZM92,208H34.63C41.38,198.41,48,183.92,48,164a44,44,0,1,1,44,44Zm32.42-94.45q5.14-6.66,10.09-12.55A76.23,76.23,0,0,1,155,121.49q-5.9,4.94-12.55,10.09A60.54,60.54,0,0,0,124.42,113.55Zm42.7-2.68a92.57,92.57,0,0,0-22-22c31.78-34.53,55.75-45,69.9-47.91C212.17,55.12,201.65,79.09,167.12,110.87Z\"/>",
     "source": "design/assets/phosphor/duotone/paint-brush.svg",
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/paint-brush-duotone.svg",
-    "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+    "licence": "MIT — Phosphor",
     "sha256": "0b51caafe4ae1a139e7da7bd4051f199fdf466ef9cc2ba6b1a30058eaf93285a"
+  },
+  "phosphor:palette:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M224,127.17a96.48,96.48,0,0,1-2.39,22.18A24,24,0,0,1,198.21,168H152a24,24,0,0,0-24,24,24,24,0,0,1-32,22.61C58.73,201.44,32,169.81,32,128a96,96,0,0,1,95-96C179.84,31.47,223.55,74.35,224,127.17Z\" opacity=\"0.2\"/><path d=\"M200.77,53.89A103.27,103.27,0,0,0,128,24h-1.07A104,104,0,0,0,24,128c0,43,26.58,79.06,69.36,94.17A32,32,0,0,0,136,192a16,16,0,0,1,16-16h46.21a31.81,31.81,0,0,0,31.2-24.88,104.43,104.43,0,0,0,2.59-24A103.28,103.28,0,0,0,200.77,53.89Zm13,93.71A15.89,15.89,0,0,1,198.21,160H152a32,32,0,0,0-32,32,16,16,0,0,1-21.31,15.07C62.49,194.3,40,164,40,128a88,88,0,0,1,87.09-88h.9a88.35,88.35,0,0,1,88,87.25A88.86,88.86,0,0,1,213.81,147.6ZM140,76a12,12,0,1,1-12-12A12,12,0,0,1,140,76ZM96,100A12,12,0,1,1,84,88,12,12,0,0,1,96,100Zm0,56a12,12,0,1,1-12-12A12,12,0,0,1,96,156Zm88-56a12,12,0,1,1-12-12A12,12,0,0,1,184,100Z\"/>",
+    "source": "design/assets/phosphor/duotone/palette.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/palette-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "f88e53a831d175ba02b0ba49d8be24be22963a1522cd8e55bf07d02897b8c7eb"
   },
   "phosphor:pause-circle:duotone": {
     "viewBox": "0 0 256 256",
@@ -233,14 +685,77 @@ export const APPROVED_ICONS = {
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "94175b4db6fae91ebadb9e08105285cef2c1e0c70598f0b1971a638e4168dc78"
   },
+  "phosphor:paw-print:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M232,108a20,20,0,1,1-20-20A20,20,0,0,1,232,108ZM64,108a20,20,0,1,0-20,20A20,20,0,0,0,64,108ZM92,80A20,20,0,1,0,72,60,20,20,0,0,0,92,80Zm72,0a20,20,0,1,0-20-20A20,20,0,0,0,164,80Zm19.24,75.85A43.46,43.46,0,0,1,162.57,130a36,36,0,0,0-69.14,0,43.49,43.49,0,0,1-20.67,25.9,32,32,0,0,0,27.73,57.62,72.49,72.49,0,0,1,55,0,32,32,0,0,0,27.73-57.62Z\" opacity=\"0.2\"/><path d=\"M212,80a28,28,0,1,0,28,28A28,28,0,0,0,212,80Zm0,40a12,12,0,1,1,12-12A12,12,0,0,1,212,120ZM72,108a28,28,0,1,0-28,28A28,28,0,0,0,72,108ZM44,120a12,12,0,1,1,12-12A12,12,0,0,1,44,120ZM92,88A28,28,0,1,0,64,60,28,28,0,0,0,92,88Zm0-40A12,12,0,1,1,80,60,12,12,0,0,1,92,48Zm72,40a28,28,0,1,0-28-28A28,28,0,0,0,164,88Zm0-40a12,12,0,1,1-12,12A12,12,0,0,1,164,48Zm23.12,100.86a35.3,35.3,0,0,1-16.87-21.14,44,44,0,0,0-84.5,0A35.25,35.25,0,0,1,69,148.82,40,40,0,0,0,88,224a39.48,39.48,0,0,0,15.52-3.13,64.09,64.09,0,0,1,48.87,0,40,40,0,0,0,34.73-72ZM168,208a24,24,0,0,1-9.45-1.93,80.14,80.14,0,0,0-61.19,0,24,24,0,0,1-20.71-43.26,51.22,51.22,0,0,0,24.46-30.67,28,28,0,0,1,53.78,0,51.27,51.27,0,0,0,24.53,30.71A24,24,0,0,1,168,208Z\"/>",
+    "source": "design/assets/phosphor/duotone/paw-print.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/paw-print-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "2d10fb0d6e3797fc3530c9976e90799683c6a8a30cadae975edc421c12171950"
+  },
+  "phosphor:pen:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M221.66,90.34,192,120,136,64l29.66-29.66a8,8,0,0,1,11.31,0L221.66,79A8,8,0,0,1,221.66,90.34Z\" opacity=\"0.2\"/><path d=\"M227.32,73.37,182.63,28.69a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31l83.67-83.66,3.48,13.9-36.8,36.79a8,8,0,0,0,11.31,11.32l40-40a8,8,0,0,0,2.11-7.6l-6.9-27.61L227.32,96A16,16,0,0,0,227.32,73.37ZM48,208V179.31L76.69,208Zm48-3.31L51.31,160,136,75.31,180.69,120Zm96-96L147.32,64l24-24L216,84.69Z\"/>",
+    "source": "design/assets/phosphor/duotone/pen.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/pen-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "3f417054f2b2cbebf49f705e7910d651cc8ce92e26798d77556504aef4cc10d7"
+  },
   "phosphor:pencil:duotone": {
     "viewBox": "0 0 256 256",
     "fill": "currentColor",
     "inner": "<path d=\"M221.66,90.34,192,120,136,64l29.66-29.66a8,8,0,0,1,11.31,0L221.66,79A8,8,0,0,1,221.66,90.34Z\" opacity=\"0.2\"/><path d=\"M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM51.31,160,136,75.31,152.69,92,68,176.68ZM48,179.31,76.69,208H48Zm48,25.38L79.31,188,164,103.31,180.69,120Zm96-96L147.31,64l24-24L216,84.68Z\"/>",
     "source": "design/assets/phosphor/duotone/pencil.svg",
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/pencil-duotone.svg",
-    "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+    "licence": "MIT — Phosphor",
     "sha256": "98d18d7c189b0a8911d5605d7bf50e807b0e4174d605fda265977b014b7f843a"
+  },
+  "phosphor:person-simple-run:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M176,56a24,24,0,1,1-24-24A24,24,0,0,1,176,56Z\" opacity=\"0.2\"/><path d=\"M152,88a32,32,0,1,0-32-32A32,32,0,0,0,152,88Zm0-48a16,16,0,1,1-16,16A16,16,0,0,1,152,40Zm67.31,100.68c-.61.28-7.49,3.28-19.67,3.28-13.85,0-34.55-3.88-60.69-20a169.31,169.31,0,0,1-15.41,32.34,104.29,104.29,0,0,1,31.31,15.81C173.92,186.65,184,207.35,184,232a8,8,0,0,1-16,0c0-41.7-34.69-56.71-54.14-61.85-.55.7-1.12,1.41-1.69,2.1-19.64,23.8-44.25,36.18-71.63,36.18A92.29,92.29,0,0,1,31.2,208,8,8,0,0,1,32.8,192c25.92,2.59,48.47-7.49,67-30,12.49-15.14,21-33.61,25.25-47C86.13,92.34,61.27,111.63,61,111.84A8,8,0,1,1,51,99.36c1.5-1.2,37.22-29,89.51,6.57,45.47,30.91,71.93,20.31,72.18,20.19a8,8,0,1,1,6.63,14.56Z\"/>",
+    "source": "design/assets/phosphor/duotone/person-simple-run.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/person-simple-run-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "b14afd7b024b5a1cfc142aa9a2506bcc1a6e3f47dc328077bbad2172bb825041"
+  },
+  "phosphor:piano-keys:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M184,40V144H144V40ZM72,144h40V40H72Z\" opacity=\"0.2\"/><path d=\"M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM80,48h24v88H80Zm32,104a8,8,0,0,0,8-8V48h16v96a8,8,0,0,0,8,8h8v56H104V152Zm40-16V48h24v88ZM48,48H64v96a8,8,0,0,0,8,8H88v56H48ZM208,208H168V152h16a8,8,0,0,0,8-8V48h16V208Z\"/>",
+    "source": "design/assets/phosphor/duotone/piano-keys.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/piano-keys-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "0be77383cdb3b39d894782b7357813e9c2bda8adc8bf413ad9f784faf04a96d6"
+  },
+  "phosphor:piggy-bank:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M240,112v32a16,16,0,0,1-16,16h-8l-18.1,50.69a8,8,0,0,1-7.54,5.31H177.64a8,8,0,0,1-7.54-5.31L166.29,200H97.71L93.9,210.69A8,8,0,0,1,86.36,216H73.64a8,8,0,0,1-7.54-5.31L53,174a79.7,79.7,0,0,1-21-54h0a80,80,0,0,1,80-80h32a80,80,0,0,1,73.44,48.22,82.22,82.22,0,0,1,2.9,7.78H224A16,16,0,0,1,240,112Z\" opacity=\"0.2\"/><path d=\"M192,116a12,12,0,1,1-12-12A12,12,0,0,1,192,116ZM152,64H112a8,8,0,0,0,0,16h40a8,8,0,0,0,0-16Zm96,48v32a24,24,0,0,1-24,24h-2.36l-16.21,45.38A16,16,0,0,1,190.36,224H177.64a16,16,0,0,1-15.07-10.62L160.65,208h-57.3l-1.92,5.38A16,16,0,0,1,86.36,224H73.64a16,16,0,0,1-15.07-10.62L46,178.22a87.69,87.69,0,0,1-21.44-48.38A16,16,0,0,0,16,144a8,8,0,0,1-16,0,32,32,0,0,1,24.28-31A88.12,88.12,0,0,1,112,32H216a8,8,0,0,1,0,16H194.61a87.93,87.93,0,0,1,30.17,37c.43,1,.85,2,1.25,3A24,24,0,0,1,248,112Zm-16,0a8,8,0,0,0-8-8h-3.66a8,8,0,0,1-7.64-5.6A71.9,71.9,0,0,0,144,48H112A72,72,0,0,0,58.91,168.64a8,8,0,0,1,1.64,2.71L73.64,208H86.36l3.82-10.69A8,8,0,0,1,97.71,192h68.58a8,8,0,0,1,7.53,5.31L177.64,208h12.72l18.11-50.69A8,8,0,0,1,216,152h8a8,8,0,0,0,8-8Z\"/>",
+    "source": "design/assets/phosphor/duotone/piggy-bank.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/piggy-bank-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "7e7cd1997ce99297e65565a1f02255654dd0818d071d7f3b9771a55c7c9e0371"
+  },
+  "phosphor:ping-pong:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M206.6,81.4,81.4,206.6A93.92,93.92,0,0,1,32,122.69c.69-49.55,41.13-90,90.68-90.68A93.92,93.92,0,0,1,206.6,81.4Z\" opacity=\"0.2\"/><path d=\"M240,196a16,16,0,0,0-6.65-11.7l-38-27.15,17-16.95a39.67,39.67,0,0,0,11-35.79,99.52,99.52,0,0,0-35.4-57.89A101.93,101.93,0,0,0,122.58,24,100.29,100.29,0,0,0,24,122.58a102.12,102.12,0,0,0,22.55,65.28,99.52,99.52,0,0,0,57.89,35.4,39.68,39.68,0,0,0,35.79-11l16.95-17,27.15,38A16,16,0,0,0,196,240c.44,0,.88.05,1.32.05a16,16,0,0,0,11.31-4.69l26.64-26.64A16,16,0,0,0,240,196ZM59,177.83a86.09,86.09,0,0,1-19-55A84.27,84.27,0,0,1,122.8,40a86.28,86.28,0,0,1,55,19A85.08,85.08,0,0,1,196.58,80.1L80.1,196.58A85.08,85.08,0,0,1,59,177.83ZM197.35,224l-32.63-45.69a8,8,0,0,0-5.85-3.32q-.33,0-.66,0a8,8,0,0,0-5.66,2.34l-23.63,23.63a23.68,23.68,0,0,1-21.36,6.63,80.3,80.3,0,0,1-12.3-3.5l108.8-108.8a80.63,80.63,0,0,1,3.5,12.3,23.67,23.67,0,0,1-6.63,21.36L177.3,152.55a8,8,0,0,0,1,12.17L224,197.35Z\"/>",
+    "source": "design/assets/phosphor/duotone/ping-pong.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/ping-pong-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "a6222294ce07a752df449045372e3f0e95312d9e79b399b5533f7ef7693bad21"
+  },
+  "phosphor:pizza:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M218,91.76,187.13,142.4A32,32,0,1,0,154,196.78l-19.13,31.38a8,8,0,0,1-13.7,0L84.3,167.71a32,32,0,1,0-30.48-50L38,91.76a159.77,159.77,0,0,1,180,0Z\" opacity=\"0.2\"/><path d=\"M239.54,63a15.91,15.91,0,0,0-7.25-9.9,201.49,201.49,0,0,0-208.58,0,16,16,0,0,0-5.37,22l96,157.27a16,16,0,0,0,27.36,0L194,146.53v0l43.61-71.45A15.82,15.82,0,0,0,239.54,63ZM63.59,118.5a24,24,0,1,1,24.47,40.09Zm87.92,66.95A24,24,0,0,1,176,145.37Zm32.93-53.93a40,40,0,0,0-41.38,67.77L128,224,96.5,172.43a40,40,0,1,0-41.35-67.76L48.8,94.26a152,152,0,0,1,158.39,0Zm31.1-50.93a168.12,168.12,0,0,0-175.08,0L32,66.77a185.6,185.6,0,0,1,192,0Z\"/>",
+    "source": "design/assets/phosphor/duotone/pizza.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/pizza-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "7c797b60091ed8d06909765e51517c086c134c9ec08a982cf6508f6d7ec13783"
   },
   "phosphor:plus-circle:duotone": {
     "viewBox": "0 0 256 256",
@@ -251,6 +766,33 @@ export const APPROVED_ICONS = {
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "96f01d50fb5c1c830a8a136e43a3254db228a4a1db2cbc6afabc057b7a7b4471"
   },
+  "phosphor:popcorn:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M88,96l16,120H70.34a8,8,0,0,1-7.79-6.17L32,80Zm80,0L152,216h33.66a8,8,0,0,0,7.79-6.17L224,80Z\" opacity=\"0.2\"/><path d=\"M229.52,74.21a8,8,0,0,0-7.13-2A44,44,0,0,0,168,41.67a44,44,0,0,0-80,0,44,44,0,0,0-54.4,30.51,8,8,0,0,0-9.4,9.65L54.76,211.67A16,16,0,0,0,70.34,224H185.66a16,16,0,0,0,15.58-12.33L231.79,81.83A8,8,0,0,0,229.52,74.21ZM76,56a27.68,27.68,0,0,1,13.11,3.26,8,8,0,0,0,11.56-5.34,28,28,0,0,1,54.66,0,8,8,0,0,0,11.56,5.34A28,28,0,0,1,207,76.54l-38.56,11-34.49-13.8a16,16,0,0,0-11.88,0L87.57,87.56,49,76.54A28,28,0,0,1,76,56Zm83.25,45.11L145,208H111L96.75,101.11,128,88.62ZM42.91,91.44l37.85,10.81L94.86,208H70.34ZM185.66,208H161.14l14.1-105.75,37.85-10.81Z\"/>",
+    "source": "design/assets/phosphor/duotone/popcorn.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/popcorn-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "4bfde073a4ffb2af3a5aab7a6e2d1248ea4e65a4b239634b72a7ae80cf472565"
+  },
+  "phosphor:puzzle-piece:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M204,168a28,28,0,0,0,12-2.69V208a8,8,0,0,1-8,8H64a8,8,0,0,1-8-8V165.31a28,28,0,1,1,0-50.62V72a8,8,0,0,1,8-8h46.69a28,28,0,1,1,50.61,0H208a8,8,0,0,1,8,8v42.69A28,28,0,1,0,204,168Z\" opacity=\"0.2\"/><path d=\"M220.27,158.54a8,8,0,0,0-7.7-.46,20,20,0,1,1,0-36.16A8,8,0,0,0,224,114.69V72a16,16,0,0,0-16-16H171.78a35.36,35.36,0,0,0,.22-4,36.15,36.15,0,0,0-11.36-26.25,36,36,0,0,0-60.55,23.63,36.56,36.56,0,0,0,.14,6.62H64A16,16,0,0,0,48,72v32.22a35.36,35.36,0,0,0-4-.22,36.12,36.12,0,0,0-26.24,11.36,35.7,35.7,0,0,0-9.69,27,36.08,36.08,0,0,0,33.31,33.6,36.56,36.56,0,0,0,6.62-.14V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V165.31A8,8,0,0,0,220.27,158.54ZM208,208H64V165.31a8,8,0,0,0-11.43-7.23,20,20,0,1,1,0-36.16A8,8,0,0,0,64,114.69V72h46.69a8,8,0,0,0,7.23-11.43,20,20,0,1,1,36.16,0A8,8,0,0,0,161.31,72H208v32.23a35.68,35.68,0,0,0-6.62-.14A36,36,0,0,0,204,176a35.36,35.36,0,0,0,4-.22Z\"/>",
+    "source": "design/assets/phosphor/duotone/puzzle-piece.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/puzzle-piece-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "21b5ecfdd65a1aaced52daf72e1ac405e4de7c2a1363a9065800a40fb15cb602"
+  },
+  "phosphor:rabbit:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M208,188a44,44,0,0,1-80,25.3,44,44,0,1,1-63.71-59.48,64,64,0,0,1,127.42,0A43.9,43.9,0,0,1,208,188Z\" opacity=\"0.2\"/><path d=\"M112,164a12,12,0,1,1-12-12A12,12,0,0,1,112,164Zm44-12a12,12,0,1,0,12,12A12,12,0,0,0,156,152Zm60,36a52,52,0,0,1-88,37.52A52,52,0,1,1,56.72,149.8,71.58,71.58,0,0,1,63,129C44,91.1,32.53,40.76,45.64,19.08A22,22,0,0,1,65.06,8c14.12,0,26,11.89,36.44,36.36,6.22,14.62,10.85,31.32,14,44.74a71.8,71.8,0,0,1,25,0c3.13-13.42,7.76-30.12,14-44.74C164.9,19.89,176.82,8,190.94,8a22,22,0,0,1,19.42,11.08C223.47,40.76,212,91.1,193,129a71.58,71.58,0,0,1,6.26,20.76A51.77,51.77,0,0,1,216,188ZM155.89,93.63a71.72,71.72,0,0,1,26.88,19.64A218.45,218.45,0,0,0,197.6,67.08c3.49-18.13,3.15-33-.93-39.72A6,6,0,0,0,190.94,24c-6.61,0-14.52,9.7-21.72,26.62C163.29,64.56,158.87,80.74,155.89,93.63ZM73.23,113.27a71.72,71.72,0,0,1,26.88-19.64c-3-12.89-7.4-29.07-13.33-43C79.58,33.7,71.67,24,65.06,24a6,6,0,0,0-5.73,3.36C55.25,34.1,54.91,49,58.4,67.08A218.45,218.45,0,0,0,73.23,113.27ZM200,188a35.87,35.87,0,0,0-13.34-28,8,8,0,0,1-2.92-5.45,56,56,0,0,0-111.48,0A8,8,0,0,1,69.34,160a36,36,0,1,0,47.28,54.21l-9.74-8.09a8,8,0,1,1,10.24-12.3L128,202.9l10.88-9.05a8,8,0,0,1,10.24,12.3l-9.74,8.09A36,36,0,0,0,200,188Z\"/>",
+    "source": "design/assets/phosphor/duotone/rabbit.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/rabbit-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "0228ed410d30fdab9a95bd8535fc6d2b12928568a69046f013f144f966a530ba"
+  },
   "phosphor:repeat:duotone": {
     "viewBox": "0 0 256 256",
     "fill": "currentColor",
@@ -260,14 +802,77 @@ export const APPROVED_ICONS = {
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "3b6c818a506d0a591de61f835504b2a4828c3a1be60132dd49bfa5a64f60d541"
   },
+  "phosphor:scissors:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M40.2,95.8a28,28,0,1,1,39.6,0A28,28,0,0,1,40.2,95.8Zm0,64.4a28,28,0,1,0,39.6,0A28,28,0,0,0,40.2,160.2Z\" opacity=\"0.2\"/><path d=\"M157.73,113.13A8,8,0,0,1,159.82,102L227.48,55.7a8,8,0,0,1,9,13.21l-67.67,46.3a7.92,7.92,0,0,1-4.51,1.4A8,8,0,0,1,157.73,113.13Zm80.87,85.09a8,8,0,0,1-11.12,2.08L136,137.7,93.49,166.78a36,36,0,1,1-9-13.19L121.83,128,84.44,102.41a35.86,35.86,0,1,1,9-13.19l143,97.87A8,8,0,0,1,238.6,198.22ZM80,180a20,20,0,1,0-5.86,14.14A19.85,19.85,0,0,0,80,180ZM74.14,90.13a20,20,0,1,0-28.28,0A19.85,19.85,0,0,0,74.14,90.13Z\"/>",
+    "source": "design/assets/phosphor/duotone/scissors.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/scissors-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "a1d6e1a9d9e9513d1791e83d09fe460fb48736d5f30aa5190fb26d6439114d77"
+  },
+  "phosphor:smiley-wink:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z\" opacity=\"0.2\"/><path d=\"M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM80,108a12,12,0,1,1,12,12A12,12,0,0,1,80,108Zm104,0a8,8,0,0,1-8,8H152a8,8,0,0,1,0-16h24A8,8,0,0,1,184,108Zm-9.08,48c-10.29,17.79-27.39,28-46.92,28s-36.63-10.2-46.92-28a8,8,0,1,1,13.84-8c7.47,12.91,19.21,20,33.08,20s25.61-7.1,33.08-20a8,8,0,1,1,13.84,8Z\"/>",
+    "source": "design/assets/phosphor/duotone/smiley-wink.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/smiley-wink-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "f52120a3abc17521c4dafc13c4b7907bcea72e4a98fba6d8d808b984cf241d3b"
+  },
+  "phosphor:smiley:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z\" opacity=\"0.2\"/><path d=\"M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM80,108a12,12,0,1,1,12,12A12,12,0,0,1,80,108Zm96,0a12,12,0,1,1-12-12A12,12,0,0,1,176,108Zm-1.08,48c-10.29,17.79-27.39,28-46.92,28s-36.63-10.2-46.92-28a8,8,0,1,1,13.84-8c7.47,12.91,19.21,20,33.08,20s25.61-7.1,33.08-20a8,8,0,1,1,13.84,8Z\"/>",
+    "source": "design/assets/phosphor/duotone/smiley.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/smiley-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "b5e8638df688ea1832380e63c0b986f4a502ade6d51ea2f4552d0a9f5a796eac"
+  },
+  "phosphor:soccer-ball:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M65.17,108.08l-33,25.34c-.1-1.8-.15-3.6-.15-5.42A95.61,95.61,0,0,1,53.23,67.78ZM46.92,179.42a96.12,96.12,0,0,0,57,41.52l-14.7-41.52Zm105.21,41.52a96.12,96.12,0,0,0,57-41.52H166.83ZM202.77,67.78l-11.94,40.3,33,25.34c.1-1.8.15-3.6.15-5.42A95.61,95.61,0,0,0,202.77,67.78Zm-38.52-28.7a96.34,96.34,0,0,0-72.5,0L128,64ZM152.72,160,168,115.5,128,88,88,115.5,103.28,160Z\" opacity=\"0.2\"/><path d=\"M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm76.52,147.42H170.9l-9.26-12.76,12.63-36.78,15-4.89,26.24,20.13A87.38,87.38,0,0,1,204.52,171.42Zm-164-34.3L66.71,117l15,4.89,12.63,36.78L85.1,171.42H51.48A87.38,87.38,0,0,1,40.47,137.12Zm10-50.64,5.51,18.6L40.71,116.77A87.33,87.33,0,0,1,50.43,86.48ZM109,152,97.54,118.65,128,97.71l30.46,20.94L147,152Zm91.07-46.92,5.51-18.6a87.33,87.33,0,0,1,9.72,30.29Zm-6.2-35.38-9.51,32.08-15.07,4.89L136,83.79V68.21l29.09-20A88.58,88.58,0,0,1,193.86,69.7ZM146.07,41.87,128,54.29,109.93,41.87a88.24,88.24,0,0,1,36.14,0ZM90.91,48.21l29.09,20V83.79L86.72,106.67l-15.07-4.89L62.14,69.7A88.58,88.58,0,0,1,90.91,48.21ZM63.15,187.42H83.52l7.17,20.27A88.4,88.4,0,0,1,63.15,187.42ZM110,214.13,98.12,180.71,107.35,168h41.3l9.23,12.71-11.83,33.42a88,88,0,0,1-36.1,0Zm55.36-6.44,7.17-20.27h20.37A88.4,88.4,0,0,1,165.31,207.69Z\"/>",
+    "source": "design/assets/phosphor/duotone/soccer-ball.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/soccer-ball-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "95c2b16b6bbe07f1b484d0abc87b7dc4d218da022466cd874d000089c64ea466"
+  },
   "phosphor:sparkle:duotone": {
     "viewBox": "0 0 256 256",
     "fill": "currentColor",
     "inner": "<path d=\"M194.82,151.43l-55.09,20.3-20.3,55.09a7.92,7.92,0,0,1-14.86,0l-20.3-55.09-55.09-20.3a7.92,7.92,0,0,1,0-14.86l55.09-20.3,20.3-55.09a7.92,7.92,0,0,1,14.86,0l20.3,55.09,55.09,20.3A7.92,7.92,0,0,1,194.82,151.43Z\" opacity=\"0.2\"/><path d=\"M197.58,129.06,146,110l-19-51.62a15.92,15.92,0,0,0-29.88,0L78,110l-51.62,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0L146,178l51.62-19a15.92,15.92,0,0,0,0-29.88ZM137,164.22a8,8,0,0,0-4.74,4.74L112,223.85,91.78,169A8,8,0,0,0,87,164.22L32.15,144,87,123.78A8,8,0,0,0,91.78,119L112,64.15,132.22,119a8,8,0,0,0,4.74,4.74L191.85,144ZM144,40a8,8,0,0,1,8-8h16V16a8,8,0,0,1,16,0V32h16a8,8,0,0,1,0,16H184V64a8,8,0,0,1-16,0V48H152A8,8,0,0,1,144,40ZM248,88a8,8,0,0,1-8,8h-8v8a8,8,0,0,1-16,0V96h-8a8,8,0,0,1,0-16h8V72a8,8,0,0,1,16,0v8h8A8,8,0,0,1,248,88Z\"/>",
     "source": "design/assets/phosphor/duotone/sparkle.svg",
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/sparkle-duotone.svg",
-    "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+    "licence": "MIT — Phosphor",
     "sha256": "c4740b4365131487e4b49b54fc554a6cbdde28aaad74c5a8a8be2195b5fb4c19"
+  },
+  "phosphor:sun:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M184,128a56,56,0,1,1-56-56A56,56,0,0,1,184,128Z\" opacity=\"0.2\"/><path d=\"M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z\"/>",
+    "source": "design/assets/phosphor/duotone/sun.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/sun-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "6a180204ea92f2501de811908395e6dad15ddf2ca0a577f420fad8bef0b4c5ca"
+  },
+  "phosphor:swimming-pool:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M224,168v40c-24,0-24,16-48,16s-24-16-48-16-24,16-48,16-24-16-48-16V168c24,0,24,16,48,16s24-16,48-16,24,16,48,16S200,168,224,168Z\" opacity=\"0.2\"/><path d=\"M88,149.39a8,8,0,0,0,8-8V128h64v15.29a8,8,0,0,0,16,0V32a8,8,0,0,0-16,0V48H96V32a8,8,0,0,0-16,0V141.39A8,8,0,0,0,88,149.39ZM96,112V96h64v16Zm64-48V80H96V64ZM24,168a8,8,0,0,1,8-8c14.42,0,22.19,5.18,28.44,9.34C66,173.06,70.42,176,80,176s14-2.94,19.56-6.66c6.24-4.16,14-9.34,28.43-9.34s22.2,5.18,28.44,9.34c5.58,3.72,10,6.66,19.57,6.66s14-2.94,19.56-6.66c6.25-4.16,14-9.34,28.44-9.34a8,8,0,0,1,0,16c-9.58,0-14,2.94-19.56,6.66-6.25,4.16-14,9.34-28.44,9.34s-22.2-5.18-28.44-9.34C142,178.94,137.57,176,128,176s-14,2.94-19.56,6.66c-6.24,4.16-14,9.34-28.43,9.34s-22.19-5.18-28.44-9.34C46,178.94,41.58,176,32,176A8,8,0,0,1,24,168Zm208,40a8,8,0,0,1-8,8c-9.58,0-14,2.94-19.56,6.66-6.25,4.16-14,9.34-28.44,9.34s-22.2-5.18-28.44-9.34C142,218.94,137.57,216,128,216s-14,2.94-19.56,6.66c-6.24,4.16-14,9.34-28.43,9.34s-22.19-5.18-28.44-9.34C46,218.94,41.58,216,32,216a8,8,0,0,1,0-16c14.42,0,22.19,5.18,28.44,9.34C66,213.06,70.42,216,80,216s14-2.94,19.56-6.66c6.24-4.16,14-9.34,28.43-9.34s22.2,5.18,28.44,9.34c5.58,3.72,10,6.66,19.57,6.66s14-2.94,19.56-6.66c6.25-4.16,14-9.34,28.44-9.34A8,8,0,0,1,232,208Z\"/>",
+    "source": "design/assets/phosphor/duotone/swimming-pool.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/swimming-pool-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "f286c885444501e506a91d45f904e652d1892f07b8fcf14e12cdf68b34b32459"
+  },
+  "phosphor:t-shirt:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M247.11,78.77l-19.27,36.81a8.44,8.44,0,0,1-7.5,4.42H192V40l51.78,28.25A7.81,7.81,0,0,1,247.11,78.77Zm-238.22,0,19.27,36.81a8.44,8.44,0,0,0,7.5,4.42H64V40L12.22,68.25A7.81,7.81,0,0,0,8.89,78.77Z\" opacity=\"0.2\"/><path d=\"M247.59,61.22,195.83,33A8,8,0,0,0,192,32H160a8,8,0,0,0-8,8,24,24,0,0,1-48,0,8,8,0,0,0-8-8H64a8,8,0,0,0-3.84,1L8.41,61.22A15.76,15.76,0,0,0,1.82,82.48l19.27,36.81A16.37,16.37,0,0,0,35.67,128H56v80a16,16,0,0,0,16,16H184a16,16,0,0,0,16-16V128h20.34a16.37,16.37,0,0,0,14.58-8.71l19.27-36.81A15.76,15.76,0,0,0,247.59,61.22ZM35.67,112a.62.62,0,0,1-.41-.13L16.09,75.26,56,53.48V112ZM184,208H72V48h16.8a40,40,0,0,0,78.38,0H184Zm36.75-96.14a.55.55,0,0,1-.41.14H200V53.48l39.92,21.78Z\"/>",
+    "source": "design/assets/phosphor/duotone/t-shirt.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/t-shirt-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "6245dae8e687ffc5fdb794888a145c7b690f1d43659892d78437fef753299003"
   },
   "phosphor:target:duotone": {
     "viewBox": "0 0 256 256",
@@ -277,6 +882,69 @@ export const APPROVED_ICONS = {
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/target-duotone.svg",
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "f7e6e8cb3ff844db1ac5b65e34257651d7a55f68eb97da574ac369fcc259343f"
+  },
+  "phosphor:television:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M152,72V208H40a8,8,0,0,1-8-8V80a8,8,0,0,1,8-8Z\" opacity=\"0.2\"/><path d=\"M216,64H147.31l34.35-34.34a8,8,0,1,0-11.32-11.32L128,60.69,85.66,18.34A8,8,0,0,0,74.34,29.66L108.69,64H40A16,16,0,0,0,24,80V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V80A16,16,0,0,0,216,64ZM40,80H144V200H40ZM216,200H160V80h56V200Zm-16-84a12,12,0,1,1-12-12A12,12,0,0,1,200,116Zm0,48a12,12,0,1,1-12-12A12,12,0,0,1,200,164Z\"/>",
+    "source": "design/assets/phosphor/duotone/television.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/television-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "e4d84e326fccf615c5d475e8fff0f7f9d2ca8fd00cede30ac36db91552f18da2"
+  },
+  "phosphor:tennis-ball:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M60.12,60.09A95.74,95.74,0,0,1,127.83,32h0A95.94,95.94,0,0,1,32,127.75,95.64,95.64,0,0,1,60.12,60.09ZM32,127.92v-.17h0Zm124.28,28.26a95.54,95.54,0,0,0-28.11,67.65A96,96,0,0,0,224,128.08h0A95.79,95.79,0,0,0,156.28,156.18ZM128.17,224v-.17h0Z\" opacity=\"0.2\"/><path d=\"M201.57,54.46a104,104,0,1,0,0,147.08A103.4,103.4,0,0,0,201.57,54.46ZM65.75,65.77a87.63,87.63,0,0,1,53.66-25.31A87.31,87.31,0,0,1,94,94.06a87.42,87.42,0,0,1-53.62,25.35A87.58,87.58,0,0,1,65.75,65.77ZM40.33,135.48a103.29,103.29,0,0,0,65-30.11,103.24,103.24,0,0,0,30.13-65,87.78,87.78,0,0,1,80.18,80.14,104,104,0,0,0-95.16,95.1,87.78,87.78,0,0,1-80.18-80.14Zm149.92,54.75a87.69,87.69,0,0,1-53.66,25.31,88,88,0,0,1,79-78.95A87.58,87.58,0,0,1,190.25,190.23Z\"/>",
+    "source": "design/assets/phosphor/duotone/tennis-ball.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/tennis-ball-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "1ce02a3d8f07225966ccaf99ac3a132c3fea6a2d8d794770f0e2518a6e7d2bc8"
+  },
+  "phosphor:tent:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M136,192H8L72,48Z\" opacity=\"0.2\"/><path d=\"M255.31,188.75l-64-144A8,8,0,0,0,184,40H72a8,8,0,0,0-7.27,4.69.21.21,0,0,0,0,.06l0,.12,0,0L.69,188.75A8,8,0,0,0,8,200H248a8,8,0,0,0,7.31-11.25ZM64,184H20.31L64,85.7Zm16,0V85.7L123.69,184Zm61.2,0L84.31,56H178.8l56.89,128Z\"/>",
+    "source": "design/assets/phosphor/duotone/tent.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/tent-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "82a134d8060cacea91b32ffc2c5b09ed6d9a8ebc40f8bd57669c777bff8c69a8"
+  },
+  "phosphor:ticket:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M200,128a32,32,0,0,0,32,32v32a8,8,0,0,1-8,8H96V56H224a8,8,0,0,1,8,8V96A32,32,0,0,0,200,128Z\" opacity=\"0.2\"/><path d=\"M232,104a8,8,0,0,0,8-8V64a16,16,0,0,0-16-16H32A16,16,0,0,0,16,64V96a8,8,0,0,0,8,8,24,24,0,0,1,0,48,8,8,0,0,0-8,8v32a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V160a8,8,0,0,0-8-8,24,24,0,0,1,0-48ZM32,167.2a40,40,0,0,0,0-78.4V64H88V192H32Zm192,0V192H104V64H224V88.8a40,40,0,0,0,0,78.4Z\"/>",
+    "source": "design/assets/phosphor/duotone/ticket.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/ticket-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "89673690a1fd213542b4793dde4ae2e7d165fda42e06fa01e13a96682a0290a6"
+  },
+  "phosphor:train:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M208,72v56H48V72Z\" opacity=\"0.2\"/><path d=\"M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM56,120V80h64v40Zm80-40h64v40H136ZM72,40H184a16,16,0,0,1,16,16v8H56V56A16,16,0,0,1,72,40ZM184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z\"/>",
+    "source": "design/assets/phosphor/duotone/train.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/train-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "a29072c2bb72e15f7f05327e298cdedacddbcf7dc2b20d9ab11234deae4dd1fc"
+  },
+  "phosphor:tree:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M232,127.82c.09,33.94-28.41,63.3-62.34,64.16a63.72,63.72,0,0,1-41.66-14,63.71,63.71,0,0,1-41.65,14c-33.93-.86-62.44-30.22-62.35-64.16a64,64,0,0,1,40.13-59.2,68,68,0,0,1,127.74,0A64,64,0,0,1,232,127.82Z\" opacity=\"0.2\"/><path d=\"M198.1,62.59a76,76,0,0,0-140.2,0A71.71,71.71,0,0,0,16,127.8C15.9,166,48,199,86.14,200A72.22,72.22,0,0,0,120,192.47V232a8,8,0,0,0,16,0V192.47A72.17,72.17,0,0,0,168,200l1.82,0C208,199,240.11,166,240,127.8A71.71,71.71,0,0,0,198.1,62.59ZM169.45,184a56.08,56.08,0,0,1-33.45-10v-41l43.58-21.78a8,8,0,1,0-7.16-14.32L136,115.06V88a8,8,0,0,0-16,0v51.06L83.58,120.84a8,8,0,1,0-7.16,14.32L120,156.94v17a56,56,0,0,1-33.45,10C56.9,183.23,31.92,157.52,32,127.84A55.79,55.79,0,0,1,67.11,76a8,8,0,0,0,4.53-4.67,60,60,0,0,1,112.72,0A8,8,0,0,0,188.89,76,55.79,55.79,0,0,1,224,127.84C224.08,157.52,199.1,183.23,169.45,184Z\"/>",
+    "source": "design/assets/phosphor/duotone/tree.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/tree-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "de05cdd50d72f0561bc3c4fc8fd55262e35a5afc2c49e01978b0d2ab2217f8ac"
+  },
+  "phosphor:trophy:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M200,48v63.1c0,39.7-31.75,72.6-71.45,72.9A72,72,0,0,1,56,112V48Z\" opacity=\"0.2\"/><path d=\"M232,64H208V48a8,8,0,0,0-8-8H56a8,8,0,0,0-8,8V64H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8Zm144-8.9c0,35.52-29,64.64-64,64.9a64,64,0,0,1-64-64V56H192ZM232,96a24,24,0,0,1-24,24h-.5a81.81,81.81,0,0,0,.5-8.9V80h24Z\"/>",
+    "source": "design/assets/phosphor/duotone/trophy.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/trophy-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "3e9f32441fc0315f359dbab71322d9e069cada283527918360d6789a84c7bf14"
   },
   "phosphor:user-switch:duotone": {
     "viewBox": "0 0 256 256",
@@ -295,5 +963,14 @@ export const APPROVED_ICONS = {
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/users-duotone.svg",
     "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
     "sha256": "bce473e028982d8383e97e4f4c9cde592564be57cc16c7a303fe72cfdced34ff"
+  },
+  "phosphor:watch:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M200,128a72,72,0,1,1-72-72A72,72,0,0,1,200,128Z\" opacity=\"0.2\"/><path d=\"M208,128a79.94,79.94,0,0,0-32.7-64.47l-6.24-34.38A16,16,0,0,0,153.32,16H102.68A16,16,0,0,0,86.94,29.15L80.7,63.53a79.9,79.9,0,0,0,0,128.94l6.24,34.38A16,16,0,0,0,102.68,240h50.64a16,16,0,0,0,15.74-13.15l6.24-34.38A79.94,79.94,0,0,0,208,128ZM102.68,32h50.64l3.91,21.55a79.75,79.75,0,0,0-58.46,0ZM64,128a64,64,0,1,1,64,64A64.07,64.07,0,0,1,64,128Zm89.32,96H102.68l-3.91-21.55a79.75,79.75,0,0,0,58.46,0ZM120,128V88a8,8,0,0,1,16,0v32h32a8,8,0,0,1,0,16H128A8,8,0,0,1,120,128Z\"/>",
+    "source": "design/assets/phosphor/duotone/watch.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/watch-duotone.svg",
+    "licence": "MIT — Phosphor",
+    "sha256": "5df6063d77195f671fce1caf87eb663aa405eefda7ddce42d05d10f0c3ed3afe"
   }
 };

@@ -4,6 +4,7 @@ const ICON_KEY_MESSAGE = 'Choose one of the icons shown';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import pool from './db.js';
+import { isRewardIconKey } from './rewardIcons.js';
 import { prepareFamilyExport, MAX_EXPORT_BYTES } from './export.js';
 import { pickAllowedColumns, findMissingRequired } from './columns.js';
 import { uploadIdOf, uploadsAreOwned, releaseUpload, UPLOAD_REF_COLUMNS } from './uploads.js';
@@ -115,7 +116,7 @@ async function loadRewardsById(db, familyCode, ids) {
   const wanted = [...new Set(ids.map((id) => String(id || '')).filter(isUuid))];
   if (wanted.length === 0) return new Map();
   const { rows } = await db.query(
-    'SELECT id, title, cost_points, assigned_child_ids FROM rewards WHERE id = ANY($1::uuid[]) AND family_code = $2',
+    'SELECT id, title, cost_points, assigned_child_ids, icon_key, emoji, image_url FROM rewards WHERE id = ANY($1::uuid[]) AND family_code = $2',
     [wanted, familyCode]
   );
   return new Map(rows.map((r) => [r.id, r]));
@@ -128,17 +129,24 @@ function spendableFrom(byId, rewardId, childId) {
   if (!r) return null;
   const assigned = r.assigned_child_ids || [];
   if (assigned.length > 0 && !assigned.includes(childId)) return null;
-  return { id: r.id, title: r.title, cost: r.cost_points };
+  return { id: r.id, title: r.title, cost: r.cost_points, icon_key: r.icon_key ?? null, emoji: r.emoji ?? null, image_url: r.image_url ?? null };
 }
 
+// The priced stack also carries how to draw each reward (V1-D: icon_key,
+// then image_url, then emoji), so Home shows the reward's own icon.
+// stackIndex is the item's position in the STORED stack (which can hold
+// rewards since deleted), so a remove uses the right position (V1-D).
 function priceStackFrom(byId, stack, childId) {
   const out = [];
-  for (const item of stack || []) {
+  (stack || []).forEach((item, stackIndex) => {
     const reward = spendableFrom(byId, item.rewardId, childId);
-    if (reward) out.push({ rewardId: reward.id, name: reward.title, cost: reward.cost });
-  }
+    if (reward) out.push({ rewardId: reward.id, name: reward.title, cost: reward.cost, icon_key: reward.icon_key, emoji: reward.emoji, image_url: reward.image_url, stackIndex });
+  });
   return out;
 }
+
+// What is stored in children.reward_stack: the original three fields only.
+const storedStackItem = ({ rewardId, name, cost }) => ({ rewardId, name, cost });
 
 const stackTotalOf = (stack) => (stack || []).reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
 
@@ -214,6 +222,11 @@ function validateCreatePayload(table, data, { isCreate = false } = {}) {
       if (typeof data.cost_points !== 'number' || data.cost_points < 1) {
         throw Object.assign(new Error('Reward cost must be at least 1 point'), { status: 400 });
       }
+    }
+    // V1-D, D2: null clears the icon; otherwise one of the 71 picker icons
+    // (also a database CHECK, migration 015).
+    if (data.icon_key !== undefined && data.icon_key !== null && !isRewardIconKey(data.icon_key)) {
+      throw Object.assign(new Error('Choose an icon from the list.'), { status: 400 });
     }
   }
   if (table === 'point_events') {
@@ -1135,7 +1148,7 @@ router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
 
     await client.query(
       'UPDATE children SET reward_stack = $1 WHERE id = $2 AND family_code = $3',
-      [JSON.stringify(stack), childId, req.familyCode]
+      [JSON.stringify(stack.map(storedStackItem)), childId, req.familyCode]
     );
 
     await client.query('COMMIT');
@@ -1168,6 +1181,13 @@ router.delete('/api/children/:id/stack/:index', authMiddleware, async (req, res)
       return res.status(404).json({ error: 'Child not found' });
     }
     const stack = childRows[0].reward_stack || [];
+    // V1-D: the caller may name the reward it means; if the stack changed
+    // since it looked, nothing is removed (409) rather than the wrong item.
+    const expected = req.query.reward_id;
+    if (expected !== undefined && stack[index]?.rewardId !== String(expected)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
+    }
     if (index >= stack.length) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Invalid stack index' });

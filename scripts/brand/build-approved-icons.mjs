@@ -45,6 +45,21 @@ export function collect(register) {
     contexts.goals[ctx] = e.asset_id;
     add(e.asset_id, e.local_file, e.source_url, e.license_reference);
   }
+  // V1-D: the owner-approved reward picker (12 categories, 84 placements, 71
+  // Phosphor Duotone icons). Each source is the checked-in file whose hash
+  // equals the recorded upstream fetch (design/brand/UPSTREAM_VERIFICATION.json).
+  contexts.picker = {};
+  for (const [name, cat] of Object.entries(register.picker.categories)) {
+    if (cat.status !== 'owner_selected') throw new Error(`picker/${name} is not owner_selected (${cat.status})`);
+    contexts.picker[name] = cat.asset_ids;
+    for (const id of cat.asset_ids) {
+      const [, slug, variant] = id.split(':');
+      if (variant !== 'duotone') throw new Error(`picker/${name}: ${id} is not duotone`);
+      add(id, `design/assets/phosphor/duotone/${slug}.svg`,
+        `https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/${slug}-duotone.svg`,
+        register.picker.license);
+    }
+  }
   return { contexts, assets: [...assets.values()].sort((a, b) => a.id.localeCompare(b.id)) };
 }
 

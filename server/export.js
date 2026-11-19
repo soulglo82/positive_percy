@@ -29,7 +29,7 @@ export async function prepareFamilyExport(pool, familyCode, { includePhotos = tr
       FROM children WHERE family_code = $1 ORDER BY created_date, id
     `);
     const rewards = await rows(`
-      SELECT id, title, description, cost_points, image_url, emoji,
+      SELECT id, title, description, cost_points, image_url, emoji, icon_key,
              visible_to_child, assigned_child_ids, created_date
       FROM rewards WHERE family_code = $1 ORDER BY created_date, id
     `);
