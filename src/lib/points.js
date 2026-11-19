@@ -181,7 +181,7 @@ export async function confirmRequests(childId, items, requestId = newRequestId()
   return result; // { child, confirmed_count, points_deducted, redemption_ids, duplicate }
 }
 
-// V1-D: remove one request ("Not now"), naming the reward so a stale view
+// V1-D: remove one request ("Not this time"), naming the reward so a stale view
 // never removes a different one (409).
 export async function removeRequest(childId, item) {
   const res = await fetch(`/api/children/${childId}/stack/${item.stackIndex}?reward_id=${encodeURIComponent(item.rewardId)}`, {
