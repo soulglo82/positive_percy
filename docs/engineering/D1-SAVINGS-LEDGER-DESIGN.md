@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.4 |
+| Version | 1.5 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | 1.0 | 2026-11-19 | First draft |
 | 1.1 | 2026-11-19 | Peer review: 5 blocking and 7 non-blocking findings, all adopted (§10) |
+| 1.5 | 2026-11-19 | Adversarial review of O6 at `392ad16` (§14): one blocking bug fixed (a child id in capitals skipped that child's savings and requests: over-commit reproduced, now canonical). Insert trigger, over-commit finding in the reconciliation, lock order for the save endpoints, restore runbook rule |
 | 1.4 | 2026-11-19 | Owner review of PR #60 (head `a11e890`): synthetic proof accepted as a credible fixture proof, not as sign-off to ship 016. **O6 reversed**: savings never revive (allocation generations, §13). The scratch rollback refuses once savings exist; a marked-copy token proves the target is a copy (§13) |
 | 1.3 | 2026-11-19 | Adversarial review of the proof: 2 blocking (read path counted a requested goal twice and let a negative sum add points; write paths ignored savings) and 5 non-blocking, all fixed (§12) |
 | 1.2 | 2026-11-19 | Owner's data-preservation requirements; legacy `family_goals` inspected; migration 016, its rollback and the reconciliation proof built and passing (§11) |
@@ -313,3 +314,19 @@ The test "the check catches: …" proves the reconciliation reports each of thes
 1. Run the tool on a verified, isolated restoration of the production backup, with restricted credentials, and inspect its report: apply, rollback and re-apply, plus the history-drift baseline.
 2. An independent review of the corrected O6 design (in progress).
 3. Then the savings feature: endpoints, goal redemption, refunds, and the Home, Children and Child View screens.
+
+## 14. Adversarial review of O6 (v1.5, head `392ad16`)
+
+A fresh-context reviewer attacked the generation design on a throwaway database. The design held: the reviewer found no way to make savings from an older generation count again. They found one blocking bug, and it was in how ids are compared, not in generations.
+
+| # | Finding | Severity | Resolution |
+| --- | --- | --- | --- |
+| R1 | A child id written in capitals in the URL (Postgres accepts it) skipped every one of that child's savings and requests. The JavaScript balance rule compares ids as text. Reproduced: with 100 saved out of a total of 100, an 80-point redeem was refused in lower case and accepted in capitals | Blocking | Fixed. `router.param('id')` lower-cases every `:id` route. `balanceOf`, `goalGeneration` and `spendableFrom` also compare in lower case as a second guard. Test: redeem, `stack/add` and `stack/confirm` with the id in capitals. Mutation (both guards removed): the test fails |
+| R2 | The generation trigger ran only on UPDATE. A row re-inserted with a reused id and its old epochs would bring old savings back | Non-blocking (the app cannot write `id` or the epoch columns) | Fixed. A `BEFORE INSERT` trigger always starts a reward at `0:0`. The rollback drops it. Test, plus a mutation check. **Restore runbook rule:** never restore `rewards` without `savings_events`, and never edit with `session_replication_role = replica` |
+| R3 | The save endpoints still to be built need a lock order. Without one, a save can race an un-mark and be silently lost (it under-counts) | Design | Adopted for the feature build. Lock the child `FOR UPDATE`, then the reward `FOR SHARE`. Take the generation from that locked row, using the canonical child id, in the same transaction. Lock several children in id order. Paths that edit a reward never lock children. §13.2's rule against writes that span several children stays |
+| R4 | `available` is clamped at 0, so comparing before with after could hide a child who has been promised more than they have | Non-blocking | Fixed. The reconciliation reports a child who is newly over-committed (`committed > total`); a child already over-committed in legacy data is not a new finding. Every `agree()` in the tests also asserts `committed ≤ total`. The boundary (equal) is tested |
+| R5 | Test gaps: the "concurrent" test does not race real endpoint locks; delete/recreate always gets a new UUID; the ledger helper shares the generation formula with `reconcile.js` | Recorded | The R2 insert test covers reuse of an id. Real lock races are tested with the save endpoints (R3). Against the shared-formula risk, JavaScript `goalGeneration` and SQL are already compared in every `agree()` |
+| R6 | `assigned_child_ids` were stored as written (capitals, or another family's ids). A child given in capitals lost the goal and their epoch moved on: savings ended, not revived (safe, but surprising) | Non-blocking | Lower-cased on create and update (test). An id from another family never matches a child, so it has no effect. Rejecting such ids outright is left to the D1 feature's reward form |
+
+**Not covered by any test:** two save requests from two devices racing a real un-mark. These are tested once the save endpoint exists, under the R3 lock order.
+

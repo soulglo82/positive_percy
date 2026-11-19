@@ -172,9 +172,17 @@ export function differences(before, after, { allowMigrations = [] } = {}) {
     for (const k of ['total_points', 'points_spent', 'stack', 'history', 'reserved', 'saved', 'committed', 'available']) {
       if (a[k] !== b[k]) out.push(`child ${id}: ${k} ${b[k]} -> ${a[k]}`);
     }
+    // available is clamped at 0, so a comparison alone would not show points
+    // promised twice (O6 review #4): a child newly over-committed is a finding.
+    if (overCommitted(a) && !overCommitted(b)) out.push(`child ${id}: committed ${a.committed} is more than total ${a.total_points}`);
   }
   for (const id of Object.keys(after.children)) if (!before.children[id]) out.push(`child ${id} appeared`);
   return out;
+}
+
+// True when more is set aside (requests and counted savings) than the child has.
+export function overCommitted(c) {
+  return c != null && c.total_points != null && Number(c.committed) > Number(c.total_points);
 }
 
 // Schema objects present in `after` but not in `before` (what a migration added).

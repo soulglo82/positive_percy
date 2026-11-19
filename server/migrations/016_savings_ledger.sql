@@ -44,6 +44,19 @@ DROP TRIGGER IF EXISTS rewards_goal_generation ON rewards;
 CREATE TRIGGER rewards_goal_generation BEFORE UPDATE ON rewards
   FOR EACH ROW EXECUTE FUNCTION rewards_goal_generation();
 
+-- A new reward row starts at generation 0:0, whatever the INSERT says, so a
+-- re-inserted id can never bring back an old generation (O6 review #2).
+CREATE OR REPLACE FUNCTION rewards_goal_generation_insert() RETURNS trigger AS $$
+BEGIN
+  NEW.goal_epoch := 0;
+  NEW.goal_child_epochs := '{}'::jsonb;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS rewards_goal_generation_insert ON rewards;
+CREATE TRIGGER rewards_goal_generation_insert BEFORE INSERT ON rewards
+  FOR EACH ROW EXECUTE FUNCTION rewards_goal_generation_insert();
+
 CREATE TABLE IF NOT EXISTS savings_events (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   family_code   TEXT NOT NULL REFERENCES families(family_code) ON DELETE CASCADE,

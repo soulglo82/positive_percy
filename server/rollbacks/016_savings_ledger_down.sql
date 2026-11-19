@@ -14,6 +14,8 @@ BEGIN
     RAISE EXCEPTION 'savings exist: this rollback would destroy them. Use the approved archived reversal instead.';
   END IF;
 END $$;
+DROP TRIGGER IF EXISTS rewards_goal_generation_insert ON rewards;
+DROP FUNCTION IF EXISTS rewards_goal_generation_insert();
 DROP TRIGGER IF EXISTS rewards_goal_generation ON rewards;
 DROP FUNCTION IF EXISTS rewards_goal_generation();
 DROP TABLE IF EXISTS savings_events;

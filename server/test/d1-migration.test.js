@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { startApp, stopApp, api } from './harness.js';
 import { runMigrations } from '../migrate.js';
-import { fingerprint, differences, addedSchema, legacyFamilyGoals } from '../reconcile.js';
+import { fingerprint, differences, addedSchema, legacyFamilyGoals, overCommitted } from '../reconcile.js';
 import { seedLegacyFamilies } from './fixtures/legacyFamilies.js';
 
 const hasDb = !!process.env.TEST_DATABASE_URL;
@@ -131,6 +131,7 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     const db = (await fingerprint(ctx.pool)).children[id];
     expect({ total: app.total_points, available: app.available_points, saved: app.saved_total })
       .toEqual({ total: db.total_points, available: db.available, saved: db.saved });
+    expect(db.committed).toBeLessThanOrEqual(db.total_points); // available is clamped: check what it hides (O6 review #4)
     return app;
   };
 
@@ -280,6 +281,55 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     expect((await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: toy.id })).status).toBe(400);
     expect((await call('POST', `/api/point-events/${award.event.id}/undo`, { request_id: crypto.randomUUID() })).status).toBe(409);
     expect((await agree(B, kid.id)).total_points).toBe(30); // nothing was spent or undone
+  });
+
+  it('O6 review #1: a child id in capitals reaches the same savings (redeem, stack/add, stack/confirm)', async () => {
+    const { B } = seed;
+    const call = (method, path, body) => api(ctx.base, method, path, { token: B.token, body: body ?? undefined });
+    const kid = (await call('POST', '/api/children', { name: 'Caps' })).json;
+    const ID = kid.id.toUpperCase();
+    expect(ID).not.toBe(kid.id);
+    await call('POST', `/api/children/${kid.id}/award`, { points: 100, category: 'Kindness', request_id: crypto.randomUUID() });
+    const bike = (await call('POST', '/api/rewards', { title: 'Caps bike', cost_points: 300 })).json;
+    const toy = (await call('POST', '/api/rewards', { title: 'Caps toy', cost_points: 80 })).json;
+    await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [bike.id]);
+    await ledger(B, kid, bike, 100);
+    expect((await call('POST', `/api/children/${ID}/redeem`, { reward_id: toy.id, request_id: crypto.randomUUID() })).status).toBe(400);
+    expect((await call('POST', `/api/children/${ID}/stack/add`, { reward_id: toy.id })).status).toBe(400);
+    // Release the savings: the request now fits, and confirm in capitals still sees the savings again once re-saved.
+    await ledger(B, kid, bike, -100);
+    expect((await call('POST', `/api/children/${ID}/stack/add`, { reward_id: toy.id })).status).toBe(200);
+    await ledger(B, kid, bike, 30); // 80 requested + 30 saved > 100
+    const confirm = await call('POST', `/api/children/${ID}/stack/confirm`, {
+      request_id: crypto.randomUUID(), expected: [{ reward_id: toy.id, stack_index: 0, cost: 80 }] });
+    expect(confirm.status).toBe(400);
+    await ledger(B, kid, bike, -30); // the direct ledger row above bypassed the save checks; undo it before checking agreement
+    const after = await agree(B, kid.id);
+    expect(after.total_points).toBe(100);
+    // Assignments are stored in the one spelling too (O6 review #6).
+    const only = (await call('POST', '/api/rewards', { title: 'Caps only', cost_points: 5, assigned_child_ids: [ID] })).json;
+    expect(only.assigned_child_ids).toEqual([kid.id]);
+  });
+
+  it('O6 review #2: an inserted reward always starts at generation 0:0', async () => {
+    const { B } = seed;
+    const { rows } = await ctx.pool.query(
+      "INSERT INTO rewards (family_code, title, cost_points, is_bigger_goal, goal_epoch, goal_child_epochs) VALUES ($1, 'Reinserted', 10, true, 7, '{\"x\": 3}') RETURNING goal_epoch, goal_child_epochs",
+      [B.code]);
+    expect(rows[0]).toEqual({ goal_epoch: 0, goal_child_epochs: {} });
+  });
+
+  it('O6 review #4: the reconciliation reports a child newly promised more than they have', async () => {
+    const base = { total_points: 100, committed: 60 };
+    expect(overCommitted(base)).toBe(false);
+    expect(overCommitted({ total_points: 100, committed: 100 })).toBe(false); // exact boundary is fine
+    expect(overCommitted({ total_points: 100, committed: 101 })).toBe(true);
+    expect(overCommitted({ total_points: null, committed: 5 })).toBe(false);
+    const before = { tables: {}, schema: [], migrations: [], children: { c: { ...base, available: 40 } } };
+    const after = { tables: {}, schema: [], migrations: [], children: { c: { ...base, committed: 180, available: 0 } } };
+    expect(differences(before, after).some((d) => /committed 180 is more than total 100/.test(d))).toBe(true);
+    // Already over-committed before (legacy) is not a new finding by itself.
+    expect(differences(after, after)).toEqual([]);
   });
 
   it('the schema refuses ledger rows of the wrong shape', async () => {

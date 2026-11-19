@@ -13,6 +13,15 @@ import { createTodaysGoalsRouter } from './todaysGoals.js';
 
 const router = Router();
 
+// One spelling of every id from here on (O6 review #1). Postgres accepts a
+// UUID in any letter case, but ids are compared as text in JavaScript (the
+// balance rule, generations, assignments), so a capitalised :id would miss
+// the child's own savings and requests. Every :id route sees the lower case.
+router.param('id', (req, _res, next, id) => {
+  if (typeof id === 'string') req.params.id = id.toLowerCase();
+  next();
+});
+
 // Every route with an :id expects a UUID. Anything else is not found, so a
 // malformed id never reaches the database.
 router.param('id', (req, res, next, id) => {
@@ -127,8 +136,8 @@ async function loadRewardsById(db, familyCode, ids) {
 function spendableFrom(byId, rewardId, childId) {
   const r = byId.get(String(rewardId || ''));
   if (!r) return null;
-  const assigned = r.assigned_child_ids || [];
-  if (assigned.length > 0 && !assigned.includes(childId)) return null;
+  const assigned = (r.assigned_child_ids || []).map((x) => String(x).toLowerCase());
+  if (assigned.length > 0 && !assigned.includes(String(childId).toLowerCase())) return null;
   return { id: r.id, title: r.title, cost: r.cost_points, icon_key: r.icon_key ?? null, emoji: r.emoji ?? null, image_url: r.image_url ?? null, is_bigger_goal: !!r.is_bigger_goal };
 }
 
@@ -172,7 +181,7 @@ async function savingsSums(db, familyCode, childIds) {
 // for the child). Savings of any other generation are expired history (O6).
 function goalGeneration(reward, childId) {
   const epochs = reward?.goal_child_epochs || {};
-  return `${reward?.goal_epoch ?? 0}:${epochs[childId] ?? 0}`;
+  return `${reward?.goal_epoch ?? 0}:${epochs[String(childId).toLowerCase()] ?? 0}`;
 }
 
 // THE balance rule (D1, design §3, §11 and §13), used by every read and write:
@@ -188,7 +197,7 @@ function balanceOf(byId, sums, child) {
   const goals = [];
   let savedCounted = 0;
   for (const x of sums) {
-    if (x.child_id !== child.id) continue;
+    if (String(x.child_id).toLowerCase() !== String(child.id).toLowerCase()) continue;
     const reward = spendableFrom(byId, x.reward_id, child.id);
     if (!reward || !reward.is_bigger_goal) continue;
     // Only the current generation counts: un-marking, re-marking or taking the
@@ -292,6 +301,11 @@ function validateCreatePayload(table, data, { isCreate = false } = {}) {
     // (also a database CHECK, migration 015).
     if (data.icon_key !== undefined && data.icon_key !== null && !isRewardIconKey(data.icon_key)) {
       throw Object.assign(new Error(ICON_KEY_MESSAGE), { status: 422 });
+    }
+    // Stored in the one spelling the balance rule and migration 016's
+    // trigger compare against (O6 review #6).
+    if (Array.isArray(data.assigned_child_ids)) {
+      data.assigned_child_ids = data.assigned_child_ids.map((x) => (typeof x === 'string' ? x.toLowerCase() : x));
     }
   }
   if (table === 'point_events') {
