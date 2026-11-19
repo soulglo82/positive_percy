@@ -7,12 +7,12 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Child, Reward } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useRewardMutations } from "@/hooks/useRewardMutations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Gift } from "lucide-react";
 import PercyIcon from "@/components/icons/PercyIcon";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 import Logo from "@/components/brand/Logo";
@@ -55,7 +55,6 @@ export default function Rewards() {
   const [editing, setEditing] = useState(null);
   const [starterTemplate, setStarterTemplate] = useState(null);
   const [filter, setFilter] = useState('all');
-  const queryClient = useQueryClient();
 
   const { data: rewards = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['rewards'],
@@ -67,32 +66,13 @@ export default function Rewards() {
     enabled: !!user,
   });
 
-  const done = () => {
-    queryClient.invalidateQueries({ queryKey: ['rewards'] });
-    queryClient.invalidateQueries({ queryKey: ['children'] }); // priced stacks show reward icons
-  };
-  const saveMutation = useMutation({
-    mutationFn: ({ id, data }) => (id ? Reward.update(id, data) : Reward.create(data)),
-    onSuccess: (_, { id }) => { done(); toast.success(id ? 'Reward updated.' : 'Reward created.'); },
-  });
-  const deleteMutation = useMutation({
-    mutationFn: (id) => Reward.delete(id),
-    onSuccess: () => { done(); toast.success('Reward deleted'); },
-  });
+  const { save, remove } = useRewardMutations();
 
   const openNew = (template = null) => { setEditing(null); setStarterTemplate(template); setFormOpen(true); };
   const openEdit = (reward) => { setEditing(reward); setStarterTemplate(null); setFormOpen(true); };
   const close = () => { setFormOpen(false); setEditing(null); setStarterTemplate(null); };
 
-  const submit = async (data) => {
-    try {
-      await saveMutation.mutateAsync({ id: editing?.id, data });
-      return true;
-    } catch (err) {
-      toast.error(err?.message || "Couldn't save the reward.");
-      return false;
-    }
-  };
+  const submit = (data) => save(editing?.id, data);
 
   const shown = sortRewardsForParent(rewards).filter(FILTERS.find((f) => f.key === filter).keep);
 
@@ -166,10 +146,7 @@ export default function Rewards() {
         initialTemplate={starterTemplate}
         children={children}
         onSubmit={submit}
-        onDelete={async (reward) => {
-          try { await deleteMutation.mutateAsync(reward.id); close(); }
-          catch (err) { toast.error(err?.message || "Couldn't delete the reward."); }
-        }}
+        onDelete={async (reward) => { if (await remove(reward)) close(); }}
       />
     </div>
   );

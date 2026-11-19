@@ -31,7 +31,10 @@ const choiceClass = (on) => cn(
   'inline-flex items-center justify-center gap-2 min-h-11 rounded-md px-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
   on ? 'border-2 border-selected-border bg-selected' : 'border border-border bg-card hover:bg-accent');
 
-export default function ManageGoalsDialog({ open, onClose, child: initialChild, children = [], categories = [], today }) {
+// `start` (V1-B, Children page): open on the list (default), on a new goal
+// ({ view: 'form' }) or on one goal's form ({ goal }). Back from the form
+// always returns to the list, as it does from Home.
+export default function ManageGoalsDialog({ open, onClose, child: initialChild, children = [], categories = [], today, start: opening = null }) {
   const queryClient = useQueryClient();
   const [childId, setChildId] = useState(initialChild?.id);
   const [view, setView] = useState('list'); // 'list' | 'form'
@@ -82,25 +85,29 @@ export default function ManageGoalsDialog({ open, onClose, child: initialChild, 
     setCategoryId(available[0]?.id || '');
   };
 
-  // Each opening starts on the list for the child it was opened for.
+  // Each opening starts where it was asked to, for the child it was opened for.
   useEffect(() => {
     if (!open) return;
     setChildId(initialChild?.id);
-    setView('list');
-  }, [open, initialChild?.id]);
+    // The behaviours are those of the child being opened for, not of the
+    // child the dialog showed last time (state updates after this render).
+    if (opening?.goal) startEditing(opening.goal, behavioursFor(categories, initialChild?.id));
+    else if (opening?.view === 'form') startAdding();
+    else setView('list');
+  }, [open, initialChild?.id, opening]);
 
   const backToList = () => { clearForm(); setView('list'); };
 
   const startAdding = () => { clearForm(); setView('form'); };
 
-  const startEditing = (goal) => {
+  const startEditing = (goal, behaviours = available) => {
     setEditingId(goal.id);
     setEditingGoal(goal);
     setSaveError('');
     setTitle(goal.title);
     // A behaviour since removed or reassigned cannot be kept: the parent
     // chooses again (review finding 3); saving waits for that choice.
-    setCategoryId(available.some((c) => c.id === goal.category_id) ? goal.category_id : '');
+    setCategoryId(behaviours.some((c) => c.id === goal.category_id) ? goal.category_id : '');
     setSchedule(goal.schedule_kind);
     setScheduledDate(goal.scheduled_date || localToday);
     const days = goal.weekdays?.length ? goal.weekdays : [1, 2, 3, 4, 5];
