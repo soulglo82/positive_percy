@@ -73,7 +73,7 @@ export default function ManageGoalsDialog({ open, onClose, child: initialChild, 
   });
   const localToday = today || data?.date || '';
 
-  const clearForm = () => {
+  const clearForm = (behaviours = available) => {
     setEditingId(null);
     setEditingGoal(null);
     setSaveError('');
@@ -82,7 +82,7 @@ export default function ManageGoalsDialog({ open, onClose, child: initialChild, 
     setScheduledDate(localToday);
     setStartDate(localToday);
     setWeekdays([1, 2, 3, 4, 5]);
-    setCategoryId(available[0]?.id || '');
+    setCategoryId(behaviours[0]?.id || '');
   };
 
   // Each opening starts where it was asked to, for the child it was opened for.
@@ -91,14 +91,16 @@ export default function ManageGoalsDialog({ open, onClose, child: initialChild, 
     setChildId(initialChild?.id);
     // The behaviours are those of the child being opened for, not of the
     // child the dialog showed last time (state updates after this render).
-    if (opening?.goal) startEditing(opening.goal, behavioursFor(categories, initialChild?.id));
-    else if (opening?.view === 'form') startAdding();
+    // (code review of #61: both the edit and the add path need this).
+    const behaviours = behavioursFor(categories, initialChild?.id);
+    if (opening?.goal) startEditing(opening.goal, behaviours);
+    else if (opening?.view === 'form') startAdding(behaviours);
     else setView('list');
   }, [open, initialChild?.id, opening]);
 
   const backToList = () => { clearForm(); setView('list'); };
 
-  const startAdding = () => { clearForm(); setView('form'); };
+  const startAdding = (behaviours = available) => { clearForm(behaviours); setView('form'); };
 
   const startEditing = (goal, behaviours = available) => {
     setEditingId(goal.id);
@@ -191,7 +193,7 @@ export default function ManageGoalsDialog({ open, onClose, child: initialChild, 
                         <p className="text-sm text-muted-foreground">{goals.length} {goals.length === 1 ? 'goal' : 'goals'} for {name}</p>
                       )}
                     </div>
-                    <Button type="button" onClick={startAdding}>
+                    <Button type="button" onClick={() => startAdding()}>
                       <PercyIcon id="phosphor:plus-circle:duotone" className="h-5 w-5" /> Add goal
                     </Button>
                   </div>

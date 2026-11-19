@@ -189,4 +189,30 @@ describe('Goal form (G2, G3)', () => {
     fireEvent.click(within(d).getByRole('button', { name: 'Edit Finish homework' }));
     expect(document.activeElement).toBe(within(d).getByRole('heading', { name: 'Edit goal' }));
   });
+
+  it('opened for another child, New goal and Edit use that child\'s behaviours (code review of #61)', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = (props) => (<QueryClientProvider client={client}>
+      <ManageGoalsDialog onClose={() => {}} children={kids} categories={cats} today="2026-11-18" {...props} />
+    </QueryClientProvider>);
+    // First shown for Lara (whose first behaviour is Piano, k0, hers only), then closed.
+    const { rerender } = render(view({ open: true, child: kids[1] }));
+    await screen.findByText('3 goals for Lara');
+    rerender(view({ open: false, child: kids[1] }));
+    // Opened again for Omar straight on New goal.
+    rerender(view({ open: true, child: kids[0], start: { view: 'form' } }));
+    let d = await screen.findByRole('dialog');
+    expect(within(d).getByLabelText('Positive behaviour').value).toBe('k1');
+    fireEvent.change(within(d).getByLabelText('Goal name'), { target: { value: 'Practise scales' } });
+    fireEvent.click(within(d).getByRole('button', { name: 'Create goal' }));
+    await waitFor(() => expect(saveTodayGoal).toHaveBeenCalledTimes(1));
+    expect(saveTodayGoal.mock.calls[0][0]).toMatchObject({ child_id: 'c2', category_id: 'k1' });
+    // Opened again for Omar on a goal whose behaviour (Piano) is not his: it must be chosen again.
+    rerender(view({ open: false, child: kids[0] }));
+    rerender(view({ open: true, child: kids[0], start: { goal: { id: 'g5', child_id: 'c2', title: 'Old piano goal', category_id: 'k0',
+      schedule_kind: 'weekly', weekdays: [2], start_date: '2026-11-02' } } }));
+    d = await screen.findByRole('dialog');
+    expect(within(d).getByLabelText('Positive behaviour').value).toBe('');
+  });
 });
+

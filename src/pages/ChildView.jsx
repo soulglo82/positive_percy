@@ -3,7 +3,7 @@
 // decision D5): this page never spends points, and it has no parent Edit or
 // visibility controls (D8). A parent agrees from Home. The "Saved towards"
 // tile and "My next big adventure" wait for the savings ledger (D1).
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -18,6 +18,7 @@ import Logo from '@/components/brand/Logo';
 import RewardIcon from '../components/rewards/RewardIcon';
 import { FamilyStrip } from '../components/home/HomeSections';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorCard from '../components/ErrorCard';
 
 const pointsWord = (n) => (n === 1 ? 'point' : 'points');
 
@@ -54,16 +55,35 @@ export default function ChildView() {
   const inFlight = useRef(new Set());
   const [pending, setPending] = useState([]);
 
-  const { data: children = [], isLoading } = useQuery({
+  // A parent may agree on another device: look again when the child comes back.
+  const { data: children = [], isLoading, dataUpdatedAt } = useQuery({
     queryKey: ['children'],
     queryFn: () => Child.list(),
     enabled: !!user,
+    refetchOnWindowFocus: true,
   });
-  const { data: allRewards = [] } = useQuery({
+  const { data: allRewards = [], isLoading: rewardsLoading, isError: rewardsError, refetch: refetchRewards } = useQuery({
     queryKey: ['rewards'],
     queryFn: () => Reward.list(),
     enabled: !!user,
   });
+  // Rows whose request could not be confirmed by fresh data stay locked until
+  // the next successful load (code review of #61: no window for a duplicate).
+  const unconfirmed = useRef(new Set());
+  useEffect(() => {
+    if (!unconfirmed.current.size) return;
+    for (const key of unconfirmed.current) inFlight.current.delete(key);
+    unconfirmed.current.clear();
+    setPending([...inFlight.current]);
+  }, [dataUpdatedAt]);
+  // After a request the button is replaced: focus moves to the row's caption.
+  const captions = useRef({});
+  const [focusKey, setFocusKey] = useState(null);
+  useEffect(() => {
+    if (focusKey && captions.current[focusKey]) { captions.current[focusKey].focus(); setFocusKey(null); }
+  });
+  // One polite announcement for a request, not a live region per row.
+  const [announce, setAnnounce] = useState('');
 
   if (isLoading) return <div className="min-h-screen p-6"><LoadingSpinner message="Loading..." /></div>;
 
@@ -91,15 +111,24 @@ export default function ChildView() {
     if (inFlight.current.has(key)) return;
     inFlight.current.add(key);
     setPending([...inFlight.current]);
+    let asked = false;
     try {
       await requestReward(child.id, reward.id);
+      asked = true;
     } catch (e) {
       toast.error(e.status === 400 && e.message ? e.message : "Couldn't update points. Please try again.");
-    } finally {
-      // Release only once the row can show what the server now holds.
-      await queryClient.refetchQueries({ queryKey: ['children'] }).catch(() => {});
-      inFlight.current.delete(key);
-      setPending([...inFlight.current]);
+    }
+    // Release only once the row can show what the server now holds.
+    await queryClient.refetchQueries({ queryKey: ['children'] }).catch(() => {});
+    if (queryClient.getQueryState(['children'])?.status === 'error') {
+      unconfirmed.current.add(key);
+      return;
+    }
+    inFlight.current.delete(key);
+    setPending([...inFlight.current]);
+    if (asked) {
+      setAnnounce(`${reward.title}: Ready when a parent agrees`);
+      setFocusKey(key);
     }
   };
 
@@ -130,7 +159,12 @@ export default function ChildView() {
         <Card>
           <CardContent className="p-4 sm:p-5 space-y-3">
             <h2 className="font-display font-bold text-lg text-primary">Rewards I can choose</h2>
-            {rewards.length === 0 ? (
+            <p className="sr-only" role="status">{announce}</p>
+            {rewardsLoading ? (
+              <LoadingSpinner message="Loading..." />
+            ) : rewardsError ? (
+              <ErrorCard message="Couldn't load rewards" onRetry={refetchRewards} />
+            ) : rewards.length === 0 ? (
               <p className="text-muted-foreground">No rewards created yet.</p>
             ) : (
               <ul className="space-y-2">
@@ -143,7 +177,8 @@ export default function ChildView() {
                       <RewardIcon reward={reward} size="md" />
                       <div className="flex-1 min-w-[10rem]">
                         <p className="font-semibold text-foreground break-words">{reward.title}</p>
-                        <p className="text-sm text-muted-foreground" aria-live="polite">
+                        <p className="text-sm text-muted-foreground rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={-1}
+                          ref={(el) => { captions.current[child.id + ':' + reward.id] = el; }}>
                           {state.kind === 'requested' ? `${cost} · Ready when a parent agrees`
                             : state.kind === 'ask' ? `${cost} · Ask a parent` : cost}
                         </p>
