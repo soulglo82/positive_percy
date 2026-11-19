@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { isIconKey } from './iconKeys.js';
-const ICON_KEY_MESSAGE = 'Choose one of the icons shown';
+const ICON_KEY_MESSAGE = 'Choose one of the icons shown.'; // owner-approved C4
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import pool from './db.js';
