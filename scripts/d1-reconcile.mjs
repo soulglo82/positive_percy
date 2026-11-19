@@ -3,7 +3,14 @@
 // (docs/engineering/D1-SAVINGS-LEDGER-DESIGN.md §11). Never point this at
 // production: it applies migration 016 and then rolls it back.
 //
-//   node scripts/d1-reconcile.mjs --database-url postgres://...copy... --i-confirm-this-is-a-copy
+//   node scripts/d1-reconcile.mjs --database-url postgres://...copy... --i-confirm-this-is-a-copy --copy-token <token>
+//
+// Proving the target is a copy (owner review 2026-11-19: a URL check alone
+// cannot): after restoring the backup, the operator writes a one-time token
+// into the COPY, which production never has:
+//   CREATE TABLE percy_restore_marker (token text NOT NULL, restored_from text, restored_at timestamptz DEFAULT now());
+//   INSERT INTO percy_restore_marker (token, restored_from) VALUES ('<token>', '<backup id>');
+// and passes the same token here. No marker, or a different token: refused.
 //
 // Steps: fingerprint -> apply pending migrations (016) -> compare -> roll
 // 016 back -> compare -> apply 016 again -> compare. Prints a report and
@@ -18,8 +25,9 @@ import { fingerprint, differences, addedSchema, legacyFamilyGoals } from '../ser
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : undefined; };
 const url = arg('--database-url');
-if (!url || !process.argv.includes('--i-confirm-this-is-a-copy')) {
-  console.error('Usage: node scripts/d1-reconcile.mjs --database-url <URL of a restored copy> --i-confirm-this-is-a-copy');
+const token = arg('--copy-token');
+if (!url || !token || !process.argv.includes('--i-confirm-this-is-a-copy')) {
+  console.error('Usage: node scripts/d1-reconcile.mjs --database-url <URL of a restored copy> --i-confirm-this-is-a-copy --copy-token <token written into the copy>');
   process.exit(2);
 }
 
@@ -33,6 +41,9 @@ const report = { steps: [] };
 const step = (name, diffs, extra = {}) => { report.steps.push({ name, changed: diffs, ...extra }); console.log(`${diffs.length ? 'FAIL' : 'ok  '} ${name}${diffs.length ? '\n  ' + diffs.join('\n  ') : ''}`); };
 
 try {
+  const marker = await pool.query('SELECT token, restored_from, restored_at FROM percy_restore_marker').catch(() => ({ rows: [] }));
+  if (!marker.rows.some((r) => r.token === token)) throw new Error('No matching percy_restore_marker token in this database: it is not a marked restored copy. Refusing.');
+  report.restored_from = marker.rows.find((r) => r.token === token).restored_from;
   const applied = (await pool.query("SELECT name FROM schema_migrations WHERE name = '016_savings_ledger.sql'").catch(() => ({ rows: [] }))).rows.length > 0;
   if (applied) throw new Error('This copy already has migration 016. Restore a copy taken before 016.');
   // Only 016 may be pending, so the run proves 016 and nothing else.
@@ -51,7 +62,7 @@ try {
   const saved = (await pool.query('SELECT count(*)::int n FROM savings_events')).rows[0].n;
   const goals = (await pool.query('SELECT count(*)::int n FROM rewards WHERE is_bigger_goal')).rows[0].n;
   const allow = { allowMigrations: ['016_savings_ledger.sql'] };
-  const strayAdded = addedSchema(before, after).filter((o) => !/savings_events|public\.rewards\.is_bigger_goal/.test(o));
+  const strayAdded = addedSchema(before, after).filter((o) => !/savings_events|public\.rewards\.(is_bigger_goal|goal_epoch|goal_child_epochs|rewards_goal_generation)/.test(o));
   step('apply 016', [...differences(before, after, allow), ...strayAdded.map((o) => `unexpected new schema object: ${o}`)],
     { added: after.added, savings_rows: saved, goals_designated: goals });
   if (saved || goals) step('016 created savings or goals', [`savings rows ${saved}, goals ${goals}`]);
@@ -70,7 +81,7 @@ try {
 
   await runMigrations(pool, { log: () => {} });
   const again = await fingerprint(pool, before);
-  const present = (await pool.query("SELECT to_regclass('public.savings_events') IS NOT NULL AS t, EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'rewards' AND column_name = 'is_bigger_goal') AS c")).rows[0];
+  const present = (await pool.query("SELECT to_regclass('public.savings_events') IS NOT NULL AS t, (SELECT count(*) FROM information_schema.columns WHERE table_name = 'rewards' AND column_name IN ('is_bigger_goal', 'goal_epoch', 'goal_child_epochs')) = 3 AS c")).rows[0];
   step('apply 016 again', [...differences(before, again, allow), ...(present.t && present.c ? [] : ['016 objects missing after re-apply'])]);
 } catch (err) {
   report.error = err.message;

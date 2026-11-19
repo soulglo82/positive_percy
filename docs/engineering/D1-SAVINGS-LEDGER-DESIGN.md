@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.3 |
+| Version | 1.4 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | 1.0 | 2026-11-19 | First draft |
 | 1.1 | 2026-11-19 | Peer review: 5 blocking and 7 non-blocking findings, all adopted (§10) |
+| 1.4 | 2026-11-19 | Owner review of PR #60 (head `a11e890`): synthetic proof accepted as a credible fixture proof, not as sign-off to ship 016. **O6 reversed**: savings never revive (allocation generations, §13). The scratch rollback refuses once savings exist; a marked-copy token proves the target is a copy (§13) |
 | 1.3 | 2026-11-19 | Adversarial review of the proof: 2 blocking (read path counted a requested goal twice and let a negative sum add points; write paths ignored savings) and 5 non-blocking, all fixed (§12) |
 | 1.2 | 2026-11-19 | Owner's data-preservation requirements; legacy `family_goals` inspected; migration 016, its rollback and the reconciliation proof built and passing (§11) |
 
@@ -260,3 +261,55 @@ The test "the check catches: …" proves the reconciliation reports each of thes
 | 5 | The copy tool's safety | It refuses Railway URLs and the app's own `DATABASE_URL`, and requires that 016 is the only pending migration. Rollback and record removal run in one transaction. It checks that 016's objects exist after re-apply and reports anything left behind | Run 2026-11-19 on the richer copy: every step ok; Railway URL refused (exit 2) |
 | 6 | Tests compared values with their own source | The reconciliation now applies the same written savings rule in SQL (independently of the JavaScript), and the tests compare app and SQL after every ledger change. The fixture's hand-set starting points are a deliberate legacy shape (imported balances), not a check | (above) |
 | 7 | The note said only contribute changed `family_goals` | Corrected in §11.2; the conclusion is unchanged | (none) |
+
+## 13. Owner review of PR #60 and the O6 correction (v1.4)
+
+### 13.1 Decisions as given (owner's recommendations; not each separately approved by the owner)
+
+| # | Recommendation | Status in engineering |
+| --- | --- | --- |
+| O2 | Only parents move points in V1 | Planned |
+| O4 | Wording: "Save points", "Move points back", "Bigger goal" (helper text "Save points towards this reward over time"); Activity "Saved N points towards X" / "Moved N points back from X" | Used as the proposed strings; the owner approves the final wording at screen review |
+| **O6** | **Reversed: savings never revive.** Un-marking a goal, or taking it away from a child, ends that allocation for good. History is kept, and a re-marked goal starts at 0 | **Built** (§13.2) |
+| O7 | Parents redeem bigger goals from the Children page | Planned |
+| O8 | Legacy family goals stay stored and exported, never shown as child savings | As built (016 leaves them untouched) |
+
+### 13.2 Allocation generations (replaces v1.1 B5's "savings reappear")
+
+- **The generation.** A goal's generation for a child is `goal_epoch:child_epoch`.
+  - `rewards.goal_epoch` and `rewards.goal_child_epochs` (a JSON map from child id to epoch) are new in 016, starting at 0.
+  - A database trigger, `rewards_goal_generation` (`BEFORE UPDATE ON rewards`), owns them:
+    - `goal_epoch` goes up by 1 whenever `is_bigger_goal` changes, in either direction;
+    - a child's epoch goes up by 1 whenever an assignment change takes the reward away from that child.
+  - Whatever an UPDATE writes to those columns is replaced, so generations only move forward, whichever code path or direct SQL changes the reward.
+- **Savings rows** carry the `generation` they were written in. **Only rows of the current generation count**, in the app (`balanceOf`) and in the independent SQL reconciliation alike. Rows of earlier generations stay as history and never count again.
+- **Delete and recreate** gives a new reward id, so nothing carries over.
+- **No multi-child writes or locks.** Un-marking or reassigning updates one reward row. A save racing a goal edit can only be written in a generation that is no longer current, so it under-counts and returns points to available; it can never over-commit.
+- **Refunds** (when the feature is built): undoing a goal redemption restores savings only as a row of the **current** generation, and only if the reward is still a goal for the child. Otherwise the points return to available.
+
+**Tests** (`server/test/d1-migration.test.js`; removing the generation rule fails six of them):
+
+| Test | What it shows |
+| --- | --- |
+| "O6, the owner's example" | 100 saved → un-mark → spend 80 → re-mark gives total 20, saved 0, available 20, and committed ≤ total |
+| "reassigning away and back, and delete/recreate" | A child's savings don't come back. A sibling who kept access keeps theirs. A direct write cannot roll a generation back |
+| "concurrent goal edits and saves never over-commit" | 10 rounds of a goal toggle racing a save |
+| The key rule | Re-marking starts at 0, and the history row is kept |
+
+### 13.3 Rollback after launch
+
+- `server/rollbacks/016_savings_ledger_down.sql` is **scratch and pre-launch only**. It now **refuses to run once any savings exist** (tested).
+- Reversing D1 after families have used savings needs a **separately approved archived or compensated reversal with audit evidence**: the ledger is kept, or exported and archived, and every allocation is compensated so points return to available, with a report. That procedure will be designed if ever needed. It is not this file.
+
+### 13.4 Proving the target is a copy
+
+- The owner noted that a URL check cannot prove the target is a copy, because a live database can have any hostname. So the tool (`scripts/d1-reconcile.mjs`) now requires `--copy-token <token>`.
+- After restoring the backup, the operator writes that token into the **copy**, in a `percy_restore_marker` table along with the backup id. Production never has this table, so a mistaken connection is refused whatever its address.
+- The Railway and `DATABASE_URL` refusals remain as extra guards. The report records `restored_from`.
+- **Run 2026-11-19 on the synthetic copy:** refused without the marker (exit 1); with the marker, every step ok.
+
+### 13.5 Next gate (owner)
+
+1. Run the tool on a verified, isolated restoration of the production backup, with restricted credentials, and inspect its report: apply, rollback and re-apply, plus the history-drift baseline.
+2. An independent review of the corrected O6 design (in progress).
+3. Then the savings feature: endpoints, goal redemption, refunds, and the Home, Children and Child View screens.

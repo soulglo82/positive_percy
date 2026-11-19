@@ -74,7 +74,7 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     // What 016 added to the structure: the goal column, the ledger and its
     // constraints and indexes - nothing else.
     const added = addedSchema(before, after);
-    expect(added.every((o) => /savings_events|public\.rewards\.is_bigger_goal/.test(o)), added.join('\n')).toBe(true);
+    expect(added.every((o) => /savings_events|public\.rewards\.(is_bigger_goal|goal_epoch|goal_child_epochs|rewards_goal_generation)/.test(o)), added.join('\n')).toBe(true);
     expect((await ctx.pool.query('SELECT count(*)::int n FROM savings_events')).rows[0].n).toBe(0);
     expect((await ctx.pool.query('SELECT count(*)::int n FROM rewards WHERE is_bigger_goal')).rows[0].n).toBe(0);
   });
@@ -117,9 +117,13 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
 
   // Ledger helpers for the tests below (the save endpoints come with the
   // feature; these are the rows they will write).
-  const ledger = (F, child, reward, delta, kind = delta > 0 ? 'save' : 'release') => ctx.pool.query(
-    'INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, delta, kind, request_id) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-    [F.code, child.id, reward.id, reward.title, delta, kind, crypto.randomUUID()]);
+  // Written in the goal's CURRENT generation for the child, as the save
+  // endpoint will (read from the reward row, the trigger's output).
+  const generationOf = async (rewardId, childId) => (await ctx.pool.query(
+    "SELECT goal_epoch::text || ':' || COALESCE(goal_child_epochs->>$2::text, '0') AS g FROM rewards WHERE id = $1", [rewardId, childId])).rows[0].g;
+  const ledger = async (F, child, reward, delta, kind = delta > 0 ? 'save' : 'release', generation = null) => ctx.pool.query(
+    'INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, request_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+    [F.code, child.id, reward.id, reward.title, generation ?? await generationOf(reward.id, child.id), delta, kind, crypto.randomUUID()]);
   const appChild = async (F, id) => (await api(ctx.base, 'GET', '/api/children', { token: F.token })).json.find((c) => c.id === id);
   // After every ledger change the app and the SQL reconciliation must agree.
   const agree = async (F, id) => {
@@ -146,10 +150,91 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     expect(now.goals).toEqual([expect.objectContaining({ rewardId: bike.id, saved: 50, cost: 300, to_go: 250 })]);
     const facts = (await fingerprint(ctx.pool)).children[sam.id];
     expect(facts).toMatchObject({ total_points: factsWas.total_points, history: factsWas.history, points_spent: factsWas.points_spent });
-    // Un-marking the goal returns the points to available (read-time filter), in both views.
+    // Un-marking the goal returns the points to available, in both views.
     await ctx.pool.query('UPDATE rewards SET is_bigger_goal = false WHERE id = $1', [bike.id]);
     expect((await agree(B, sam.id)).available_points).toBe(was.available_points);
+    // O6: re-marking starts a NEW allocation period. The old 50 stay in the
+    // history but never count again.
     await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [bike.id]);
+    const remarked = await agree(B, sam.id);
+    expect(remarked.saved_total).toBe(0);
+    expect(remarked.available_points).toBe(was.available_points);
+    expect((await ctx.pool.query('SELECT count(*)::int n FROM savings_events WHERE child_id = $1', [sam.id])).rows[0].n).toBe(1); // history kept
+    // The tests below start from 50 saved in the current generation.
+    await ledger(B, sam, bike, 50);
+    expect((await agree(B, sam.id)).available_points).toBe(was.available_points - 50);
+  });
+
+  it('the scratch rollback refuses to run once savings exist (owner review: never destroy the ledger)', async () => {
+    expect((await ctx.pool.query('SELECT count(*)::int n FROM savings_events')).rows[0].n).toBeGreaterThan(0);
+    await expect(ctx.pool.query(DOWN)).rejects.toThrow(/savings exist/);
+    expect((await ctx.pool.query("SELECT to_regclass('public.savings_events') IS NOT NULL AS t")).rows[0].t).toBe(true);
+  });
+
+  it("O6, the owner's example: un-mark, spend 80, re-mark never over-commits", async () => {
+    const { B } = seed;
+    const call = (method, path, body) => api(ctx.base, method, path, { token: B.token, body: body ?? undefined });
+    const kid = (await call('POST', '/api/children', { name: 'Ollie' })).json;
+    await call('POST', `/api/children/${kid.id}/award`, { points: 100, category: 'Kindness', request_id: crypto.randomUUID() });
+    const bike = (await call('POST', '/api/rewards', { title: 'Ollie bike', cost_points: 300 })).json;
+    const sweets = (await call('POST', '/api/rewards', { title: 'Sweets', cost_points: 80 })).json;
+    await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [bike.id]);
+    await ledger(B, kid, bike, 100);
+    expect((await agree(B, kid.id)).available_points).toBe(0);
+    await ctx.pool.query('UPDATE rewards SET is_bigger_goal = false WHERE id = $1', [bike.id]); // un-mark
+    expect((await agree(B, kid.id)).available_points).toBe(100);
+    expect((await call('POST', `/api/children/${kid.id}/redeem`, { reward_id: sweets.id, request_id: crypto.randomUUID() })).status).toBe(200); // spend 80
+    await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [bike.id]); // re-mark
+    const after = await agree(B, kid.id);
+    expect(after).toMatchObject({ total_points: 20, saved_total: 0, available_points: 20 });
+    const db = (await fingerprint(ctx.pool)).children[kid.id];
+    expect(db.committed).toBeLessThanOrEqual(db.total_points); // no hidden over-commit behind the clamp
+  });
+
+  it('O6: reassigning away and back, and delete/recreate, never revive savings; a sibling keeps theirs', async () => {
+    const { B } = seed;
+    const call = (method, path, body) => api(ctx.base, method, path, { token: B.token, body: body ?? undefined });
+    const ann = (await call('POST', '/api/children', { name: 'Ann' })).json;
+    const ben = (await call('POST', '/api/children', { name: 'Ben' })).json;
+    for (const k of [ann, ben]) await call('POST', `/api/children/${k.id}/award`, { points: 60, category: 'Kindness', request_id: crypto.randomUUID() });
+    const kite = (await call('POST', '/api/rewards', { title: 'Big kite', cost_points: 100 })).json;
+    await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [kite.id]);
+    await ledger(B, ann, kite, 30);
+    await ledger(B, ben, kite, 40);
+    expect((await call('PUT', `/api/rewards/${kite.id}`, { assigned_child_ids: [ben.id] })).status).toBe(200); // away from Ann
+    expect((await agree(B, ann.id)).saved_total).toBe(0);
+    expect((await call('PUT', `/api/rewards/${kite.id}`, { assigned_child_ids: [] })).status).toBe(200); // back to everyone
+    expect((await agree(B, ann.id)).saved_total).toBe(0); // not revived
+    expect((await agree(B, ben.id)).saved_total).toBe(40); // Ben never lost access
+    // A direct write cannot move a generation back (the trigger owns it).
+    await ctx.pool.query("UPDATE rewards SET goal_epoch = 0, goal_child_epochs = '{}'::jsonb WHERE id = $1", [kite.id]);
+    expect((await agree(B, ann.id)).saved_total).toBe(0);
+    // Delete and recreate with the same title: a different reward; nothing carries over.
+    await call('DELETE', `/api/rewards/${kite.id}`);
+    const kite2 = (await call('POST', '/api/rewards', { title: 'Big kite', cost_points: 100 })).json;
+    await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [kite2.id]);
+    expect((await agree(B, ben.id)).saved_total).toBe(0);
+    expect((await agree(B, ben.id)).available_points).toBe(60);
+  });
+
+  it('O6: concurrent goal edits and saves never over-commit (a stale generation only under-counts)', async () => {
+    const { B } = seed;
+    const call = (method, path, body) => api(ctx.base, method, path, { token: B.token, body: body ?? undefined });
+    const kid = (await call('POST', '/api/children', { name: 'Racer' })).json;
+    await call('POST', `/api/children/${kid.id}/award`, { points: 50, category: 'Kindness', request_id: crypto.randomUUID() });
+    const goal = (await call('POST', '/api/rewards', { title: 'Race goal', cost_points: 500 })).json;
+    await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [goal.id]);
+    for (let round = 0; round < 10; round++) {
+      const gen = await generationOf(goal.id, kid.id); // read, then race a toggle against the write
+      await Promise.all([
+        ctx.pool.query('UPDATE rewards SET is_bigger_goal = NOT is_bigger_goal WHERE id = $1', [goal.id]),
+        ledger(B, kid, goal, 5, 'save', gen),
+      ]);
+      const app = await agree(B, kid.id);
+      const db = (await fingerprint(ctx.pool)).children[kid.id];
+      expect(db.committed).toBeLessThanOrEqual(db.total_points);
+      expect(app.saved_total).toBeLessThanOrEqual(5); // only a write in the live generation can count
+    }
   });
 
   it('review: a goal that is also requested is counted once, and a negative sum never adds points', async () => {
@@ -201,7 +286,7 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     const { A } = seed;
     const kid = seed.children.lara.id;
     const ins = (delta, kind, requestId) => ctx.pool.query(
-      'INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, delta, kind, request_id) VALUES ($1, $2, gen_random_uuid(), $3, $4, $5, $6)',
+      "INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, request_id) VALUES ($1, $2, gen_random_uuid(), $3, '0:0', $4, $5, $6)",
       [A.code, kid, 'x', delta, kind, requestId]);
     await expect(ins(0, 'save', crypto.randomUUID())).rejects.toThrow(/delta/);
     await expect(ins(5, 'save', null)).rejects.toThrow(/savings_events_derived_shape/);
@@ -215,7 +300,7 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
   // do is caught. Each runs inside a transaction that is rolled back.
   it.each([
     ['a balance changed', "UPDATE children SET total_points = total_points + 1 WHERE name = 'Sam'", /total_points/],
-    ['points auto-allocated to a goal', "INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, delta, kind, request_id) SELECT c.family_code, c.id, r.id, r.title, 10, 'save', gen_random_uuid() FROM children c JOIN rewards r ON r.family_code = c.family_code AND r.title = 'Mountain bike' WHERE c.name = 'Sam'", /saved 0 -> 60/],
+    ['points auto-allocated to a goal', "INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, request_id) SELECT c.family_code, c.id, r.id, r.title, r.goal_epoch::text || ':' || COALESCE(r.goal_child_epochs->>c.id::text, '0'), 10, 'save', gen_random_uuid() FROM children c JOIN rewards r ON r.family_code = c.family_code AND r.title = 'Mountain bike' WHERE c.name = 'Sam'", /saved 50 -> 60/],
     ['a legacy family goal contribution reset', 'UPDATE family_goals SET current_points = 0', /table public\.family_goals: row contents changed/],
     ['a history row removed', "DELETE FROM point_events WHERE family_code IS NULL", /table public\.point_events/],
     ['a request dropped', "UPDATE children SET reward_stack = '[]' WHERE name = 'Lara'", /stack/],
@@ -224,11 +309,11 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     const client = await ctx.pool.connect();
     try {
       await client.query('BEGIN');
-      // Only what this damage adds counts (earlier tests saved 50 for Sam).
-      const base = new Set(differences(before, await fingerprint(client, before)));
+      // Compared with the state just before the damage, in the same transaction.
+      const base = await fingerprint(client);
       await client.query(damage);
-      const fresh = differences(before, await fingerprint(client, before)).filter((d) => !base.has(d));
-      expect(fresh.join('\n')).toMatch(expected);
+      const found = differences(base, await fingerprint(client, base));
+      expect(found.join('\n')).toMatch(expected);
     } finally {
       await client.query('ROLLBACK');
       client.release();

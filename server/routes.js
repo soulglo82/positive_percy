@@ -116,7 +116,7 @@ async function loadRewardsById(db, familyCode, ids) {
   const wanted = [...new Set(ids.map((id) => String(id || '')).filter(isUuid))];
   if (wanted.length === 0) return new Map();
   const { rows } = await db.query(
-    'SELECT id, title, cost_points, assigned_child_ids, icon_key, emoji, image_url, is_bigger_goal FROM rewards WHERE id = ANY($1::uuid[]) AND family_code = $2',
+    'SELECT id, title, cost_points, assigned_child_ids, icon_key, emoji, image_url, is_bigger_goal, goal_epoch, goal_child_epochs FROM rewards WHERE id = ANY($1::uuid[]) AND family_code = $2',
     [wanted, familyCode]
   );
   return new Map(rows.map((r) => [r.id, r]));
@@ -161,13 +161,21 @@ const stackTotalOf = (stack) => (stack || []).reduce((sum, item) => sum + (Numbe
 async function savingsSums(db, familyCode, childIds) {
   if (!childIds.length) return [];
   const { rows } = await db.query(
-    `SELECT child_id, reward_id, SUM(delta)::int AS saved FROM savings_events
-     WHERE family_code = $1 AND child_id = ANY($2::uuid[]) GROUP BY child_id, reward_id HAVING SUM(delta) > 0`,
+    `SELECT child_id, reward_id, generation, SUM(delta)::int AS saved FROM savings_events
+     WHERE family_code = $1 AND child_id = ANY($2::uuid[]) GROUP BY child_id, reward_id, generation HAVING SUM(delta) > 0`,
     [familyCode, childIds]);
   return rows;
 }
 
-// THE balance rule (D1, design §3 and §11), used by every read and write:
+// A goal's current allocation generation for a child (migration 016's
+// trigger moves it forward on mark/un-mark and when the reward stops being
+// for the child). Savings of any other generation are expired history (O6).
+function goalGeneration(reward, childId) {
+  const epochs = reward?.goal_child_epochs || {};
+  return `${reward?.goal_epoch ?? 0}:${epochs[childId] ?? 0}`;
+}
+
+// THE balance rule (D1, design §3, §11 and §13), used by every read and write:
 //   committed = points set aside for requests + points saved towards goals,
 //   available = total - committed.
 // Savings count only towards a reward that is still a bigger goal for this
@@ -183,6 +191,9 @@ function balanceOf(byId, sums, child) {
     if (x.child_id !== child.id) continue;
     const reward = spendableFrom(byId, x.reward_id, child.id);
     if (!reward || !reward.is_bigger_goal) continue;
+    // Only the current generation counts: un-marking, re-marking or taking the
+    // goal away from the child expires earlier savings for good.
+    if (x.generation !== goalGeneration(byId.get(String(x.reward_id)), child.id)) continue;
     goals.push({ rewardId: reward.id, name: reward.title, cost: reward.cost, saved: x.saved, to_go: Math.max(0, reward.cost - x.saved),
       icon_key: reward.icon_key, emoji: reward.emoji, image_url: reward.image_url });
     savedCounted += Math.max(0, x.saved - (stacked.get(reward.id) || 0));

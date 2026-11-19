@@ -16,8 +16,8 @@
 //
 // Points set aside, savings and available are computed here in SQL from the
 // rows themselves, independently of the app's JavaScript, with the same
-// written rule (design §3, §11): only savings towards a reward that is still
-// a bigger goal for the child count, only positive sums, and a goal that is
+// written rule (design §3, §11, §13): only savings of the goal's current
+// generation, towards a reward that is still a bigger goal for the child, count, only positive sums, and a goal that is
 // also requested counts once (max of the two). The app and this check are
 // compared after every ledger change in the tests.
 
@@ -101,6 +101,8 @@ async function childFacts(db) {
       JOIN children c ON c.id = v.child_id
       JOIN rewards r ON r.id = v.reward_id AND r.is_bigger_goal AND ${spendable}
       WHERE v.family_code IS NOT DISTINCT FROM c.family_code
+        -- only the goal's current generation for this child (O6)
+        AND v.generation = r.goal_epoch::text || ':' || COALESCE(r.goal_child_epochs->>c.id::text, '0')
       GROUP BY v.child_id, v.reward_id HAVING SUM(v.delta) > 0` : 'SELECT NULL::uuid AS child_id, NULL::uuid AS reward_id, 0 AS saved WHERE false'}
     ),
     goals AS (
