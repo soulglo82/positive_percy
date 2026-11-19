@@ -6,6 +6,8 @@
 -- anything else. Reversal: ALTER TABLE rewards DROP COLUMN icon_key;
 ALTER TABLE rewards ADD COLUMN IF NOT EXISTS icon_key TEXT NULL;
 
+-- Safe to run again: the constraint is replaced, never duplicated.
+ALTER TABLE rewards DROP CONSTRAINT IF EXISTS rewards_icon_key_approved;
 ALTER TABLE rewards ADD CONSTRAINT rewards_icon_key_approved CHECK (icon_key IS NULL OR icon_key IN (
   'phosphor:airplane:duotone',
   'phosphor:backpack:duotone',

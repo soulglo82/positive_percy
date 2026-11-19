@@ -285,7 +285,7 @@ export default function ParentDashboard() {
           setShowSpendRewards(false);
           setSelectedChild(null);
         }}
-        child={selectedChild}
+        child={ordered.find((c) => c.id === selectedChild?.id) || selectedChild}
         rewards={rewards.filter(r =>
           !selectedChild || !r.assigned_child_ids || r.assigned_child_ids.length === 0 || r.assigned_child_ids.includes(selectedChild.id)
         )}

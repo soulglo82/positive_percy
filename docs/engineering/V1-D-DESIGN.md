@@ -2,10 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.0 |
+| Version | 1.1 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-d-rewards`, stacked on V1-F `claude/percy-v1-f-forms`) |
-| Status | Draft, for fresh-context peer review |
+| Status | Reviewed (fresh-context peer review adopted, v1.1; §10 supersedes earlier sections where they conflict) |
 | Binding inputs | Approved HTML blob `9de1df2` (screens `rewards`, `rewardform`; picker data `APPROVED_PICKER_CATEGORIES`, `APPROVED_PICKER_ICON_ALIASES`, `pickerItems`, `pickerLabel`); `design/stage1/APPROVAL_REGISTER.json` `picker` (12 categories, 84 placements, 71 icons, 10 owner-approved UX choices); plan v1.1 §2 Rewards rows, §8.2, §8.7, §8.8; **owner decision D2 (2026-11-19, issue #56)**; owner directions D3, D5, D7 (2026-11-19) |
 
 ## Change log
@@ -13,6 +13,7 @@
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 2026-11-19 | First draft |
+| 1.1 | 2026-11-19 | Peer review: 5 blocking and 6 non-blocking findings; all blocking adopted, non-blocking adopted or answered (§10) |
 
 ## 1. Owner decisions this note implements
 
@@ -200,3 +201,24 @@
 | C4 | Error: "Choose an icon from the list." |
 | C5 | Parent confirmation strings (§4.3) |
 | D1/D7 | The savings ledger with explicit bigger-goal designation: a separate design, to be brought for approval |
+
+## 10. Amendments in v1.1 (peer review; these supersede §2, §4 and §6 where they conflict)
+
+| # | Finding | Ruling |
+| --- | --- | --- |
+| R1 | **Blocking.** Preselecting the gift icon is an automatic assignment (D2) and would hide template emoji | **Adopted.** New and template rewards start with `icon_key` NULL. The selected-icon row shows the emoji fallback with "Current icon" (C3). Only a tile tap sets `icon_key`. F1 becomes: `icon_key` null, with the default or template emoji |
+| R2 | **Blocking.** The precedence in the note and the code disagreed; under `image_url` first, a parent's choice on an image reward would be invisible | **Adopted.** Display is `icon_key`, then `image_url`, then `emoji`, then gift. The image stays stored and shows whenever `icon_key` is NULL. F3: the icon shows; the image is kept |
+| R3 | **Blocking.** Undo after "Agree" had no ids | **Adopted in part.** `stack/confirm` returns `redemption_ids`, and the replay returns the same ids. The toast after "Agree" has **no Undo**; each redemption is undone one at a time in Activity (the existing per-redemption undo), so a partial batch failure cannot arise. Owner item C5's toast loses its Undo |
+| R4 | **Blocking.** Confirm charged the stack as stored at commit, not what the parent saw | **Adopted.** `stack/confirm` requires `expected: [{reward_id, stack_index}]`: the priced items in stack order, at least one. It is part of the idempotency arguments. Any difference gives 409 and nothing is charged (test C5). The toast count comes from the server's `confirmed_count` |
+| R5 | **Blocking.** The "Not now" contract was undocumented and its guard optional | **Adopted.** `DELETE /stack/:index?reward_id=<uuid>` is **required** (400 without it; 409 when the stored item differs). Priced items carry `stackIndex`, their position in the stored stack. `stack/add` answers with the stored stack, so its positions are the stack indexes. Test C4: [deleted, Keep, Drop] gives `stackIndex` 1 and 2; a stale remove gives 409 |
+| R6 | Migration 015 was not re-runnable | **Adopted.** `DROP CONSTRAINT IF EXISTS` comes before `ADD`. Test: running 015 twice leaves exactly one constraint |
+| R7 | Missed callers | **Adopted.** First-run and ui E2E selectors are updated. The template browser ("Browse Reward Ideas") is **not** in the approved form and is removed; the first-run "Start with screen time" prefill stays. `SpendRewardsModal` decides affordability from `available_points`. Child View still redeems directly until V1-B (D5); recorded, not changed here |
+| R8 | Copy | **Adopted.** Invalid icons get the shipped "Choose one of the icons shown" with 422, the same as behaviour icons (C4 withdrawn). The count is singular for 1 ("1 icon matches your search" / "1 icon in Outings"), a grammar variant of approved copy (owner item C6). A blank search shows the category. Disclosure defaults as approved: a new reward opens the picker; editing starts closed ("Change") |
+| R9 | Tests | **Adopted.** The CHECK list is compared with the register, not with `REWARD_ICON_KEYS`. P2 expects Film Slate only |
+| R10 | Accent in search results | **Adopted.** In a category, that category's accent; in search results, the icon's first category in approved order (fish: sunshine, from Nature & outdoors) |
+| R11 | Simpler options | **Container query adopted.** The approved CSS `container-type: inline-size` with `@container` 520/760 goes in `index.css`; `ResizeObserver` and `columnsForWidth` are dropped, and E2E measures the columns. **Generator kept:** `APPROVED_CONTEXTS.picker` holds arrays per category, so the 84 placements with duplicates fit |
+
+**Server-side changes landed with this amendment:**
+- the generic create/update routes now pass a validation 422 through (they passed only 400);
+- the stack and confirm contracts above;
+- 202/202 server tests pass.

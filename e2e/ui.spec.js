@@ -134,9 +134,23 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   expect(order.domOrdered).toBe(true);
   if (order.oneColumn) expect(order.visuallyOrdered).toBe(true);
 
+  // V1-D (D5): a child's request shows in the parent's Rewards dialog; "Not now" removes it.
+  const headers = { Authorization: `Bearer ${family.token}` };
+  const kids = await (await page.request.get('/api/children', { headers })).json();
+  const samId = kids.find((k) => k.name === 'Sam').id;
+  // A 1-point reward made for this check (Sam has only a few points), removed after.
+  const cheap = await (await page.request.post('/api/rewards', { headers, data: { title: 'Sticker ' + testInfo.project.name, cost_points: 1, emoji: '⭐', visible_to_child: true } })).json();
+  expect((await page.request.post(`/api/children/${samId}/stack/add`, { headers, data: { reward_id: cheap.id } })).status()).toBe(200);
+  await go(page, '/');
+  await page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: /^Sam / }).click();
   await page.getByRole('button', { name: /^Rewards$/ }).last().click();
+  const spend = page.getByRole('dialog');
+  await expect(spend.getByRole('heading', { name: 'Sam asked for' })).toBeVisible();
   await checkScreen(page, 'spend', testInfo);
+  await spend.getByRole('button', { name: `Not now: ${cheap.title}` }).click();
+  await expect(spend.getByRole('heading', { name: 'Sam asked for' })).toHaveCount(0);
   await closeDialog(page);
+  await page.request.delete(`/api/rewards/${cheap.id}`, { headers });
 
   // V1-F: "Give Percy Points" - child, behaviour (its own points), note.
   await page.getByRole('button', { name: /^Award points/ }).first().click();
@@ -206,14 +220,32 @@ test('activity, with the log open and the child filter open', async ({ page }, t
 test('rewards and its dialogs', async ({ page }, testInfo) => {
   await go(page, '/rewards');
   await checkScreen(page, 'rewards', testInfo);
-  await page.getByRole('button', { name: /New Reward/ }).click();
-  await page.getByRole('button', { name: /Browse Reward Ideas/ }).click();
-  await checkScreen(page, 'create reward with ideas', testInfo);
-  // #34: with the long ideas list open, the title and the buttons stay on screen.
-  await expect(page.getByRole('heading', { name: 'Create Reward' })).toBeInViewport();
-  await expect(page.getByRole('button', { name: 'Cancel' })).toBeInViewport();
-  await expect(page.getByRole('button', { name: 'Create Reward' })).toBeInViewport();
+  // V1-D catalogue: filters.
+  await page.getByRole('button', { name: 'Hidden', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Hidden', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'All rewards' }).click();
+
+  // V1-D reward form: a new reward opens the icon picker.
+  await page.getByRole('button', { name: /New reward/ }).click();
+  const form = page.getByRole('dialog');
+  await expect(form.getByRole('heading', { name: 'Create or edit reward' })).toBeVisible();
+  await checkScreen(page, 'create reward with picker', testInfo);
+  // The title and the buttons stay on screen with the picker open (#34).
+  await expect(form.getByRole('heading', { name: 'Create or edit reward' })).toBeInViewport();
+  await expect(form.getByRole('button', { name: 'Save reward' })).toBeInViewport();
+  // Owner-approved grid: 3 columns under 520px of picker width, 5 to 759px, 6 from 760px.
+  const grid = form.getByRole('group', { name: 'Reward icons' });
+  const { width, cols } = await grid.evaluate((el) => ({
+    width: el.parentElement.getBoundingClientRect().width,
+    cols: getComputedStyle(el).gridTemplateColumns.split(' ').length,
+  }));
+  expect(cols).toBe(width >= 760 ? 6 : width >= 520 ? 5 : 3);
+  await form.getByLabel('Find an icon').fill('bike');
+  await expect(form.getByText('1 icon matches your search')).toBeVisible();
+  await form.getByRole('button', { name: 'Bicycle' }).click();
+  await expect(form.getByRole('button', { name: 'Bicycle' })).toHaveAttribute('aria-pressed', 'true');
   await closeDialog(page);
+
   await page.getByRole('button', { name: /^Edit Screen time/ }).click();
   await checkScreen(page, 'edit reward', testInfo);
   await page.getByRole('button', { name: 'Delete Reward' }).click();

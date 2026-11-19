@@ -16,6 +16,8 @@ const DESIGN_ONLY = [
   /This preview does not change/i,
   /Streak figure is sample content/i,
   /is a visual concept until/i,
+  /Approved Phosphor icons/i,
+  /The catalogue uses original approved Streamline/i,
 ];
 
 describe('copy rule (§8.6)', () => {

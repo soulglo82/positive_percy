@@ -226,7 +226,7 @@ function validateCreatePayload(table, data, { isCreate = false } = {}) {
     // V1-D, D2: null clears the icon; otherwise one of the 71 picker icons
     // (also a database CHECK, migration 015).
     if (data.icon_key !== undefined && data.icon_key !== null && !isRewardIconKey(data.icon_key)) {
-      throw Object.assign(new Error('Choose an icon from the list.'), { status: 400 });
+      throw Object.assign(new Error(ICON_KEY_MESSAGE), { status: 422 });
     }
   }
   if (table === 'point_events') {
@@ -1145,16 +1145,19 @@ router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
     }
 
     stack.push({ rewardId: reward.id, name: reward_title, cost: reward_cost });
+    // Stored as it is now (rewards no longer available were dropped above), so
+    // the positions in this answer are the stored stack indexes.
+    const stored = stack.map(storedStackItem);
 
     await client.query(
       'UPDATE children SET reward_stack = $1 WHERE id = $2 AND family_code = $3',
-      [JSON.stringify(stack.map(storedStackItem)), childId, req.familyCode]
+      [JSON.stringify(stored), childId, req.familyCode]
     );
 
     await client.query('COMMIT');
 
     broadcastFn(req.familyCode, { type: 'stack_updated', child_id: childId });
-    res.json({ reward_stack: stack });
+    res.json({ reward_stack: stored });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     return serverError(res, 'Stack add error:', err);
@@ -1181,10 +1184,14 @@ router.delete('/api/children/:id/stack/:index', authMiddleware, async (req, res)
       return res.status(404).json({ error: 'Child not found' });
     }
     const stack = childRows[0].reward_stack || [];
-    // V1-D: the caller may name the reward it means; if the stack changed
-    // since it looked, nothing is removed (409) rather than the wrong item.
+    // V1-D: the caller names the reward it means; if the stack changed since
+    // it looked, nothing is removed (409) rather than the wrong item.
     const expected = req.query.reward_id;
-    if (expected !== undefined && stack[index]?.rewardId !== String(expected)) {
+    if (typeof expected !== 'string' || !isUuid(expected)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Invalid request' });
+    }
+    if (stack[index]?.rewardId !== expected) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Invalid request' });
     }
@@ -1215,7 +1222,15 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     const childId = req.params.id;
     const rq = spendRequestId(req.body);
     if (rq.error) return res.status(400).json({ error: 'Invalid request' });
-    const args = { child_id: childId };
+    // V1-D: the parent agrees to exactly the requests they saw
+    // ([{reward_id, stack_index}], in stack order). Anything else changed in
+    // between is refused (409), never charged.
+    const expected = req.body?.expected;
+    const validExpected = Array.isArray(expected) && expected.length >= 1 && expected.length <= 100
+      && expected.every((e) => e && typeof e.reward_id === 'string' && isUuid(e.reward_id)
+        && Number.isInteger(e.stack_index) && e.stack_index >= 0);
+    if (!validExpected) return res.status(400).json({ error: 'Invalid request' });
+    const args = { child_id: childId, expected: expected.map((e) => [e.reward_id, e.stack_index]) };
     req.spend = { rq, args };
 
     await client.query('BEGIN');
@@ -1253,11 +1268,10 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     // Price every item from the rewards table now. Items whose reward is gone
     // or no longer for this child are dropped, never charged.
     const priced = await pricedStack(client, stack, childId, req.familyCode);
-    if (priced.length === 0) {
-      await client.query("UPDATE children SET reward_stack = '[]' WHERE id = $1 AND family_code = $2", [childId, req.familyCode]);
-      await client.query('COMMIT');
-      broadcastFn(req.familyCode, { type: 'stack_updated', child_id: childId });
-      return res.status(400).json({ error: 'Those rewards are no longer available.' });
+    const seen = JSON.stringify(priced.map((p) => [p.rewardId, p.stackIndex]));
+    if (seen !== JSON.stringify(args.expected)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
     }
     stack.splice(0, stack.length, ...priced);
     const stackTotal = stackTotalOf(stack);
@@ -1278,15 +1292,17 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     );
 
     // 2. Log each reward as a redemption
+    const redemptionIds = [];
     for (const item of stack) {
-      await client.query(
+      const { rows: [r] } = await client.query(
         `INSERT INTO redemptions (child_id, child_name, reward_id, reward_title, reward_cost, status, family_code)
-         VALUES ($1, $2, $3, $4, $5, 'Completed', $6)`,
+         VALUES ($1, $2, $3, $4, $5, 'Completed', $6) RETURNING id`,
         [childId, child.name, item.rewardId, item.name, item.cost, req.familyCode]
       );
+      redemptionIds.push(r.id);
     }
     await rememberRequest(client, req.familyCode, rq.id, 'stack_confirm', args,
-      { confirmed_count: stack.length, points_deducted: stackTotal });
+      { confirmed_count: stack.length, points_deducted: stackTotal, redemption_ids: redemptionIds });
 
     await client.query('COMMIT');
 
@@ -1297,7 +1313,7 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     );
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
-    res.json({ child: updatedChild[0], confirmed_count: stack.length, points_deducted: stackTotal, duplicate: false });
+    res.json({ child: updatedChild[0], confirmed_count: stack.length, points_deducted: stackTotal, redemption_ids: redemptionIds, duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505' && req.spend) {
@@ -2049,7 +2065,7 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
     broadcastFn(req.familyCode, { type: `${req.params.entity}_created`, id: rows[0].id });
     res.json(rows[0]);
   } catch (err) {
-    if (err.status === 400) return res.status(400).json({ error: err.message });
+    if (err.status === 400 || err.status === 422) return res.status(err.status).json({ error: err.message });
     if (err.status === 404) return res.status(404).json({ error: 'Not found' });
     return serverError(res, `Create ${req.params.entity} error:`, err);
   }
@@ -2276,7 +2292,7 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
     broadcastFn(req.familyCode, { type: `${req.params.entity}_updated`, id: req.params.id });
     res.json(table === 'children' ? (await withBalances(pool, req.familyCode, [result.row]))[0] : result.row);
   } catch (err) {
-    if (err.status === 400) return res.status(400).json({ error: err.message });
+    if (err.status === 400 || err.status === 422) return res.status(err.status).json({ error: err.message });
     return serverError(res, `Update ${req.params.entity} error`, err);
   }
 });

@@ -210,3 +210,12 @@
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
+
+/* V1-D reward icon picker: the owner-approved container breakpoints
+   (register picker.ux_choices.responsive_breakpoints): under 520px 3
+   columns, 520-759px 5, from 760px 6, measured on the picker's own width
+   (the approved HTML's container query), not the viewport. */
+.picker-container { container-type: inline-size; }
+.picker-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+@container (min-width: 520px) { .picker-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@container (min-width: 760px) { .picker-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }

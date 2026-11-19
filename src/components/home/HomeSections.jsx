@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PercyIcon from '@/components/icons/PercyIcon';
 import CategoryIcon from '@/components/CategoryIcon';
+import RewardIcon from '@/components/rewards/RewardIcon';
 import ChildAvatar from '@/components/child/ChildAvatar';
 import { childColour } from '@/lib/childColour';
 
@@ -100,9 +101,7 @@ export function WorkingTowards({ child }) {
         <h2 className="font-display font-bold text-lg text-primary">What you're working towards</h2>
         {stack.map((item, i) => (
           <div key={item.rewardId + '-' + i} className="flex items-center gap-3">
-            <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-warning text-primary">
-              <PercyIcon id="phosphor:gift:duotone" className="h-6 w-6" />
-            </span>
+            <RewardIcon reward={item} size="md" />
             <div className="min-w-0">
               <p className="font-semibold text-foreground break-words">{item.name}</p>
               <p className="text-sm text-muted-foreground">{item.cost} {item.cost === 1 ? 'point' : 'points'} · Ready when a parent agrees</p>

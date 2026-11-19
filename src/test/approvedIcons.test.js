@@ -106,7 +106,7 @@ describe('icon ids in the app', () => {
       used += (t.match(/<PercyIcon\b/g) || []).length;
       expect(iconIdProblems(t, known), path.relative(ROOT, f)).toEqual([]);
     }
-    expect(used).toBeGreaterThanOrEqual(20); // control: the scan sees the call sites
+    expect(used).toBeGreaterThanOrEqual(15); // control: the scan sees the call sites (19 after V1-D removed the old reward modals)
   });
   it.each([
     ['<PercyIcon id="phosphor:nope:duotone" />', 1],
@@ -129,7 +129,8 @@ const BANS = {
   // E05 removed the exemption: the completed-goal tile keeps its category icon.
   'src/components/dashboard/TodaysGoalsPanel.jsx': ['Settings2', 'Target', 'Check', 'Sparkles', 'Sparkle', 'CheckCircle2', 'CircleCheck', 'ClipboardCheck'],
   'src/lib/categoryIcons.js': ['RotateCcw', 'Undo', 'Undo2'],
-  'src/components/rewards/AddRewardModal.jsx': ['Gift'],
+  // V1-D: the reward form replaced AddRewardModal; its gift stays Phosphor.
+  'src/components/rewards/RewardForm.jsx': ['Gift'],
 };
 export function lucideImports(text) {
   return [...text.matchAll(/import\s*\{([^}]*)\}\s*from\s*['"]lucide-react['"]/g)]
@@ -198,9 +199,11 @@ describe('illustrations', () => {
         expect(selected.get(src), `${m[1]} (${src})`).toBe('selected');
       }
     }
-    // V1-F: the locked V1 design has no Home sticker and no onboarding
-    // illustration; only the reward creation form remains (until V1-D).
-    expect(refs).toBe(1);
+    // V1-F/V1-D: the locked V1 design has no Home sticker, no onboarding
+    // illustration and no reward-form illustration (the V1 form shows the
+    // reward's own icon), so the app references none. Any new reference is
+    // still checked above against the register.
+    expect(refs).toBe(0);
   });
 
   it('every illustration <img> is decorative (alt="")', () => {

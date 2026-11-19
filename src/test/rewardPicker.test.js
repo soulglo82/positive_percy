@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { REWARD_ICON_KEYS } from '../../server/rewardIcons.js';
 import {
-  PICKER_CATEGORIES, PICKER_ICONS, PICKER_ALIASES, pickerItems, pickerLabel, columnsForWidth, accentOf, isPickerIcon,
+  PICKER_CATEGORIES, PICKER_ICONS, PICKER_ALIASES, pickerItems, pickerLabel, accentOf, isPickerIcon,
 } from '../lib/rewardPicker.js';
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -74,8 +74,11 @@ describe('labels, accents and columns', () => {
     expect(pickerLabel('phosphor:game-controller:duotone')).toBe('Game Controller');
     expect(pickerLabel('phosphor:person-simple-run:duotone')).toBe('Person Simple Run');
   });
-  it('P6: container breakpoints 520 and 760', () => {
-    expect([0, 519, 520, 759, 760, 1200].map(columnsForWidth)).toEqual([3, 3, 5, 5, 6, 6]);
+  it('P6: the container breakpoints 520 and 760 are in the stylesheet (columns measured in E2E)', () => {
+    const css = fs.readFileSync(path.join(ROOT, 'src/index.css'), 'utf8');
+    expect(css).toMatch(/\.picker-container\s*\{\s*container-type:\s*inline-size;/);
+    expect(css).toMatch(/@container \(min-width: 520px\) \{ \.picker-grid \{ grid-template-columns: repeat\(5,/);
+    expect(css).toMatch(/@container \(min-width: 760px\) \{ \.picker-grid \{ grid-template-columns: repeat\(6,/);
   });
   it('accent of an icon is its first category\'s', () => {
     expect(accentOf('phosphor:game-controller:duotone')).toBe('orange');

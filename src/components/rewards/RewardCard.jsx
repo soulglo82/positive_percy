@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, Check } from "lucide-react";
 import PercyIcon from "@/components/icons/PercyIcon";
 import { Points } from "@/components/brand/PointsStar";
-import EmojiTile from "./EmojiTile";
+import RewardIcon from "./RewardIcon";
 
 export default function RewardCard({ reward, onToggleStack, isParentView, onToggleVisibility, onEdit, canAfford, childPoints, assignedChildren = [], isInStack = false }) {
   const pointsNeeded = reward.cost_points - (childPoints || 0);
@@ -14,7 +14,7 @@ export default function RewardCard({ reward, onToggleStack, isParentView, onTogg
     <Card className={`overflow-hidden ${
       isInStack ? 'border-2 border-selected-border bg-selected' : hidden ? 'bg-muted' : ''
     }`}>
-      {reward.image_url && (
+      {reward.image_url && !reward.icon_key && (
         <div
           className="h-32 bg-cover bg-center"
           role="img"
@@ -25,7 +25,7 @@ export default function RewardCard({ reward, onToggleStack, isParentView, onTogg
 
       <CardContent className="p-4">
         <div className="flex items-start gap-3 mb-2">
-          {!reward.image_url && <EmojiTile emoji={reward.emoji} />}
+          {(reward.icon_key || !reward.image_url) && <RewardIcon reward={reward} size="sm" />}
           <div className="flex-1 min-w-0">
             <h3 className="font-display font-bold text-foreground text-lg line-clamp-2">
               {reward.title}

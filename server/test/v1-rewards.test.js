@@ -6,7 +6,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { startApp, stopApp, api, makeFamily } from './harness.js';
 import { runMigrations } from '../migrate.js';
-import { REWARD_ICON_KEYS } from '../rewardIcons.js';
+import fs from 'node:fs';
+import path from 'node:path';
+const REGISTER_IDS = [...new Set(Object.values(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../design/stage1/APPROVAL_REGISTER.json'), 'utf8')).picker.categories).flatMap((c) => c.asset_ids))];
 
 const hasDb = !!process.env.TEST_DATABASE_URL;
 const rid = () => crypto.randomUUID();
@@ -37,8 +39,8 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     const before = (await call('GET', '/api/rewards')).json.length;
     for (const bad of ['phosphor:gear:duotone', 'gift', '', 42, [GIFT], 'phosphor:gift:regular', ' phosphor:gift:duotone']) {
       const r = await reward({ title: 'Bad ' + JSON.stringify(bad), icon_key: bad });
-      expect(r.status, JSON.stringify(bad)).toBe(400);
-      expect(r.json.error).toBe('Choose an icon from the list.');
+      expect(r.status, JSON.stringify(bad)).toBe(422);
+      expect(r.json.error).toBe('Choose one of the icons shown'); // the shipped icon message
     }
     expect((await call('GET', '/api/rewards')).json.length).toBe(before);
   });
@@ -51,7 +53,7 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     const renamed = (await call('PUT', `/api/rewards/${r.id}`, { title: 'Pizza night' })).json;
     expect(renamed).toMatchObject({ icon_key: null, emoji: '🍕', cost_points: 5, title: 'Pizza night' });
     const bad = await call('PUT', `/api/rewards/${r.id}`, { icon_key: 'nope' });
-    expect(bad.status).toBe(400);
+    expect(bad.status).toBe(422);
   });
 
   it('S6: the database itself refuses an unapproved icon', async () => {
@@ -89,12 +91,20 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     await expect(ctx.pool.query("UPDATE rewards SET icon_key = 'x' WHERE id = $1", [legacy.id])).rejects.toThrow(/rewards_icon_key_approved/);
   });
 
+  it('migration 015 is safe to run again on a database that already has it', async () => {
+    const sql = fs.readFileSync(path.resolve(__dirname, '../migrations/015_reward_icon_key.sql'), 'utf8');
+    await ctx.pool.query(sql);
+    await ctx.pool.query(sql);
+    const { rows } = await ctx.pool.query("SELECT count(*)::int AS n FROM pg_constraint WHERE conname = 'rewards_icon_key_approved'");
+    expect(rows[0].n).toBe(1);
+  });
+
   it('the CHECK list is exactly the 71 picker icons', async () => {
     const { rows } = await ctx.pool.query(
       "SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conname = 'rewards_icon_key_approved'");
     const inDb = new Set([...rows[0].def.matchAll(/'(phosphor:[a-z0-9-]+:duotone)'/g)].map((m) => m[1]));
     expect(inDb.size).toBe(71);
-    expect([...inDb].sort()).toEqual([...REWARD_ICON_KEYS].sort());
+    expect([...inDb].sort()).toEqual([...REGISTER_IDS].sort()); // against the register itself
   });
 
   it('the export and the priced stack carry the icon', async () => {
@@ -113,13 +123,16 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     const b = (await reward({ title: 'B', cost_points: 8 })).json;
     await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: a.id });
     await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: b.id });
-    expect((await call('DELETE', `/api/children/${kid.id}/stack/0`)).status).toBe(200);
+    expect((await call('DELETE', `/api/children/${kid.id}/stack/0?reward_id=${a.id}`)).status).toBe(200);
     const id = rid();
-    const ok = await call('POST', `/api/children/${kid.id}/stack/confirm`, { request_id: id });
+    const expected = [{ reward_id: b.id, stack_index: 0 }];
+    const ok = await call('POST', `/api/children/${kid.id}/stack/confirm`, { request_id: id, expected });
     expect(ok.status).toBe(200);
     expect(ok.json).toMatchObject({ confirmed_count: 1, points_deducted: 8 });
-    const again = await call('POST', `/api/children/${kid.id}/stack/confirm`, { request_id: id });
+    expect(ok.json.redemption_ids).toHaveLength(1);
+    const again = await call('POST', `/api/children/${kid.id}/stack/confirm`, { request_id: id, expected });
     expect(again.json.duplicate).toBe(true);
+    expect(again.json.redemption_ids).toEqual(ok.json.redemption_ids);
     const { rows } = await ctx.pool.query('SELECT reward_title FROM redemptions WHERE child_id = $1', [kid.id]);
     expect(rows.map((r) => r.reward_title)).toEqual(['B']);
     const after = (await call('GET', '/api/children')).json.find((c) => c.id === kid.id);
@@ -146,5 +159,20 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     expect(ok.status).toBe(200);
     const left = (await call('GET', '/api/children')).json.find((c) => c.id === kid.id).reward_stack_priced;
     expect(left.map((p) => p.name)).toEqual(['Keep']);
+  });
+
+  it('C5: confirm charges only what the parent saw; a request added meanwhile makes it refuse', async () => {
+    const kid = (await call('POST', '/api/children', { name: 'Late', total_points: 50 })).json;
+    const a = (await reward({ title: 'A1', cost_points: 5 })).json;
+    const b = (await reward({ title: 'B1', cost_points: 6 })).json;
+    await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: a.id });
+    const saw = [{ reward_id: a.id, stack_index: 0 }];
+    await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: b.id }); // added while the dialog was open
+    const r = await call('POST', `/api/children/${kid.id}/stack/confirm`, { request_id: rid(), expected: saw });
+    expect(r.status).toBe(409);
+    expect((await call('GET', '/api/children')).json.find((c) => c.id === kid.id).total_points).toBe(50);
+    for (const bad of [undefined, [], [{ reward_id: 'x', stack_index: 0 }], [{ reward_id: a.id, stack_index: -1 }]]) {
+      expect((await call('POST', `/api/children/${kid.id}/stack/confirm`, { request_id: rid(), expected: bad })).status, JSON.stringify(bad)).toBe(400);
+    }
   });
 });

@@ -208,7 +208,9 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
     const big = await api(ctx.base, 'POST', '/api/rewards', { token: F.token, body: { title: 'Big', cost_points: 80 } });
     await ctx.pool.query('UPDATE children SET reward_stack = $1 WHERE id = $2',
       [JSON.stringify([{ rewardId: big.json.id, name: 'Big', cost: 1 }, { rewardId: rid(), name: 'Gone', cost: 1 }]), c.id]);
-    const r = await api(ctx.base, 'POST', `/api/children/${c.id}/stack/confirm`, { token: F.token });
+    // V1-D: the parent confirms what they saw (the gone item is not shown).
+    const r = await api(ctx.base, 'POST', `/api/children/${c.id}/stack/confirm`, { token: F.token,
+      body: { expected: [{ reward_id: big.json.id, stack_index: 0 }] } });
     expect(r.status).toBe(200);
     expect((await balance(c.id)).total_points).toBe(20);
     expect(await historyTotal(c.id)).toBe(20);
@@ -219,17 +221,28 @@ describe.skipIf(!runDb)('batch A: points correctness', () => {
     await award(c.id, 100);
     const t = await api(ctx.base, 'POST', '/api/rewards', { token: F.token, body: { title: 'T', cost_points: 10 } });
     expect((await api(ctx.base, 'DELETE', `/api/children/${c.id}/stack/abc`, { token: F.token })).status).toBe(400);
+    // V1-D: a remove must name the reward it means.
+    expect((await api(ctx.base, 'DELETE', `/api/children/${c.id}/stack/0`, { token: F.token })).status).toBe(400);
     expect((await api(ctx.base, 'DELETE', '/api/children/not-a-uuid/stack/0', { token: F.token })).status).toBe(404);
     for (let i = 0; i < 8; i++) {
       await api(ctx.base, 'POST', `/api/children/${c.id}/stack/add`, { token: F.token, body: { reward_id: t.json.id } });
       await api(ctx.base, 'POST', `/api/children/${c.id}/stack/add`, { token: F.token, body: { reward_id: t.json.id } });
-      await Promise.all([
-        api(ctx.base, 'POST', `/api/children/${c.id}/stack/confirm`, { token: F.token }),
-        api(ctx.base, 'DELETE', `/api/children/${c.id}/stack/0`, { token: F.token }),
+      const [conf, rem] = await Promise.all([
+        api(ctx.base, 'POST', `/api/children/${c.id}/stack/confirm`, { token: F.token,
+          body: { expected: [{ reward_id: t.json.id, stack_index: 0 }, { reward_id: t.json.id, stack_index: 1 }] } }),
+        api(ctx.base, 'DELETE', `/api/children/${c.id}/stack/0?reward_id=${t.json.id}`, { token: F.token }),
       ]);
       const { rows } = await ctx.pool.query('SELECT reward_stack FROM children WHERE id = $1', [c.id]);
-      // Either the confirm took both, or the remove ran first and confirm took the one left.
-      expect(rows[0].reward_stack).toEqual([]);
+      // Either the confirm took both (the remove then finds nothing), or the
+      // remove ran first and the confirm, no longer matching what the parent
+      // saw, charged nothing (V1-D).
+      if (conf.status === 200) expect(rows[0].reward_stack).toEqual([]);
+      else {
+        expect(conf.status).toBe(409);
+        expect(rem.status).toBe(200);
+        expect(rows[0].reward_stack).toHaveLength(1);
+        await api(ctx.base, 'DELETE', `/api/children/${c.id}/stack/0?reward_id=${t.json.id}`, { token: F.token });
+      }
     }
     expect(await historyTotal(c.id)).toBe((await balance(c.id)).total_points);
   });

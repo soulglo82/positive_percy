@@ -62,13 +62,7 @@ export function pickerItems(category, term) {
   });
 }
 
-// Owner-approved container breakpoints (ux_choices.responsive_breakpoints):
-// under 520px 3 columns, 520-759px 5, from 760px 6. Width is the picker
-// grid's own container, not the viewport.
-export function columnsForWidth(width) {
-  if (width >= 760) return 6;
-  if (width >= 520) return 5;
-  return 3;
-}
+// Grid columns follow the owner-approved container breakpoints in
+// src/index.css (.picker-container / .picker-grid), checked in the browser tests.
 
 export const accentOf = (assetId) => PICKER_CATEGORIES.find((c) => c.icons.includes(assetId))?.accent || 'purple';
