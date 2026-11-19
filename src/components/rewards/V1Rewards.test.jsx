@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import RewardIcon from './RewardIcon';
 import RewardPicker, { countLine } from './RewardPicker';
-import RewardForm from './RewardForm';
+import RewardForm, { currentArtLabel } from './RewardForm';
 import { RewardTile } from '@/pages/Rewards';
 import SpendRewardsModal from '@/components/child/SpendRewardsModal';
 
@@ -72,7 +72,9 @@ function openForm(props = {}) {
 describe('RewardForm', () => {
   it('approved copy; a new reward opens the picker with no icon chosen (R1)', () => {
     const { d } = openForm();
-    expect(within(d).getByRole('heading', { name: 'Create or edit reward' })).toBeTruthy();
+    expect(within(d).getByRole('heading', { name: 'Add reward' })).toBeTruthy();
+    expect(d.textContent).toContain('Name the reward, set its points cost and choose an icon.');
+    expect(d.textContent).not.toMatch(/approved library|Phosphor|71/);
     expect(d.textContent).toContain('The reward');
     expect(d.textContent).toContain('Set the name and point cost.');
     expect(within(d).getByLabelText('Reward name').getAttribute('placeholder')).toBe('e.g. Choose a movie');
@@ -149,6 +151,21 @@ describe('Picker opens where the chosen icon is', () => {
   });
 });
 
+describe('Approved wording C1 and C3', () => {
+  it('editing an existing reward says "Edit reward"', () => {
+    const { d } = openForm({ reward: { id: 'r1', title: 'Cinema', cost_points: 8, icon_key: null, emoji: '🎬' } });
+    expect(within(d).getByRole('heading', { name: 'Edit reward' })).toBeTruthy();
+  });
+  it('"Current image" for a photo, "Current icon" for an icon, an emoji or nothing', () => {
+    expect(currentArtLabel({ image_url: '/u/a.png' })).toBe('Current image');
+    expect(currentArtLabel({ image_url: '/u/a.png', icon_key: 'phosphor:pizza:duotone' })).toBe('Current icon');
+    expect(currentArtLabel({ emoji: '🍕' })).toBe('Current icon');
+    expect(currentArtLabel(null)).toBe('Current icon');
+    const { d } = openForm({ reward: { id: 'r2', title: 'Photo', cost_points: 3, image_url: '/u/p.png' } });
+    expect(d.textContent).toContain('Current image');
+  });
+});
+
 describe('Catalogue tile', () => {
   it('shows icon, title, points (singular), visibility and a named Edit; no subtitle', () => {
     const onEdit = vi.fn();
@@ -182,10 +199,12 @@ describe('Parent confirmation of requests (D5, R4)', () => {
     return screen.getByRole('dialog');
   };
 
-  it('lists the requests and agrees to exactly what is shown', async () => {
+  it('lists the requests, shows their exact total and approves exactly what is shown (C5)', async () => {
     const d = open();
     expect(within(d).getByRole('heading', { name: 'Lara asked for' })).toBeTruthy();
-    fireEvent.click(within(d).getByRole('button', { name: 'Agree to 2 rewards' }));
+    // 5 + 8: the same items and prices the confirmation sends.
+    expect(d.querySelector('[data-requests-total]').textContent.trim()).toBe("This will spend 13 points from Lara's balance.");
+    fireEvent.click(within(d).getByRole('button', { name: 'Approve 2 rewards' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('/api/children/c1/stack/confirm');
@@ -193,9 +212,14 @@ describe('Parent confirmation of requests (D5, R4)', () => {
     expect(body.expected).toEqual([{ reward_id: 'a', stack_index: 1, cost: 5 }, { reward_id: 'b', stack_index: 2, cost: 8 }]);
     expect(body.request_id).toMatch(/^[0-9a-f-]{36}$/);
   });
-  it('"Not now" removes that request by its stored position and names it', async () => {
+  it('one request of 1 point: singular wording (C5)', () => {
+    const d = open({ ...child, reward_stack_priced: [{ rewardId: 'a', name: 'Sticker', cost: 1, stackIndex: 0 }] });
+    expect(d.querySelector('[data-requests-total]').textContent.trim()).toBe("This will spend 1 point from Lara's balance.");
+    expect(within(d).getByRole('button', { name: 'Approve 1 reward' })).toBeTruthy();
+  });
+  it('"Not this time" removes that request by its stored position and names it', async () => {
     const d = open();
-    fireEvent.click(within(d).getByRole('button', { name: 'Not now: Cinema' }));
+    fireEvent.click(within(d).getByRole('button', { name: 'Not this time: Cinema' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(fetchMock.mock.calls[0][0]).toBe('/api/children/c1/stack/2?reward_id=b');
     expect(fetchMock.mock.calls[0][1].method).toBe('DELETE');
