@@ -1,11 +1,13 @@
 // V1-D parent confirmation strings (docs/engineering/V1-D-DESIGN.md §4.3).
-// NOT in the approved V1 HTML: owner item C5. Kept in one place so the
-// owner's approved wording replaces them in one edit.
+// Owner-approved wording, C5 (2026-11-19, recorded on PR #59).
 const rewards = (n) => (n === 1 ? 'reward' : 'rewards');
 export const REQUEST_COPY = {
   heading: (name) => `${name} asked for`,
-  notNow: 'Not now',
-  agree: (n) => `Agree to ${n} ${rewards(n)}`,
+  notNow: 'Not this time',
+  agree: (n) => `Approve ${n} ${rewards(n)}`,
+  // The exact total of the requests being approved (the same items and
+  // prices the confirmation sends; a change is refused, never charged).
+  total: (total, name) => `This will spend ${total} ${total === 1 ? 'point' : 'points'} from ${name}'s balance.`,
   agreed: (name, n) => `${name} can enjoy ${n} ${rewards(n)}.`,
   changed: 'The requests changed. Check them again.',
 };

@@ -134,7 +134,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   expect(order.domOrdered).toBe(true);
   if (order.oneColumn) expect(order.visuallyOrdered).toBe(true);
 
-  // V1-D (D5): a child's request shows in the parent's Rewards dialog; "Not now" removes it.
+  // V1-D (D5): a child's request shows in the parent's Rewards dialog; "Not this time" removes it.
   const headers = { Authorization: `Bearer ${family.token}` };
   const kids = await (await page.request.get('/api/children', { headers })).json();
   const samId = kids.find((k) => k.name === 'Sam').id;
@@ -147,7 +147,8 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   const spend = page.getByRole('dialog');
   await expect(spend.getByRole('heading', { name: 'Sam asked for' })).toBeVisible();
   await checkScreen(page, 'spend', testInfo);
-  await spend.getByRole('button', { name: `Not now: ${cheap.title}` }).click();
+  await expect(spend.locator('[data-requests-total]')).toHaveText(new RegExp(`^This will spend \\d+ points? from Sam's balance\\.$`));
+  await spend.getByRole('button', { name: `Not this time: ${cheap.title}` }).click();
   await expect(spend.getByRole('heading', { name: 'Sam asked for' })).toHaveCount(0);
   await closeDialog(page);
   await page.request.delete(`/api/rewards/${cheap.id}`, { headers });
@@ -274,10 +275,10 @@ test('rewards and its dialogs', async ({ page }, testInfo) => {
   // V1-D reward form: a new reward opens the icon picker.
   await page.getByRole('button', { name: /New reward/ }).click();
   const form = page.getByRole('dialog');
-  await expect(form.getByRole('heading', { name: 'Create or edit reward' })).toBeVisible();
+  await expect(form.getByRole('heading', { name: 'Add reward' })).toBeVisible();
   await checkScreen(page, 'create reward with picker', testInfo);
   // The title and the buttons stay on screen with the picker open (#34).
-  await expect(form.getByRole('heading', { name: 'Create or edit reward' })).toBeInViewport();
+  await expect(form.getByRole('heading', { name: 'Add reward' })).toBeInViewport();
   await expect(form.getByRole('button', { name: 'Save reward' })).toBeInViewport();
   // Owner-approved grid: 3 columns under 520px of picker width, 5 to 759px, 6 from 760px.
   const grid = form.getByRole('group', { name: 'Reward icons' });
