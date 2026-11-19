@@ -95,7 +95,7 @@ describe('Children page (§2)', () => {
     expect(screen.getByText('Hidden from children')).toBeTruthy();
     expect(screen.queryByText('Omar only')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Edit Movie night' }));
-    expect(await screen.findByRole('heading', { name: 'Create or edit reward' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Edit reward' })).toBeTruthy(); // approved C1
   });
 
   it('E3: the target reached shows 0, as the approved code does', async () => {
