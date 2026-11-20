@@ -62,8 +62,10 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
     }
   };
 
+  // O-I1: a requested reward is approved or declined above, not spent here.
+  const requestedIds = new Set(requests.map((item) => item.rewardId));
   const availableRewards = rewards
-    .filter(r => r.visible_to_child !== false)
+    .filter(r => r.visible_to_child !== false && !requestedIds.has(r.id))
     .sort((a, b) => a.cost_points - b.cost_points);
 
   const handleRedeem = async (reward) => {
@@ -86,6 +88,8 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
         action: { label: 'Undo', onClick: undoAction('spend', redemption.id, queryClient) },
       });
     } catch (e) {
+      // 409: the child asked for it meanwhile (O-I1); show the requests as they are now.
+      if (e.status === 409) { refreshPoints(queryClient); toast.info(REQUEST_COPY.changed); return; }
       toast.error(e.message || 'Failed to redeem reward');
     } finally {
       setRedeeming(null);
