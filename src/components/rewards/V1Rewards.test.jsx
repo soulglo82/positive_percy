@@ -48,9 +48,13 @@ describe('RewardPicker', () => {
     expect(within(grid).getAllByRole('button')).toHaveLength(7);
     expect(within(grid).getByRole('button', { name: 'Game Controller' })).toBeTruthy();
   });
-  it("an existing reward opens on its own icon's group", () => {
-    render(<RewardPicker value={CONTROLLER} onChange={() => {}} />);
+  it("an existing reward opens on its own icon's group (artwork too)", () => {
+    const { unmount } = render(<RewardPicker value={CONTROLLER} onChange={() => {}} />);
     expect(screen.getByText('7 icons in Fun & games')).toBeTruthy();
+    unmount();
+    render(<RewardPicker value="streamline:plump:duo:images-photography:film-slate" onChange={() => {}} />);
+    expect(screen.getByText('12 icons in Reward artwork')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Movie night' }).getAttribute('aria-pressed')).toBe('true');
   });
   it('category chips switch the list; search dedupes and counts in the singular', () => {
     render(<RewardPicker value={null} onChange={() => {}} />);

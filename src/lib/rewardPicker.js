@@ -9,13 +9,17 @@ import { REWARD_ARTWORK, REWARD_ARTWORK_IDS, REWARD_ART_GROUP, artworkOf } from 
 
 // Everyday words that also find an approved artwork (the same words the
 // approved aliases give its Phosphor counterpart).
-const ARTWORK_ALIASES = {
+export const ARTWORK_ALIASES = {
   'streamline:plump:duo:computer-devices:controller-1': 'game gaming controller',
+  'streamline:plump:duo:interface-essential:give-gift': 'gift present',
+  'streamline:plump:duo:images-photography:camera-1': 'camera photo',
+  'streamline:plump:duo:entertainment:music-note-2': 'music song',
+  'streamline:plump:duo:map-travel:beach': 'beach seaside outing',
   'streamline:plump:duo:images-photography:film-slate': 'movie cinema film night',
   'streamline:plump:duo:food-drink:ice-cream-2': 'ice cream dessert treat',
   'phosphor:book-bookmark:duotone': 'book reading story',
-  'streamline:plump:duo:map-travel:bicycle-bike': 'bike cycling ride',
-  'streamline:plump:duo:culture:ticket-1': 'outing show cinema day out',
+  'streamline:plump:duo:map-travel:bicycle-bike': 'bicycle bike cycling ride',
+  'streamline:plump:duo:culture:ticket-1': 'ticket outing show cinema day out',
   'streamline:plump:duo:food-drink:cake-slice': 'birthday celebration treat',
   'streamline:plump:duo:interface-essential:paintbrush-2': 'drawing painting creativity art',
 };

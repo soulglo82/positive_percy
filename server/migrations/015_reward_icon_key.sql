@@ -1,9 +1,10 @@
 -- V1-D, owner decision D2 (2026-11-19, issue #56): rewards may carry one of
 -- the 71 owner-approved reward-picker icons (Phosphor Duotone, register
 -- picker.categories) or one of the 12 approved reward artworks (register
--- decisions.rewards; owner decision 2026-11-20, V1-D §14): 83 ids. Amended in
--- place while unshipped; a database that ran the earlier draft re-runs it with
--- DELETE FROM schema_migrations WHERE name = '015_reward_icon_key.sql'. Additive and nullable: no existing row is changed, no
+-- decisions.rewards; owner decision 2026-11-20, V1-D §14): 83 ids.
+-- Amended in place while unshipped. A database that ran the earlier draft
+-- re-runs it after: DELETE FROM schema_migrations
+--   WHERE name = '015_reward_icon_key.sql'; Additive and nullable: no existing row is changed, no
 -- icon is assigned automatically, and emoji / image_url stay as they are.
 -- The CHECK makes the approved set a schema rule, so no code path can store
 -- anything else. Reversal: ALTER TABLE rewards DROP COLUMN icon_key;
