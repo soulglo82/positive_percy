@@ -89,7 +89,8 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
       });
     } catch (e) {
       // 409: the child asked for it meanwhile (O-I1); show the requests as they are now.
-      if (e.status === 409) { refreshPoints(queryClient); toast.info(REQUEST_COPY.changed); return; }
+      // Only that refusal; any other 409 keeps its own message.
+      if (e.status === 409 && e.message === REQUEST_COPY.changed) { refreshPoints(queryClient); toast.info(REQUEST_COPY.changed); return; }
       toast.error(e.message || 'Failed to redeem reward');
     } finally {
       setRedeeming(null);
@@ -132,7 +133,9 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
               <Button className="w-full" disabled={busy} onClick={agree} aria-describedby="requests-total">{REQUEST_COPY.agree(requests.length)}</Button>
             </section>
           )}
-          {availableRewards.length === 0 ? (
+          {/* "No rewards created yet" only when there are none; a list emptied
+              because every reward is requested shows nothing extra (review of O-I1). */}
+          {availableRewards.length === 0 && requests.length > 0 ? null : availableRewards.length === 0 ? (
             <div className="text-center py-8">
               <Logo size={48} decorative className="mb-3" />
               <p className="text-muted-foreground text-sm">No rewards created yet.</p>
