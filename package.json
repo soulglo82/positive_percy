@@ -17,7 +17,8 @@
     "test:ui": "playwright test",
     "check:tokens": "node scripts/check-tokens.mjs",
     "preview": "vite preview",
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "maintenance:purge-families": "node server/purgeDeleted.js"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

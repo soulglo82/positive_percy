@@ -45,6 +45,12 @@ export default function useRealtimeSync(familyCode) {
         // Rejected for no valid session: retrying with the same token cannot
         // succeed. The next API call returns 401 and the app signs out.
         if (event.code === 4401) return;
+        if (event.code === 4403) {
+          // A grown-up requested deletion from another device. A reload makes
+          // AuthContext discard the revoked JWT instead of showing stale data.
+          window.location.reload();
+          return;
+        }
         // Auto-reconnect after 3 seconds
         reconnectTimer.current = setTimeout(connect, 3000);
       };

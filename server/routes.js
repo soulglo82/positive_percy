@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import pool from './db.js';
 import { prepareFamilyExport, MAX_EXPORT_BYTES } from './export.js';
 import { pickAllowedColumns, findMissingRequired } from './columns.js';
-import { uploadIdOf, uploadsAreOwned, releaseUpload, UPLOAD_REF_COLUMNS } from './uploads.js';
+import { uploadIdOf, uploadsAreOwned, releaseUpload, UPLOAD_REF_COLUMNS, UPLOAD_URL_PATTERN } from './uploads.js';
 import { weekPointsFor, withWeekPoints, weekStartSql, localDays, validTimezone, isGenericZone, recomputeLastActive } from './week.js';
 
 const router = Router();
@@ -19,7 +19,30 @@ router.param('id', (req, res, next, id) => {
 });
 
 let broadcastFn = () => {};
+let closeFamilySocketsFn = () => {};
 export function setBroadcast(fn) { broadcastFn = fn; }
+export function setCloseFamilySockets(fn) { closeFamilySocketsFn = fn; }
+
+// The app cannot enable deletion just by setting environment flags: a
+// separately implemented and reviewed external erasure registry must actually
+// be registered. This PR intentionally provides NO production adapter.
+let erasureRegistry = null;
+export function registerErasureRegistry(adapter) {
+  if (adapter !== null && (
+    typeof adapter?.recordPurgeReceipt !== 'function' ||
+    typeof adapter?.replayBeforeRestore !== 'function'
+  )) throw new Error('Erasure registry requires durable write and restore replay functions');
+  erasureRegistry = adapter;
+}
+
+// A destructive account workflow is unavailable by default; do not expose it
+// until backups, recovery, privacy and operator identity have been reviewed.
+const deletionEnabled = () =>
+  erasureRegistry !== null &&
+  process.env.PERCY_FAMILY_DELETION_ENABLED === 'true' &&
+  process.env.PERCY_FAMILY_PURGE_ENABLED === 'true' &&
+  process.env.PERCY_RESTORE_DRILL_VERIFIED === 'true' &&
+  process.env.PERCY_DELETION_CRON_VERIFIED === 'true';
 
 const JWT_EXPIRY = '30d';
 const MIN_SECRET_LENGTH = 32;
@@ -35,8 +58,8 @@ export function getJwtSecret() {
   return secret;
 }
 
-function signToken(familyCode) {
-  return jwt.sign({ family_code: familyCode }, getJwtSecret(), { expiresIn: JWT_EXPIRY });
+function signToken(familyCode, authVersion = 0) {
+  return jwt.sign({ family_code: familyCode, auth_version: authVersion }, getJwtSecret(), { expiresIn: JWT_EXPIRY });
 }
 
 // Returns { familyCode, expiresAt } for a valid token, or null.
@@ -45,7 +68,7 @@ export function verifyToken(token) {
   try {
     const decoded = jwt.verify(token, getJwtSecret());
     if (typeof decoded.family_code !== 'string') return null;
-    return { familyCode: decoded.family_code, expiresAt: decoded.exp ? decoded.exp * 1000 : null };
+    return { familyCode: decoded.family_code, authVersion: decoded.auth_version ?? 0, expiresAt: decoded.exp ? decoded.exp * 1000 : null };
   } catch {
     return null;
   }
@@ -68,11 +91,20 @@ async function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
   try {
-    const { rowCount } = await pool.query(
-      'SELECT 1 FROM families WHERE family_code = $1', [decoded.family_code]
+    const { rows } = await pool.query(
+      'SELECT auth_version, deletion_due_at FROM families WHERE family_code = $1', [decoded.family_code]
     );
-    if (rowCount === 0) {
+    if (!rows.length) {
       return res.status(401).json({ error: 'Family no longer available. Sign in again.' });
+    }
+    if (rows[0].deletion_due_at) {
+      return res.status(403).json({ error: 'This family is pending deletion. Use its code to restore it.', deletion_pending: true });
+    }
+    // Sessions issued before the first deletion have auth_version 0.
+    // Increment it when deletion is requested so old tokens never regain
+    // access even after a recovery or a backup restore.
+    if (Number(decoded.auth_version ?? 0) !== Number(rows[0].auth_version)) {
+      return res.status(401).json({ error: 'Session expired. Sign in again.' });
     }
     req.familyCode = decoded.family_code;
     return next();
@@ -291,10 +323,39 @@ router.post('/api/upload', authMiddleware, async (req, res) => {
 // ids are random UUIDs. The type comes from the bytes, never from what was
 // stored, so rows saved before validation existed can never render as HTML.
 router.get('/api/uploads/:id', async (req, res) => {
+  // Even unowned or missing legacy images must never fall through to HTML or caches.
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('Cache-Control', 'private, no-store, max-age=0');
+  res.type('text/plain');
   try {
     if (!isUuid(req.params.id)) return res.status(404).send('Not found');
-    const { rows } = await pool.query('SELECT data FROM uploads WHERE id = $1', [req.params.id]);
-    if (rows.length === 0) return res.status(404).send('Not found');
+    const { rows } = await pool.query(`
+      SELECT u.data, u.family_code, f.deletion_due_at, f.id AS family_exists,
+        CASE WHEN u.family_code IS NULL THEN (
+          EXISTS (
+            SELECT 1 FROM children c
+            JOIN families cf ON cf.family_code = c.family_code
+            WHERE cf.deletion_due_at IS NULL
+              AND lower((regexp_match(c.avatar_url, $2, 'i'))[1]) = u.id::text
+          ) OR EXISTS (
+            SELECT 1 FROM rewards r
+            JOIN families rf ON rf.family_code = r.family_code
+            WHERE rf.deletion_due_at IS NULL
+              AND lower((regexp_match(r.image_url, $2, 'i'))[1]) = u.id::text
+          )
+        ) ELSE FALSE END AS legacy_has_active_reference
+      FROM uploads u LEFT JOIN families f ON f.family_code = u.family_code
+      WHERE u.id = $1
+    `, [req.params.id, UPLOAD_URL_PATTERN]);
+    if (!rows.length ||
+        (rows[0].family_code
+          ? rows[0].deletion_due_at || !rows[0].family_exists
+          : !rows[0].legacy_has_active_reference)) {
+      // Legacy unowned URLs must stop being served when every known owner is
+      // suspended. Orphaned unowned URLs are not a public image library.
+      res.set('Cache-Control', 'private, no-store, max-age=0');
+      return res.status(404).send('Not found');
+    }
 
     const buffer = decodeDataUrl(rows[0].data) || Buffer.from(String(rows[0].data));
     const type = sniffImageType(buffer);
@@ -306,7 +367,9 @@ router.get('/api/uploads/:id', async (req, res) => {
     }
     res.set('Content-Type', type);
     res.set('Content-Disposition', 'inline');
-    res.set('Cache-Control', 'public, max-age=31536000');
+    // Photos are children's personal data. Do not cache them for a year,
+    // especially when a family may enter its seven-day deletion window.
+    res.set('Cache-Control', 'private, no-store, max-age=0');
     return res.send(buffer);
   } catch (err) {
     console.error('Upload serve error:', err);
@@ -353,7 +416,7 @@ router.post('/api/family/create', async (req, res) => {
         [family_code]
       );
 
-      const token = signToken(family_code);
+      const token = signToken(family_code, rows[0].auth_version);
       return res.json({ ...rows[0], token });
     } catch (err) {
       if (err.code === '23505') {
@@ -382,10 +445,83 @@ router.post('/api/family/join', async (req, res) => {
       return res.status(404).json({ error: 'Family not found. Check the code and try again.' });
     }
 
-    const token = signToken(rows[0].family_code);
+    if (rows[0].deletion_due_at) {
+      if (new Date(rows[0].deletion_due_at).getTime() <= Date.now()) {
+        return res.status(410).json({
+          error: 'This family\'s recovery window has ended and the account is scheduled for permanent deletion.',
+        });
+      }
+      return res.status(409).json({
+        error: 'This family is pending deletion. You can restore it with the family code before the recovery window ends.',
+        deletion_pending: true,
+        restore_before: rows[0].deletion_due_at,
+      });
+    }
+    const token = signToken(rows[0].family_code, rows[0].auth_version);
     res.json({ ...rows[0], token });
   } catch (err) {
     return serverError(res, 'Join family error', err);
+  }
+});
+
+// Capability endpoint lets clients hide the entire destructive flow until
+// the operator has enabled it after legal and recovery checks.
+router.get('/api/family/deletion-capability', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ enabled: deletionEnabled(), recovery_days: 7 });
+});
+
+// The code holder must type the exact family code to confirm the request.
+// The SQL update is atomic and also revokes every existing family JWT.
+router.post('/api/family/request-deletion', authMiddleware, async (req, res) => {
+  if (!deletionEnabled()) return res.status(404).json({ error: 'Not available' });
+  if (req.body?.confirmation !== req.familyCode) {
+    return res.status(400).json({ error: 'Enter your family code exactly to confirm deletion.' });
+  }
+  try {
+    const { rows } = await pool.query(`
+      UPDATE families
+      SET deletion_requested_at = NOW(),
+          deletion_due_at = NOW() + INTERVAL '7 days',
+          auth_version = auth_version + 1
+      WHERE family_code = $1 AND deletion_due_at IS NULL
+      RETURNING family_name, deletion_due_at
+    `, [req.familyCode]);
+    if (!rows.length) return res.status(409).json({ error: 'Deletion already requested. Sign in with the code to restore it.' });
+    const dueAt = rows[0].deletion_due_at;
+    // Revoke existing WebSocket sessions immediately as well.
+    closeFamilySocketsFn(req.familyCode);
+    res.set('Cache-Control', 'no-store');
+    return res.json({ deletion_pending: true, due_at: dueAt });
+  } catch (err) {
+    return serverError(res, 'Request deletion error', err);
+  }
+});
+
+// Parents recover a pending family by re-entering the same secret code.
+// Refuse recovery after expiry; a database purger may process it at any time.
+router.post('/api/family/restore', async (req, res) => {
+  if (!deletionEnabled()) return res.status(404).json({ error: 'Not available' });
+  const code = typeof req.body?.family_code === 'string'
+    ? req.body.family_code.trim().toUpperCase() : '';
+  if (!/^[A-Z2-9]{6}$/.test(code)) {
+    return res.status(400).json({ error: 'Enter a valid family code.' });
+  }
+  try {
+    const { rows } = await pool.query(`
+      UPDATE families
+      SET deletion_requested_at = NULL, deletion_due_at = NULL
+      WHERE family_code = $1 AND deletion_due_at > NOW()
+      RETURNING family_name, auth_version
+    `, [code]);
+    if (!rows.length) {
+      return res.status(404).json({ error: 'This family is not available for recovery.' });
+    }
+    const token = signToken(code, rows[0].auth_version);
+    res.set('Cache-Control', 'no-store');
+    return res.json({ family_code: code, family_name: rows[0].family_name, token });
+  } catch (err) {
+    return serverError(res, 'Restore family error', err);
   }
 });
 
