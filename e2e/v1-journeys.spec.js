@@ -55,7 +55,7 @@ test('child asks, parent approves, history and settings follow', async ({ page }
     await expect(dialog.getByRole('heading', { name: `${name} asked for` })).toBeVisible();
     await expect(dialog.locator('[data-requests-total]')).toHaveText(`This will spend 10 points from ${name}'s balance.`);
     await dialog.getByRole('button', { name: 'Approve 1 reward' }).click();
-    await expect(page.getByText(`${name} can enjoy 1 reward.`)).toBeVisible();
+    await expect(page.getByText(`Approved 1 reward for ${name}.`)).toBeVisible();
     me = (await api('GET', '/api/children')).find((c) => c.id === kid.id);
     expect(me.total_points).toBe(20);
     expect(me.reward_stack_priced).toEqual([]);
