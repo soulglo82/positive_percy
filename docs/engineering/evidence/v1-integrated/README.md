@@ -11,7 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
-| 2.3 | 2026-11-20 | Rebuilt on the latest heads with the approved reward artwork (owner decision 2026-11-20); every screen retaken; the artwork row is closed |
+| 2.3 | 2026-11-20 | Full checks rerun on the combined heads (910 unit/server, 42 browser, 14 skipped by design); rebuilt on the latest heads with the approved reward artwork (owner decision 2026-11-20); every screen retaken; the artwork row is closed |
 | 2.2 | 2026-11-20 | Correction: the Streamline licence row was written before searching; the repository does record Streamline assets and their licence (see the corrected row) |
 | 2.1 | 2026-11-20 | Owner visual review answered (§Owner review): supporting screens added; Home retaken with behaviours that carry their approved icons |
 | 2.0 | 2026-11-20 | Rebuilt on the latest green heads, with O-I1 and the visual-review fixes; three widths; side-by-side comparisons |
@@ -29,11 +29,11 @@ The only conflict was one line: the return value of `spendableFrom`. The #60 sid
 
 | Check | Result |
 | --- | --- |
-| Unit and server tests (Vitest, with the database) | 878 passed, 48 files |
+| Unit and server tests (Vitest, with the database) | 910 passed, 49 files |
 | Lint | 0 errors |
 | Design tokens | OK |
 | Browser tests, all screens and dialogs, with axe, 44 px and no-sideways-scroll checks (320/390/834/1280) | 42 passed, 14 skipped by design (specs that run at one width only) |
-| Journeys (`e2e/v1-journeys.spec.js`, phone and desktop) | Passed |
+| Journeys (`e2e/v1-journeys.spec.js`, phone and desktop) | Passed (now also checks the approved artwork in Child View) |
 
 The journey covers:
 - the child asks for a reward, and nothing is spent;
