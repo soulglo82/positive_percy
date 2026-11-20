@@ -209,5 +209,15 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     me = (await call('GET', '/api/children')).json.find((c) => c.id === kid.id);
     expect(me.total_points).toBe(35);
   });
-});
 
+  it('O-I1: a reward requested twice stays blocked until both requests are gone (R5)', async () => {
+    const kid = (await call('POST', '/api/children', { name: 'Twice', total_points: 40 })).json;
+    const treat = (await reward({ title: 'Twice treat', cost_points: 5 })).json;
+    await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: treat.id });
+    await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: treat.id });
+    expect((await call('DELETE', `/api/children/${kid.id}/stack/0?reward_id=${treat.id}`)).status).toBe(200);
+    expect((await call('POST', `/api/children/${kid.id}/redeem`, { reward_id: treat.id, request_id: rid() })).status).toBe(409);
+    expect((await call('DELETE', `/api/children/${kid.id}/stack/0?reward_id=${treat.id}`)).status).toBe(200);
+    expect((await call('POST', `/api/children/${kid.id}/redeem`, { reward_id: treat.id, request_id: rid() })).status).toBe(200);
+  });
+});

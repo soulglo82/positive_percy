@@ -6,8 +6,8 @@ import { render, screen, within, fireEvent, waitFor } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const { toastSuccess, toastInfo } = vi.hoisted(() => ({ toastSuccess: vi.fn(), toastInfo: vi.fn() }));
-vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: vi.fn(), info: toastInfo, warning: vi.fn() } }));
+const { toastSuccess, toastInfo, toastError } = vi.hoisted(() => ({ toastSuccess: vi.fn(), toastInfo: vi.fn(), toastError: vi.fn() }));
+vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: toastError, info: toastInfo, warning: vi.fn() } }));
 
 import RewardIcon from './RewardIcon';
 import RewardPicker, { countLine } from './RewardPicker';
@@ -199,6 +199,8 @@ describe('Parent confirmation of requests (D5, R4)', () => {
   let fetchMock;
   beforeEach(() => {
     toastSuccess.mockClear();
+    toastInfo.mockClear();
+    toastError.mockClear();
     fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ confirmed_count: 2, points_deducted: 13, redemption_ids: ['x', 'y'] }) }));
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -265,6 +267,26 @@ describe('Parent confirmation of requests (D5, R4)', () => {
     render(<QueryClientProvider client={client}><MemoryRouter><SpendRewardsModal isOpen onClose={() => {}} child={child} rewards={list} /></MemoryRouter></QueryClientProvider>);
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Spend/ }));
     await waitFor(() => expect(toastInfo).toHaveBeenCalledWith('The requests changed. Check them again.'));
+  });
+  it('O-I1: once declined, the reward is back in the direct list (R3); all requested shows no empty-catalogue line', () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const list = [{ id: 'b', title: 'Cinema', cost_points: 8, visible_to_child: true }];
+    const ui = (c) => <QueryClientProvider client={client}><MemoryRouter><SpendRewardsModal isOpen onClose={() => {}} child={c} rewards={list} /></MemoryRouter></QueryClientProvider>;
+    const { rerender } = render(ui(child));
+    let d = screen.getByRole('dialog');
+    expect(within(d).queryAllByRole('button', { name: /^(Spend|Need)/ })).toHaveLength(0);
+    expect(d.textContent).not.toContain('No rewards created yet.');
+    rerender(ui({ ...child, reward_stack_priced: [] })); // "Not this time" removed it
+    d = screen.getByRole('dialog');
+    expect(within(d).getAllByRole('button', { name: /^(Spend|Need)/ })).toHaveLength(1);
+  });
+  it('O-I1: another 409 keeps its own message', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 409, json: async () => ({ error: 'Invalid request' }) });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><MemoryRouter><SpendRewardsModal isOpen onClose={() => {}} child={child} rewards={[{ id: 'c', title: 'Kite', cost_points: 4, visible_to_child: true }]} /></MemoryRouter></QueryClientProvider>);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Spend/ }));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('Invalid request'));
+    expect(toastInfo).not.toHaveBeenCalled();
   });
   it('no requests: no section', () => {
     const d = open({ ...child, reward_stack_priced: [] });
