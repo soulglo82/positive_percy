@@ -54,6 +54,8 @@ test('child asks, parent approves, history and settings follow', async ({ page }
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('heading', { name: `${name} asked for` })).toBeVisible();
     await expect(dialog.locator('[data-requests-total]')).toHaveText(`This will spend 10 points from ${name}'s balance.`);
+    // O-I1: the requested reward is only in "asked for", not in the direct Spend list.
+    await expect(dialog.getByText(reward.title, { exact: true })).toHaveCount(1);
     await dialog.getByRole('button', { name: 'Approve 1 reward' }).click();
     await expect(page.getByText(`Approved 1 reward for ${name}.`)).toBeVisible();
     me = (await api('GET', '/api/children')).find((c) => c.id === kid.id);
