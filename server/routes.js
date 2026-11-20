@@ -223,7 +223,7 @@ function validateCreatePayload(table, data, { isCreate = false } = {}) {
         throw Object.assign(new Error('Reward cost must be at least 1 point'), { status: 400 });
       }
     }
-    // V1-D, D2: null clears the icon; otherwise one of the 71 picker icons
+    // V1-D, D2: null clears the icon; otherwise one of the 71 picker icons or the 12 approved reward artworks (§14)
     // (also a database CHECK, migration 015).
     if (data.icon_key !== undefined && data.icon_key !== null && !isRewardIconKey(data.icon_key)) {
       throw Object.assign(new Error(ICON_KEY_MESSAGE), { status: 422 });
