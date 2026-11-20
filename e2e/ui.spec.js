@@ -164,6 +164,9 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await award.getByRole('button', { name: /^Award \d+ points?$/ }).click();
   await expect(award).toHaveCount(0);
   await page.getByRole('button', { name: 'Undo' }).first().click();
+  // Toasts pause while the pointer rests on them (Sonner); a real parent moves
+  // on, so the pointer leaves the toasts before waiting for them to clear.
+  await page.mouse.move(0, 0);
   // The Undo really ran (its toast appears), then clears before the next taps.
   await expect(page.getByText(/^Undone\./)).toBeVisible();
   await expect(page.getByText(/^Undone\./)).toHaveCount(0, { timeout: 15000 });
