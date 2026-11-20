@@ -3,9 +3,9 @@
   "stage": 1,
   "scope": "explicit_owner_choices_only",
   "recorded_date": "2026-11-13",
-  "version": "1.9",
+  "version": "1.10",
   "approval_level": "approved_icon_mappings_for_specific_review_contexts_only",
-  "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state now has a specific external Freepik artwork selected by owner, subject to licensing verification and obtaining the exact asset; no production usage authorised yet.",
+  "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state now has a specific external Freepik artwork selected by owner, subject to licensing verification and obtaining the exact asset; no production usage authorised yet. UPDATE 2026-11-20: Owner decision 2026-11-20 (PR #59, chat): Streamline licensing is settled; the approved reward artwork is used in Positive Percy (Rewards catalogue, Child View, reward selection), alongside the 71 Phosphor picker icons. Existing saved rewards are never re-arted automatically. This question is closed.",
   "meaning_of_NONE": "Explicitly rejected presented candidates; further icon options required. NOT a deliberate choice of no icon.",
   "source": "Owner's copied interactive Stage 1 decisions, four groups, 13 November 2026",
   "decisions": {
@@ -395,7 +395,7 @@
   },
   "untouched_and_unselected": [
     "Goals empty state exact Freepik #3570506 PNG now checked into design/brand/library on the handover branch. Asset-specific commercial licence and attribution evidence remain outstanding; production use blocked.",
-    "Parent reward picker: ten UX choices approved including exact 12-category palette grouping and 520/760px picker-container grid breakpoints. Open: exact synonym dictionary/ranking, visible category presentation, tile accent application/contrast QA, proposed Phosphor-only picker policy (not owner-approved), existing reward migration technical plan, and post-launch icon additions.",
+    "Parent reward picker: ten UX choices approved including exact 12-category palette grouping and 520/760px picker-container grid breakpoints. Open: exact synonym dictionary/ranking, visible category presentation, tile accent application/contrast QA, existing reward migration technical plan, and post-launch icon additions. The picker source policy is settled by the owner (2026-11-20): approved Streamline reward artwork plus the 71 Phosphor icons.",
     "global icon family/style rules (other than explicitly selected source variants)",
     "Dedicated brand points-star master remains outstanding. The Fox 1A approved-board vector trace and logo exports are now checked into the engineering handover GitHub branch; running-app 1A fidelity sign-off still required",
     "Today's Goals: exact pinned Phosphor Repeat, Sparkle, and Check Circle Duotone SVGs now approved for their separate contexts; final colouring/spacing and running React rendering remain unsigned."
@@ -855,86 +855,94 @@
     "ux_choices_status": "ten_owner_approved_picker_ux_choices"
   },
   "last_update": {
-    "date": "2026-11-15",
-    "action": "engineering_brand_pack_checked_into_github_and_freepik_png_source_confirmed_without_license_clearance",
+    "date": "2026-11-20",
+    "action": "owner_approved_streamline_reward_artwork_in_app_licensing_closed",
     "contexts": [
-      "brand_assets:fox_1a",
-      "visuals:moments:Goals empty state:source availability"
+      "decisions:rewards",
+      "proposed_engineering_constraints:parent_picker_launch_source_policy"
     ],
     "previous": {
-      "date": "2026-11-14",
-      "action": "verified_owner_project_treasure_map_png_source_availability",
+      "date": "2026-11-15",
+      "action": "engineering_brand_pack_checked_into_github_and_freepik_png_source_confirmed_without_license_clearance",
       "contexts": [
-        "moments:Goals empty state"
+        "brand_assets:fox_1a",
+        "visuals:moments:Goals empty state:source availability"
       ],
       "previous": {
         "date": "2026-11-14",
-        "action": "owner_approved_picker_category_colours_and_container_breakpoints",
+        "action": "verified_owner_project_treasure_map_png_source_availability",
         "contexts": [
-          "picker_ux:category_colour_mapping",
-          "picker_ux:responsive_breakpoints"
+          "moments:Goals empty state"
         ],
         "previous": {
           "date": "2026-11-14",
-          "action": "owner_approved_picker_uploads_legacy_rewards_and_three_goals_svgs",
+          "action": "owner_approved_picker_category_colours_and_container_breakpoints",
           "contexts": [
-            "picker_ux:image_uploads",
-            "picker_ux:existing_saved_rewards",
-            "goals_interactions:recurring_indicator:svg",
-            "goals_interactions:header_accent:svg",
-            "goals_interactions:completed_goal:svg"
+            "picker_ux:category_colour_mapping",
+            "picker_ux:responsive_breakpoints"
           ],
           "previous": {
             "date": "2026-11-14",
-            "action": "owner_approved_picker_launch_library_dedup_search_synonyms",
+            "action": "owner_approved_picker_uploads_legacy_rewards_and_three_goals_svgs",
             "contexts": [
-              "picker_ux:launch_library",
-              "picker_ux:cross_category_duplicates",
-              "picker_ux:search_matching"
+              "picker_ux:image_uploads",
+              "picker_ux:existing_saved_rewards",
+              "goals_interactions:recurring_indicator:svg",
+              "goals_interactions:header_accent:svg",
+              "goals_interactions:completed_goal:svg"
             ],
             "previous": {
               "date": "2026-11-14",
-              "action": "owner_approved_picker_discovery_grid_and_colour",
+              "action": "owner_approved_picker_launch_library_dedup_search_synonyms",
               "contexts": [
-                "picker_ux:discovery",
-                "picker_ux:responsive_grid",
-                "picker_ux:icon_color"
+                "picker_ux:launch_library",
+                "picker_ux:cross_category_duplicates",
+                "picker_ux:search_matching"
               ],
               "previous": {
                 "date": "2026-11-14",
-                "action": "owner_approved_remaining_three_goals_design_choices",
+                "action": "owner_approved_picker_discovery_grid_and_colour",
                 "contexts": [
-                  "goals_interactions:recurring_indicator",
-                  "goals_interactions:header_accent",
-                  "goals_interactions:control_size_weight"
+                  "picker_ux:discovery",
+                  "picker_ux:responsive_grid",
+                  "picker_ux:icon_color"
                 ],
                 "previous": {
                   "date": "2026-11-14",
-                  "action": "owner_approved_completed_goal_option_A",
+                  "action": "owner_approved_remaining_three_goals_design_choices",
                   "contexts": [
-                    "goals_interactions:completed_goal"
+                    "goals_interactions:recurring_indicator",
+                    "goals_interactions:header_accent",
+                    "goals_interactions:control_size_weight"
                   ],
                   "previous": {
                     "date": "2026-11-14",
-                    "action": "owner_selected_goals_empty_state_freepik_pending_license",
+                    "action": "owner_approved_completed_goal_option_A",
                     "contexts": [
-                      "moments:Goals empty state"
+                      "goals_interactions:completed_goal"
                     ],
                     "previous": {
-                      "date": "2026-11-13",
-                      "action": "record_9_visuals_goals_empty_needs_alternatives",
+                      "date": "2026-11-14",
+                      "action": "owner_selected_goals_empty_state_freepik_pending_license",
                       "contexts": [
-                        "moments:Home welcome",
-                        "moments:Progress milestone",
-                        "moments:Reward redeemed",
-                        "moments:First-run onboarding",
-                        "moments:Reward creation form",
-                        "elements:small decorative sticker",
-                        "elements:celebration burst",
-                        "elements:positive progress badge",
-                        "elements:learning spot art",
                         "moments:Goals empty state"
-                      ]
+                      ],
+                      "previous": {
+                        "date": "2026-11-13",
+                        "action": "record_9_visuals_goals_empty_needs_alternatives",
+                        "contexts": [
+                          "moments:Home welcome",
+                          "moments:Progress milestone",
+                          "moments:Reward redeemed",
+                          "moments:First-run onboarding",
+                          "moments:Reward creation form",
+                          "elements:small decorative sticker",
+                          "elements:celebration burst",
+                          "elements:positive progress badge",
+                          "elements:learning spot art",
+                          "moments:Goals empty state"
+                        ]
+                      }
                     }
                   }
                 }
@@ -1051,9 +1059,10 @@
   },
   "proposed_engineering_constraints": {
     "parent_picker_launch_source_policy": {
-      "status": "proposal_not_owner_approved",
+      "status": "superseded_by_owner_decision_2026-11-20",
       "proposal": "Ship the parent-selectable reward icon picker using the 71 already owner-approved MIT Phosphor Duotone SVGs only; do not enable Streamline redistribution in the picker without additional written legal/licensing clearance and explicit owner approval.",
-      "distinction": "Curated Streamline spot artwork and Freepik Goals empty-state artwork have separate asset-specific licence checks."
+      "distinction": "Curated Streamline spot artwork and Freepik Goals empty-state artwork have separate asset-specific licence checks.",
+      "owner_decision": "Owner decision 2026-11-20 (PR #59, chat): Streamline licensing is settled; the approved reward artwork is used in Positive Percy (Rewards catalogue, Child View, reward selection), alongside the 71 Phosphor picker icons. Existing saved rewards are never re-arted automatically. This question is closed."
     }
   },
   "brand_asset_delivery": {

@@ -37,7 +37,9 @@ The brand's dedicated *points star* appears next to the numerical point price. D
 - Preserve legacy reward `emoji` fields and existing saved rewards. Migrate gradually with an explicit mapping; use an approved generic icon for unmapped cases.
 - The icon picker can launch with **Phosphor MIT only**, with Plump Duo excluded from the user-selectable resource list until Streamline licensing is resolved. Curated Plump Duo artwork and the picker are different licensing/use cases.
 
-## Licensing checkpoint — do not skip
+> **Owner decision, 20 November 2026 (supersedes the licensing notes below):** Streamline licensing is settled. The approved Plump Duo reward artwork (`APPROVAL_REGISTER.json` `decisions.rewards`) is used in Positive Percy, including the parent's reward picker, alongside the 71 Phosphor icons. Existing saved rewards are never re-arted automatically. Implementation: `docs/engineering/V1-D-DESIGN.md` §14. This question is closed.
+
+## Licensing checkpoint — do not skip (superseded 2026-11-20)
 
 The [Plump Duo – Free page](https://www.streamlinehq.com/icons/plump-duo-free) describes the 500-asset open-source free set as **CC BY 4.0**. The [Streamline Free License](https://help.streamlinehq.com/en/articles/5354376-streamline-free-license) separately restricts supplying assets as reusable end-user libraries, while its open-source section encourages redistribution. Because Percy's parents can choose reward icons, obtain written confirmation for that exact picker use or keep it solely Phosphor MIT. Do not interpret “free” as permission for every distribution model.
 

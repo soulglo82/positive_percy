@@ -134,9 +134,24 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   expect(order.domOrdered).toBe(true);
   if (order.oneColumn) expect(order.visuallyOrdered).toBe(true);
 
+  // V1-D (D5): a child's request shows in the parent's Rewards dialog; "Not this time" removes it.
+  const headers = { Authorization: `Bearer ${family.token}` };
+  const kids = await (await page.request.get('/api/children', { headers })).json();
+  const samId = kids.find((k) => k.name === 'Sam').id;
+  // A 1-point reward made for this check (Sam has only a few points), removed after.
+  const cheap = await (await page.request.post('/api/rewards', { headers, data: { title: 'Sticker ' + testInfo.project.name, cost_points: 1, emoji: '⭐', visible_to_child: true } })).json();
+  expect((await page.request.post(`/api/children/${samId}/stack/add`, { headers, data: { reward_id: cheap.id } })).status()).toBe(200);
+  await go(page, '/');
+  await page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: /^Sam / }).click();
   await page.getByRole('button', { name: /^Rewards$/ }).last().click();
+  const spend = page.getByRole('dialog');
+  await expect(spend.getByRole('heading', { name: 'Sam asked for' })).toBeVisible();
   await checkScreen(page, 'spend', testInfo);
+  await expect(spend.locator('[data-requests-total]')).toHaveText(new RegExp(`^This will spend \\d+ points? from Sam's balance\\.$`));
+  await spend.getByRole('button', { name: `Not this time: ${cheap.title}` }).click();
+  await expect(spend.getByRole('heading', { name: 'Sam asked for' })).toHaveCount(0);
   await closeDialog(page);
+  await page.request.delete(`/api/rewards/${cheap.id}`, { headers });
 
   // V1-F: "Give Percy Points" - child, behaviour (its own points), note.
   await page.getByRole('button', { name: /^Award points/ }).first().click();
@@ -149,6 +164,9 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await award.getByRole('button', { name: /^Award \d+ points?$/ }).click();
   await expect(award).toHaveCount(0);
   await page.getByRole('button', { name: 'Undo' }).first().click();
+  // Toasts pause while the pointer rests on them (Sonner); a real parent moves
+  // on, so the pointer leaves the toasts before waiting for them to clear.
+  await page.mouse.move(0, 0);
   // The Undo really ran (its toast appears), then clears before the next taps.
   await expect(page.getByText(/^Undone\./)).toBeVisible();
   await expect(page.getByText(/^Undone\./)).toHaveCount(0, { timeout: 15000 });
@@ -206,14 +224,48 @@ test('activity, with the log open and the child filter open', async ({ page }, t
 test('rewards and its dialogs', async ({ page }, testInfo) => {
   await go(page, '/rewards');
   await checkScreen(page, 'rewards', testInfo);
-  await page.getByRole('button', { name: /New Reward/ }).click();
-  await page.getByRole('button', { name: /Browse Reward Ideas/ }).click();
-  await checkScreen(page, 'create reward with ideas', testInfo);
-  // #34: with the long ideas list open, the title and the buttons stay on screen.
-  await expect(page.getByRole('heading', { name: 'Create Reward' })).toBeInViewport();
-  await expect(page.getByRole('button', { name: 'Cancel' })).toBeInViewport();
-  await expect(page.getByRole('button', { name: 'Create Reward' })).toBeInViewport();
-  await closeDialog(page);
+  // V1-D catalogue: filters.
+  await page.getByRole('button', { name: 'Hidden', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Hidden', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'All rewards' }).click();
+
+  // V1-D reward form: a new reward opens the icon picker.
+  await page.getByRole('button', { name: /New reward/ }).click();
+  const form = page.getByRole('dialog');
+  await expect(form.getByRole('heading', { name: 'Add reward' })).toBeVisible();
+  await checkScreen(page, 'create reward with picker', testInfo);
+  // The title and the buttons stay on screen with the picker open (#34).
+  await expect(form.getByRole('heading', { name: 'Add reward' })).toBeInViewport();
+  await expect(form.getByRole('button', { name: 'Save reward' })).toBeInViewport();
+  // Owner-approved grid: 3 columns under 520px of picker width, 5 to 759px, 6 from 760px.
+  const grid = form.getByRole('group', { name: 'Reward icons' });
+  const { width, cols } = await grid.evaluate((el) => ({
+    width: el.parentElement.getBoundingClientRect().width,
+    cols: getComputedStyle(el).gridTemplateColumns.split(' ').length,
+  }));
+  expect(cols).toBe(width >= 760 ? 6 : width >= 520 ? 5 : 3);
+  // V1-D §14: a new reward opens on the approved reward artwork.
+  await expect(form.getByText('12 icons in Reward artwork')).toBeVisible();
+  await expect(form.getByRole('button', { name: 'Movie night' }).locator('img')).toHaveAttribute('src', '/reward-art/film-slate.svg');
+  await expect.poll(() => form.getByRole('button', { name: 'Movie night' }).locator('img').evaluate((i) => i.naturalWidth)).toBeGreaterThan(0); // the file is served
+  await form.getByLabel('Find an icon').fill('bike');
+  await expect(form.getByText('2 icons match your search')).toBeVisible();
+  await form.getByRole('button', { name: 'Bike ride' }).click();
+  await expect(form.getByRole('button', { name: 'Bike ride' })).toHaveAttribute('aria-pressed', 'true');
+  // Saved, the reward shows its approved artwork in the catalogue (V1-D §14).
+  const artTitle = `Art ride ${testInfo.project.name}`;
+  await form.getByLabel('Reward name').fill(artTitle);
+  await form.getByRole('button', { name: 'Save reward' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const tile = page.locator('div').filter({ has: page.getByText(artTitle, { exact: true }) }).filter({ has: page.locator('img[src="/reward-art/bicycle-bike.svg"]') });
+  await expect(tile.first()).toBeVisible();
+  const auth = { Authorization: `Bearer ${family.token}` };
+  const saved = (await (await page.request.get('/api/rewards', { headers: auth })).json()).find((r) => r.title === artTitle);
+  expect(saved.icon_key).toBe('streamline:plump:duo:map-travel:bicycle-bike');
+  await page.request.delete(`/api/rewards/${saved.id}`, { headers: auth });
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+
   await page.getByRole('button', { name: /^Edit Screen time/ }).click();
   await checkScreen(page, 'edit reward', testInfo);
   await page.getByRole('button', { name: 'Delete Reward' }).click();

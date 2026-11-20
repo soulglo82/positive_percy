@@ -54,7 +54,7 @@ describe.skipIf(!hasDb)('V1-A: Home server contracts', () => {
       await call('POST', `/api/children/${c.id}/stack/add`, { reward_id: r.id });
       await call('PUT', `/api/rewards/${r.id}`, { cost_points: 25, title: 'Big kite' });
       let got = await child(c.id);
-      expect(got.reward_stack_priced).toEqual([{ rewardId: r.id, name: 'Big kite', cost: 25 }]);
+      expect(got.reward_stack_priced).toEqual([expect.objectContaining({ rewardId: r.id, name: 'Big kite', cost: 25 })]);
       expect(got.available_points).toBe(50 - 25);
       expect((await call('DELETE', `/api/rewards/${r.id}`)).status).toBeLessThan(300);
       got = await child(c.id);

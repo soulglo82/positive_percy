@@ -34,9 +34,19 @@ describe('generated approved-icon module', () => {
     expect(read(OUT).startsWith('/*! @license Phosphor Icons, MIT License')).toBe(true);
   });
 
-  it('holds exactly the register nav, controls, behaviours and goals sources, all Phosphor', async () => {
+  it('holds exactly the register nav, controls, behaviours, goals and reward-picker sources, all Phosphor', async () => {
     const { APPROVED_ICONS, APPROVED_CONTEXTS } = await import('../components/icons/approvedIcons.js');
-    expect(Object.keys(APPROVED_CONTEXTS).sort()).toEqual(['behaviors', 'controls', 'goals', 'nav']);
+    expect(Object.keys(APPROVED_CONTEXTS).sort()).toEqual(['behaviors', 'controls', 'goals', 'nav', 'picker', 'rewards']);
+    // V1-D §14: the Phosphor reward artwork (book-bookmark for New book); the Streamline artwork ships as files.
+    expect(APPROVED_CONTEXTS.rewards).toEqual({ 'New book': 'phosphor:book-bookmark:duotone' });
+    // V1-D: the owner's launch library is 12 categories, 84 placements, 71
+    // icons (register picker.ux_choices.launch_library), numbers fixed here
+    // so a register edit that silently adds icons fails.
+    const picker = APPROVED_CONTEXTS.picker;
+    expect(Object.keys(picker)).toHaveLength(12);
+    expect(Object.values(picker).flat()).toHaveLength(84);
+    expect(new Set(Object.values(picker).flat()).size).toBe(71);
+    for (const id of Object.values(picker).flat()) expect(APPROVED_ICONS[id], id).toBeTruthy();
     for (const g of ['nav', 'controls', 'behaviors']) {
       expect(Object.keys(APPROVED_CONTEXTS[g]).sort()).toEqual(Object.keys(REGISTER.decisions[g]).sort());
     }
@@ -98,7 +108,7 @@ describe('icon ids in the app', () => {
       used += (t.match(/<PercyIcon\b/g) || []).length;
       expect(iconIdProblems(t, known), path.relative(ROOT, f)).toEqual([]);
     }
-    expect(used).toBeGreaterThanOrEqual(20); // control: the scan sees the call sites
+    expect(used).toBeGreaterThanOrEqual(15); // control: the scan sees the call sites (19 after V1-D removed the old reward modals)
   });
   it.each([
     ['<PercyIcon id="phosphor:nope:duotone" />', 1],
@@ -121,7 +131,8 @@ const BANS = {
   // E05 removed the exemption: the completed-goal tile keeps its category icon.
   'src/components/dashboard/TodaysGoalsPanel.jsx': ['Settings2', 'Target', 'Check', 'Sparkles', 'Sparkle', 'CheckCircle2', 'CircleCheck', 'ClipboardCheck'],
   'src/lib/categoryIcons.js': ['RotateCcw', 'Undo', 'Undo2'],
-  'src/components/rewards/AddRewardModal.jsx': ['Gift'],
+  // V1-D: the reward form replaced AddRewardModal; its gift stays Phosphor.
+  'src/components/rewards/RewardForm.jsx': ['Gift'],
 };
 export function lucideImports(text) {
   return [...text.matchAll(/import\s*\{([^}]*)\}\s*from\s*['"]lucide-react['"]/g)]
@@ -190,9 +201,11 @@ describe('illustrations', () => {
         expect(selected.get(src), `${m[1]} (${src})`).toBe('selected');
       }
     }
-    // V1-F: the locked V1 design has no Home sticker and no onboarding
-    // illustration; only the reward creation form remains (until V1-D).
-    expect(refs).toBe(1);
+    // V1-F/V1-D: the locked V1 design has no Home sticker, no onboarding
+    // illustration and no reward-form illustration (the V1 form shows the
+    // reward's own icon), so the app references none. Any new reference is
+    // still checked above against the register.
+    expect(refs).toBe(0);
   });
 
   it('every illustration <img> is decorative (alt="")', () => {

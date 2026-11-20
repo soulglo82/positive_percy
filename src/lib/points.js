@@ -150,3 +150,49 @@ export async function spendReward(childId, rewardId, requestId = newRequestId())
   }
   return result; // { child, redemption, duplicate }
 }
+
+// V1-D (D5): a parent agrees to exactly the requests they saw, at the prices
+// they saw. `items` are the server's priced stack items ({ rewardId, stackIndex, cost }). Same retry
+// rule as a spend: one request id, reused once. A 409 means the requests
+// changed meanwhile; nothing was charged.
+export async function confirmRequests(childId, items, requestId = newRequestId()) {
+  const body = JSON.stringify({ request_id: requestId, expected: items.map((i) => ({ reward_id: i.rewardId, stack_index: i.stackIndex, cost: i.cost })) });
+  const send = () => fetch(`/api/children/${childId}/stack/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body,
+  });
+  let res;
+  try {
+    res = await send();
+  } catch {
+    res = null;
+  }
+  if (!res || res.status >= 500) {
+    await new Promise((r) => setTimeout(r, 800));
+    res = await send();
+  }
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(result.error || 'Could not confirm');
+    err.status = res.status;
+    throw err;
+  }
+  return result; // { child, confirmed_count, points_deducted, redemption_ids, duplicate }
+}
+
+// V1-D: remove one request ("Not this time"), naming the reward so a stale view
+// never removes a different one (409).
+export async function removeRequest(childId, item) {
+  const res = await fetch(`/api/children/${childId}/stack/${item.stackIndex}?reward_id=${encodeURIComponent(item.rewardId)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) {
+    const result = await res.json().catch(() => ({}));
+    const err = new Error(result.error || 'Could not remove');
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}

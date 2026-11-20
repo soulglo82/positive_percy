@@ -42,10 +42,10 @@ test('new family sees code, one-point behaviours, and editable screen-time rewar
     await expect(page.getByText('No rewards yet')).toBeVisible();
     await page.getByRole('button', { name: 'Start with screen time' }).click();
     const rewardDialog = page.getByRole('dialog');
-    await expect(rewardDialog.getByLabel('Reward Title')).toHaveValue('Extra Screen Time');
-    await expect(rewardDialog.getByLabel('Point Cost')).toHaveValue('30');
-    await rewardDialog.getByLabel('Point Cost').fill('12');
-    await rewardDialog.getByRole('button', { name: 'Create Reward', exact: true }).click();
+    await expect(rewardDialog.getByLabel('Reward name')).toHaveValue('Extra Screen Time');
+    await expect(rewardDialog.getByLabel('Points needed')).toHaveValue('30');
+    await rewardDialog.getByLabel('Points needed').fill('12');
+    await rewardDialog.getByRole('button', { name: 'Save reward', exact: true }).click();
     await expect(page.getByText('Extra Screen Time').first()).toBeVisible();
 
     // V1-F: Home with no children is the Welcome card, after first-run onboarding.

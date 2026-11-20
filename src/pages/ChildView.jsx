@@ -9,7 +9,7 @@ import { Gift } from "lucide-react";
 import { toast } from "sonner";
 import { Points } from "@/components/brand/PointsStar";
 import Logo from "@/components/brand/Logo";
-import EmojiTile from "../components/rewards/EmojiTile";
+import RewardIcon from "../components/rewards/RewardIcon";
 import ChildAvatar from "../components/child/ChildAvatar";
 import { childColour } from "@/lib/childColour";
 import { cn } from "@/lib/utils";
@@ -154,7 +154,7 @@ export default function ChildView() {
                     return (
                       <Card key={reward.id} className={`overflow-hidden ${canAfford ? '' : 'bg-muted shadow-none'}`}>
                         <CardContent className="flex items-center gap-3 p-3 sm:p-4">
-                          <EmojiTile emoji={reward.emoji} className={canAfford ? "" : "bg-card"} />
+                          <RewardIcon reward={reward} size="sm" className={canAfford ? "" : "bg-card"} />
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-foreground text-sm sm:text-base truncate">{reward.title}</p>
                             {reward.description && (
