@@ -6,6 +6,9 @@ import { render, screen, within, fireEvent, waitFor } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+const { toastSuccess } = vi.hoisted(() => ({ toastSuccess: vi.fn() }));
+vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: vi.fn(), info: vi.fn(), warning: vi.fn() } }));
+
 import RewardIcon from './RewardIcon';
 import RewardPicker, { countLine } from './RewardPicker';
 import RewardForm, { currentArtLabel } from './RewardForm';
@@ -195,6 +198,7 @@ describe('Parent confirmation of requests (D5, R4)', () => {
   };
   let fetchMock;
   beforeEach(() => {
+    toastSuccess.mockClear();
     fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ confirmed_count: 2, points_deducted: 13, redemption_ids: ['x', 'y'] }) }));
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -219,6 +223,13 @@ describe('Parent confirmation of requests (D5, R4)', () => {
     const body = JSON.parse(init.body);
     expect(body.expected).toEqual([{ reward_id: 'a', stack_index: 1, cost: 5 }, { reward_id: 'b', stack_index: 2, cost: 8 }]);
     expect(body.request_id).toMatch(/^[0-9a-f-]{36}$/);
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('Approved 2 rewards for Lara.'));
+  });
+  it('the success message is singular for one reward', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ confirmed_count: 1, points_deducted: 1, redemption_ids: ['x'] }) });
+    const d = open({ ...child, reward_stack_priced: [{ rewardId: 'a', name: 'Sticker', cost: 1, stackIndex: 0 }] });
+    fireEvent.click(within(d).getByRole('button', { name: 'Approve 1 reward' }));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('Approved 1 reward for Lara.'));
   });
   it('one request of 1 point: singular wording (C5)', () => {
     const d = open({ ...child, reward_stack_priced: [{ rewardId: 'a', name: 'Sticker', cost: 1, stackIndex: 0 }] });
@@ -231,6 +242,7 @@ describe('Parent confirmation of requests (D5, R4)', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(fetchMock.mock.calls[0][0]).toBe('/api/children/c1/stack/2?reward_id=b');
     expect(fetchMock.mock.calls[0][1].method).toBe('DELETE');
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Removed Cinema from Lara's requests."));
   });
   it('affordability uses points available now, not the total', () => {
     const d = open();
