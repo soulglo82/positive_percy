@@ -34,26 +34,40 @@ describe('RewardIcon precedence (R2)', () => {
 });
 
 describe('RewardPicker', () => {
-  it('starts on Fun & games with the approved count; tiles are named by their label', () => {
+  it('a new reward opens on the approved reward artwork (V1-D §14); Fun & games keeps its approved count', () => {
     render(<RewardPicker value={null} onChange={() => {}} />);
+    expect(screen.getByText('12 icons in Reward artwork')).toBeTruthy();
+    let grid = screen.getByRole('group', { name: 'Reward icons' });
+    expect(within(grid).getAllByRole('button').map((b) => b.textContent)).toEqual(['Gaming time', 'Movie night', 'Ice cream treat', 'New book', 'Bike ride', 'Gift', 'Day out', 'Cake treat', 'Art activity', 'Photo adventure', 'Music time', 'Family outing']);
+    expect(within(grid).getByRole('button', { name: 'Cake treat' }).querySelector('img').getAttribute('src')).toBe('/reward-art/cake-slice.svg');
+    // The chips: the artwork group first, then the 12 owner-selected categories.
+    expect(within(screen.getByRole('group', { name: 'Icon categories' })).getAllByRole('button').map((b) => b.textContent)[0]).toBe('Reward artwork');
+    fireEvent.click(screen.getByRole('button', { name: 'Fun & games' }));
     expect(screen.getByText('7 icons in Fun & games')).toBeTruthy();
-    const grid = screen.getByRole('group', { name: 'Reward icons' });
+    grid = screen.getByRole('group', { name: 'Reward icons' });
     expect(within(grid).getAllByRole('button')).toHaveLength(7);
     expect(within(grid).getByRole('button', { name: 'Game Controller' })).toBeTruthy();
+  });
+  it("an existing reward opens on its own icon's group", () => {
+    render(<RewardPicker value={CONTROLLER} onChange={() => {}} />);
+    expect(screen.getByText('7 icons in Fun & games')).toBeTruthy();
   });
   it('category chips switch the list; search dedupes and counts in the singular', () => {
     render(<RewardPicker value={null} onChange={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Tech & media' }));
     expect(screen.getByText('4 icons in Tech & media')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Find an icon'), { target: { value: 'bike' } });
+    expect(screen.getByText('2 icons match your search')).toBeTruthy();
+    expect(within(screen.getByRole('group', { name: 'Reward icons' })).getAllByRole('button').map((b) => b.textContent)).toEqual(['Bike ride', 'Bicycle']);
+    fireEvent.change(screen.getByLabelText('Find an icon'), { target: { value: 'piggy' } });
     expect(screen.getByText('1 icon matches your search')).toBeTruthy();
-    expect(within(screen.getByRole('group', { name: 'Reward icons' })).getAllByRole('button').map((b) => b.textContent)).toEqual(['Bicycle']);
     fireEvent.change(screen.getByLabelText('Find an icon'), { target: { value: 'zzz' } });
     expect(screen.getByText('No matching icons. Try a different word.')).toBeTruthy();
   });
   it('a tap selects; the selected tile is pressed', () => {
     const onChange = vi.fn();
     const { rerender } = render(<RewardPicker value={null} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Fun & games' }));
     fireEvent.click(screen.getByRole('button', { name: 'Game Controller' }));
     expect(onChange).toHaveBeenCalledWith(CONTROLLER);
     rerender(<RewardPicker value={CONTROLLER} onChange={onChange} />);
@@ -101,11 +115,21 @@ describe('RewardForm', () => {
   it('a tap sets icon_key and the row names it', async () => {
     const { d, onSubmit } = openForm();
     fireEvent.change(within(d).getByLabelText('Reward name'), { target: { value: 'Gaming' } });
+    fireEvent.click(within(d).getByRole('button', { name: 'Fun & games' }));
     fireEvent.click(within(d).getByRole('button', { name: 'Game Controller' }));
     expect(within(d).getByText('Game Controller', { selector: 'p' })).toBeTruthy();
     fireEvent.click(within(d).getByRole('button', { name: 'Save reward' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     expect(onSubmit.mock.calls[0][0].icon_key).toBe(CONTROLLER);
+  });
+  it('choosing approved artwork stores its id (V1-D §14)', async () => {
+    const { d, onSubmit } = openForm();
+    fireEvent.change(within(d).getByLabelText('Reward name'), { target: { value: 'Movie night' } });
+    fireEvent.click(within(d).getByRole('button', { name: 'Movie night' }));
+    expect(within(d).getByText('Movie night', { selector: 'p' })).toBeTruthy();
+    fireEvent.click(within(d).getByRole('button', { name: 'Save reward' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0].icon_key).toBe('streamline:plump:duo:images-photography:film-slate');
   });
   it('a starter template keeps its emoji (no automatic icon)', async () => {
     const { d, onSubmit } = openForm({ initialTemplate: { title: 'Extra Screen Time', cost_points: 30, emoji: '🎮' } });

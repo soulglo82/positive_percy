@@ -20,7 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { StepHeading } from '@/components/home/AwardPointsDialog';
 import { pickerLabel } from '@/lib/rewardPicker';
 import { ChildAssignList } from './RewardFormParts';
-import RewardIcon, { PICKER_ICON_COMPONENTS } from './RewardIcon';
+import RewardIcon, { rewardArt } from './RewardIcon';
 import RewardPicker from './RewardPicker';
 
 const DEFAULT_EMOJI = '🎁';
@@ -29,7 +29,7 @@ const DEFAULT_EMOJI = '🎁';
 // A photo is "Current image"; an icon or emoji (or the gift) is "Current icon".
 // Same precedence as RewardIcon: a known picker icon wins, then a photo.
 export const currentArtLabel = (reward) =>
-  (reward?.image_url && !(reward?.icon_key && PICKER_ICON_COMPONENTS[reward.icon_key]) ? 'Current image' : 'Current icon');
+  (reward?.image_url && !rewardArt(reward?.icon_key) ? 'Current image' : 'Current icon');
 
 export default function RewardForm({ isOpen, onClose, reward = null, initialTemplate = null, children = [], onSubmit, onDelete }) {
   const editing = !!reward;

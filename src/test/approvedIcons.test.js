@@ -36,7 +36,9 @@ describe('generated approved-icon module', () => {
 
   it('holds exactly the register nav, controls, behaviours, goals and reward-picker sources, all Phosphor', async () => {
     const { APPROVED_ICONS, APPROVED_CONTEXTS } = await import('../components/icons/approvedIcons.js');
-    expect(Object.keys(APPROVED_CONTEXTS).sort()).toEqual(['behaviors', 'controls', 'goals', 'nav', 'picker']);
+    expect(Object.keys(APPROVED_CONTEXTS).sort()).toEqual(['behaviors', 'controls', 'goals', 'nav', 'picker', 'rewards']);
+    // V1-D §14: the Phosphor reward artwork (book-bookmark for New book); the Streamline artwork ships as files.
+    expect(APPROVED_CONTEXTS.rewards).toEqual({ 'New book': 'phosphor:book-bookmark:duotone' });
     // V1-D: the owner's launch library is 12 categories, 84 placements, 71
     // icons (register picker.ux_choices.launch_library), numbers fixed here
     // so a register edit that silently adds icons fails.

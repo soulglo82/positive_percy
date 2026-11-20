@@ -8,6 +8,7 @@ import { startApp, stopApp, api, makeFamily } from './harness.js';
 import { runMigrations } from '../migrate.js';
 import fs from 'node:fs';
 import path from 'node:path';
+const ARTWORK_IDS = Object.values(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../design/stage1/APPROVAL_REGISTER.json'), 'utf8')).decisions.rewards).map((e) => e.asset_id);
 const REGISTER_IDS = [...new Set(Object.values(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../design/stage1/APPROVAL_REGISTER.json'), 'utf8')).picker.categories).flatMap((c) => c.asset_ids))];
 
 const hasDb = !!process.env.TEST_DATABASE_URL;
@@ -99,12 +100,24 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     expect(rows[0].n).toBe(1);
   });
 
-  it('the CHECK list is exactly the 71 picker icons', async () => {
+  it('the live CHECK is the 71 picker icons plus the 12 approved reward artworks (V1-D §14)', async () => {
     const { rows } = await ctx.pool.query(
       "SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conname = 'rewards_icon_key_approved'");
-    const inDb = new Set([...rows[0].def.matchAll(/'(phosphor:[a-z0-9-]+:duotone)'/g)].map((m) => m[1]));
-    expect(inDb.size).toBe(71);
-    expect([...inDb].sort()).toEqual([...REGISTER_IDS].sort()); // against the register itself
+    const inDb = new Set([...rows[0].def.matchAll(/'((?:phosphor|streamline):[a-z0-9:-]+)'/g)].map((m) => m[1]));
+    expect(inDb.size).toBe(83);
+    expect([...inDb].sort()).toEqual([...new Set([...REGISTER_IDS, ...ARTWORK_IDS])].sort()); // against the register itself
+  });
+
+  it('approved reward artwork is stored; an unknown Streamline id is refused (A3)', async () => {
+    const ok = await reward({ title: 'Movie night', icon_key: 'streamline:plump:duo:images-photography:film-slate' });
+    expect(ok.status).toBe(200);
+    expect(ok.json.icon_key).toBe('streamline:plump:duo:images-photography:film-slate');
+    const book = await reward({ title: 'New book', icon_key: 'phosphor:book-bookmark:duotone' });
+    expect(book.status).toBe(200);
+    const bad = await reward({ title: 'X', icon_key: 'streamline:plump:duo:not:real' });
+    expect(bad.status).toBe(422);
+    expect(bad.json.error).toBe('Choose one of the icons shown.');
+    await expect(ctx.pool.query("UPDATE rewards SET icon_key = 'streamline:plump:duo:not:real' WHERE id = $1", [ok.json.id])).rejects.toThrow(/rewards_icon_key_approved/);
   });
 
   it('the export and the priced stack carry the icon', async () => {
