@@ -90,15 +90,6 @@ export function goalShortDate(ymd) {
 const uniqueDays = (days) => [...new Set((days || []).map(Number))]
   .filter(d => d >= 1 && d <= 7).sort((a, b) => a - b);
 
-// Today's Goals row: "Repeats Mon, Wed, Fri" / "Repeats every day" (register
-// recurring_indicator: the actual scheduled days, never a streak).
-export function goalRepeatText(weekdays) {
-  const days = uniqueDays(weekdays);
-  if (!days.length) return '';
-  if (days.length === 7) return 'Repeats every day';
-  return 'Repeats ' + days.map(d => GOAL_DAYS[d - 1].label).join(', ');
-}
-
 // Manage goals row schedule: "Every day", "Mon–Fri", "Mon, Wed, Fri", "One-off · 16 Nov".
 export function goalScheduleSummary(goal) {
   if (goal.schedule_kind === 'one_off') return 'One-off · ' + goalShortDate(goal.scheduled_date);
@@ -126,4 +117,20 @@ export function editStartDate(goal, weekdays, today) {
   }
   const value = stored && stored > today ? stored : today;
   return { editable: true, value, hint: stored ? 'newSchedule' : null };
+}
+
+// V1 approved wording (design 18769f7): "Wednesday 18 Nov".
+export function goalDateShortLine(ymd) {
+  const p = parts(ymd);
+  return p ? `${WEEKDAY_NAMES[p.iso - 1]} ${p.d} ${MONTHS[p.mo - 1].slice(0, 3)}` : '';
+}
+
+// V1 approved recurrence text on goal rows: "Today" (one-off due today),
+// "Daily" (all seven days), otherwise the real days ("Mon, Wed, Fri").
+// A one-off on another date shows its date ("16 Nov").
+export function goalRecurrenceV1(goal, today) {
+  if (goal.schedule_kind === 'one_off') return goal.scheduled_date === today ? 'Today' : goalShortDate(goal.scheduled_date);
+  const days = uniqueDays(goal.weekdays);
+  if (days.length === 7) return 'Daily';
+  return days.map(d => GOAL_DAYS[d - 1].label).join(', ');
 }

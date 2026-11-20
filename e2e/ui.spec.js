@@ -113,28 +113,36 @@ async function closeDialog(page) {
 test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await go(page, '/');
   await checkScreen(page, 'home', testInfo);
+  // V1 Home: family strip selects the child; Goals before the summary.
+  await expect(page.getByRole('heading', { name: 'Welcome back!' })).toBeVisible();
+  const sam = page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: /^Sam / });
+  await sam.click();
+  await expect(sam).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText("Sam's checklist")).toBeVisible();
+  // Review of PR #57: the DOM (Tab and screen-reader) order is the reading
+  // order Goals, Little wins, Working towards, Quick Points; on one-column
+  // layouts it is also the visual order.
+  const order = await page.evaluate(() => {
+    const titles = ["Today's Goals", 'Little wins, big adventures!', "What you're working towards", 'Quick Points'];
+    const hs = titles.map((t) => [...document.querySelectorAll('h2')].find((h) => h.textContent.trim() === t));
+    if (hs.some((h) => !h)) return { missing: titles.filter((_, i) => !hs[i]) };
+    const domOrdered = hs.every((h, i) => i === 0 || (hs[i - 1].compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING));
+    const tops = hs.map((h) => h.getBoundingClientRect().top);
+    return { domOrdered, visuallyOrdered: tops.every((t, i) => i === 0 || t > tops[i - 1]), oneColumn: window.innerWidth < 1024 };
+  });
+  expect(order.domOrdered).toBe(true);
+  if (order.oneColumn) expect(order.visuallyOrdered).toBe(true);
 
-  await page.getByRole('button', { name: /^Add points/ }).first().click();
+  await page.getByRole('button', { name: /^Award points/ }).first().click();
   await checkScreen(page, 'add points', testInfo);
   await closeDialog(page);
 
-  await page.getByRole('button', { name: /^Spend$/ }).first().click();
+  await page.getByRole('button', { name: /^Rewards$/ }).last().click();
   await checkScreen(page, 'spend', testInfo);
   await closeDialog(page);
 
-  await page.getByRole('button', { name: /^Edit Alexandra/ }).first().click();
-  await checkScreen(page, 'edit child', testInfo);
-  await page.getByRole('button', { name: 'Delete Child' }).click();
-  await checkScreen(page, 'delete child', testInfo);
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
-  await expect(page.getByRole('alertdialog')).toHaveCount(0);
-  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-
-  await page.getByRole('button', { name: / for Sam$/ }).first().click();
+  await page.getByRole('button', { name: /\+\d+ for Sam$/ }).first().click();
   await page.getByRole('button', { name: 'Undo' }).first().waitFor();
-  // The award made here pops that child's star (and only that one).
-  await expect(page.locator('.star-pop')).toHaveCount(1);
   await checkScreen(page, 'undo toast', testInfo);
   await page.getByRole('button', { name: 'Undo' }).first().click();
 
@@ -211,6 +219,16 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await page.getByRole('button', { name: /^Add child/ }).click();
   await checkScreen(page, 'add child', testInfo);
   await closeDialog(page);
+
+  // Child edit and delete moved from Home cards to Settings in V1.
+  await page.getByRole('button', { name: /^Edit Alexandra/ }).first().click();
+  await checkScreen(page, 'edit child', testInfo);
+  await page.getByRole('button', { name: 'Delete Child' }).click();
+  await checkScreen(page, 'delete child', testInfo);
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 
   await page.getByRole('button', { name: /parenting tips/i }).click();
   await checkScreen(page, 'tips', testInfo);

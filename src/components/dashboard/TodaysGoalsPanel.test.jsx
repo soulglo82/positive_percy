@@ -15,7 +15,7 @@ vi.mock('@/lib/todaysGoals', async (orig) => {
         { id: 'g1', child_id: 'c1', title: 'Read', category_name: 'Reading', category_points: 2,
           category_icon_key: 'reading', schedule_kind: 'weekly', weekdays: [1, 3, 5], completion_id: 'x1' },
         { id: 'g2', child_id: 'c1', title: 'Tidy', category_name: 'Reading', category_points: 1,
-          category_icon_key: 'reading', schedule_kind: 'one_off', weekdays: [], completion_id: null },
+          category_icon_key: 'reading', schedule_kind: 'one_off', scheduled_date: '2026-11-12', weekdays: [], completion_id: null },
       ],
     })),
   };
@@ -45,16 +45,29 @@ describe('TodaysGoalsPanel (E05)', () => {
     expect(within(items[0]).queryByRole('button')).toBeNull();
   });
 
-  it('names the child, the server date, real repeat days, and points in the button name', async () => {
+  it('V1 wording: checklist owner, short server date, done count, recurrence, Complete name', async () => {
     renderPanel();
     await screen.findAllByRole('listitem');
-    expect(screen.getByText('Thursday 12 November')).toBeTruthy();
-    expect(screen.getByText(/1 of 2 complete/)).toBeTruthy();
-    expect(screen.getByText('Repeats Mon, Wed, Fri')).toBeTruthy();
-    const btn = screen.getByRole('button', { name: 'Complete Tidy, +1 point' });
-    expect(btn.textContent).toContain('+1');
-    const chips = screen.getByRole('group', { name: 'Choose a child' });
-    expect(within(chips).getByRole('button', { name: 'Ava' }).getAttribute('aria-pressed')).toBe('true');
-    expect(within(chips).getByRole('button', { name: 'Ben' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByText('Thursday 12 Nov')).toBeTruthy();
+    expect(screen.getByText("Ava's checklist")).toBeTruthy();
+    expect(screen.getByText('1 of 2 done')).toBeTruthy();
+    expect(screen.getByText('Reading · Mon, Wed, Fri · +2 points')).toBeTruthy();
+    expect(screen.getByText('Reading · Today · +1 point')).toBeTruthy();
+    const btn = screen.getByRole('button', { name: 'Complete Tidy' });
+    expect(btn.textContent).toContain('Complete');
+    // The Home strip chooses the child; the panel has no chips of its own.
+    expect(screen.queryByRole('group', { name: 'Choose a child' })).toBeNull();
+  });
+
+  it('shows the child the Home strip chose; an unknown id falls back to the first child', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><TodaysGoalsPanel children={kids} enabled selectedChildId="c2" /></QueryClientProvider>);
+    expect(await screen.findByText("Ben's checklist")).toBeTruthy();
+  });
+
+  it('a selected id no longer in the list shows the first child', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><TodaysGoalsPanel children={kids} enabled selectedChildId="gone" /></QueryClientProvider>);
+    expect(await screen.findByText("Ava's checklist")).toBeTruthy();
   });
 });

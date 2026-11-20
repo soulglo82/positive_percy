@@ -211,9 +211,19 @@ describe('Percy v2 brand values (E02)', () => {
     ['primary', '#4b1d8c'], ['foreground', '#271737'], ['background', '#fff6e8'],
     ['star', '#ffc938'], ['border', '#e5dcea'], ['selected', '#e5dcea'],
   ])('%s is %s', (k, v) => expect(TOKENS[k]).toBe(v));
-  it('no token is the vivid orange (2.87:1 on white; logo artwork only)', () => {
-    expect(Object.values(TOKENS).map((v) => v.toLowerCase())).not.toContain('#ff6a00');
-    expect(ratio('#ff6a00', 'card')).toBeLessThan(3);
+  // V1 added brand orange as `sunrise`, decorative only (progress fills).
+  // It is below 3:1 on every surface, so it can never be text or a state border.
+  it('sunrise is the brand orange and is decorative only (< 3:1 on card and cream)', () => {
+    expect(TOKENS.sunrise).toBe('#ff6a00');
+    expect(ratio('sunrise', 'card')).toBeLessThan(3);
+    expect(ratio('sunrise', 'background')).toBeLessThan(3);
+  });
+  it('sunrise is only used as a background fill in the app (never text, border or ring)', () => {
+    const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
+    const files = walk(path.join(ROOT, 'src')).filter((f) => /\.jsx?$/.test(f) && !f.includes(`${path.sep}test${path.sep}`) && !/\.test\./.test(f));
+    const bad = [];
+    for (const f of files) for (const m of fs.readFileSync(f, 'utf8').matchAll(/\b(text|border|ring|outline|fill|stroke|decoration|placeholder|caret)-sunrise\b/g)) bad.push(path.relative(ROOT, f) + ': ' + m[0]);
+    expect(bad).toEqual([]);
   });
   it('no retired Batch D brand value survives', () => {
     for (const v of ['#c2410c', '#9a3412', '#1e3a5f', '#e8a317', '#fbf6ee', '#7d3c8f']) expect(Object.values(TOKENS)).not.toContain(v);

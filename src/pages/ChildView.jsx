@@ -34,9 +34,12 @@ export default function ChildView() {
     queryFn: () => Reward.list(),
   });
 
+  // Home's "View all goals and rewards" passes the child it was showing.
   useEffect(() => {
     if (children.length > 0 && !selectedChildId) {
-      setSelectedChildId(children[0].id);
+      let wanted = null;
+      try { wanted = new URLSearchParams(window.location.search).get('child'); } catch {}
+      setSelectedChildId(children.some(c => c.id === wanted) ? wanted : children[0].id);
     }
   }, [children, selectedChildId]);
 

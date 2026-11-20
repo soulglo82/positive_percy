@@ -1,6 +1,6 @@
 // E05: goal text and the start-date rule, independent of the device zone.
 import { describe, it, expect } from 'vitest';
-import { goalDateLine, goalShortDate, goalRepeatText, goalScheduleSummary, pointsText, editStartDate, sameWeekdays } from './todaysGoals';
+import { goalDateLine, goalShortDate, goalScheduleSummary, pointsText, editStartDate, sameWeekdays } from './todaysGoals';
 
 describe('goal text', () => {
   it('formats the server date with fixed words, whatever the process zone', () => {
@@ -10,12 +10,6 @@ describe('goal text', () => {
     expect(goalShortDate('2026-11-16')).toBe('16 Nov');
     expect(goalDateLine('nonsense')).toBe('');
     expect(goalDateLine(undefined)).toBe('');
-  });
-  it('repeat text uses the real days, sorted and de-duplicated', () => {
-    expect(goalRepeatText([5, 1, 3, 3])).toBe('Repeats Mon, Wed, Fri');
-    expect(goalRepeatText([7, 6, 5, 4, 3, 2, 1])).toBe('Repeats every day');
-    expect(goalRepeatText([])).toBe('');
-    expect(goalRepeatText([0, 8])).toBe('');
   });
   it('dialog schedule summaries', () => {
     expect(goalScheduleSummary({ schedule_kind: 'weekly', weekdays: [1, 2, 3, 4, 5] })).toBe('Mon–Fri');
@@ -53,5 +47,19 @@ describe('editStartDate (mirrors the server rule)', () => {
   it('weekday comparison ignores order and duplicates', () => {
     expect(sameWeekdays([3, 1, 1], [1, 3])).toBe(true);
     expect(sameWeekdays([1], [1, 2])).toBe(false);
+  });
+});
+
+import { goalDateShortLine, goalRecurrenceV1 } from './todaysGoals';
+describe('V1 goal wording', () => {
+  it('short date line and recurrence', () => {
+    expect(goalDateShortLine('2026-11-18')).toBe('Wednesday 18 Nov');
+    expect(goalRecurrenceV1({ schedule_kind: 'one_off', scheduled_date: '2026-11-18' }, '2026-11-18')).toBe('Today');
+    expect(goalRecurrenceV1({ schedule_kind: 'one_off', scheduled_date: '2026-11-20' }, '2026-11-18')).toBe('20 Nov');
+    // Real days only: sorted, de-duplicated, out-of-range values dropped.
+    expect(goalRecurrenceV1({ schedule_kind: 'weekly', weekdays: [5, 1, 3, 3, 0, 8] }, '2026-11-18')).toBe('Mon, Wed, Fri');
+    expect(goalRecurrenceV1({ schedule_kind: 'weekly', weekdays: [7, 6, 5, 4, 3, 2, 1, 1] }, '2026-11-18')).toBe('Daily');
+    expect(goalRecurrenceV1({ schedule_kind: 'weekly', weekdays: [7, 1, 2, 3, 4, 5, 6] }, 'x')).toBe('Daily');
+    expect(goalRecurrenceV1({ schedule_kind: 'weekly', weekdays: [5, 1, 3] }, 'x')).toBe('Mon, Wed, Fri');
   });
 });
