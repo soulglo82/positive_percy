@@ -241,8 +241,9 @@ export default function Activity() {
               <div className="space-y-4">
                 {groups.map((group) => (
                   <section key={group.label} aria-label={group.label}>
-                    <h3 className="text-sm font-semibold text-muted-foreground mb-2">{group.label}</h3>
-                    <div className="rounded-lg border border-border">
+                    {/* As approved: the day on a tinted band, rows separated by lines with no outer box (visual review). */}
+                    <h3 className="rounded-md bg-warning px-3 py-2 text-sm font-semibold text-foreground">{group.label}</h3>
+                    <div>
                       {group.events.map((event) => (
                         <NarrativeItem key={`${event.type}-${event.id}`} event={event} timeZone={timeZone}
                           canCorrect={canCorrect(event)} onCorrect={() => setCorrectionTarget(event)} />
