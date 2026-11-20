@@ -8,6 +8,8 @@ export const REQUEST_COPY = {
   // The exact total of the requests being approved (the same items and
   // prices the confirmation sends; a change is refused, never charged).
   total: (total, name) => `This will spend ${total} ${total === 1 ? 'point' : 'points'} from ${name}'s balance.`,
-  agreed: (name, n) => `${name} can enjoy ${n} ${rewards(n)}.`,
+  // Owner-approved 2026-11-20: the success and removal messages.
+  agreed: (name, n) => `Approved ${n} ${rewards(n)} for ${name}.`,
+  removed: (reward, name) => `Removed ${reward} from ${name}'s requests.`,
   changed: 'The requests changed. Check them again.',
 };
