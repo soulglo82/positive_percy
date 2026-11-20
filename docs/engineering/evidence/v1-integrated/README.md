@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 2.2 |
+| Version | 2.3 |
 | Issued | 2026-11-20 |
 | Owner | Percy V1 engineering |
 | Status | For the owner's full V1 visual and functional review (not a release candidate) |
@@ -11,6 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 2.3 | 2026-11-20 | Rebuilt on the latest heads with the approved reward artwork (owner decision 2026-11-20); every screen retaken; the artwork row is closed |
 | 2.2 | 2026-11-20 | Correction: the Streamline licence row was written before searching; the repository does record Streamline assets and their licence (see the corrected row) |
 | 2.1 | 2026-11-20 | Owner visual review answered (§Owner review): supporting screens added; Home retaken with behaviours that carry their approved icons |
 | 2.0 | 2026-11-20 | Rebuilt on the latest green heads, with O-I1 and the visual-review fixes; three widths; side-by-side comparisons |
@@ -19,8 +20,8 @@
 ## What was combined
 
 A scratch merge, not pushed, of:
-- #63 at `7fdbb4a`, which contains #62 `97294d6`, #61 `3e29350` and #59 `c72f941`;
-- #60 at `0ccaaac`.
+- #63 at `f8d2692`, which contains #62 `fdaf955`, #61 `58ca0c2` and #59 `80a0965`;
+- #60 at `6c3fc42`.
 
 The only conflict was one line: the return value of `spendableFrom`. The #60 side, which adds `is_bigger_goal`, was kept.
 
@@ -45,7 +46,7 @@ The journey covers:
 
 ## Files
 
-- **`built/`:** Home, the Home Rewards dialog, Children, Child View, Activity, Rewards and Settings, at 390, 834 and 1280 px.
+- **`built/`:** Home, the Home Rewards dialog, Children, Child View, Activity, Rewards, Settings, Award Points, Manage Goals, the goal form, the reward form, Onboarding and Welcome, at 390, 834 and 1280 px. The fixture rewards carry the approved artwork, as in the reference.
 - **`compare/`:** the approved reference (left) and the built screen (right), for each screen and width. The approved file draws every width as a phone frame; the built app uses its responsive layouts at 834 and 1280.
 
 ## Fixed in this round of visual review
@@ -72,7 +73,7 @@ The journey covers:
 
 | Priority | Finding | Status |
 | --- | --- | --- |
-| High | Reward artwork: the reference embeds colourful Streamline-style illustrations; the build uses the 71 approved Phosphor picker icons | **Owner decision needed** (licensing and picker permission). The repository records 16 Streamline assets from `webalys-hq/streamline-vectors` (commit `52d750c`), licensed **CC BY 4.0**, in `design/assets/streamline/asset-registry.json`. Six are reward candidates: controller-1, film-slate, book-1, camera-1, ice-cream-2 and bicycle-bike. Every one is marked `review_only_not_approved`. The registry notes say not to expose the icons to users "until parent-selectable picker licensing and attribution are explicitly reviewed". The V2 handover says Streamline Plump rewards need "correct licensed actual assets and written picker permission"; until then, Phosphor Duotone is the fallback. `public/licenses/CREDITS.txt` already carries a Streamline CC BY 4.0 credit line. **Options:** (a) give written approval for named Streamline reward icons as selectable artwork, with the CC BY 4.0 attribution (engineering then adds them as a separate, approved source in the picker); or (b) approve the Phosphor fallback explicitly for V1. Recommendation: (b) for V1, then (a) as a follow-up once the full illustration set the owner wants is licensed and listed |
+| High | Reward artwork | **Done.** The owner settled licensing on 2026-11-20. The approved artwork (`APPROVAL_REGISTER.json` `decisions.rewards`: 11 Streamline Plump Duo, plus the Phosphor book-bookmark for New book) is selectable in the reward picker. It is drawn in the Rewards catalogue, Child View, the Home requests and the Children treats. The 71 Phosphor icons remain, and existing rewards keep their art. V1-D design §14 |
 | High | D1 savings sections absent | Gated: the restored-backup reconciliation (owner) comes first, then the D1 features, then a review of the finished screens |
 | Medium | Supporting screens missing from the pack | **Done.** `built/` and `compare/` now hold Award Points, Manage Goals, the goal form, the reward form with picker, Onboarding and Welcome, at 390, 834 and 1280 px, from the same combined build (#63 `75a7cb4` and #60 `0ccaaac`) |
 | Medium | Today's Goals shows generic circles | **Explained and retaken.** The circles came from fixture behaviours created without an icon. `home-*` is retaken with behaviours that carry their approved icons (Learning, Helping, Reading), and the rows show those icons. Families' seeded behaviours always carry icons; new ones are chosen from the approved set |
