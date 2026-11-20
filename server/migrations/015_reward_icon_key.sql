@@ -1,6 +1,9 @@
 -- V1-D, owner decision D2 (2026-11-19, issue #56): rewards may carry one of
 -- the 71 owner-approved reward-picker icons (Phosphor Duotone, register
--- picker.categories). Additive and nullable: no existing row is changed, no
+-- picker.categories) or one of the 12 approved reward artworks (register
+-- decisions.rewards; owner decision 2026-11-20, V1-D §14): 83 ids. Amended in
+-- place while unshipped; a database that ran the earlier draft re-runs it with
+-- DELETE FROM schema_migrations WHERE name = '015_reward_icon_key.sql'. Additive and nullable: no existing row is changed, no
 -- icon is assigned automatically, and emoji / image_url stay as they are.
 -- The CHECK makes the approved set a schema rule, so no code path can store
 -- anything else. Reversal: ALTER TABLE rewards DROP COLUMN icon_key;
@@ -9,6 +12,18 @@ ALTER TABLE rewards ADD COLUMN IF NOT EXISTS icon_key TEXT NULL;
 -- Safe to run again: the constraint is replaced, never duplicated.
 ALTER TABLE rewards DROP CONSTRAINT IF EXISTS rewards_icon_key_approved;
 ALTER TABLE rewards ADD CONSTRAINT rewards_icon_key_approved CHECK (icon_key IS NULL OR icon_key IN (
+  'streamline:plump:duo:computer-devices:controller-1',
+  'streamline:plump:duo:images-photography:film-slate',
+  'streamline:plump:duo:food-drink:ice-cream-2',
+  'phosphor:book-bookmark:duotone',
+  'streamline:plump:duo:map-travel:bicycle-bike',
+  'streamline:plump:duo:interface-essential:give-gift',
+  'streamline:plump:duo:culture:ticket-1',
+  'streamline:plump:duo:food-drink:cake-slice',
+  'streamline:plump:duo:interface-essential:paintbrush-2',
+  'streamline:plump:duo:images-photography:camera-1',
+  'streamline:plump:duo:entertainment:music-note-2',
+  'streamline:plump:duo:map-travel:beach',
   'phosphor:airplane:duotone',
   'phosphor:backpack:duotone',
   'phosphor:balloon:duotone',

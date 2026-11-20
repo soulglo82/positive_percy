@@ -11,7 +11,8 @@ import {
 } from '../lib/rewardPicker.js';
 
 const ROOT = path.resolve(__dirname, '../..');
-const REGISTER = JSON.parse(fs.readFileSync(path.join(ROOT, 'design/stage1/APPROVAL_REGISTER.json'), 'utf8')).picker;
+const FULL_REGISTER = JSON.parse(fs.readFileSync(path.join(ROOT, 'design/stage1/APPROVAL_REGISTER.json'), 'utf8'));
+const REGISTER = FULL_REGISTER.picker;
 const SQL = fs.readFileSync(path.join(ROOT, 'server/migrations/015_reward_icon_key.sql'), 'utf8');
 const label = (items) => items.map(pickerLabel);
 
@@ -22,12 +23,16 @@ describe('one approved icon set', () => {
     for (const c of PICKER_CATEGORIES) expect(c.icons, c.name).toEqual(REGISTER.categories[c.name].asset_ids);
     expect(PICKER_CATEGORIES.flatMap((c) => c.icons)).toHaveLength(84);
   });
-  it('server validator, migration CHECK and client picker are the same 71 icons as the register', () => {
+  it("the picker is the register's 71 icons; server and migration allow those plus the 12 approved artworks (83)", () => {
     const want = [...new Set(fromRegister)].sort();
     expect(want).toHaveLength(71);
-    expect([...REWARD_ICON_KEYS].sort()).toEqual(want);
     expect([...PICKER_ICONS].sort()).toEqual(want);
-    expect([...new Set([...SQL.matchAll(/'(phosphor:[a-z0-9-]+:duotone)'/g)].map((m) => m[1]))].sort()).toEqual(want);
+    const artwork = Object.values(FULL_REGISTER.decisions.rewards).map((e) => e.asset_id);
+    expect(artwork).toHaveLength(12);
+    const all = [...new Set([...want, ...artwork])].sort();
+    expect(all).toHaveLength(83);
+    expect([...REWARD_ICON_KEYS].sort()).toEqual(all);
+    expect([...new Set([...SQL.matchAll(/'((?:phosphor|streamline):[a-z0-9:-]+)'/g)].map((m) => m[1]))].sort()).toEqual(all);
   });
   it('category accents are the owner-approved mapping', () => {
     const mapping = REGISTER.ux_choices.category_colour_mapping.per_category;
@@ -36,14 +41,15 @@ describe('one approved icon set', () => {
 });
 
 describe('approved search (pickerItems)', () => {
+  // V1-D §14: approved reward artwork matching the term comes first.
   it('P1: an alias finds an icon once, though it sits in two categories', () => {
-    expect(label(pickerItems('Fun & games', 'bike'))).toEqual(['Bicycle']);
+    expect(label(pickerItems('Fun & games', 'bike'))).toEqual(['Bike ride', 'Bicycle']);
   });
-  it('P2: "movie" finds Film Slate by alias, nothing else', () => {
-    expect(label(pickerItems('Fun & games', 'movie'))).toEqual(['Film Slate']);
+  it('P2: "movie" finds Movie night (artwork) and Film Slate by alias, nothing else', () => {
+    expect(label(pickerItems('Fun & games', 'movie'))).toEqual(['Movie night', 'Film Slate']);
   });
   it('P3: case and spaces are ignored; names match too', () => {
-    expect(label(pickerItems('Outings', '  CAKE '))).toEqual(['Cake']);
+    expect(label(pickerItems('Outings', '  CAKE '))).toEqual(['Cake treat', 'Cake']);
     expect(label(pickerItems('Outings', 'game controller'))).toEqual(['Game Controller']);
   });
   it('P4: no match gives an empty list', () => {

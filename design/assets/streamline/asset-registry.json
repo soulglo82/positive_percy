@@ -4,13 +4,13 @@
   "source_repository": "https://github.com/webalys-hq/streamline-vectors",
   "source_commit": "52d750c9ce051e51cb181b7a78932120c48541d0",
   "source_license": "CC BY 4.0",
-  "purpose": "Only actual repository SVG files; pending icon-by-icon design approval.",
+  "purpose": "Actual repository SVG files. Reward artwork listed with status approved_reward_artwork is owner-approved for use in the app (2026-11-20); other entries remain review-only.",
   "notes": [
     "The SVGs are copied unchanged. Preview UI may recolour Freehand/Cyber for comparison; staged originals stay unmodified.",
     "Do not show the Stickies star as Percy's dedicated points currency.",
-    "Neither visuals nor registry imply navigation/control or reward icon choices are approved.",
-    "Do not expose the whole icon set to users until parent-selectable picker licensing and attribution are explicitly reviewed.",
-    "The approved Fox 1A master is not included in this kit; no replacement animal illustration was created."
+    "The approved Fox 1A master is not included in this kit; no replacement animal illustration was created.",
+    "Owner decision 2026-11-20 (PR #59, chat): Streamline licensing is settled; the approved reward artwork is used in Positive Percy (Rewards catalogue, Child View, reward selection), alongside the 71 Phosphor picker icons. Existing saved rewards are never re-arted automatically. This question is closed.",
+    "Entries not marked approved_reward_artwork are not approved for navigation, controls or rewards."
   ],
   "assets": [
     {
@@ -93,9 +93,11 @@
       "source_url": "https://github.com/webalys-hq/streamline-vectors/blob/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/computer-devices/controller-1.svg",
       "semantic_name": "Gaming time",
       "use_case": "reward_candidate",
-      "status": "review_only_not_approved",
+      "status": "approved_reward_artwork",
       "source_modified": false,
-      "attribution": "© Streamline · https://streamlinehq.com"
+      "attribution": "© Streamline · https://streamlinehq.com",
+      "approved_for": "Gaming time",
+      "approved_on": "2026-11-20"
     },
     {
       "asset_id": "streamline:plump:duo:images-photography:film-slate",
@@ -107,9 +109,11 @@
       "source_url": "https://github.com/webalys-hq/streamline-vectors/blob/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/images-photography/film-slate.svg",
       "semantic_name": "Movie night",
       "use_case": "reward_candidate",
-      "status": "review_only_not_approved",
+      "status": "approved_reward_artwork",
       "source_modified": false,
-      "attribution": "© Streamline · https://streamlinehq.com"
+      "attribution": "© Streamline · https://streamlinehq.com",
+      "approved_for": "Movie night",
+      "approved_on": "2026-11-20"
     },
     {
       "asset_id": "streamline:plump:duo:interface-essential:book-1",
@@ -135,9 +139,11 @@
       "source_url": "https://github.com/webalys-hq/streamline-vectors/blob/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/images-photography/camera-1.svg",
       "semantic_name": "Photo adventure",
       "use_case": "reward_candidate",
-      "status": "review_only_not_approved",
+      "status": "approved_reward_artwork",
       "source_modified": false,
-      "attribution": "© Streamline · https://streamlinehq.com"
+      "attribution": "© Streamline · https://streamlinehq.com",
+      "approved_for": "Photo adventure",
+      "approved_on": "2026-11-20"
     },
     {
       "asset_id": "streamline:plump:duo:food-drink:ice-cream-2",
@@ -149,9 +155,11 @@
       "source_url": "https://github.com/webalys-hq/streamline-vectors/blob/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/food-drink/ice-cream-2.svg",
       "semantic_name": "Ice cream treat",
       "use_case": "reward_candidate",
-      "status": "review_only_not_approved",
+      "status": "approved_reward_artwork",
       "source_modified": false,
-      "attribution": "© Streamline · https://streamlinehq.com"
+      "attribution": "© Streamline · https://streamlinehq.com",
+      "approved_for": "Ice cream treat",
+      "approved_on": "2026-11-20"
     },
     {
       "asset_id": "streamline:plump:duo:map-travel:bicycle-bike",
@@ -163,9 +171,11 @@
       "source_url": "https://github.com/webalys-hq/streamline-vectors/blob/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/map-travel/bicycle-bike.svg",
       "semantic_name": "Bike ride",
       "use_case": "reward_candidate",
-      "status": "review_only_not_approved",
+      "status": "approved_reward_artwork",
       "source_modified": false,
-      "attribution": "© Streamline · https://streamlinehq.com"
+      "attribution": "© Streamline · https://streamlinehq.com",
+      "approved_for": "Bike ride",
+      "approved_on": "2026-11-20"
     },
     {
       "asset_id": "streamline:kameleon:pop:entertainment:party-poppers",
@@ -236,6 +246,90 @@
       "status": "review_only_not_approved",
       "source_modified": false,
       "attribution": "© Streamline · https://streamlinehq.com"
+    },
+    {
+      "asset_id": "streamline:plump:duo:interface-essential:give-gift",
+      "library": "Streamline",
+      "family": "plump",
+      "variant": "duo",
+      "local_file_path": "design/assets/streamline/plump/duo/interface-essential/give-gift.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/give-gift.svg",
+      "semantic_name": "Gift",
+      "use_case": "reward_candidate",
+      "status": "approved_reward_artwork",
+      "approved_for": "Gift",
+      "approved_on": "2026-11-20"
+    },
+    {
+      "asset_id": "streamline:plump:duo:culture:ticket-1",
+      "library": "Streamline",
+      "family": "plump",
+      "variant": "duo",
+      "local_file_path": "design/assets/streamline/plump/duo/culture/ticket-1.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/culture/ticket-1.svg",
+      "semantic_name": "Day out",
+      "use_case": "reward_candidate",
+      "status": "approved_reward_artwork",
+      "approved_for": "Day out",
+      "approved_on": "2026-11-20"
+    },
+    {
+      "asset_id": "streamline:plump:duo:food-drink:cake-slice",
+      "library": "Streamline",
+      "family": "plump",
+      "variant": "duo",
+      "local_file_path": "design/assets/streamline/plump/duo/food-drink/cake-slice.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/food-drink/cake-slice.svg",
+      "semantic_name": "Cake treat",
+      "use_case": "reward_candidate",
+      "status": "approved_reward_artwork",
+      "approved_for": "Cake treat",
+      "approved_on": "2026-11-20"
+    },
+    {
+      "asset_id": "streamline:plump:duo:interface-essential:paintbrush-2",
+      "library": "Streamline",
+      "family": "plump",
+      "variant": "duo",
+      "local_file_path": "design/assets/streamline/plump/duo/interface-essential/paintbrush-2.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/interface-essential/paintbrush-2.svg",
+      "semantic_name": "Art activity",
+      "use_case": "reward_candidate",
+      "status": "approved_reward_artwork",
+      "approved_for": "Art activity",
+      "approved_on": "2026-11-20"
+    },
+    {
+      "asset_id": "streamline:plump:duo:entertainment:music-note-2",
+      "library": "Streamline",
+      "family": "plump",
+      "variant": "duo",
+      "local_file_path": "design/assets/streamline/plump/duo/entertainment/music-note-2.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/entertainment/music-note-2.svg",
+      "semantic_name": "Music time",
+      "use_case": "reward_candidate",
+      "status": "approved_reward_artwork",
+      "approved_for": "Music time",
+      "approved_on": "2026-11-20"
+    },
+    {
+      "asset_id": "streamline:plump:duo:map-travel:beach",
+      "library": "Streamline",
+      "family": "plump",
+      "variant": "duo",
+      "local_file_path": "design/assets/streamline/plump/duo/map-travel/beach.svg",
+      "license_reference": "https://creativecommons.org/licenses/by/4.0/",
+      "source_url": "https://raw.githubusercontent.com/webalys-hq/streamline-vectors/52d750c9ce051e51cb181b7a78932120c48541d0/plump/duo/map-travel/beach.svg",
+      "semantic_name": "Family outing",
+      "use_case": "reward_candidate",
+      "status": "approved_reward_artwork",
+      "approved_for": "Family outing",
+      "approved_on": "2026-11-20"
     }
   ]
 }
