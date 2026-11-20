@@ -950,6 +950,13 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     // twice (D1: the one balance rule). A reward with savings is redeemed
     // through its goal, not spent here.
     const bal = await balanceFor(client, req.familyCode, { id: childId, ...childRows[0] });
+    // O-I1 (owner, 2026-11-20): a reward the child has asked for is approved
+    // or declined, never spent directly (a stale screen gets the approved
+    // stale-view message; nothing is spent or remembered).
+    if (bal.stack.some((item) => item.rewardId === reward.id)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'The requests changed. Check them again.' });
+    }
     if (bal.goals.some((g) => g.rewardId === reward.id)) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Invalid request' });
