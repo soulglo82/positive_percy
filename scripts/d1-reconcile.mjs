@@ -23,7 +23,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { runMigrations } from '../server/migrate.js';
-import { fingerprint, differences, addedSchema, legacyFamilyGoals } from '../server/reconcile.js';
+import { fingerprint, differences, addedSchema, legacyFamilyGoals, PREREQ_SCHEMA, SAVINGS_SCHEMA } from '../server/reconcile.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : undefined; };
@@ -42,9 +42,6 @@ const pool = new pg.Pool({ connectionString: url });
 // The V1 release's migrations, in order. 014 and 015 are prerequisites of
 // 016 (production is at 012); each is additive.
 const V1_MIGRATIONS = ['014_todays_goals.sql', '015_reward_icon_key.sql', '016_savings_ledger.sql'];
-// What 014 and 015 add: the Today's Goals tables, their indexes and checks,
-// and the nullable rewards.icon_key with its approved-set CHECK.
-const PREREQ_SCHEMA = /today_goal|public\.rewards\.icon_key|rewards_icon_key_approved/;
 const DOWN = fs.readFileSync(path.join(ROOT, 'server/rollbacks/016_savings_ledger_down.sql'), 'utf8');
 const report = { steps: [] };
 const step = (name, diffs, extra = {}) => { report.steps.push({ name, changed: diffs, ...extra }); console.log(`${diffs.length ? 'FAIL' : 'ok  '} ${name}${diffs.length ? '\n  ' + diffs.join('\n  ') : ''}`); };
@@ -55,15 +52,18 @@ try {
   report.restored_from = marker.rows.find((r) => r.token === token).restored_from;
   const applied = (await pool.query("SELECT name FROM schema_migrations WHERE name = '016_savings_ledger.sql'").catch(() => ({ rows: [] }))).rows.length > 0;
   if (applied) throw new Error('This copy already has migration 016. Restore a copy taken before 016.');
-  // Only the V1 migrations may be pending: 014 and 015 (each optional, in
-  // order) and 016, last. Anything else pending is refused, so the run
-  // proves exactly these and nothing else.
+  // The copy must be at a point on production's line before 016: every
+  // applied record has a file on this branch (no 013 from another branch),
+  // and what is pending is exactly a tail of the V1 migrations (016, or 015
+  // and 016, or 014, 015 and 016). Anything else is refused, so the run
+  // proves exactly these and nothing else (code review of 8fa4d35).
   const files = fs.readdirSync(path.join(ROOT, 'server/migrations')).filter((f) => /^\d{3}_.+\.(sql|js)$/.test(f)).sort();
   const done = new Set((await pool.query('SELECT name FROM schema_migrations')).rows.map((r) => r.name));
+  const unknown = [...done].filter((n) => !files.includes(n));
+  if (unknown.length) throw new Error(`This copy has migrations this branch does not know: ${unknown.join(', ')}. Refusing.`);
   const pending = files.filter((f) => !done.has(f));
-  const unexpected = pending.filter((f) => !V1_MIGRATIONS.includes(f));
-  if (unexpected.length || pending[pending.length - 1] !== '016_savings_ledger.sql') {
-    throw new Error(`Expected only the V1 migrations (${V1_MIGRATIONS.join(', ')}) pending, ending with 016; found: ${pending.join(', ') || 'none'}`);
+  if (!pending.length || pending.join() !== V1_MIGRATIONS.slice(-pending.length).join()) {
+    throw new Error(`Expected a tail of the V1 migrations (${V1_MIGRATIONS.join(', ')}) pending; found: ${pending.join(', ') || 'none'}`);
   }
   report.pending = pending;
   const original = await fingerprint(pool);
@@ -76,9 +76,12 @@ try {
   const prereq = pending.filter((f) => f !== '016_savings_ledger.sql');
   if (prereq.length) {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'percy-v1-prereq-'));
-    for (const f of prereq) fs.copyFileSync(path.join(ROOT, 'server/migrations', f), path.join(tmp, f));
-    await runMigrations(pool, { dir: tmp, log: () => {} });
-    fs.rmSync(tmp, { recursive: true, force: true });
+    try {
+      for (const f of prereq) fs.copyFileSync(path.join(ROOT, 'server/migrations', f), path.join(tmp, f));
+      await runMigrations(pool, { dir: tmp, log: () => {} });
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
     const afterPrereq = await fingerprint(pool, original);
     const stray = addedSchema(original, afterPrereq).filter((o) => !PREREQ_SCHEMA.test(o));
     step(`apply ${prereq.map((f) => f.slice(0, 3)).join(' and ')} (V1 prerequisites)`,
@@ -99,7 +102,7 @@ try {
   const saved = (await pool.query('SELECT count(*)::int n FROM savings_events')).rows[0].n;
   const goals = (await pool.query('SELECT count(*)::int n FROM rewards WHERE is_bigger_goal')).rows[0].n;
   const allow = { allowMigrations: ['016_savings_ledger.sql'] };
-  const strayAdded = addedSchema(before, after).filter((o) => !/savings_events|public\.rewards\.(is_bigger_goal|goal_epoch|goal_child_epochs|rewards_goal_generation)/.test(o));
+  const strayAdded = addedSchema(before, after).filter((o) => !SAVINGS_SCHEMA.test(o));
   step('apply 016', [...differences(before, after, allow), ...strayAdded.map((o) => `unexpected new schema object: ${o}`)],
     { added: after.added, savings_rows: saved, goals_designated: goals });
   if (saved || goals) step('016 created savings or goals', [`savings rows ${saved}, goals ${goals}`]);
@@ -123,6 +126,9 @@ try {
 } catch (err) {
   report.error = err.message;
   console.error('ERROR', err.message);
+  // A failed run can leave the copy part-way (a prerequisite applied, 016
+  // rolled back or not). Do not rerun on it: restore a fresh copy.
+  console.error('Restore a fresh copy before running again.');
 } finally {
   await pool.end();
 }

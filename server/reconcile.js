@@ -134,6 +134,25 @@ async function childFacts(db) {
 
 // Take a fingerprint. With `like`, hash only the tables and columns `like`
 // had, so a later fingerprint compares like with like.
+// Schema objects each V1 migration may add, anchored on the object's name in
+// the strings schemaObjects() builds ('column public.<table>.<col> ...',
+// 'constraint public.<name> ...', 'index public.<name> ...', 'trigger
+// public.<table>.<name> ...'). Anything else new is reported (code review of
+// 8fa4d35: an unanchored /today_goal/ would have hidden, say, a stray
+// children.today_goal_flag column).
+export const PREREQ_SCHEMA = new RegExp([
+  '^(column|trigger) public\\.(today_goals|today_goal_completions)\\.',
+  '^(constraint|index) public\\.today_goal[a-z_]* ',
+  '^column public\\.rewards\\.icon_key ',
+  '^constraint public\\.rewards_icon_key_approved ',
+].join('|'));
+export const SAVINGS_SCHEMA = new RegExp([
+  '^(column|trigger) public\\.savings_events\\.',
+  '^(constraint|index) public\\.savings_events[a-z_]* ',
+  '^column public\\.rewards\\.(is_bigger_goal|goal_epoch|goal_child_epochs) ',
+  '^trigger public\\.rewards\\.rewards_goal_generation(_insert)? ',
+].join('|'));
+
 export async function fingerprint(db, like = null) {
   const now = await tableColumns(db);
   const tables = {};

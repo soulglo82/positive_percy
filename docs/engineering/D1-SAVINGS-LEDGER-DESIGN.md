@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.7 |
+| Version | 1.8 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.8 | 2026-11-20 | §17: post-build code review of `8fa4d35`; six findings fixed (pending must be a tail of the V1 migrations, unknown applied records refused, allowlists anchored on names, a copy at 014 tested, temp-dir cleanup, restore after any error) |
 | 1.7 | 2026-11-20 | §16: production is at migration 012, so the restored-backup run applies the V1 prerequisites 014 and 015 first; the CLI and its test cover a copy at 012 |
 | 1.0 | 2026-11-19 | First draft |
 | 1.1 | 2026-11-19 | Peer review: 5 blocking and 7 non-blocking findings, all adopted (§10) |
@@ -372,4 +373,21 @@ Both tests fail on the previous script.
 4. Keep `d1-reconcile-report.json`.
 
 The run passes only if it exits 0 with every step unchanged.
+
+**After any error, restore a fresh copy before running again** (§17). A failed run can leave the copy part-way.
+
+## 17. Post-build code review of `8fa4d35` (v1.8)
+
+A fresh-context reviewer read the §16 change. It found nothing Major and six smaller findings. All six are fixed.
+
+| # | Finding | Fix | Test (red on `8fa4d35` or by mutation) |
+| --- | --- | --- | --- |
+| 1 | A gap was accepted. With 015 recorded and 014 not, the pending list (014, 016) passed, though production cannot reach that state | `pending` must be exactly a tail of `014, 015, 016` | "refuses a gap in the V1 migrations"; mutation M2 restores the old rule and the test goes red |
+| 2 | An applied record with no file on this branch was ignored. A copy with the unmerged 013 would be proved against a schema this branch never built | Any applied record this branch has no file for is refused, and the record is named | "refuses a copy with an applied migration this branch does not have"; mutation M1 |
+| 3 | The allowlists were unanchored. `/today_goal/` would have hidden a stray `children.today_goal_flag` column, and the 016 pattern had the same shape | `PREREQ_SCHEMA` and `SAVINGS_SCHEMA` in `server/reconcile.js` match on the object kind and name only | `server/test/reconcile-allowlist.test.js`, 29 cases: each real object allowed, and look-alikes reported. Mutations M3 and M4 restore the old patterns and the tests go red |
+| 4 | Only a copy at 012 was tested | A copy built at 014 runs with 015 as its only prerequisite | "applies only 015 as the prerequisite, then proves 016" |
+| 5 | The temporary migration folder leaked when a prerequisite failed | Removed in `finally` | Read-only check. A failing prerequisite already ends the run |
+| 6 | No guidance after a failed run | The CLI prints "Restore a fresh copy before running again"; runbook note above | Read-only check |
+
+What these tests do not cover: a restored copy whose schema differs from its migration records (for example, a hand-made change on production). The fingerprint compares data and the objects added by each step. It does not compare the copy's whole schema against a freshly built 012. The real backup run is the check for that.
 
