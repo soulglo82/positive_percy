@@ -17,8 +17,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 export const REGISTER = 'design/stage1/APPROVAL_REGISTER.json';
 export const OUT = 'src/components/icons/approvedIcons.js';
 
-// Reward contexts (Streamline Plump, fixed fills) are not rendered in E03;
-// they go to E06 (docs/engineering/E03-DESIGN.md section 3).
+// Reward artwork (V1-D §14): the Streamline Plump entries of
+// decisions.rewards are served unchanged as image files (public/reward-art);
+// only its Phosphor entries (book-bookmark for New book) are generated here,
+// as the `rewards` context.
 const GROUPS = ['nav', 'controls', 'behaviors'];
 
 export function collect(register) {
@@ -44,6 +46,13 @@ export function collect(register) {
     if (e.status !== 'owner_approved') throw new Error(`goals/${ctx} source not owner_approved`);
     contexts.goals[ctx] = e.asset_id;
     add(e.asset_id, e.local_file, e.source_url, e.license_reference);
+  }
+  contexts.rewards = {};
+  for (const [ctx, e] of Object.entries(register.decisions.rewards)) {
+    if (!e.asset_id.startsWith('phosphor:')) continue;
+    if (e.status !== 'selected') throw new Error(`rewards/${ctx} is not selected (${e.status})`);
+    contexts.rewards[ctx] = e.asset_id;
+    add(e.asset_id, e.source_file, e.source_url, e.license);
   }
   // V1-D: the owner-approved reward picker (12 categories, 84 placements, 71
   // Phosphor Duotone icons). Each source is the checked-in file whose hash

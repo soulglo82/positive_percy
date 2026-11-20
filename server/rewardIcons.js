@@ -1,9 +1,23 @@
 // V1-D, owner decision D2: the 71 reward-picker icons a reward may store in
-// rewards.icon_key (Phosphor Duotone asset ids, register picker.categories).
+// rewards.icon_key (Phosphor Duotone asset ids, register picker.categories),
+// and the 12 approved reward artworks (register decisions.rewards; owner
+// decision 2026-11-20, V1-D §14): 83 ids.
 // The same set is the CHECK in migrations/015_reward_icon_key.sql and the
 // picker in src/lib/rewardPicker.js; src/test/rewardPicker.test.js keeps all
 // of them equal to the register.
 export const REWARD_ICON_KEYS = new Set([
+  'streamline:plump:duo:computer-devices:controller-1',
+  'streamline:plump:duo:images-photography:film-slate',
+  'streamline:plump:duo:food-drink:ice-cream-2',
+  'phosphor:book-bookmark:duotone',
+  'streamline:plump:duo:map-travel:bicycle-bike',
+  'streamline:plump:duo:interface-essential:give-gift',
+  'streamline:plump:duo:culture:ticket-1',
+  'streamline:plump:duo:food-drink:cake-slice',
+  'streamline:plump:duo:interface-essential:paintbrush-2',
+  'streamline:plump:duo:images-photography:camera-1',
+  'streamline:plump:duo:entertainment:music-note-2',
+  'streamline:plump:duo:map-travel:beach',
   'phosphor:airplane:duotone',
   'phosphor:backpack:duotone',
   'phosphor:balloon:duotone',

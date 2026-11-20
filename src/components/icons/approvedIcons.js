@@ -41,6 +41,9 @@ export const APPROVED_CONTEXTS = {
     "recurring_indicator": "phosphor:repeat:duotone",
     "header_accent": "phosphor:sparkle:duotone"
   },
+  "rewards": {
+    "New book": "phosphor:book-bookmark:duotone"
+  },
   "picker": {
     "Fun & games": [
       "phosphor:game-controller:duotone",
@@ -234,6 +237,15 @@ export const APPROVED_ICONS = {
     "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bicycle-duotone.svg",
     "licence": "MIT — Phosphor",
     "sha256": "f99f21cc07a6ae8ad32cdf5b986888e293f9f572c039912d60a4a6efb30a4ccf"
+  },
+  "phosphor:book-bookmark:duotone": {
+    "viewBox": "0 0 256 256",
+    "fill": "currentColor",
+    "inner": "<path d=\"M208,32V192H72a24,24,0,0,0-24,24V56A24,24,0,0,1,72,32h40v96l32-24,32,24V32Z\" opacity=\"0.2\"/><path d=\"M208,24H72A32,32,0,0,0,40,56V224a8,8,0,0,0,8,8H192a8,8,0,0,0,0-16H56a16,16,0,0,1,16-16H208a8,8,0,0,0,8-8V32A8,8,0,0,0,208,24ZM120,40h48v72L148.79,97.6a8,8,0,0,0-9.6,0L120,112Zm80,144H72a31.82,31.82,0,0,0-16,4.29V56A16,16,0,0,1,72,40h32v88a8,8,0,0,0,12.8,6.4L144,114l27.21,20.4A8,8,0,0,0,176,136a8.1,8.1,0,0,0,3.58-.84A8,8,0,0,0,184,128V40h16Z\"/>",
+    "source": "design/assets/phosphor/duotone/book-bookmark.svg",
+    "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/book-bookmark-duotone.svg",
+    "licence": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE",
+    "sha256": "fd3df771fbd0d671e4c1cba526427930995965851650cf91b40a2f09011f4f2b"
   },
   "phosphor:book-open-text:duotone": {
     "viewBox": "0 0 256 256",

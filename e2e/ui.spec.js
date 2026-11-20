@@ -244,10 +244,14 @@ test('rewards and its dialogs', async ({ page }, testInfo) => {
     cols: getComputedStyle(el).gridTemplateColumns.split(' ').length,
   }));
   expect(cols).toBe(width >= 760 ? 6 : width >= 520 ? 5 : 3);
+  // V1-D §14: a new reward opens on the approved reward artwork.
+  await expect(form.getByText('12 icons in Reward artwork')).toBeVisible();
+  await expect(form.getByRole('button', { name: 'Movie night' }).locator('img')).toHaveAttribute('src', '/reward-art/film-slate.svg');
+  await expect.poll(() => form.getByRole('button', { name: 'Movie night' }).locator('img').evaluate((i) => i.naturalWidth)).toBeGreaterThan(0); // the file is served
   await form.getByLabel('Find an icon').fill('bike');
-  await expect(form.getByText('1 icon matches your search')).toBeVisible();
-  await form.getByRole('button', { name: 'Bicycle' }).click();
-  await expect(form.getByRole('button', { name: 'Bicycle' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(form.getByText('2 icons match your search')).toBeVisible();
+  await form.getByRole('button', { name: 'Bike ride' }).click();
+  await expect(form.getByRole('button', { name: 'Bike ride' })).toHaveAttribute('aria-pressed', 'true');
   await closeDialog(page);
 
   await page.getByRole('button', { name: /^Edit Screen time/ }).click();
