@@ -268,7 +268,9 @@ The total is the sum of the same priced items the confirmation sends (`expected`
 **Code paths.**
 - **Screen:** the parent's Rewards dialog (`SpendRewardsModal`) leaves requested rewards out of its direct list. They stay in "{Name} asked for".
 - **Server:** `POST /api/children/:id/redeem` refuses (409) a reward that is in the child's priced stack. The check runs under the child row lock, together with the balance check. The message is the approved stale-view wording "The requests changed. Check them again." The redemption is not recorded in the replay store, so a retry after the request is resolved is a new request.
-- **Not affected:** `stack/confirm` (Approve), `stack/remove` (Not this time), Undo of a spend, and Child View (requests only).
+- **Not affected:** `stack/confirm` (Approve), `stack/remove` (Not this time), Undo of a spend.
+- **Child View:** on this branch (#59) the old Child View still has a direct Spend button; for a requested reward the server refuses it (409). PR #61 replaces that page with the request-only Child View (D5), so in the stacked result no Child View path spends directly (correction after the code review of O-I1).
+- **Empty list:** when every visible reward is requested, the direct list shows nothing extra (no "No rewards created yet."). Only the server's O-I1 refusal shows the stale-view message; any other 409 keeps its own message.
 
 **Edge cases.**
 | # | Input | Expected |
@@ -279,5 +281,5 @@ The total is the sum of the same priced items the confirmation sends (`expected`
 | R4 | The same reward requested by a sibling only | Still directly spendable for this child (requests are per child) |
 | R5 | A reward requested twice | Hidden while any request remains |
 
-**Tests.** Server: R2, R3 and R4, each against the database. Screen: R1 and R3. Mutation: removing the server check fails R2.
+**Tests.** Server: R2, R3, R4 and R5, against the database. Screen: R1, R2, R3, the empty list and another 409. Mutations: removing the server check fails R2; removing the screen filter fails R1.
 
