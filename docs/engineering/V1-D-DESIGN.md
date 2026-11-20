@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.3 |
+| Version | 1.4 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-d-rewards`, stacked on V1-F `claude/percy-v1-f-forms`) |
 | Status | Reviewed (fresh-context peer review adopted, v1.1; §10 supersedes earlier sections where they conflict) |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.4 | 2026-11-20 | Owner approved the success and removal messages; applied (§12) |
 | 1.3 | 2026-11-19 | Owner approved the wording C1–C6 (recorded on PR #59); applied and tested (§12) |
 | 1.0 | 2026-11-19 | First draft |
 | 1.1 | 2026-11-19 | Peer review: 5 blocking and 6 non-blocking findings; all blocking adopted, non-blocking adopted or answered (§10) |
@@ -254,6 +255,8 @@ Post-build code review of the wording commit: C4's full stop added; the total is
 | C4 | "Choose one of the icons shown." (full stop added, as approved; shared with behaviour icons) | server 422 |
 | C5 | "{Name} asked for"; "Not this time" (removes the request, spends nothing); "Approve 1 reward" / "Approve N rewards"; total "This will spend {total} point(s) from {Name}'s balance."; "The requests changed. Check them again." | `REQUEST_COPY`, `SpendRewardsModal` |
 | C6 | "1 icon matches your search" (unchanged); "No rewards match this filter." | `RewardPicker`, `Rewards` |
+| C5 success (2026-11-20) | "Approved 1 reward for {Name}." / "Approved {N} rewards for {Name}." No Undo is offered | `REQUEST_COPY.agreed` |
+| C5 removal (2026-11-20) | "Removed {reward} from {Name}'s requests." after "Not this time" | `REQUEST_COPY.removed` |
 
 The total is the sum of the same priced items the confirmation sends (`expected` with each reward's id, position and cost). A change in price or requests gets a 409 and the parent sees them again; nothing is charged at a different amount (test C6, unchanged since PR #59's review).
 

@@ -52,6 +52,7 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
     setBusy(true);
     try {
       await removeRequest(child.id, item);
+      toast.success(REQUEST_COPY.removed(item.name, child.name));
     } catch (e) {
       if (e.status === 409) toast.info(REQUEST_COPY.changed);
       else toast.error("Couldn't update points. Please try again.");
