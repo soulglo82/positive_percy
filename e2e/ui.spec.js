@@ -298,7 +298,19 @@ test('rewards and its dialogs', async ({ page }, testInfo) => {
   await expect(form.getByText('2 icons match your search')).toBeVisible();
   await form.getByRole('button', { name: 'Bike ride' }).click();
   await expect(form.getByRole('button', { name: 'Bike ride' })).toHaveAttribute('aria-pressed', 'true');
-  await closeDialog(page);
+  // Saved, the reward shows its approved artwork in the catalogue (V1-D §14).
+  const artTitle = `Art ride ${testInfo.project.name}`;
+  await form.getByLabel('Reward name').fill(artTitle);
+  await form.getByRole('button', { name: 'Save reward' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const tile = page.locator('div').filter({ has: page.getByText(artTitle, { exact: true }) }).filter({ has: page.locator('img[src="/reward-art/bicycle-bike.svg"]') });
+  await expect(tile.first()).toBeVisible();
+  const auth = { Authorization: `Bearer ${family.token}` };
+  const saved = (await (await page.request.get('/api/rewards', { headers: auth })).json()).find((r) => r.title === artTitle);
+  expect(saved.icon_key).toBe('streamline:plump:duo:map-travel:bicycle-bike');
+  await page.request.delete(`/api/rewards/${saved.id}`, { headers: auth });
+  await page.reload();
+  await page.waitForLoadState('networkidle');
 
   await page.getByRole('button', { name: /^Edit Screen time/ }).click();
   await checkScreen(page, 'edit reward', testInfo);

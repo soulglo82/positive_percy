@@ -7,7 +7,7 @@ import path from 'node:path';
 import { render } from '@testing-library/react';
 import { svgProblems } from './svgScan.js';
 import { REWARD_ARTWORK, REWARD_ART_GROUP } from '../lib/rewardArtwork.js';
-import { pickerItems, pickerLabel, accentOf } from '../lib/rewardPicker.js';
+import { pickerItems, pickerLabel, accentOf, ARTWORK_ALIASES } from '../lib/rewardPicker.js';
 import RewardIcon, { rewardArt } from '../components/rewards/RewardIcon.jsx';
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -45,6 +45,12 @@ describe('approved reward artwork', () => {
     expect(pickerItems('', 'bike').map(pickerLabel)).toEqual(['Bike ride', 'Bicycle']);
     expect(pickerItems('', 'movie').map(pickerLabel)).toEqual(['Movie night', 'Film Slate']);
     expect(rewardArt('streamline:plump:duo:not:real')).toBeNull();
+    // Every alias belongs to a real artwork; the obvious words find each one.
+    const ids = new Set(REWARD_ARTWORK.map((a) => a.id));
+    expect(Object.keys(ARTWORK_ALIASES).filter((k) => !ids.has(k))).toEqual([]);
+    for (const [word, name] of [['camera', 'Photo adventure'], ['beach', 'Family outing'], ['ticket', 'Day out'], ['bicycle', 'Bike ride'], ['present', 'Gift'], ['song', 'Music time']]) {
+      expect(pickerItems('', word).map(pickerLabel), word).toContain(name);
+    }
   });
   it('a reward with artwork draws its image (decorative); precedence and fallback unchanged', () => {
     const { container, rerender } = render(<RewardIcon reward={{ icon_key: 'streamline:plump:duo:food-drink:cake-slice', emoji: '🎂', image_url: '/u/p.png' }} />);

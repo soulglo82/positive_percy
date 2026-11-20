@@ -218,7 +218,7 @@ export async function check(files) {
       const v = s.value;
       // An approved icon asset id ("phosphor:…:duotone", "streamline:plump:duo:…")
       // is data, not a class list (V1-D §14).
-      if (/^(phosphor|streamline):[a-z0-9:-]+$/.test(v.trim())) continue;
+      if (/^(phosphor:[a-z0-9-]+:duotone|streamline:[a-z]+:[a-z]+:[a-z0-9-]+:[a-z0-9-]+)$/.test(v)) continue;
       if (!isTokensJs) {
         if (/(^|[\s'"(:,])#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b/.test(v)) add(file, ln, `hex colour in "${v.slice(0, 40)}"`);
         if (/\b(rgba?|hsla?)\((?!var\(--)/.test(v) || /\b(oklch|lab|hwb|color-mix)\(/.test(v)) add(file, ln, `colour function in "${v.slice(0, 40)}"`);
