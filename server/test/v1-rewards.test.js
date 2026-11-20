@@ -188,4 +188,26 @@ describe.skipIf(!hasDb)('V1-D: reward icon_key (D2)', () => {
     // An out-of-range remove is a stale view too: 409, nothing removed.
     expect((await call('DELETE', `/api/children/${kid.id}/stack/5?reward_id=${r.id}`)).status).toBe(409);
   });
+
+  it('O-I1: a requested reward is not spent directly; once declined it can be (R2, R3, R4)', async () => {
+    const kid = (await call('POST', '/api/children', { name: 'Requester', total_points: 40 })).json;
+    const sib = (await call('POST', '/api/children', { name: 'Sibling', total_points: 40 })).json;
+    const treat = (await reward({ title: 'Treat', cost_points: 5 })).json;
+    await call('POST', `/api/children/${kid.id}/stack/add`, { reward_id: treat.id });
+    // R2: a stale screen tries to spend the requested reward directly.
+    const refused = await call('POST', `/api/children/${kid.id}/redeem`, { reward_id: treat.id, request_id: rid() });
+    expect(refused.status).toBe(409);
+    expect(refused.json.error).toBe('The requests changed. Check them again.');
+    let me = (await call('GET', '/api/children')).json.find((c) => c.id === kid.id);
+    expect(me.total_points).toBe(40);
+    expect(me.reward_stack_priced.map((i) => i.rewardId)).toEqual([treat.id]);
+    // R4: the sibling did not ask for it, so it is spendable for them.
+    expect((await call('POST', `/api/children/${sib.id}/redeem`, { reward_id: treat.id, request_id: rid() })).status).toBe(200);
+    // R3: declined ("Not this time"), it can be spent directly again.
+    expect((await call('DELETE', `/api/children/${kid.id}/stack/0?reward_id=${treat.id}`)).status).toBe(200);
+    expect((await call('POST', `/api/children/${kid.id}/redeem`, { reward_id: treat.id, request_id: rid() })).status).toBe(200);
+    me = (await call('GET', '/api/children')).json.find((c) => c.id === kid.id);
+    expect(me.total_points).toBe(35);
+  });
 });
+

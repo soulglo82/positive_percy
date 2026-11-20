@@ -865,7 +865,15 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     const child_name = childRows[0].name;
 
     // Points already set aside in the reward stack are not spendable twice.
-    const reserved = stackTotalOf(await pricedStack(client, childRows[0].reward_stack, childId, req.familyCode));
+    const stack = await pricedStack(client, childRows[0].reward_stack, childId, req.familyCode);
+    // O-I1 (owner, 2026-11-20): a reward the child has asked for is approved
+    // or declined, never spent directly (a stale screen gets the approved
+    // stale-view message; nothing is spent or remembered).
+    if (stack.some((item) => item.rewardId === reward.id)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'The requests changed. Check them again.' });
+    }
+    const reserved = stackTotalOf(stack);
     if (childRows[0].total_points - reserved < reward_cost) {
       await client.query('ROLLBACK');
       return res.status(400).json({
