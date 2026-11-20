@@ -201,9 +201,45 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   expect(await page.evaluate(() => localStorage.getItem('percy_onboarding_done'))).toBe('true');
 });
 
-test('child view', async ({ page }, testInfo) => {
+// V1-B: the Children page (nav "Children") and the request-only Child View.
+test('children page', async ({ page }, testInfo) => {
+  await go(page, '/');
+  await page.getByRole('link', { name: 'Children' }).first().click();
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByRole('heading', { name: 'Children', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Weekly treats to choose from' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Children' }).first()).toHaveAttribute('aria-current', 'page');
+  await checkScreen(page, 'children', testInfo);
+  await page.getByRole('link', { name: 'View as child' }).click();
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByRole('heading', { name: 'My Percy adventure' })).toBeVisible();
+  // Child View keeps the Children item marked as the current section.
+  await expect(page.getByRole('link', { name: 'Children' }).first()).toHaveAttribute('aria-current', 'page');
+});
+
+test('child view: choosing a reward is a request, never a spend', async ({ page }, testInfo) => {
+  const headers = { Authorization: `Bearer ${family.token}` };
   await go(page, '/childview');
+  await expect(page.getByText('Choosing a reward is a request. Only a parent-authorised confirmation can spend points.')).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Spend|^Edit/ })).toHaveCount(0);
   await checkScreen(page, 'child view', testInfo);
+  const before = (await (await page.request.get('/api/children', { headers })).json()).find((c) => /^Alexandra/.test(c.name));
+  try {
+    await page.getByRole('button', { name: 'Ask a parent for Screen time, 30 minutes' }).click();
+    await expect(page.getByText('20 points · Ready when a parent agrees')).toBeVisible();
+    const after = (await (await page.request.get('/api/children', { headers })).json()).find((c) => c.id === before.id);
+    expect(after.total_points).toBe(before.total_points); // nothing was spent
+    expect(after.available_points).toBe(before.available_points - 20);
+    await checkScreen(page, 'child view requested', testInfo);
+  } finally {
+    // Leave the family as it was for the other screens, even after a failure.
+    const now = (await (await page.request.get('/api/children', { headers })).json()).find((c) => c.id === before.id);
+    for (const item of [...(now.reward_stack_priced || [])].reverse()) {
+      if (item.name === 'Screen time, 30 minutes') {
+        await page.request.delete(`/api/children/${now.id}/stack/${item.stackIndex}?reward_id=${item.rewardId}`, { headers });
+      }
+    }
+  }
 });
 
 test('activity, with the log open and the child filter open', async ({ page }, testInfo) => {

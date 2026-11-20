@@ -23,6 +23,7 @@ import {
 
 const PAGE_TITLES = {
   ParentDashboard: 'Family',
+  Children: 'Children',
   ChildView: 'My Rewards',
   Activity: 'Activity',
   Rewards: 'Rewards',
@@ -36,7 +37,7 @@ export default function Layout({ children, currentPageName }) {
 
   const navItems = [
     { name: 'ParentDashboard', label: 'Home', icon: NAV_ICONS.Home },
-    { name: 'ChildView', label: 'Child', icon: NAV_ICONS.Progress },
+    { name: 'Children', label: 'Children', icon: NAV_ICONS.Progress },
     { name: 'Activity', label: 'Activity', icon: NAV_ICONS.Activity },
     { name: 'Rewards', label: 'Rewards', icon: NAV_ICONS.Rewards },
     { name: 'ParentProfile', label: 'Settings', icon: NAV_ICONS.Settings },
@@ -68,7 +69,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex gap-1 items-center">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = currentPageName === item.name;
+                const isActive = currentPageName === item.name || (item.name === 'Children' && currentPageName === 'ChildView');
 
                 return (
                   <Link
@@ -126,7 +127,7 @@ export default function Layout({ children, currentPageName }) {
         <div className="flex justify-around items-center h-16 px-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentPageName === item.name;
+            const isActive = currentPageName === item.name || (item.name === 'Children' && currentPageName === 'ChildView');
 
             return (
               <Link

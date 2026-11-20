@@ -196,3 +196,22 @@ export async function removeRequest(childId, item) {
   }
   return res.json();
 }
+
+// V1-B (D5): a child asks for a reward; a parent confirms it later. Never
+// retried: the server has no request id for this, so a retry could add the
+// same request twice (V1-B design §3).
+export async function requestReward(childId, rewardId) {
+  const res = await fetch(`/api/children/${childId}/stack/add`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body: JSON.stringify({ reward_id: rewardId }),
+  });
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    // No raw fallback text: callers show the shipped wording when there is no message.
+    const err = new Error(result.error || '');
+    err.status = res.status;
+    throw err;
+  }
+  return result; // { reward_stack }
+}
