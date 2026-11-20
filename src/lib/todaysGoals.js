@@ -90,16 +90,6 @@ export function goalShortDate(ymd) {
 const uniqueDays = (days) => [...new Set((days || []).map(Number))]
   .filter(d => d >= 1 && d <= 7).sort((a, b) => a - b);
 
-// Manage goals row schedule: "Every day", "Mon–Fri", "Mon, Wed, Fri", "One-off · 16 Nov".
-export function goalScheduleSummary(goal) {
-  if (goal.schedule_kind === 'one_off') return 'One-off · ' + goalShortDate(goal.scheduled_date);
-  const days = uniqueDays(goal.weekdays);
-  if (days.length === 7) return 'Every day';
-  const contiguous = days.length >= 3 && days.every((d, i) => i === 0 || d === days[i - 1] + 1);
-  if (contiguous) return GOAL_DAYS[days[0] - 1].label + '–' + GOAL_DAYS[days[days.length - 1] - 1].label;
-  return days.map(d => GOAL_DAYS[d - 1].label).join(', ');
-}
-
 export const pointsText = (n) => '+' + n + (n === 1 ? ' point' : ' points');
 
 export const sameWeekdays = (a, b) => uniqueDays(a).join(',') === uniqueDays(b).join(',');

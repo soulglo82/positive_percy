@@ -23,13 +23,16 @@ test('parent can add, complete once, edit and archive a dated goal', async ({ pa
   await page.getByRole('button', { name: /^Sam \d+ \/ \d+ this week$/ }).click();
   await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
   const dialog = page.getByRole('dialog');
-  await expect(dialog.getByRole('heading', { name: 'Manage goals for Sam' })).toBeVisible();
-  await dialog.getByLabel('Goal', { exact: true }).fill(title);
+  await expect(dialog.getByRole('heading', { name: "Manage Sam's goals" })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Add goal' }).click();
+  await dialog.getByLabel('Goal name').fill(title);
   await dialog.getByRole('button', { name: 'One-off' }).click();
   await dialog.getByLabel('Date').fill(today);
-  await dialog.getByRole('button', { name: 'Add goal' }).click();
+  await dialog.getByRole('button', { name: 'Create goal' }).click();
   await expect(dialog.getByText(title)).toBeVisible();
-  await dialog.getByRole('button', { name: 'Done' }).click();
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  // Wait for the close animation: until then the goal row is in the page twice.
+  await expect(dialog).toHaveCount(0);
 
   await expect(page.getByRole('button', { name: 'Complete ' + title })).toBeVisible();
   await page.getByRole('button', { name: 'Complete ' + title }).click();
@@ -47,10 +50,11 @@ test('parent can add, complete once, edit and archive a dated goal', async ({ pa
   // The management screen keeps completed entries editable and auditable.
   await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
   await dialog.getByRole('button', { name: 'Edit ' + title }).click();
-  await dialog.getByLabel('Goal', { exact: true }).fill(title + ' updated');
+  await dialog.getByLabel('Goal name').fill(title + ' updated');
   await dialog.getByRole('button', { name: 'Save changes' }).click();
   await expect(dialog.getByText(title + ' updated')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Archive ' + title + ' updated' }).click();
+  await dialog.getByRole('button', { name: 'Edit ' + title + ' updated' }).click();
+  await dialog.getByRole('button', { name: 'Archive goal' }).click();
   const confirmation = page.getByRole('alertdialog');
   await expect(confirmation.getByText('Archive this goal?')).toBeVisible();
   await confirmation.getByRole('button', { name: 'Archive goal' }).click();
@@ -73,7 +77,8 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
   await expect(page.getByRole('button', { name: /^Sam \d+ \/ \d+ this week$/ })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByLabel('Goal', { exact: true }).fill(title);
+  await dialog.getByRole('button', { name: 'Add goal' }).click();
+  await dialog.getByLabel('Goal name').fill(title);
   for (const day of ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']) {
     const b = dialog.getByRole('button', { name: day, exact: true });
     if ((await b.getAttribute('aria-pressed')) !== 'true') await b.click();
@@ -82,10 +87,12 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
     const b = dialog.getByRole('button', { name: day, exact: true });
     if ((await b.getAttribute('aria-pressed')) !== 'true') await b.click();
   }
-  await dialog.getByRole('button', { name: 'Add goal' }).click();
+  await dialog.getByRole('button', { name: 'Create goal' }).click();
   await expect(dialog.getByText(title)).toBeVisible();
-  await expect(dialog.getByText(/Every day/).first()).toBeVisible();
-  await dialog.getByRole('button', { name: 'Done' }).click();
+  await expect(dialog.getByRole('listitem').filter({ hasText: title }).getByText(/· Daily ·/)).toBeVisible();
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  // Wait for the close animation: until then the goal row is in the page twice.
+  await expect(dialog).toHaveCount(0);
 
   const completeBtn = page.getByRole('button', { name: 'Complete ' + title, exact: true });
   await expect(completeBtn).toBeVisible();
@@ -116,7 +123,7 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
   const before = (await api()).goals.find(g => g.title === title);
   await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
   await dialog.getByRole('button', { name: 'Edit ' + title }).click();
-  await dialog.getByLabel('Goal', { exact: true }).fill(title + ' x');
+  await dialog.getByLabel('Goal name').fill(title + ' x');
   await dialog.getByRole('button', { name: 'Save changes' }).click();
   await expect(dialog.getByText(title + ' x')).toBeVisible();
   const renamed = (await api()).goals.find(g => g.title === title + ' x');
@@ -131,9 +138,10 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
   await dialog.getByRole('button', { name: 'One-off' }).click();
   await dialog.getByRole('button', { name: 'Save changes' }).click();
   await expect(dialog.getByRole('alert')).toContainText('Create a separate goal');
-  await dialog.getByRole('button', { name: 'Cancel edit' }).click();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
 
-  await dialog.getByRole('button', { name: 'Archive ' + title + ' x' }).click();
+  await dialog.getByRole('button', { name: 'Edit ' + title + ' x' }).click();
+  await dialog.getByRole('button', { name: 'Archive goal' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Archive goal' }).click();
   await expect(dialog.getByText(title + ' x')).toHaveCount(0);
   expect(await balance()).toBe(start + pts); // archive keeps earned points

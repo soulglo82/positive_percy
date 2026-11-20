@@ -1,10 +1,10 @@
 {
-  "version": "1.1",
+  "version": "1.2",
   "issued": "2026-11-15",
   "owner": "Percy v2 engineering",
   "status": "E01 provenance for runtime brand files; not deployed",
   "chain": "Logo/icon sources are members of the pinned archive design/brand/archives (sha256 e7e93dde728048cb03ba78a1f761cc221af184bfda3bdd4234f7fd3df61f3638), checked in src/test/brandAssets.test.js. Font sources are vendored from the npm tarballs whose sha512 integrity is recorded per entry; the tarball check was done at import (2026-11-15) and is not re-run in CI.",
-  "excluded_from_runtime": "Everything else in the 150-file pack stays design source only. Not used in this web app: iOS AppIcon-1024 and Android adaptive layers (no native app; the PWA maskable icon covers Android launchers), print/PDF/letterhead files (E12), social covers (website, E12), and the Freepik treasure map (E03, licence gate).",
+  "excluded_from_runtime": "Everything else in the 150-file pack stays design source only. Not used in this web app: iOS AppIcon-1024 and Android adaptive layers (no native app; the PWA maskable icon covers Android launchers), print/PDF/letterhead files (E12), social covers (website, E12). The Freepik treasure map is not in public/ and not in a normal build; the build adds it only once release gate freepik-treasure-map-3570506 is cleared (design/brand/RELEASE_GATES.json; V1-F).",
   "entries": [
     {
       "runtime": "public/brand/fox-1a-symbol-black.svg",
@@ -245,6 +245,11 @@
       "version": "1.1",
       "date": "2026-11-17",
       "change": "E03 illustrations and licence files"
+    },
+    {
+      "version": "1.2",
+      "date": "2026-11-18",
+      "change": "V1-F: the treasure map is release-gated (not in public/; build-time only once cleared)"
     }
   ]
 }

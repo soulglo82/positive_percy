@@ -1,6 +1,6 @@
 // E05: goal text and the start-date rule, independent of the device zone.
 import { describe, it, expect } from 'vitest';
-import { goalDateLine, goalShortDate, goalScheduleSummary, pointsText, editStartDate, sameWeekdays } from './todaysGoals';
+import { goalDateLine, goalShortDate, pointsText, editStartDate, sameWeekdays } from './todaysGoals';
 
 describe('goal text', () => {
   it('formats the server date with fixed words, whatever the process zone', () => {
@@ -10,13 +10,6 @@ describe('goal text', () => {
     expect(goalShortDate('2026-11-16')).toBe('16 Nov');
     expect(goalDateLine('nonsense')).toBe('');
     expect(goalDateLine(undefined)).toBe('');
-  });
-  it('dialog schedule summaries', () => {
-    expect(goalScheduleSummary({ schedule_kind: 'weekly', weekdays: [1, 2, 3, 4, 5] })).toBe('Mon–Fri');
-    expect(goalScheduleSummary({ schedule_kind: 'weekly', weekdays: [6, 7] })).toBe('Sat, Sun');
-    expect(goalScheduleSummary({ schedule_kind: 'weekly', weekdays: [1, 3, 5] })).toBe('Mon, Wed, Fri');
-    expect(goalScheduleSummary({ schedule_kind: 'weekly', weekdays: [1, 2, 3, 4, 5, 6, 7] })).toBe('Every day');
-    expect(goalScheduleSummary({ schedule_kind: 'one_off', scheduled_date: '2026-11-16' })).toBe('One-off · 16 Nov');
   });
   it('points text is singular for one point', () => {
     expect(pointsText(1)).toBe('+1 point');

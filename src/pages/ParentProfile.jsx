@@ -14,7 +14,7 @@ import { Points } from "@/components/brand/PointsStar";
 import ChildAvatar from "../components/child/ChildAvatar";
 import { childColour } from "@/lib/childColour";
 import SectionHeader from "../components/SectionHeader";
-import OnboardingTips from "../components/OnboardingTips";
+import ParentingTips from "../components/ParentingTips";
 import AddChildModal from "../components/child/AddChildModal";
 import EditChildModal from "../components/child/EditChildModal";
 import BehaviorCategoryManager from "../components/settings/BehaviorCategoryManager";
@@ -291,10 +291,9 @@ export default function ParentProfile() {
         </a>
       </div>
 
-      <OnboardingTips
+      <ParentingTips
         isOpen={showTips}
         onClose={() => setShowTips(false)}
-        forceShow
       />
 
       <AddChildModal

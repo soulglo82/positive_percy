@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "issued": "2026-11-18",
+  "owner": "Percy V1 engineering; clearance is the owner's decision",
+  "status": "Active. Gated files are never in public/. The build adds a gated file only when its gate is cleared with a recorded clearance (scripts/brand/gated-assets.mjs); CI fails if a built dist contains a gated file whose gate is open (scripts/check-release-gates.mjs).",
+  "production_branch": "claude/migrate-base64-percy-code-PNAym",
+  "gates": [
+    {
+      "id": "freepik-treasure-map-3570506",
+      "what": "Freepik Bright Adventure Map (asset 3570506), the approved V1 Welcome map",
+      "runtime": "gated/treasure-map-3570506.png",
+      "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/04_Illustrations/treasure-map_3570506.png",
+      "sha256": "9f31c75a73e77e4bd19ebe93b09b94f75d30ef1c667a94ec89a541209b9d8ad1",
+      "status": "open",
+      "clears_when": "The owner holds and records a Freepik licence or receipt that covers commercial distribution of this asset in the app, with any required attribution. Then set status to \"cleared\" and clearance to that record's reference.",
+      "clearance": null,
+      "env": "VITE_WELCOME_MAP"
+    }
+  ],
+  "change_log": [
+    {
+      "version": "1.0",
+      "date": "2026-11-18",
+      "change": "First gate: the Freepik treasure map (V1-F Welcome)"
+    }
+  ]
+}
