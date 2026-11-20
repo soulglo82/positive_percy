@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.5 |
+| Version | 1.6 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-d-rewards`, stacked on V1-F `claude/percy-v1-f-forms`) |
 | Status | Reviewed (fresh-context peer review adopted, v1.1; §10 supersedes earlier sections where they conflict) |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.6 | 2026-11-20 | Owner decision (§14): the 12 approved reward artworks (11 Streamline Plump Duo and Phosphor book-bookmark) become selectable reward art, with the 71 Phosphor icons kept |
 | 1.5 | 2026-11-20 | Owner decision O-I1 (§13): a requested reward is not directly spendable, on screen and on the server |
 | 1.4 | 2026-11-20 | Owner approved the success and removal messages; applied (§12) |
 | 1.3 | 2026-11-19 | Owner approved the wording C1–C6 (recorded on PR #59); applied and tested (§12) |
@@ -282,4 +283,63 @@ The total is the sum of the same priced items the confirmation sends (`expected`
 | R5 | A reward requested twice | Hidden while any request remains |
 
 **Tests.** Server: R2, R3, R4 and R5, against the database. Screen: R1, R2, R3, the empty list and another 409. Mutations: removing the server check fails R2; removing the screen filter fails R1.
+
+## 14. Approved reward artwork (owner, 2026-11-20)
+
+**Decision.** The licensing question is settled and closed. Use the reward artwork the register approves (`design/stage1/APPROVAL_REGISTER.json` `decisions.rewards`, 12 entries):
+- 11 Streamline Plump Duo assets: Gaming time, Movie night, Ice cream treat, Bike ride, Gift, Day out, Cake treat, Art activity, Photo adventure, Music time and Family outing;
+- the Phosphor `book-bookmark` for New book.
+
+Keep the 71 Phosphor picker icons. Never replace the art of rewards families have already saved.
+
+**Contract.**
+1. **One set, read from the register.** `src/lib/rewardArtwork.js` lists the 12 entries: id (the register's `asset_id`), the approved reward name, and the file. A test keeps it equal to `decisions.rewards`, entry for entry.
+2. **Files used unchanged.** The 11 Streamline SVGs are copied byte for byte from `design/assets/streamline/plump/duo/...` (the CC BY 4.0 credit is already in `public/licenses/CREDITS.txt`). `book-bookmark` is drawn like the other Phosphor icons. Tests:
+   - each file is byte-identical to its source;
+   - each passes the SVG active-content scan.
+3. **Stored as `icon_key`.** The allowed set is the 71 picker icons plus the 12 artworks: 83 ids, enforced in `server/rewardIcons.js` and by migration 015's CHECK. 015 is unshipped (draft PR #59), so it is amended in place; it already replaces its constraint safely. Existing rows are untouched: nothing is assigned automatically.
+4. **Drawn everywhere a reward is drawn.** `RewardIcon` is the one renderer, used by:
+   - the Rewards catalogue;
+   - the reward form;
+   - Home's requests and "What you're working towards";
+   - the Children treats;
+   - Child View.
+
+   A Streamline artwork is an `<img alt="">` inside the same tile (decorative; the title sits beside it). Precedence is unchanged: `icon_key`, then image, then emoji, then gift.
+5. **Selectable in the picker.** The 12 artworks come first, as their own group above the 12 Phosphor categories. Each tile is named by its approved reward name ("Gaming time"). The group's chip label is provisional, "Reward artwork" (owner wording item A-1). Search finds them by name. The count line counts the group like any category.
+6. **Suggested rewards.** Starter templates whose meaning matches an approved artwork carry it, so a reward created from a template gets that art:
+   - Movie Night Pick: film-slate;
+   - Bike Ride Adventure: bicycle-bike;
+   - Ice Cream Outing: ice-cream-2;
+   - Day Out: ticket-1;
+   - Book of Choice: book-bookmark;
+   - New Game: controller-1;
+   - Baking Together: cake-slice;
+   - Craft Supplies: paintbrush-2;
+   - Pick the Music: music-note-2.
+
+   Templates only shape new rewards.
+7. **Records.** `asset-registry.json` and the register's superseded "Phosphor-only picker" proposal are updated to say the owner approved these artworks on 2026-11-20. The review pack drops the licensing question.
+
+**Edge cases.**
+| # | Input | Expected |
+| --- | --- | --- |
+| A1 | An existing reward with an emoji or image | Unchanged; shows as before |
+| A2 | A reward set to an artwork, then cleared | Falls back to its image or emoji (no data lost) |
+| A3 | An unknown `streamline:` id posted | 422 "Choose one of the icons shown."; the database refuses it too |
+| A4 | Search "bike" | Finds the Bike ride artwork and the Phosphor bicycle |
+| A5 | "Current icon" label (C3) | An artwork counts as an icon: "Current icon" |
+| A6 | 320 px picker | The group wraps; no sideways scroll |
+
+**Tests.**
+- Register equality.
+- Byte identity and SVG scan.
+- Server: store and refuse; the CHECK equals the set.
+- Renderer: an artwork draws an image with an empty alt; precedence.
+- Picker: the group is first, tiles are named and searchable.
+- Templates.
+- E2E: choose an artwork, save it, and see it on Rewards and Child View, with axe at 4 sizes.
+- Evidence retaken.
+
+**Not covered:** high-contrast and dark modes (the art keeps its own colours).
 
