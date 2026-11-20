@@ -43,6 +43,7 @@ describe('token check', () => {
     'colour-outside-root.css': /colour value/, 'dark.css': /\.dark rule/,
     'css-font-size.css': /css font-size/, 'css-second-prop.css': /css background: hotpink/, 'css-border.css': /css border/,
     'allow-jsx-text.jsx': /text-2xl is not in the token scale/, 'button-important-height.jsx': /own height/, 'css-named-colour.css': /css color/, 'css-uppercase.css': /css text-transform/,
+    'asset-id-lookalike.jsx': /raw palette|not in the token scale/,
   };
   const bad = fs.readdirSync(FIXTURES).filter((f) => f !== 'clean.jsx');
 

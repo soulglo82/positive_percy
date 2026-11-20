@@ -1,5 +1,8 @@
 # Stage 1 · Parent-created reward image picker
 
+> **Owner decision, 20 November 2026 (supersedes the licensing notes below):** Streamline licensing is settled. The approved Plump Duo reward artwork (`APPROVAL_REGISTER.json` `decisions.rewards`) is used in Positive Percy, including the parent's reward picker, alongside the 71 Phosphor icons. Existing saved rewards are never re-arted automatically. Implementation: `docs/engineering/V1-D-DESIGN.md` §14. This question is closed.
+
+
 > **Proposed library, not selected icons.** This is a broad **MIT-licensed Phosphor Duotone** browse set for parents creating their own rewards. It is safe to implement as a software asset library subject to the MIT notice; Streamline Plump Duo is deliberately **not inside this end-user picker** pending a specific redistribution/licensing decision. [Back to index](START_HERE.md).
 
 ## How the feature would work

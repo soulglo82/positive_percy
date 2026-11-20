@@ -5,6 +5,25 @@
 // pickerLabel). src/test/rewardPicker.test.js keeps this equal to the
 // register, server/rewardIcons.js and migration 015.
 
+import { REWARD_ARTWORK, REWARD_ARTWORK_IDS, REWARD_ART_GROUP, artworkOf } from './rewardArtwork';
+
+// Everyday words that also find an approved artwork (the same words the
+// approved aliases give its Phosphor counterpart).
+export const ARTWORK_ALIASES = {
+  'streamline:plump:duo:computer-devices:controller-1': 'game gaming controller',
+  'streamline:plump:duo:interface-essential:give-gift': 'gift present',
+  'streamline:plump:duo:images-photography:camera-1': 'camera photo',
+  'streamline:plump:duo:entertainment:music-note-2': 'music song',
+  'streamline:plump:duo:map-travel:beach': 'beach seaside outing',
+  'streamline:plump:duo:images-photography:film-slate': 'movie cinema film night',
+  'streamline:plump:duo:food-drink:ice-cream-2': 'ice cream dessert treat',
+  'phosphor:book-bookmark:duotone': 'book reading story',
+  'streamline:plump:duo:map-travel:bicycle-bike': 'bicycle bike cycling ride',
+  'streamline:plump:duo:culture:ticket-1': 'ticket outing show cinema day out',
+  'streamline:plump:duo:food-drink:cake-slice': 'birthday celebration treat',
+  'streamline:plump:duo:interface-essential:paintbrush-2': 'drawing painting creativity art',
+};
+
 export const PICKER_CATEGORIES = [
   { name: "Fun & games", accent: "orange", icons: ['phosphor:game-controller:duotone', 'phosphor:dice-five:duotone', 'phosphor:balloon:duotone', 'phosphor:basketball:duotone', 'phosphor:football:duotone', 'phosphor:bowling-ball:duotone', 'phosphor:puzzle-piece:duotone'] },
   { name: "Treats & food", accent: "orange", icons: ['phosphor:ice-cream:duotone', 'phosphor:cake:duotone', 'phosphor:cookie:duotone', 'phosphor:popcorn:duotone', 'phosphor:pizza:duotone', 'phosphor:hamburger:duotone'] },
@@ -40,7 +59,10 @@ export const PICKER_ALIASES = {
 const shortId = (assetId) => assetId.split(':')[1];
 
 // "phosphor:game-controller:duotone" -> "Game Controller" (approved pickerLabel).
+// Approved reward artwork is named by its approved reward name ("Gaming time").
 export function pickerLabel(assetId) {
+  const art = artworkOf(assetId);
+  if (art) return art.name;
   return shortId(assetId).split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
@@ -49,19 +71,22 @@ export const PICKER_ICONS = [...new Set(PICKER_CATEGORIES.flatMap((c) => c.icons
 
 // Approved pickerItems: an empty term shows the category; a term searches
 // every category in order, each icon once, by its name and its aliases.
+// The approved reward artwork comes first, as its own group (V1-D §14).
 export function pickerItems(category, term) {
   const t = String(term || '').trim().toLowerCase();
-  if (!t) return PICKER_CATEGORIES.find((c) => c.name === category)?.icons || [];
+  if (!t) return category === REWARD_ART_GROUP ? REWARD_ARTWORK_IDS : (PICKER_CATEGORIES.find((c) => c.name === category)?.icons || []);
+  const art = REWARD_ARTWORK.filter((a) => (a.name.toLowerCase() + ' ' + (ARTWORK_ALIASES[a.id] || '')).includes(t)).map((a) => a.id);
   const seen = new Set();
-  return PICKER_CATEGORIES.flatMap((c) => c.icons).filter((id) => {
+  return art.concat(PICKER_CATEGORIES.flatMap((c) => c.icons).filter((id) => {
     if (seen.has(id)) return false;
     seen.add(id);
     const s = shortId(id);
     return (s.replace(/-/g, ' ') + ' ' + (PICKER_ALIASES[s] || '')).includes(t);
-  });
+  }));
 }
 
 // Grid columns follow the owner-approved container breakpoints in
 // src/index.css (.picker-container / .picker-grid), checked in the browser tests.
 
-export const accentOf = (assetId) => PICKER_CATEGORIES.find((c) => c.icons.includes(assetId))?.accent || 'purple';
+// Approved artwork has no category accent (null: no bar).
+export const accentOf = (assetId) => (artworkOf(assetId) ? null : PICKER_CATEGORIES.find((c) => c.icons.includes(assetId))?.accent || 'purple');
