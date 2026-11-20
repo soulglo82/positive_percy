@@ -1341,7 +1341,7 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
   try {
     const familyCode = req.familyCode;
     const tz = `COALESCE((SELECT timezone FROM families WHERE family_code = $1), 'UTC')`;
-    const { rows: [{ week_start: weekStart }] } = await pool.query(`SELECT ${weekStartSql(tz)} AS week_start`, [familyCode]);
+    const { rows: [{ week_start: weekStart, timezone }] } = await pool.query(`SELECT ${weekStartSql(tz)} AS week_start, ${tz} AS timezone`, [familyCode]);
 
     const { rows: childStats } = await pool.query(`
       SELECT
@@ -1389,7 +1389,15 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
       WHERE family_code = $1 AND created_date >= $2 AND points > 0
     `, [familyCode, weekStart]);
 
-    res.json({ weekStart, childStats, topCategories, categoryBreakdowns, weekEvents, activeDays });
+    // V1-C: today's-goal completions this week that were not undone (Undo
+    // and Correct both set undone_at).
+    const { rows: [{ goals_completed: goalsCompleted }] } = await pool.query(`
+      SELECT COUNT(*)::int AS goals_completed
+      FROM today_goal_completions
+      WHERE family_code = $1 AND created_at >= $2 AND undone_at IS NULL
+    `, [familyCode, weekStart]);
+
+    res.json({ weekStart, timezone, childStats, topCategories, categoryBreakdowns, weekEvents, activeDays, goalsCompleted });
   } catch (err) {
     return serverError(res, 'Summary error:', err);
   }
@@ -1853,63 +1861,60 @@ router.delete('/api/quick-actions/:id', authMiddleware, async (req, res) => {
 // ─── Unified Activity Feed ──────────────────────────────────────────────────
 
 // Merges point_events and redemptions into a single feed
+// V1-C (docs/engineering/V1-C-DESIGN.md §3.1). One row set ("All"); each
+// filter is a projection of it, so a filter can never disagree with All.
+// Goal rows are tagged by the completion join, never by the note. C7: an
+// undone award is never listed as earned (nor as a goal); All keeps every
+// row, undone ones marked. Order and paging apply after the filter.
+const FEED_FILTERS = {
+  all: 'TRUE',
+  earned: "f.type = 'earn' AND NOT f.undone AND f.goal_completion_id IS NULL",
+  goals: "f.type = 'earn' AND NOT f.undone AND f.goal_completion_id IS NOT NULL",
+  spent: "f.type = 'spend' AND NOT f.undone",
+};
 router.get('/api/activity-feed', authMiddleware, async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 50;
-    const offset = parseInt(req.query.offset) || 0;
-    const filter = req.query.filter || 'all'; // all, earned, spent
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 200);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    // Own keys only: '?filter=constructor' must not reach the SQL (code review of #62).
+    const where = Object.hasOwn(FEED_FILTERS, req.query.filter) ? FEED_FILTERS[req.query.filter] : FEED_FILTERS.all;
+    const childId = req.query.child_id;
+    if (childId !== undefined && !isUuid(childId)) return res.status(400).json({ error: 'Invalid child.' });
 
-    let query;
-    if (filter === 'earned') {
-      query = `
-        SELECT id, child_id, child_name, points, category as label, note, 'earn' as type, created_date
-        FROM effective_point_events
-        WHERE family_code = $1 AND points > 0
-        ORDER BY created_date DESC
-        LIMIT $2 OFFSET $3
-      `;
-    } else if (filter === 'spent') {
-      query = `
-        (SELECT id, child_id, child_name, -reward_cost as points, reward_title as label, NULL as note, 'spend' as type, created_date
-         FROM redemptions
-         WHERE family_code = $1 AND status = 'Completed')
-        UNION ALL
-        (SELECT id, child_id, child_name, points, category as label, note, 'adjust' as type, created_date
-         FROM effective_point_events
-         WHERE family_code = $1 AND points < 0)
-        ORDER BY created_date DESC
-        LIMIT $2 OFFSET $3
-      `;
-    } else {
-      query = `
+    const query = `
+      SELECT f.* FROM (
         -- Every history row, so the feed adds up to the balance. Starting
-        -- points and one-off corrections are labelled as what they are.
+        -- points and one-off corrections are labelled as what they are
+        -- (including legacy 'award' rows with those categories, migration 009).
         -- An undone award and its undo row are both shown, marked undone;
         -- an undone spend shows as the spend and its refund, both marked.
         (SELECT p.id, p.child_id, p.child_name, p.points, p.category as label, p.note,
-          CASE WHEN p.kind = 'starting' THEN 'starting'
-               WHEN p.kind = 'correction' THEN 'correction'
-               WHEN p.kind = 'undo' THEN 'undo'
+          CASE WHEN p.kind = 'starting' OR lower(trim(p.category)) = 'starting points' THEN 'starting'
+               WHEN p.kind = 'correction' OR lower(trim(p.category)) = 'balance correction' THEN 'correction'
+               WHEN p.kind = 'undo' OR lower(trim(p.category)) = 'undo' THEN 'undo'
                WHEN p.points > 0 THEN 'earn' ELSE 'adjust' END as type, p.created_date,
-          (p.kind = 'undo' OR EXISTS (SELECT 1 FROM point_events u WHERE u.reverses_id = p.id)) as undone
+          (p.kind = 'undo' OR EXISTS (SELECT 1 FROM point_events u WHERE u.reverses_id = p.id)) as undone,
+          x.id as goal_completion_id
          FROM point_events p
+         LEFT JOIN today_goal_completions x ON x.point_event_id = p.id
          WHERE p.family_code = $1)
         UNION ALL
-        (SELECT id, child_id, child_name, -reward_cost as points, reward_title as label, NULL as note, 'spend' as type, created_date,
-          (status = 'Reversed') as undone
+        (SELECT id, child_id, child_name, -reward_cost as points, reward_title as label, NULL::text as note, 'spend' as type, created_date,
+          (status = 'Reversed') as undone, NULL::uuid as goal_completion_id
          FROM redemptions
          WHERE family_code = $1 AND status IN ('Completed', 'Reversed'))
         UNION ALL
-        (SELECT id, child_id, child_name, reward_cost as points, reward_title as label, NULL as note, 'undo' as type,
-          COALESCE(reversed_at, created_date) as created_date, true as undone
+        (SELECT id, child_id, child_name, reward_cost as points, reward_title as label, NULL::text as note, 'undo' as type,
+          COALESCE(reversed_at, created_date) as created_date, true as undone, NULL::uuid as goal_completion_id
          FROM redemptions
          WHERE family_code = $1 AND status = 'Reversed')
-        ORDER BY created_date DESC
-        LIMIT $2 OFFSET $3
-      `;
-    }
+      ) f
+      WHERE ${where} AND ($4::uuid IS NULL OR f.child_id = $4::uuid)
+      ORDER BY f.created_date DESC, f.type, f.id
+      LIMIT $2 OFFSET $3
+    `;
 
-    const { rows } = await pool.query(query, [req.familyCode, limit, offset]);
+    const { rows } = await pool.query(query, [req.familyCode, limit, offset, childId ?? null]);
     res.json(rows);
   } catch (err) {
     return serverError(res, 'Activity feed error:', err);
