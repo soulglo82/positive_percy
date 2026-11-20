@@ -12,10 +12,13 @@
 //   INSERT INTO percy_restore_marker (token, restored_from) VALUES ('<token>', '<backup id>');
 // and passes the same token here. No marker, or a different token: refused.
 //
-// Steps: fingerprint -> apply pending migrations (016) -> compare -> roll
-// 016 back -> compare -> apply 016 again -> compare. Prints a report and
-// exits 1 if anything families had changed at any step.
+// Steps: fingerprint -> apply the V1 prerequisites still pending (014
+// Today's Goals, 015 reward icons; production is at 012) -> compare ->
+// fingerprint -> apply 016 -> compare -> roll 016 back -> compare -> apply
+// 016 again -> compare. Prints a report and exits 1 if anything families had
+// changed at any step.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
@@ -36,6 +39,12 @@ if (/railway|rlwy/i.test(url)) { console.error('Refusing a Railway URL: run this
 if (process.env.DATABASE_URL && process.env.DATABASE_URL === url) { console.error('Refusing the app\'s own DATABASE_URL: run this on a restored copy only.'); process.exit(2); }
 
 const pool = new pg.Pool({ connectionString: url });
+// The V1 release's migrations, in order. 014 and 015 are prerequisites of
+// 016 (production is at 012); each is additive.
+const V1_MIGRATIONS = ['014_todays_goals.sql', '015_reward_icon_key.sql', '016_savings_ledger.sql'];
+// What 014 and 015 add: the Today's Goals tables, their indexes and checks,
+// and the nullable rewards.icon_key with its approved-set CHECK.
+const PREREQ_SCHEMA = /today_goal|public\.rewards\.icon_key|rewards_icon_key_approved/;
 const DOWN = fs.readFileSync(path.join(ROOT, 'server/rollbacks/016_savings_ledger_down.sql'), 'utf8');
 const report = { steps: [] };
 const step = (name, diffs, extra = {}) => { report.steps.push({ name, changed: diffs, ...extra }); console.log(`${diffs.length ? 'FAIL' : 'ok  '} ${name}${diffs.length ? '\n  ' + diffs.join('\n  ') : ''}`); };
@@ -46,16 +55,39 @@ try {
   report.restored_from = marker.rows.find((r) => r.token === token).restored_from;
   const applied = (await pool.query("SELECT name FROM schema_migrations WHERE name = '016_savings_ledger.sql'").catch(() => ({ rows: [] }))).rows.length > 0;
   if (applied) throw new Error('This copy already has migration 016. Restore a copy taken before 016.');
-  // Only 016 may be pending, so the run proves 016 and nothing else.
-  const files = fs.readdirSync(path.join(ROOT, 'server/migrations')).filter((f) => /^\d{3}_.+\.(sql|js)$/.test(f));
+  // Only the V1 migrations may be pending: 014 and 015 (each optional, in
+  // order) and 016, last. Anything else pending is refused, so the run
+  // proves exactly these and nothing else.
+  const files = fs.readdirSync(path.join(ROOT, 'server/migrations')).filter((f) => /^\d{3}_.+\.(sql|js)$/.test(f)).sort();
   const done = new Set((await pool.query('SELECT name FROM schema_migrations')).rows.map((r) => r.name));
   const pending = files.filter((f) => !done.has(f));
-  if (pending.join() !== '016_savings_ledger.sql') throw new Error(`Expected only 016 pending, found: ${pending.join(', ') || 'none'}`);
-  const before = await fingerprint(pool);
+  const unexpected = pending.filter((f) => !V1_MIGRATIONS.includes(f));
+  if (unexpected.length || pending[pending.length - 1] !== '016_savings_ledger.sql') {
+    throw new Error(`Expected only the V1 migrations (${V1_MIGRATIONS.join(', ')}) pending, ending with 016; found: ${pending.join(', ') || 'none'}`);
+  }
+  report.pending = pending;
+  const original = await fingerprint(pool);
   report.families = (await pool.query('SELECT count(*)::int n FROM families')).rows[0].n;
-  report.children = Object.keys(before.children).length;
+  report.children = Object.keys(original.children).length;
+  report.history_drift_before = Object.values(original.children).filter((c) => c.history !== c.total_points).length;
+
+  // The V1 prerequisites first (each in its own transaction, recorded),
+  // proved to change nothing families have.
+  const prereq = pending.filter((f) => f !== '016_savings_ledger.sql');
+  if (prereq.length) {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'percy-v1-prereq-'));
+    for (const f of prereq) fs.copyFileSync(path.join(ROOT, 'server/migrations', f), path.join(tmp, f));
+    await runMigrations(pool, { dir: tmp, log: () => {} });
+    fs.rmSync(tmp, { recursive: true, force: true });
+    const afterPrereq = await fingerprint(pool, original);
+    const stray = addedSchema(original, afterPrereq).filter((o) => !PREREQ_SCHEMA.test(o));
+    step(`apply ${prereq.map((f) => f.slice(0, 3)).join(' and ')} (V1 prerequisites)`,
+      [...differences(original, afterPrereq, { allowMigrations: prereq }), ...stray.map((o) => `unexpected new schema object: ${o}`)],
+      { added: afterPrereq.added });
+  }
+
+  const before = await fingerprint(pool);
   report.legacy_family_goals = await legacyFamilyGoals(pool);
-  report.history_drift_before = Object.values(before.children).filter((c) => c.history !== c.total_points).length;
   // Pre-flight (code review of 3722728): assignments stored with capitals
   // before the app lower-cased them. Compared case-insensitively everywhere;
   // counted so the owner sees how many exist.

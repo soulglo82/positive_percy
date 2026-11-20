@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.6 |
+| Version | 1.7 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.7 | 2026-11-20 | §16: production is at migration 012, so the restored-backup run applies the V1 prerequisites 014 and 015 first; the CLI and its test cover a copy at 012 |
 | 1.0 | 2026-11-19 | First draft |
 | 1.1 | 2026-11-19 | Peer review: 5 blocking and 7 non-blocking findings, all adopted (§10) |
 | 1.6 | 2026-11-19 | Post-build code review of `3722728` (§15): legacy capital assignments compared case-insensitively in the trigger and the reconciliation (Major: savings could revive); Today's Goals sub-router lower-cases ids; reward ids lower-cased; restore flag for the insert trigger; reconciliation pre-flight count |
@@ -341,4 +342,34 @@ A fresh-context reviewer attacked the generation design on a throwaway database.
 | C4 | A data-only restore (COPY) fires the insert trigger and would reset every generation, dropping all current savings | Minor | The trigger keeps restored values when the session sets `percy.restoring = 'on'` (the app never does). **Restore runbook:** a data-only restore of `rewards` sets that flag or uses `--disable-triggers`; a full `pg_dump`/`pg_restore` is unaffected. Test. Mutation fails it |
 | C5 | The over-commit line adds a label, not a new detection; children that only appear were skipped | Nit | Comment corrected; appearing children are checked too |
 | C6 | Each half of the `:id` fix alone passes the capitals test | Nit | Recorded: two layers on purpose (route and rule); the test fails only when both go |
+
+## 16. The restored-backup run on a copy at migration 012 (v1.7)
+
+**Finding (release preparation, 2026-11-20).** Railway's production app service has only ever deployed the default branch. Its live commit, `498e798`, ends at migration 012 (checked through the Railway deployment list and `git ls-tree`). A restored copy of production therefore has 014 (Today's Goals) and 015 (reward icons) pending as well as 016. The CLI refused that case: it required 016 to be the only pending migration. The owner's run would have stopped before proving anything.
+
+**Fix.**
+- `scripts/d1-reconcile.mjs` accepts exactly the V1 migrations pending: 014 and 015, each optional and in order, then 016 last. Anything else pending is refused.
+- **First step:** the CLI applies the pending prerequisites. It checks that nothing families have changed, and that the only new schema is Today's Goals' tables and indexes plus `rewards.icon_key` with its CHECK.
+- **Then:** it runs the existing 016 cycle from that point (apply, roll back, re-apply).
+- **Report:** lists `pending` and each step.
+
+**Test.** `server/test/d1-reconcile-cli.test.js` builds a database exactly at 012 (base schema plus 001–012), adds family data including a legacy capital-letter assignment, and marks it as a copy. Then it runs the CLI:
+- the steps are `apply 014 and 015 (V1 prerequisites)`, `apply 016`, `roll 016 back` and `apply 016 again`, each with no changes;
+- a second run is refused (016 already present).
+
+Both tests fail on the previous script.
+
+**Migration 015 compatibility (owner's precaution, 2026-11-20).** No persistent database has run the earlier 71-id draft of 015:
+- production's app deploys only the default branch, which has no 015;
+- the Railway design-selector service serves static files and connects to no database;
+- there is one environment;
+- CI and the test databases are rebuilt on every run.
+
+**Runbook for the owner's run (unchanged otherwise):**
+1. Restore the backup to an isolated database.
+2. Write the marker token into the copy.
+3. Run `node scripts/d1-reconcile.mjs --database-url <copy> --i-confirm-this-is-a-copy --copy-token <token>`.
+4. Keep `d1-reconcile-report.json`.
+
+The run passes only if it exits 0 with every step unchanged.
 
