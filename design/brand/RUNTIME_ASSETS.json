@@ -1,6 +1,6 @@
 {
-  "version": "1.2",
-  "issued": "2026-11-15",
+  "version": "1.3",
+  "issued": "2026-11-20",
   "owner": "Percy v2 engineering",
   "status": "E01 provenance for runtime brand files; not deployed",
   "chain": "Logo/icon sources are members of the pinned archive design/brand/archives (sha256 e7e93dde728048cb03ba78a1f761cc221af184bfda3bdd4234f7fd3df61f3638), checked in src/test/brandAssets.test.js. Font sources are vendored from the npm tarballs whose sha512 integrity is recorded per entry; the tarball check was done at import (2026-11-15) and is not re-run in CI.",
@@ -233,9 +233,80 @@
       "source": "design/brand/licenses/CREDITS.txt",
       "licence": "Credits notice, DRAFT pending owner approval of wording",
       "sha256": "621e1ea19c3c604ce8eb99c33b5c03bde78c9a1c4c86074f9ee6a9510eb72e69"
+    },
+    {
+      "runtime": "public/reward-art/controller-1.svg",
+      "source": "design/assets/streamline/plump/duo/computer-devices/controller-1.svg",
+      "licence": "Streamline Plump Duo, CC BY 4.0; owner-approved reward artwork 'Gaming time' (APPROVAL_REGISTER decisions.rewards; owner decision 2026-11-20)",
+      "sha256": "2e641297af07c3eac439b16a481e45ee7ae9e8d02748e0ecd6b8c96dfed22580"
+    },
+    {
+      "runtime": "public/reward-art/film-slate.svg",
+      "source": "design/assets/streamline/plump/duo/images-photography/film-slate.svg",
+      "licence": "Streamline Plump Duo, CC BY 4.0; owner-approved reward artwork 'Movie night' (APPROVAL_REGISTER decisions.rewards; owner decision 2026-11-20)",
+      "sha256": "23c443d729f20977d9fb0d15209c667c91c9f3b4ce9e121f02050da4d1376a99"
+    },
+    {
+      "runtime": "public/reward-art/ice-cream-2.svg",
+      "source": "design/assets/streamline/plump/duo/food-drink/ice-cream-2.svg",
+      "licence": "Streamline Plump Duo, CC BY 4.0; owner-approved reward artwork 'Ice cream treat' (APPROVAL_REGISTER decisions.rewards; owner decision 2026-11-20)",
+      "sha256": "73a528c553231e198cd225f6c4a94142a89fb6e86035ba1cd8d4c1c36c6a28c8"
+    },
+    {
+      "runtime": "public/reward-art/bicycle-bike.svg",
+      "source": "design/assets/streamline/plump/duo/map-travel/bicycle-bike.svg",
+      "licence": "Streamline Plump Duo, CC BY 4.0; owner-approved reward artwork 'Bike ride' (APPROVAL_REGISTER decisions.rewards; owner decision 2026-11-20)",
+      "sha256": "23c61397780d68ad0d49146f163b5f56933ebb39dd863fb23011c3b63fba8025"
+    },
+    {
+      "runtime": "public/reward-art/give-gift.svg",
+      "source": "design/assets/streamline/plump/duo/interface-essential/give-gift.svg",
+      "licence": "Streamline Plump Duo, CC BY 4.0; owner-approved reward artwork 'Gift' (APPROVAL_REGISTER decisions.rewards; owner decision 2026-11-20)",
+      "sha256": "87343e737d23cc99a786ba61654e93b3382f5e18b7456e2285ffce840cb38be1"
+    },
+    {
+      "runtime": "public/reward-art/ticket-1.svg",
+      "source": "design/assets/streamline/plump/duo/culture/ticket-1.svg",
+      "licence": "Streamline Plump Duo, CC BY 4.0; owner-approved reward artwork 'Day out' (APPROVAL_REGISTER decisions.rewards; owner decision 2026-11-20)",
+      "sha256": "4461364498a09477d68f98d822ef8b901bb20c7d8432cf26b06766bae5950f38"
+    },
+    {
+      "runtime": "public/reward-art/cake-slice.svg",
+      "source": "design/assets/streamline/plump/duo/food-drink/cake-slice.svg",
+      "licence": "Streamline Plump Duo, CC BY 4.0; owner-approved reward artwork 'Cake treat' (APPROVAL_REGISTER decisions.rewards; owner decision 2026-11-20)",
+      "sha256": "33e30ec103debd47161e46098ee3f86d2240d2ab6e270a6c5138d5e04de72183"
+    },
+    {
+      "runtime": "public/reward-art/paintbrush-2.svg",
+      "source": "design/assets/streamline/plump/duo/interface-essential/paintbrush-2.svg",
+      "licence": "Streamline Plump Duo, CC BY 4.0; owner-approved reward artwork 'Art activity' (APPROVAL_REGISTER decisions.rewards; owner decision 2026-11-20)",
+      "sha256": "25ef73363ca98563c86a0ef3ad8eda0b0ded6a4d51a41003c0845f2616bde5a4"
+    },
+    {
+      "runtime": "public/reward-art/camera-1.svg",
+      "source": "design/assets/streamline/plump/duo/images-photography/camera-1.svg",
+      "licence": "Streamline Plump Duo, CC BY 4.0; owner-approved reward artwork 'Photo adventure' (APPROVAL_REGISTER decisions.rewards; owner decision 2026-11-20)",
+      "sha256": "5eb86af881b33b0e21927d8435e40580fb25ba8b265a67329f07d614e12b996c"
+    },
+    {
+      "runtime": "public/reward-art/music-note-2.svg",
+      "source": "design/assets/streamline/plump/duo/entertainment/music-note-2.svg",
+      "licence": "Streamline Plump Duo, CC BY 4.0; owner-approved reward artwork 'Music time' (APPROVAL_REGISTER decisions.rewards; owner decision 2026-11-20)",
+      "sha256": "a2e0b13e1f221121c4856050bcad39a1f8d3f8476e316dce4b8a1cb2b5492b3b"
+    },
+    {
+      "runtime": "public/reward-art/beach.svg",
+      "source": "design/assets/streamline/plump/duo/map-travel/beach.svg",
+      "licence": "Streamline Plump Duo, CC BY 4.0; owner-approved reward artwork 'Family outing' (APPROVAL_REGISTER decisions.rewards; owner decision 2026-11-20)",
+      "sha256": "81c7b4c9e992d49e7bd1b6e68e1d147c485d108f31201869ad0f8e1dba148106"
     }
   ],
   "change_log": [
+    {
+      "version": "1.3",
+      "date": "2026-11-20",
+      "change": "Added the 11 owner-approved Streamline Plump Duo reward artworks (public/reward-art), unchanged from their recorded sources (V1-D §14)"
+    },
     {
       "version": "1.0",
       "date": "2026-11-15",

@@ -7,7 +7,11 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PICKER_CATEGORIES, pickerItems, pickerLabel, accentOf } from '@/lib/rewardPicker';
-import { PICKER_ICON_COMPONENTS } from './RewardIcon';
+import { REWARD_ART_GROUP, artworkOf } from '@/lib/rewardArtwork';
+import { rewardArt, RewardArt } from './RewardIcon';
+
+// The approved artwork group first, then the 12 owner-selected categories.
+const GROUPS = [{ name: REWARD_ART_GROUP, accent: null }, ...PICKER_CATEGORIES];
 
 const ACCENT_BAR = { purple: 'bg-primary', orange: 'bg-sunrise', sunshine: 'bg-star' };
 
@@ -19,13 +23,15 @@ export function countLine(n, category, searching) {
 }
 
 export default function RewardPicker({ value, onChange, id }) {
-  // Opens on the chosen icon's category, so its pressed tile is in view.
-  const [category, setCategory] = useState(() => (PICKER_CATEGORIES.find((c) => c.icons.includes(value)) || PICKER_CATEGORIES[0]).name);
+  // Opens on the chosen icon's group, so its pressed tile is in view; a new
+  // reward opens on the approved artwork (V1-D §14.1 N4).
+  const [category, setCategory] = useState(() => (!value || artworkOf(value)
+    ? REWARD_ART_GROUP : (PICKER_CATEGORIES.find((c) => c.icons.includes(value)) || PICKER_CATEGORIES[0]).name));
   const [term, setTerm] = useState('');
   const searchId = useId();
   const searching = term.trim().length > 0;
   const ids = pickerItems(category, term);
-  const accentFor = (id) => (searching ? accentOf(id) : PICKER_CATEGORIES.find((c) => c.name === category).accent);
+  const accentFor = (id) => (searching ? accentOf(id) : GROUPS.find((c) => c.name === category).accent);
 
   return (
     <div id={id} className="picker-container space-y-3">
@@ -36,7 +42,7 @@ export default function RewardPicker({ value, onChange, id }) {
       </div>
       {/* Wraps instead of the approved sideways scroll: the app keeps no horizontal scrolling (WCAG 1.4.10 reflow). */}
       <div className="flex flex-wrap gap-2" role="group" aria-label="Icon categories">
-        {PICKER_CATEGORIES.map((c) => (
+        {GROUPS.map((c) => (
           <button key={c.name} type="button" aria-pressed={!searching && category === c.name}
             onClick={() => { setCategory(c.name); setTerm(''); }}
             className={cn('min-h-11 rounded-full px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
@@ -51,14 +57,15 @@ export default function RewardPicker({ value, onChange, id }) {
       ) : (
         <div className="picker-grid" role="group" aria-label="Reward icons">
           {ids.map((id) => {
-            const Icon = PICKER_ICON_COMPONENTS[id];
+            const art = rewardArt(id);
             const on = value === id;
+            const accent = accentFor(id);
             return (
               <button key={id} type="button" aria-pressed={on} onClick={() => onChange(id)} data-icon-tile={id}
                 className={cn('relative flex min-h-11 min-w-0 flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg px-1 pb-2 pt-3 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                   on ? 'border-2 border-selected-border bg-muted' : 'border border-border bg-card hover:bg-accent')}>
-                <span aria-hidden="true" className={cn('absolute inset-x-0 top-0 h-1', ACCENT_BAR[accentFor(id)])} />
-                <Icon className="h-7 w-7" />
+                {accent && <span aria-hidden="true" className={cn('absolute inset-x-0 top-0 h-1', ACCENT_BAR[accent])} />}
+                <RewardArt art={art} className={art.kind === 'image' ? 'h-9 w-9' : 'h-7 w-7'} />
                 <span className="max-w-full break-words text-center text-xs font-semibold text-muted-foreground">{pickerLabel(id)}</span>
               </button>
             );
