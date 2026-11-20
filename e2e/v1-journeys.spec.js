@@ -33,7 +33,7 @@ test('child asks, parent approves, history and settings follow', async ({ page }
   let familyName;
   try {
     await api('POST', `/api/children/${kid.id}/award`, { points: 30, category: 'Kindness', request_id: crypto.randomUUID() });
-    reward = await api('POST', '/api/rewards', { title: `${name} treat`, cost_points: 10, visible_to_child: true, assigned_child_ids: [kid.id] });
+    reward = await api('POST', '/api/rewards', { title: `${name} treat`, cost_points: 10, visible_to_child: true, assigned_child_ids: [kid.id], icon_key: 'streamline:plump:duo:images-photography:film-slate' });
     const cats = await api('GET', '/api/behavior-categories');
     const today = (await api('GET', '/api/todays-goals')).date;
     await api('POST', '/api/todays-goals', { title: `${name} tidies up`, child_id: kid.id, category_id: cats[0].id, schedule_kind: 'one_off', scheduled_date: today });
@@ -41,6 +41,8 @@ test('child asks, parent approves, history and settings follow', async ({ page }
     // Child: ask a parent. Nothing is spent; available points drop by the cost.
     await page.goto(`/childview?child=${kid.id}`);
     await expect(page.getByRole('heading', { name: `You're doing great, ${name}!` })).toBeVisible();
+    // The approved reward artwork shows in Child View (V1-D §14).
+    await expect(page.locator('li').filter({ hasText: reward.title }).locator('img[src="/reward-art/film-slate.svg"]')).toBeVisible();
     await page.getByRole('button', { name: `Ask a parent for ${reward.title}` }).click();
     await expect(page.getByText('10 points · Ready when a parent agrees')).toBeVisible();
     let me = (await api('GET', '/api/children')).find((c) => c.id === kid.id);
