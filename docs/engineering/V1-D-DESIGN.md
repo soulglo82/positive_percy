@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.4 |
+| Version | 1.5 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-d-rewards`, stacked on V1-F `claude/percy-v1-f-forms`) |
 | Status | Reviewed (fresh-context peer review adopted, v1.1; §10 supersedes earlier sections where they conflict) |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.5 | 2026-11-20 | Owner decision O-I1 (§13): a requested reward is not directly spendable, on screen and on the server |
 | 1.4 | 2026-11-20 | Owner approved the success and removal messages; applied (§12) |
 | 1.3 | 2026-11-19 | Owner approved the wording C1–C6 (recorded on PR #59); applied and tested (§12) |
 | 1.0 | 2026-11-19 | First draft |
@@ -259,4 +260,24 @@ Post-build code review of the wording commit: C4's full stop added; the total is
 | C5 removal (2026-11-20) | "Removed {reward} from {Name}'s requests." after "Not this time" | `REQUEST_COPY.removed` |
 
 The total is the sum of the same priced items the confirmation sends (`expected` with each reward's id, position and cost). A change in price or requests gets a 409 and the parent sees them again; nothing is charged at a different amount (test C6, unchanged since PR #59's review).
+
+## 13. O-I1: a requested reward is only approved or declined (owner, 2026-11-20)
+
+**Contract.** While a reward is in a child's requests, it cannot be spent directly for that child. The only routes are "Approve" (spends it, once) or "Not this time" (removes the request; spends nothing). Once the request is gone, the reward can be spent directly again.
+
+**Code paths.**
+- **Screen:** the parent's Rewards dialog (`SpendRewardsModal`) leaves requested rewards out of its direct list. They stay in "{Name} asked for".
+- **Server:** `POST /api/children/:id/redeem` refuses (409) a reward that is in the child's priced stack. The check runs under the child row lock, together with the balance check. The message is the approved stale-view wording "The requests changed. Check them again." The redemption is not recorded in the replay store, so a retry after the request is resolved is a new request.
+- **Not affected:** `stack/confirm` (Approve), `stack/remove` (Not this time), Undo of a spend, and Child View (requests only).
+
+**Edge cases.**
+| # | Input | Expected |
+| --- | --- | --- |
+| R1 | Requested reward, parent's dialog | Only in "asked for"; not in the direct list |
+| R2 | Another device with a stale list taps Spend on a requested reward | 409 "The requests changed. Check them again."; nothing spent; the list refreshes |
+| R3 | Request removed ("Not this time") | The reward is back in the direct list and can be spent |
+| R4 | The same reward requested by a sibling only | Still directly spendable for this child (requests are per child) |
+| R5 | A reward requested twice | Hidden while any request remains |
+
+**Tests.** Server: R2, R3 and R4, each against the database. Screen: R1 and R3. Mutation: removing the server check fails R2.
 

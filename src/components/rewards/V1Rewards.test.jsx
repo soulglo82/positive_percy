@@ -6,8 +6,8 @@ import { render, screen, within, fireEvent, waitFor } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const { toastSuccess } = vi.hoisted(() => ({ toastSuccess: vi.fn() }));
-vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: vi.fn(), info: vi.fn(), warning: vi.fn() } }));
+const { toastSuccess, toastInfo } = vi.hoisted(() => ({ toastSuccess: vi.fn(), toastInfo: vi.fn() }));
+vi.mock('sonner', () => ({ toast: { success: toastSuccess, error: vi.fn(), info: toastInfo, warning: vi.fn() } }));
 
 import RewardIcon from './RewardIcon';
 import RewardPicker, { countLine } from './RewardPicker';
@@ -247,6 +247,24 @@ describe('Parent confirmation of requests (D5, R4)', () => {
   it('affordability uses points available now, not the total', () => {
     const d = open();
     expect(within(d).getByRole('button', { name: 'Need 3 more' })).toBeTruthy(); // 50 - 47
+  });
+  it('O-I1: a requested reward is only in "asked for", not in the direct list (R1); unrequested ones are', () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const list = [{ id: 'b', title: 'Cinema', cost_points: 8, visible_to_child: true }, { id: 'c', title: 'Kite', cost_points: 4, visible_to_child: true }];
+    render(<QueryClientProvider client={client}><MemoryRouter><SpendRewardsModal isOpen onClose={() => {}} child={child} rewards={list} /></MemoryRouter></QueryClientProvider>);
+    const d = screen.getByRole('dialog');
+    expect(within(d).getByRole('button', { name: 'Not this time: Cinema' })).toBeTruthy(); // in "asked for"
+    const direct = within(d).getAllByRole('button', { name: /^(Spend|Need)/ });
+    expect(direct).toHaveLength(1); // Kite only
+    expect(within(d).queryAllByText('Cinema')).toHaveLength(1);
+  });
+  it('O-I1: a direct spend refused because the child asked meanwhile shows the changed message (R2)', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 409, json: async () => ({ error: 'The requests changed. Check them again.' }) });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const list = [{ id: 'c', title: 'Kite', cost_points: 4, visible_to_child: true }];
+    render(<QueryClientProvider client={client}><MemoryRouter><SpendRewardsModal isOpen onClose={() => {}} child={child} rewards={list} /></MemoryRouter></QueryClientProvider>);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Spend/ }));
+    await waitFor(() => expect(toastInfo).toHaveBeenCalledWith('The requests changed. Check them again.'));
   });
   it('no requests: no section', () => {
     const d = open({ ...child, reward_stack_priced: [] });
