@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.15 |
+| Version | 1.16 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.16 | 2026-11-21 | §19.9: post-build code review of the screens; 1 Major and 9 Minor fixed |
 | 1.15 | 2026-11-21 | §19.8: built: endpoints, screens, tests, mutations, code review fixes, e2e finding; provisional wording list |
 | 1.14 | 2026-11-21 | §19.7: design review of §19 adopted (7 should-fix, 3 notes); the N8 reason corrected |
 | 1.13 | 2026-11-21 | §19 (design, before build): the savings feature (endpoints, goal redemption, refunds, screens) on branch `claude/percy-v1-i-savings` |
@@ -762,4 +763,24 @@ The full browser suite gives 46 passed and 14 skipped (the existing skips). Scre
 | Server errors | "More than this goal needs", "Not enough points saved" | Provisional (shown only on a stale screen) |
 | Activity icon | Phosphor `piggy-bank` (approved icon set, new placement) | For review |
 | Owner item (N2) | Un-marking or reassigning returns saved points to available with no Activity row | Owner decision at screen review |
+
+### 19.9 Post-build code review of the screens (v1.16)
+
+A fresh-context reviewer read the screens diff (`9e674c9..f24b981`). It found 1 Major and 9 Minor issues, plus some Nits. All are fixed except where stated.
+
+| # | Finding | Fix | Test (mutation) |
+| --- | --- | --- | --- |
+| Major | The reward form ended a goal's savings with no warning. Un-ticking "Bigger goal", or taking the goal away from a child, ends what was saved (O6) | A warning appears when the change would end savings, and Save asks to confirm: "End this bigger goal's savings?" with "Keep saving" or "Save reward" (provisional wording) | 2 tests (red without the confirm) |
+| 2 | The dialog's limits mixed the rewards query with the server's goal figures | Cost, saved and `to_go` come from `child.goals`. A goal with nothing saved needs its whole cost | Existing limit tests |
+| 3 | The default goal differed from Home's | On each opening, and for another child, the dialog starts on `leadingGoal`, the goal Home leads with | "reopening starts on the goal Home leads with" |
+| 4 | Requested goals were offered, and the server's message was hidden | A goal in the request stack is left out (S1). A 4xx shows the server's message, else the generic one | Red without the filter |
+| 5 | A retry after a lost reply could get a new id if another action ran in between | One id per action for the dialog's life, dropped only on success or refusal | Red when a refusal clears all ids |
+| 6 | Double tap | A synchronous `busyRef` guard. **The mutation survives:** in tests the first click disables the button, so the ref is a backstop for two taps within one frame | "a double tap sends one request" |
+| 7 | Undo had no retry and repeated existing code | Redemption Undo uses `undoAction('spend')`. Savings Undo is `undoSavingsAction`, with a guard and "Try again" reusing the same id | "the savings Undo offers a retry" |
+| 8 | Focus was lost after a redeem | Both dialogs send focus back to the card's Edit button | (manual: keyboard) |
+| 9 | Children listed only goals with savings | Every current goal is listed, at 0 saved when it has none, in Home's order | "Children lists a marked goal with nothing saved" |
+| 10 | The other rewards had no heading beside "Bigger rewards" | "Other rewards" (provisional), shown only beside the Bigger section | "Rewards names the other rewards" |
+| Nit | `pointsWord` was duplicated | Activity imports it from `@/lib/savings` | — |
+| Nit | "0 points to go" when a goal is fully saved | Kept: the approved shape. **Owner item** for screen review | — |
+| Nit | "Undone." differed from other Undo toasts | It now names the child and the available points, from the server | Retry test |
 

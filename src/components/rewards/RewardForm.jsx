@@ -44,6 +44,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   const [pickerOpen, setPickerOpen] = useState(true);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const opened = useRef(false);
 
   // Fresh form on each opening: from the reward, the starter template, or blank.
@@ -72,8 +73,17 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   const choose = (id) => { setIconKey(id); setIconTouched(true); };
   const toggleChild = (id) => setAssigned((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
-  const save = async () => {
+  // O6: un-marking a bigger goal, or taking it away from a child, ends what
+  // was saved towards it for good (the points return to available; marking it
+  // again starts from 0). Say so before saving (code review of the screens).
+  const lower = (ids) => (ids || []).map((x) => String(x).toLowerCase());
+  const hadFor = (id) => { const was = lower(reward?.assigned_child_ids); return was.length === 0 || was.includes(String(id).toLowerCase()); };
+  const hasFor = (id) => { const now = lower(assigned); return now.length === 0 || now.includes(String(id).toLowerCase()); };
+  const endsSavings = !!reward?.is_bigger_goal && (!biggerGoal || children.some((c) => hadFor(c.id) && !hasFor(c.id)));
+
+  const save = async (confirmed = false) => {
     if (!valid || saving) return;
+    if (endsSavings && confirmed !== true) { setConfirmEnd(true); return; }
     setSaving(true);
     try {
       const payload = {
@@ -147,6 +157,11 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
                   <span id="reward-bigger-goal-help" className="block text-xs text-muted-foreground">Save points towards this reward over time</span>
                 </span>
               </label>
+              {endsSavings && (
+                <p role="status" className="rounded-md border border-border bg-warning p-3 text-sm text-foreground">
+                  Points saved towards this goal will go back to the child's available points. Marking it again starts from 0.
+                </p>
+              )}
               {children.length > 0 && (
                 <div>
                   <p className="mb-1 text-sm font-medium text-foreground">Assign to Children</p>
@@ -171,10 +186,25 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={saving}>Cancel</Button>
-            <Button type="button" className="flex-1" onClick={save} disabled={!valid || saving}>Save reward</Button>
+            <Button type="button" className="flex-1" onClick={() => save()} disabled={!valid || saving}>Save reward</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End this bigger goal's savings?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Points saved towards {reward?.title} will go back to the child's available points. Marking it again starts from 0.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep saving</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmEnd(false); save(true); }}>Save reward</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>

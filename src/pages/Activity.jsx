@@ -3,6 +3,7 @@
 // the four filters are server projections of "All" (goal rows are tagged by
 // the completion join). Correct (this week's awards) and the undone marking
 // are kept from A2.
+import { pointsWord } from '@/lib/savings';
 import { useState } from 'react';
 import { Child } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
@@ -330,7 +331,7 @@ export function rowText(event, timeZone = undefined) {
   // could redeem directly), so no row claims one (A2).
   if (event.type === 'spend') return { lead: 'redeemed', what: event.label, sub: `Reward redeemed · ${time}` };
   // D1 savings moves (owner's proposed O4 wording): not balance changes.
-  const pts = `${event.points} ${event.points === 1 ? 'point' : 'points'}`;
+  const pts = `${event.points} ${pointsWord(event.points)}`;
   if (event.type === 'saving') return { lead: `saved ${pts} towards`, what: event.label, sub: `Savings · ${time}` };
   if (event.type === 'moved_back') return { lead: `moved ${pts} back from`, what: event.label, sub: `Savings · ${time}` };
   const lead = event.type === 'undo' ? 'undo:' : event.type === 'starting' ? 'started with'

@@ -40,8 +40,9 @@ export const redeemGoal = (childId, rewardId, requestId = newRequestId()) =>
 
 // The goal shown first (design §5 O5, N7): the one with the most saved,
 // then the one closest to done, then by title, so the choice is stable.
+export const goalOrder = (a, b) => (b.saved - a.saved) || (a.to_go - b.to_go) || String(a.name).localeCompare(String(b.name));
 export function leadingGoal(goals = []) {
-  return [...goals].sort((a, b) => (b.saved - a.saved) || (a.to_go - b.to_go) || String(a.name).localeCompare(String(b.name)))[0] || null;
+  return [...goals].sort(goalOrder)[0] || null;
 }
 
 // Bigger goals this child may save for: marked, in the family, for all

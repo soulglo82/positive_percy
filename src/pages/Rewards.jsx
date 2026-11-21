@@ -126,9 +126,13 @@ export default function Rewards() {
                     </section>
                   )}
                   {others.length > 0 && (
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                      {others.map((reward) => <RewardTile key={reward.id} reward={reward} onEdit={openEdit} />)}
-                    </div>
+                    <section aria-labelledby={bigger.length > 0 ? 'other-rewards' : undefined} className="space-y-3">
+                      {/* Provisional wording (§19.8): named only beside "Bigger rewards". */}
+                      {bigger.length > 0 && <h3 id="other-rewards" className="font-display font-bold text-foreground">Other rewards</h3>}
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                        {others.map((reward) => <RewardTile key={reward.id} reward={reward} onEdit={openEdit} />)}
+                      </div>
+                    </section>
                   )}
                 </>
               )}

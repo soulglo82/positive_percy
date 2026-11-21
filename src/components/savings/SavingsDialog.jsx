@@ -1,8 +1,8 @@
 // "Saving for something bigger" Edit (D1, savings design §19.3). A parent
 // chooses one of the child's bigger goals, then saves points towards it or
 // moves points back, with Undo; and redeems the goal when it is within reach
-// (O7). Amounts are limited by the server's figures: up to available_points to
-// save, up to what is saved to move back. The server re-checks every one.
+// (O7). Limits come from the server's figures (child.available_points and the
+// goal's saved, cost and to_go in child.goals); the server re-checks every one.
 //
 // Wording: "Saving for something bigger" and "Saved: {n}" are approved; "Save
 // points" and "Move points back" are the owner's proposed O4 wording; the
@@ -22,32 +22,71 @@ import { Label } from '@/components/ui/label';
 import NumberInput from '@/components/ui/NumberInput';
 import RewardIcon from '@/components/rewards/RewardIcon';
 import { cn } from '@/lib/utils';
-import { refreshPoints, undoSpend, UNDO_TOAST_MS, newRequestId } from '@/lib/points';
-import { saveTowards, moveBack, undoSavings, redeemGoal, pointsWord } from '@/lib/savings';
+import { refreshPoints, undoAction, UNDO_TOAST_MS, newRequestId } from '@/lib/points';
+import { saveTowards, moveBack, undoSavings, redeemGoal, pointsWord, leadingGoal } from '@/lib/savings';
 
 const STALE = "That didn't work: the figures changed. Check them and try again.";
 const OFFLINE = "Couldn't save that. Check your connection and try again.";
 
-export default function SavingsDialog({ open, onClose, child, goalRewards }) {
+// The savings Undo: one request id per toast, one tap at a time, and on a
+// connection failure the same undo is offered again (as undoAction does).
+export function undoSavingsAction(eventId, queryClient, requestId = newRequestId()) {
+  let running = false;
+  return async () => {
+    if (running) return;
+    running = true;
+    try {
+      const r = await undoSavings(eventId, requestId);
+      toast.success(`Undone. ${r.child.name} has ${r.child.available_points} ${pointsWord(r.child.available_points)} available.`);
+    } catch (err) {
+      if (err.status === 409 || err.status === 404) {
+        toast.error(err.message || STALE);
+      } else {
+        toast.error("Couldn't undo that. Check your connection.", {
+          duration: UNDO_TOAST_MS,
+          action: { label: 'Try again', onClick: undoSavingsAction(eventId, queryClient, requestId) },
+        });
+      }
+    } finally {
+      running = false;
+      refreshPoints(queryClient);
+    }
+  };
+}
+
+export default function SavingsDialog({ open, onClose, child, goalRewards, returnFocusRef = null }) {
   const queryClient = useQueryClient();
   const [goalId, setGoalId] = useState(null);
   const [amount, setAmount] = useState(0);
   const [busy, setBusy] = useState(false);
   const [confirmRedeem, setConfirmRedeem] = useState(false);
-  const requestRef = useRef(null); // one id per action, reused if the same action is retried
+  const busyRef = useRef(false); // state alone lets two taps in one tick through
+  // One request id per action for the life of the open dialog, kept until
+  // that action succeeds or is refused, so a retry after a lost reply can
+  // only replay, whatever else was tried in between (code review).
+  const ids = useRef(new Map());
 
-  const savedById = useMemo(() => new Map((child?.goals || []).map((g) => [g.rewardId, g.saved])), [child]);
-  const options = useMemo(() => (goalRewards || []).map((r) => ({
-    id: r.id, name: r.title, cost: r.cost_points, saved: savedById.get(r.id) ?? 0, reward: r,
-  })), [goalRewards, savedById]);
+  // A goal already asked for cannot be saved towards (S1): left out here.
+  const requested = useMemo(() => new Set((child?.reward_stack_priced || []).map((i) => i.rewardId)), [child]);
+  const serverGoals = useMemo(() => new Map((child?.goals || []).map((g) => [g.rewardId, g])), [child]);
+  const options = useMemo(() => (goalRewards || []).filter((r) => !requested.has(r.id)).map((r) => {
+    const g = serverGoals.get(r.id);
+    // The server's figures when the goal has savings; a goal with none is at
+    // 0 saved and needs its whole cost.
+    return g
+      ? { id: r.id, name: g.name, cost: g.cost, saved: g.saved, toGo: g.to_go, reward: r }
+      : { id: r.id, name: r.title, cost: r.cost_points, saved: 0, toGo: r.cost_points, reward: r };
+  }), [goalRewards, requested, serverGoals]);
 
   useEffect(() => {
     if (!open) return;
     setAmount(0);
     setConfirmRedeem(false);
-    requestRef.current = null;
-    setGoalId((cur) => (options.some((o) => o.id === cur) ? cur : (options.slice().sort((a, b) => b.saved - a.saved)[0]?.id ?? null)));
-  }, [open]); // reset on each opening only
+    ids.current = new Map();
+    // The same goal Home and Child View lead with.
+    const lead = leadingGoal(child?.goals || []);
+    setGoalId(options.some((o) => o.id === lead?.rewardId) ? lead.rewardId : (options[0]?.id ?? null));
+  }, [open, child?.id]); // reset on each opening, and for another child
 
   if (!child) return null;
   const goal = options.find((o) => o.id === goalId) || null;
@@ -55,98 +94,82 @@ export default function SavingsDialog({ open, onClose, child, goalRewards }) {
   const saved = goal?.saved ?? 0;
   const whole = Number.isInteger(amount) && amount >= 1;
   // The server refuses more than available or more than the goal still needs.
-  const maxSave = goal ? Math.max(0, Math.min(available, goal.cost - saved)) : 0;
+  const maxSave = goal ? Math.max(0, Math.min(available, goal.toGo)) : 0;
   const canSave = !!goal && whole && amount <= maxSave && !busy;
   const canMoveBack = !!goal && whole && amount <= saved && !busy;
   const canRedeem = !!goal && saved + available >= goal.cost && !busy;
   const fromSaved = goal ? Math.min(saved, goal.cost) : 0;
 
-  const fail = (err) => {
-    if (err.status === 400 || err.status === 409 || err.status === 404) toast.error(STALE);
-    else toast.error(OFFLINE);
+  const idFor = (key) => {
+    if (!ids.current.has(key)) ids.current.set(key, newRequestId());
+    return ids.current.get(key);
   };
-
-  const undoMove = (eventId) => {
-    const undoId = newRequestId();
-    let running = false;
-    return async () => {
-      if (running) return;
-      running = true;
-      try {
-        await undoSavings(eventId, undoId);
-        toast.success('Undone.');
-      } catch (err) {
-        toast.error(err.status === 409 || err.status === 404 ? (err.message || STALE) : OFFLINE);
-      } finally {
-        running = false;
-        refreshPoints(queryClient);
-      }
-    };
+  const begin = () => {
+    if (busyRef.current) return false;
+    busyRef.current = true;
+    setBusy(true);
+    return true;
+  };
+  const end = () => { busyRef.current = false; setBusy(false); refreshPoints(queryClient); };
+  const fail = (err, key) => {
+    if (err.status && err.status < 500) {
+      ids.current.delete(key); // refused: trying again is a new action
+      toast.error(err.message || STALE);
+    } else {
+      toast.error(OFFLINE); // the id is kept, so a retry can only replay
+    }
   };
 
   const move = async (kind) => {
-    if (!goal || busy) return;
+    if (!goal || !begin()) return;
     const key = `${kind}:${goal.id}:${amount}`;
-    if (requestRef.current?.key !== key) requestRef.current = { key, id: newRequestId() };
-    setBusy(true);
     try {
       const r = await (kind === 'save'
-        ? saveTowards(child.id, goal.id, amount, requestRef.current.id)
-        : moveBack(child.id, goal.id, amount, requestRef.current.id));
-      requestRef.current = null;
-      setAmount(0);
+        ? saveTowards(child.id, goal.id, amount, idFor(key))
+        : moveBack(child.id, goal.id, amount, idFor(key)));
+      ids.current.delete(key);
       const message = kind === 'save'
         ? `Saved ${amount} ${pointsWord(amount)} towards ${goal.name}`
         : `Moved ${amount} ${pointsWord(amount)} back from ${goal.name}`;
-      toast.success(message, { duration: UNDO_TOAST_MS, action: { label: 'Undo', onClick: undoMove(r.event.id) } });
+      toast.success(message, { duration: UNDO_TOAST_MS, action: { label: 'Undo', onClick: undoSavingsAction(r.event.id, queryClient) } });
       // Close, as the award dialog does: while a modal dialog is open the
       // page behind it (the toast and its Undo) cannot be used (e2e, §19.8).
       onClose();
     } catch (err) {
-      if (err.status && err.status < 500) requestRef.current = null; // refused: a new attempt is a new action
-      fail(err);
+      fail(err, key);
     } finally {
-      setBusy(false);
-      refreshPoints(queryClient);
+      end();
     }
   };
 
   const redeem = async () => {
-    if (!goal || busy) return;
+    if (!goal || !begin()) return;
     const key = `redeem:${goal.id}`;
-    if (requestRef.current?.key !== key) requestRef.current = { key, id: newRequestId() };
-    setBusy(true);
     try {
-      const r = await redeemGoal(child.id, goal.id, requestRef.current.id);
-      requestRef.current = null;
+      const r = await redeemGoal(child.id, goal.id, idFor(key));
+      ids.current.delete(key);
       setConfirmRedeem(false);
-      const undoId = newRequestId();
       toast.success(`${goal.name} redeemed for ${child.name}`, {
         duration: UNDO_TOAST_MS,
-        action: {
-          label: 'Undo',
-          onClick: async () => {
-            try { await undoSpend(r.redemption.id, undoId); toast.success('Undone.'); }
-            catch (err) { toast.error(err.status === 409 || err.status === 404 ? (err.message || STALE) : OFFLINE); }
-            finally { refreshPoints(queryClient); }
-          },
-        },
+        action: { label: 'Undo', onClick: undoAction('spend', r.redemption.id, queryClient) },
       });
       onClose();
     } catch (err) {
-      if (err.status && err.status < 500) requestRef.current = null;
       setConfirmRedeem(false);
-      fail(err);
+      fail(err, key);
     } finally {
-      setBusy(false);
-      refreshPoints(queryClient);
+      end();
     }
+  };
+
+  const focusBack = (e) => {
+    if (returnFocusRef?.current) { e.preventDefault(); returnFocusRef.current.focus(); }
   };
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(o) => { if (!o && !busy) onClose(); }}>
-        <DialogContent className="sm:max-w-lg">
+      <Dialog open={open} onOpenChange={(o) => { if (!o && !busyRef.current) onClose(); }}>
+        <DialogContent className="sm:max-w-lg" onCloseAutoFocus={focusBack}>
           <DialogHeader>
             <DialogTitle className="text-title font-extrabold text-primary">Saving for something bigger</DialogTitle>
             <DialogDescription>
@@ -207,8 +230,8 @@ export default function SavingsDialog({ open, onClose, child, goalRewards }) {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={confirmRedeem} onOpenChange={(o) => { if (!busy) setConfirmRedeem(o); }}>
-        <AlertDialogContent>
+      <AlertDialog open={confirmRedeem} onOpenChange={(o) => { if (!busyRef.current) setConfirmRedeem(o); }}>
+        <AlertDialogContent onCloseAutoFocus={focusBack}>
           <AlertDialogHeader>
             <AlertDialogTitle>Redeem {goal?.name}?</AlertDialogTitle>
             <AlertDialogDescription>

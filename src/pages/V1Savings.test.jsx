@@ -119,8 +119,8 @@ describe('Children: Saving for something bigger', () => {
     expect(undoSavings).toHaveBeenCalledWith('e1', expect.stringMatching(/^[0-9a-f-]{36}$/));
   });
 
-  it('Edit: a refused save shows the stale-figures message', async () => {
-    saveTowards.mockRejectedValue(Object.assign(new Error('Not enough points'), { status: 400 }));
+  it('Edit: a refused save with no message shows the stale-figures message', async () => {
+    saveTowards.mockRejectedValue(Object.assign(new Error(''), { status: 409 }));
     mount(<Children />);
     fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
     const d = await screen.findByRole('dialog');
@@ -234,5 +234,119 @@ describe('Home, Rewards, Spend and Activity', () => {
     expect(rowText({ type: 'moved_back', points: 1, label: 'Bike', created_date: t }, 'UTC')).toMatchObject({ lead: 'moved 1 point back from', what: 'Bike' });
     expect(rowIconKind({ type: 'saving' })).toBe('saving');
     expect(rowIconKind({ type: 'moved_back' })).toBe('saving');
+  });
+});
+
+describe('code review of the screens', () => {
+  it('Major: un-marking a goal, or taking it from a child, warns and asks before saving', async () => {
+    const onSubmit = vi.fn(async () => true);
+    const kids = [{ id: 'c1', name: 'Lara' }, { id: 'c2', name: 'Omar' }];
+    mount(<RewardForm isOpen onClose={() => {}} onSubmit={onSubmit} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true })} />);
+    expect(screen.queryByRole('status')).toBeNull();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Bigger goal/ }));
+    expect(screen.getByRole('status').textContent).toContain('Marking it again starts from 0.');
+    fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
+    const alert = await screen.findByRole('alertdialog');
+    expect(onSubmit).not.toHaveBeenCalled();
+    fireEvent.click(within(alert).getByRole('button', { name: 'Keep saving' }));
+    expect(onSubmit).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Save reward' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0].is_bigger_goal).toBe(false);
+  });
+
+  it('Major: assigning a goal to one child (from all) warns too; an unchanged goal does not', async () => {
+    const kids = [{ id: 'c1', name: 'Lara' }, { id: 'c2', name: 'Omar' }];
+    mount(<RewardForm isOpen onClose={() => {}} onSubmit={vi.fn(async () => true)} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true })} />);
+    expect(screen.queryByRole('status')).toBeNull();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Lara/ }));
+    expect(screen.getByRole('status')).toBeTruthy(); // Omar loses it
+  });
+
+  it('a goal already requested is not offered (S1); the server message is shown when it refuses', async () => {
+    state.children = [{ ...lara, reward_stack_priced: [{ rewardId: 'g2', name: 'Tent', cost: 80, stackIndex: 0 }] }];
+    saveTowards.mockRejectedValue(Object.assign(new Error('More than this goal needs'), { status: 400 }));
+    mount(<Children />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    const d = await screen.findByRole('dialog');
+    expect(within(d).queryByRole('radio', { name: /Tent/ })).toBeNull();
+    fireEvent.change(within(d).getByLabelText('Points', { exact: true }), { target: { value: '5' } });
+    fireEvent.click(within(d).getByRole('button', { name: 'Save points' }));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('More than this goal needs'));
+  });
+
+  it('a retry after a lost reply reuses the request id, even after another action; a refusal does not', async () => {
+    saveTowards.mockRejectedValueOnce(Object.assign(new Error(''), { status: 503 }));
+    moveBack.mockRejectedValueOnce(Object.assign(new Error('Not enough points saved'), { status: 400 }));
+    saveTowards.mockResolvedValueOnce({ event: { id: 'e9' }, child: lara });
+    mount(<Children />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    const d = await screen.findByRole('dialog');
+    const input = within(d).getByLabelText('Points', { exact: true });
+    fireEvent.change(input, { target: { value: '10' } });
+    fireEvent.click(within(d).getByRole('button', { name: 'Save points' }));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Couldn't save that. Check your connection and try again."));
+    fireEvent.click(within(d).getByRole('button', { name: 'Move points back' }));
+    await waitFor(() => expect(moveBack).toHaveBeenCalled());
+    fireEvent.click(within(d).getByRole('button', { name: 'Save points' }));
+    await waitFor(() => expect(saveTowards).toHaveBeenCalledTimes(2));
+    expect(saveTowards.mock.calls[1][3]).toBe(saveTowards.mock.calls[0][3]);
+  });
+
+  it('a double tap sends one request', async () => {
+    let resolve;
+    saveTowards.mockImplementation(() => new Promise((r) => { resolve = r; }));
+    mount(<Children />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    const d = await screen.findByRole('dialog');
+    fireEvent.change(within(d).getByLabelText('Points', { exact: true }), { target: { value: '10' } });
+    const btn = within(d).getByRole('button', { name: 'Save points' });
+    fireEvent.click(btn);
+    fireEvent.click(btn);
+    expect(saveTowards).toHaveBeenCalledTimes(1);
+    resolve({ event: { id: 'e1' }, child: lara });
+  });
+
+  it('reopening starts on the goal Home leads with, with the amount cleared', async () => {
+    state.children = [{ ...lara, goals: [goal('g2', 'Tent', 80, 50), goal('g1', 'Bike', 300, 50)] }]; // tie: Tent is closer
+    mount(<Children />);
+    const edit = await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' });
+    fireEvent.click(edit);
+    let d = await screen.findByRole('dialog');
+    expect(within(d).getByRole('radio', { name: /Tent/ }).checked).toBe(true);
+    fireEvent.click(within(d).getByRole('radio', { name: /Bike/ }));
+    fireEvent.change(within(d).getByLabelText('Points', { exact: true }), { target: { value: '7' } });
+    fireEvent.click(within(d).getAllByRole('button', { name: 'Close' }).at(-1));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    fireEvent.click(edit);
+    d = await screen.findByRole('dialog');
+    expect(within(d).getByRole('radio', { name: /Tent/ }).checked).toBe(true);
+    expect(within(d).getByLabelText('Points', { exact: true }).value).toBe('');
+  });
+
+  it('Children lists a marked goal with nothing saved, in the same order as Home', async () => {
+    mount(<Children />);
+    expect(await screen.findByText('120 of 300 points saved')).toBeTruthy();
+    expect(screen.getByText('0 of 80 points saved')).toBeTruthy();
+  });
+
+  it('Rewards names the other rewards beside "Bigger rewards"', async () => {
+    mount(<Rewards />);
+    expect(await screen.findByRole('heading', { name: 'Other rewards' })).toBeTruthy();
+    state.rewards = [R('r1', 'Movie night', 25)];
+  });
+
+  it('the savings Undo offers a retry when the connection fails', async () => {
+    const { undoSavingsAction } = await import('../components/savings/SavingsDialog');
+    undoSavings.mockRejectedValueOnce(Object.assign(new Error(''), { status: 503 }));
+    const client = new QueryClient();
+    await undoSavingsAction('e1', client, 'fixed-id')();
+    const [, opts] = toastError.mock.calls[0];
+    expect(opts.action.label).toBe('Try again');
+    undoSavings.mockResolvedValueOnce({ child: { name: 'Lara', available_points: 200 } });
+    await opts.action.onClick();
+    expect(undoSavings.mock.calls.map((c) => c[1])).toEqual(['fixed-id', 'fixed-id']);
+    expect(toastSuccess).toHaveBeenCalledWith('Undone. Lara has 200 points available.');
   });
 });

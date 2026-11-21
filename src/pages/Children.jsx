@@ -4,7 +4,7 @@
 // and today's completions from GET /api/todays-goals?manage=true. "Saving for
 // something bigger" shows the child's bigger goals from child.goals (D1,
 // savings design §19.3); its Edit opens the savings dialog.
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { isAssignedTo } from '@/lib/assignment';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,7 +28,7 @@ import RewardForm from '../components/rewards/RewardForm';
 import RewardTile from '../components/rewards/RewardTile';
 import GoalProgress from '../components/savings/GoalProgress';
 import SavingsDialog from '../components/savings/SavingsDialog';
-import { leadingGoal, goalRewardsFor } from '@/lib/savings';
+import { leadingGoal, goalRewardsFor, goalOrder } from '@/lib/savings';
 import { buildChildCreatePayload } from '@/lib/childPayload';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorCard from '../components/ErrorCard';
@@ -61,6 +61,7 @@ export default function Children() {
   const [goalsStart, setGoalsStart] = useState(null); // null: closed; else the dialog's `start`
   const [rewardEditing, setRewardEditing] = useState(null);
   const [savingsOpen, setSavingsOpen] = useState(false);
+  const savingsEdit = useRef(null);
   const { save, remove } = useRewardMutations();
 
   const { data: children = [], isLoading, isError, refetch } = useQuery({
@@ -124,6 +125,12 @@ export default function Children() {
   const goalRewards = goalRewardsFor(rewards, child.id, isAssignedTo);
   const savedGoals = child.goals || [];
   const topGoal = leadingGoal(savedGoals);
+  // Every current goal, at the server's figures when it has savings, else 0
+  // saved (code review: a goal with nothing saved is still listed).
+  const byGoal = new Map(savedGoals.map((g) => [g.rewardId, g]));
+  const goalRows = goalRewards.map((r) => byGoal.get(r.id) || {
+    rewardId: r.id, name: r.title, cost: r.cost_points, saved: 0, to_go: r.cost_points, icon_key: r.icon_key, emoji: r.emoji, image_url: r.image_url,
+  }).sort(goalOrder);
 
   return page(
     <>
@@ -193,7 +200,7 @@ export default function Children() {
         <CardContent className="p-4 sm:p-5 space-y-3">
           <SectionHead title="Saving for something bigger">
             {goalRewards.length > 0 && (
-              <Button variant="outline" aria-label={`Edit saving for something bigger for ${child.name}`} onClick={() => setSavingsOpen(true)}>Edit</Button>
+              <Button ref={savingsEdit} variant="outline" aria-label={`Edit saving for something bigger for ${child.name}`} onClick={() => setSavingsOpen(true)}>Edit</Button>
             )}
           </SectionHead>
           {goalRewards.length === 0 ? (
@@ -201,11 +208,9 @@ export default function Children() {
               No bigger goals yet.{' '}
               <Link to={createPageUrl('Rewards')} className={linkClass}>Mark a reward as a bigger goal</Link>
             </p>
-          ) : savedGoals.length === 0 ? (
-            <p className="text-muted-foreground">Nothing saved yet. Use Edit to save points towards a bigger goal.</p>
           ) : (
             <div className="space-y-4">
-              {[...savedGoals].sort((a, b) => b.saved - a.saved).map((g) => <GoalProgress key={g.rewardId} goal={g} />)}
+              {goalRows.map((g) => <GoalProgress key={g.rewardId} goal={g} />)}
             </div>
           )}
         </CardContent>
@@ -273,7 +278,7 @@ export default function Children() {
           toast.success(`${data.name}'s profile updated.`);
         }}
       />}
-      <SavingsDialog open={savingsOpen} onClose={() => setSavingsOpen(false)} child={child} goalRewards={goalRewards} />
+      <SavingsDialog open={savingsOpen} onClose={() => setSavingsOpen(false)} child={child} goalRewards={goalRewards} returnFocusRef={savingsEdit} />
       <ManageGoalsDialog open={!!goalsStart} onClose={() => setGoalsStart(null)} start={goalsStart}
         child={child} children={children} categories={behaviorCategories} today={today} />
       <RewardForm
