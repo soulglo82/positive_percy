@@ -52,6 +52,11 @@ jobs:
         env:
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/percy_test
 
+      # D1 §18: the one-command restored-backup run, on SYNTHETIC archives
+      # only (never a real backup in CI). Docker is on GitHub's runners.
+      - name: D1 restore-and-reconcile script
+        run: bash scripts/test/d1-restore-reconcile.test.sh
+
   # Batch D: every screen, dialog and select at four sizes in Chromium.
   # axe (serious/critical), 44px touch targets, 12px text floor, no
   # horizontal scroll, every control named.

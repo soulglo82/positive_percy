@@ -102,6 +102,12 @@ const BASE_SELECT = `
 
 export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPointsFor }) {
   const router = Router();
+  // One spelling of every :id here too: router.param does not cross into a
+  // sub-router (code review of 3722728).
+  router.param('id', (req, _res, next, id) => {
+    if (typeof id === 'string') req.params.id = id.toLowerCase();
+    next();
+  });
 
   router.get('/', async (req, res) => {
     try {

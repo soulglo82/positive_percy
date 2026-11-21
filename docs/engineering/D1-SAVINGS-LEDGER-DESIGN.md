@@ -2,18 +2,29 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.12 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
-| Status | Reviewed (fresh-context peer review adopted, v1.1; §10 supersedes earlier sections where they conflict). **For owner approval. Nothing in this note is built** |
+| Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
 | Binding inputs | Approved HTML blob `9de1df2`: Home "Saving for something bigger / 120 of 300 points saved / 180 to go"; Children "Saving for something bigger" with Edit, "Saved: 120", "300 points · Bigger achievement"; Child View "90 Ready to use / 120 Saved towards New bike / My next big adventure / 180 points to go"; its own note that the "savings/weekly-pool transfer … is a visual concept until its authorised ledger contract is implemented". Owner direction (2026-11-19): include the real ledger in V1; **D7: bigger goals by explicit designation, never by price**. Plan v1.1 §8.3 (do not reuse `family_goals` or `/contribute`) |
 
 ## Change log
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.12 | 2026-11-21 | §18.3: the owner's test conditions; 41 checks; 16 protection mutations, each red |
+| 1.11 | 2026-11-21 | §18.2: post-build code review of the restore script; findings fixed; §18 corrected to match the build |
+| 1.10 | 2026-11-21 | §18.1: design review adopted (eight findings), and two found in the build; built and tested |
+| 1.9 | 2026-11-21 | §18 (design, before build): one command that restores a backup into an isolated PostgreSQL 17 and runs the reconcile CLI against it |
+| 1.8 | 2026-11-20 | §17: post-build code review of `8fa4d35`; six findings fixed (pending must be a tail of the V1 migrations, unknown applied records refused, allowlists anchored on names, a copy at 014 tested, temp-dir cleanup, restore after any error) |
+| 1.7 | 2026-11-20 | §16: production is at migration 012, so the restored-backup run applies the V1 prerequisites 014 and 015 first; the CLI and its test cover a copy at 012 |
 | 1.0 | 2026-11-19 | First draft |
 | 1.1 | 2026-11-19 | Peer review: 5 blocking and 7 non-blocking findings, all adopted (§10) |
+| 1.6 | 2026-11-19 | Post-build code review of `3722728` (§15): legacy capital assignments compared case-insensitively in the trigger and the reconciliation (Major: savings could revive); Today's Goals sub-router lower-cases ids; reward ids lower-cased; restore flag for the insert trigger; reconciliation pre-flight count |
+| 1.5 | 2026-11-19 | Adversarial review of O6 at `392ad16` (§14): one blocking bug fixed (a child id in capitals skipped that child's savings and requests: over-commit reproduced, now canonical). Insert trigger, over-commit finding in the reconciliation, lock order for the save endpoints, restore runbook rule |
+| 1.4 | 2026-11-19 | Owner review of PR #60 (head `a11e890`): synthetic proof accepted as a credible fixture proof, not as sign-off to ship 016. **O6 reversed**: savings never revive (allocation generations, §13). The scratch rollback refuses once savings exist; a marked-copy token proves the target is a copy (§13) |
+| 1.3 | 2026-11-19 | Adversarial review of the proof: 2 blocking (read path counted a requested goal twice and let a negative sum add points; write paths ignored savings) and 5 non-blocking, all fixed (§12) |
+| 1.2 | 2026-11-19 | Owner's data-preservation requirements; legacy `family_goals` inspected; migration 016, its rollback and the reconciliation proof built and passing (§11) |
 
 ## 1. What it must do
 
@@ -163,3 +174,392 @@ CREATE INDEX savings_events_child ON savings_events (family_code, child_id, rewa
 | --- | --- | --- |
 | O6 | If a parent un-marks a bigger goal and marks it again before the child's next savings change, should the old savings reappear? | Yes (the read-time filter gives this). The alternative needs multi-child writes on every reward edit |
 | O7 | A bigger goal is redeemed by a parent from the Children page, not requested by the child (B1) | Yes |
+
+## 11. Existing family data: what it holds, and the proof that 016 preserves it (v1.2)
+
+### 11.1 Owner requirements (2026-11-19, issue #56) and their evidence
+
+| Requirement | How it is met | Evidence |
+| --- | --- | --- |
+| Keep every child's points balance unchanged | 016 writes no row. It adds a column with a constant default and an empty table | `server/test/d1-migration.test.js` "016 changes nothing…": every child's `total_points`, `points_spent`, stored requests and history total are identical |
+| Preserve rewards, requests, redemptions and activity | The same check covers every table that existed before 016: each row's every pre-existing column, by hash, plus row counts | The same test; `server/reconcile.js` |
+| Preserve existing savings where they can be verified from records | **No verifiable child savings exist.** The only earlier "goal contribution" data is the legacy `family_goals` counter, which is not child savings (§11.2). It is left exactly as it is | The test "legacy family goals are left exactly as they were…" |
+| New allocations without duplicating points | Savings are a separate pool inside `total_points`: available = total − set aside for requests − saved. Saving moves points between pools and never changes the total | The test "the key rule": +50 saved gives available −50; total, history and spent are unchanged; the database and the API agree |
+| Never assume existing points are newly earned or allocated to a goal | 016 creates no savings rows and marks no goal; its own post-check refuses to finish otherwise | 016's `DO $$` post-check; the test asserts 0 savings and 0 goals |
+| Test migration and rollback against a realistic copy | A realistic fixture (§11.3), plus a tool for a restored copy of real data (§11.4) | The test "rollback restores the exact pre-016 state; 016 then applies again cleanly"; the tool run in §11.4 |
+| The key rule: moving 50 into a goal lowers available by 50, never the total | Read path: `withBalances` subtracts verified savings (towards rewards that are still goals for the child) | The test "the key rule". Un-marking the goal returns the 50 to available |
+
+### 11.2 What legacy `family_goals` actually represent (inspected, not assumed)
+
+- **The data.** A family-level counter: `title`, `target_points`, `current_points` and `status`, with **no `child_id`** (`server/db.js`, the `family_goals` table).
+- **How it changed.** Two ways:
+  - `POST /api/family-goals/:id/contribute` raises `current_points` by any number the parent typed, capped at the target, and marks the goal completed.
+  - The generic create and update routes for `family_goals` can also set `current_points` and `status` (correction in v1.3: they are whitelisted in `server/columns.js`).
+  - Neither touches a child.
+  - It **never deducted any child's points**, wrote no `point_events` row, and recorded no child.
+  - The removed screen (introduced in commit `9bf766e`, removed in `a746bb6`) offered a free number box, default 10.
+- **Conclusion.** These counters are *not* points anyone saved: no child's balance went down when they rose. They **cannot be migrated as child savings without inventing them**.
+- **What happens to them.** 016 leaves them untouched. They stay in the database, in the family export, and in the reconciliation fingerprint. Whether to show them as history, or offer a parent a way to start a real goal from one, is an owner decision (O8). No points move either way.
+- **Plan §8.3 still holds:** the contribute endpoint is never reused.
+
+### 11.3 The realistic fixture (`server/test/fixtures/legacyFamilies.js`)
+
+Three families, built through the real API, plus direct SQL for shapes only older releases could write:
+- several children, including one at 0 points and one with over 1,000;
+- awards, an undone award and a same-week correction;
+- a Today's Goal completion;
+- spends that were completed, undone (Reversed), and legacy Pending and Denied;
+- pending requests, including one for a reward since deleted and one for a reward reassigned to a sibling;
+- rewards with an emoji, an image, a picker icon, hidden, and assigned to one child;
+- legacy history and redemptions with no `family_code`;
+- legacy family goals with contributions (active, completed, and a family that only ever used them).
+
+The first test asserts that these shapes are really present, and that every child's history adds up to their balance (rule A2 C4) before 016.
+
+### 11.4 Running the same proof on a copy of real data
+
+- **The command:** `node scripts/d1-reconcile.mjs --database-url <restored copy> --i-confirm-this-is-a-copy`.
+- **What it does:** fingerprint, apply 016, compare, roll back, compare, apply again, compare. It writes `d1-reconcile-report.json` and exits 1 on any change.
+- **Guard rails:** it refuses to run without the copy flag, and refuses a copy that already has 016.
+- **Engineering run (2026-11-19), on a pre-016 copy built from the fixture:**
+  - "apply 016", "roll 016 back" and "apply 016 again" all ok;
+  - 3 families, 4 children, 0 children with history drift;
+  - legacy family goals: 3, all with contributions, 230 contributed in total, across 2 families.
+- **Owner action (D2 item: production data access):** run it on a restored backup of production before 016 ships, or provide an anonymised copy for engineering to run it on.
+
+### 11.5 The check can fail (counter-examples, each in a rolled-back transaction)
+
+The test "the check catches: …" proves the reconciliation reports each of these:
+- a changed balance;
+- points auto-allocated to a goal;
+- a reset family-goal contribution;
+- a deleted history row;
+- a dropped request;
+- a rewritten redemption status.
+
+### 11.6 Rollback
+
+- **The script:** `server/rollbacks/016_savings_ledger_down.sql` drops only what 016 added. In production it is applied as the next forward migration, after the server code is rolled back. The new code reads the savings table, so it fails without it; the test hit exactly this and seeds before rolling back.
+- **The proof:** after rollback, the fingerprint equals the pre-016 state exactly. Re-applying 016 is clean, and a second boot changes nothing.
+
+### 11.7 What is built and what is not
+
+- **Built:**
+  - migration 016;
+  - the rollback;
+  - the reconciliation module, its tests and the copy tool;
+  - the read path (`available_points` subtracts verified savings; children responses carry `saved_total` and `goals[]`).
+- **Not built until the owner confirms this proof:** the savings endpoints (save, move back, undo), redeeming a goal from savings, the "Bigger goal" switch, and the Home, Children and Child View screens.
+
+| # | Owner question (added) | Engineering recommendation |
+| --- | --- | --- |
+| O8 | Legacy family goals: leave them as stored data only, show them read-only as history, or offer "start a real goal from this"? | Leave them stored and exported only for V1; revisit after launch. They never held child points |
+
+## 12. Adversarial review of the proof (v1.3)
+
+- **The reviewer could not make the migration proof lie about data.** 016 writes no rows, and every change made to existing rows was caught.
+- **The read path that ships with 016** (no write endpoint behind it yet) had two real bugs, and the write paths ignored savings. All are fixed, with one balance rule in one place (`balanceOf` / `balanceFor` in `server/routes.js`).
+
+| # | Finding | Fix | Test |
+| --- | --- | --- | --- |
+| 1 | **Blocking.** A goal that was also requested was counted twice: shown 610, where 660 was right. A negative ledger sum *raised* available (shown 690) | Savings count only positive sums, and only towards a reward that is still a goal for the child. A goal that is also requested commits `max(stacked, saved)`, never the sum | "review: a goal that is also requested is counted once, and a negative sum never adds points"; the app and the SQL reconciliation compared after every ledger change |
+| 2 | **Blocking.** The write paths ignored savings, so saved points could be spent twice | Request (`stack/add`), spend (`redeem`), award undo (`reverseAward`) and confirm all use the same committed figure as the read path. A bigger goal cannot be requested (B1). A reward that has savings cannot be spent or confirmed directly: it is redeemed through its goal (that flow comes with the feature) | "review: every write path respects savings" |
+| 3 | The fingerprint did not cover the schema, or schemas other than `public`, or `schema_migrations`; `string_agg` over large uploads could reach Postgres's 1 GB limit | It now covers every non-system schema; every constraint, index, trigger, column type, default and nullability; and the migration records (016 the only allowed addition). Rows are hashed one by one, then combined | The rollback leaves no object behind. The rolled-back schema equals a database built from 001–015 that **never had 016** |
+| 4 | Fixture gaps | Added: a NULL stack, an object-shaped stack, stack ids that are not UUIDs or are upper-case or belong to another family, NULL `points_spent`, a reward with no family code, an upload and a user. The app now treats a non-array stack as empty instead of failing | The fixture test asserts each shape is present |
+| 5 | The copy tool's safety | It refuses Railway URLs and the app's own `DATABASE_URL`, and requires that 016 is the only pending migration. Rollback and record removal run in one transaction. It checks that 016's objects exist after re-apply and reports anything left behind | Run 2026-11-19 on the richer copy: every step ok; Railway URL refused (exit 2) |
+| 6 | Tests compared values with their own source | The reconciliation now applies the same written savings rule in SQL (independently of the JavaScript), and the tests compare app and SQL after every ledger change. The fixture's hand-set starting points are a deliberate legacy shape (imported balances), not a check | (above) |
+| 7 | The note said only contribute changed `family_goals` | Corrected in §11.2; the conclusion is unchanged | (none) |
+
+## 13. Owner review of PR #60 and the O6 correction (v1.4)
+
+### 13.1 Decisions as given (owner's recommendations; not each separately approved by the owner)
+
+| # | Recommendation | Status in engineering |
+| --- | --- | --- |
+| O2 | Only parents move points in V1 | Planned |
+| O4 | Wording: "Save points", "Move points back", "Bigger goal" (helper text "Save points towards this reward over time"); Activity "Saved N points towards X" / "Moved N points back from X" | Used as the proposed strings; the owner approves the final wording at screen review |
+| **O6** | **Reversed: savings never revive.** Un-marking a goal, or taking it away from a child, ends that allocation for good. History is kept, and a re-marked goal starts at 0 | **Built** (§13.2) |
+| O7 | Parents redeem bigger goals from the Children page | Planned |
+| O8 | Legacy family goals stay stored and exported, never shown as child savings | As built (016 leaves them untouched) |
+
+### 13.2 Allocation generations (replaces v1.1 B5's "savings reappear")
+
+- **The generation.** A goal's generation for a child is `goal_epoch:child_epoch`.
+  - `rewards.goal_epoch` and `rewards.goal_child_epochs` (a JSON map from child id to epoch) are new in 016, starting at 0.
+  - A database trigger, `rewards_goal_generation` (`BEFORE UPDATE ON rewards`), owns them:
+    - `goal_epoch` goes up by 1 whenever `is_bigger_goal` changes, in either direction;
+    - a child's epoch goes up by 1 whenever an assignment change takes the reward away from that child.
+  - Whatever an UPDATE writes to those columns is replaced, so generations only move forward, whichever code path or direct SQL changes the reward.
+- **Savings rows** carry the `generation` they were written in. **Only rows of the current generation count**, in the app (`balanceOf`) and in the independent SQL reconciliation alike. Rows of earlier generations stay as history and never count again.
+- **Delete and recreate** gives a new reward id, so nothing carries over.
+- **No multi-child writes or locks.** Un-marking or reassigning updates one reward row. A save racing a goal edit can only be written in a generation that is no longer current, so it under-counts and returns points to available; it can never over-commit.
+- **Refunds** (when the feature is built): undoing a goal redemption restores savings only as a row of the **current** generation, and only if the reward is still a goal for the child. Otherwise the points return to available.
+
+**Tests** (`server/test/d1-migration.test.js`; removing the generation rule fails six of them):
+
+| Test | What it shows |
+| --- | --- |
+| "O6, the owner's example" | 100 saved → un-mark → spend 80 → re-mark gives total 20, saved 0, available 20, and committed ≤ total |
+| "reassigning away and back, and delete/recreate" | A child's savings don't come back. A sibling who kept access keeps theirs. A direct write cannot roll a generation back |
+| "concurrent goal edits and saves never over-commit" | 10 rounds of a goal toggle racing a save |
+| The key rule | Re-marking starts at 0, and the history row is kept |
+
+### 13.3 Rollback after launch
+
+- `server/rollbacks/016_savings_ledger_down.sql` is **scratch and pre-launch only**. It now **refuses to run once any savings exist** (tested).
+- Reversing D1 after families have used savings needs a **separately approved archived or compensated reversal with audit evidence**: the ledger is kept, or exported and archived, and every allocation is compensated so points return to available, with a report. That procedure will be designed if ever needed. It is not this file.
+
+### 13.4 Proving the target is a copy
+
+- The owner noted that a URL check cannot prove the target is a copy, because a live database can have any hostname. So the tool (`scripts/d1-reconcile.mjs`) now requires `--copy-token <token>`.
+- After restoring the backup, the operator writes that token into the **copy**, in a `percy_restore_marker` table along with the backup id. Production never has this table, so a mistaken connection is refused whatever its address.
+- The Railway and `DATABASE_URL` refusals remain as extra guards. The report records `restored_from`.
+- **Run 2026-11-19 on the synthetic copy:** refused without the marker (exit 1); with the marker, every step ok.
+
+### 13.5 Next gate (owner)
+
+1. Run the tool on a verified, isolated restoration of the production backup, with restricted credentials, and inspect its report: apply, rollback and re-apply, plus the history-drift baseline.
+2. An independent review of the corrected O6 design (in progress).
+3. Then the savings feature: endpoints, goal redemption, refunds, and the Home, Children and Child View screens.
+
+## 14. Adversarial review of O6 (v1.5, head `392ad16`)
+
+A fresh-context reviewer attacked the generation design on a throwaway database. The design held: the reviewer found no way to make savings from an older generation count again. They found one blocking bug, and it was in how ids are compared, not in generations.
+
+| # | Finding | Severity | Resolution |
+| --- | --- | --- | --- |
+| R1 | A child id written in capitals in the URL (Postgres accepts it) skipped every one of that child's savings and requests. The JavaScript balance rule compares ids as text. Reproduced: with 100 saved out of a total of 100, an 80-point redeem was refused in lower case and accepted in capitals | Blocking | Fixed. `router.param('id')` lower-cases every `:id` route. `balanceOf`, `goalGeneration` and `spendableFrom` also compare in lower case as a second guard. Test: redeem, `stack/add` and `stack/confirm` with the id in capitals. Mutation (both guards removed): the test fails |
+| R2 | The generation trigger ran only on UPDATE. A row re-inserted with a reused id and its old epochs would bring old savings back | Non-blocking (the app cannot write `id` or the epoch columns) | Fixed. A `BEFORE INSERT` trigger always starts a reward at `0:0`. The rollback drops it. Test, plus a mutation check. **Restore runbook rule:** never restore `rewards` without `savings_events`, and never edit with `session_replication_role = replica` |
+| R3 | The save endpoints still to be built need a lock order. Without one, a save can race an un-mark and be silently lost (it under-counts) | Design | Adopted for the feature build. Lock the child `FOR UPDATE`, then the reward `FOR SHARE`. Take the generation from that locked row, using the canonical child id, in the same transaction. Lock several children in id order. Paths that edit a reward never lock children. §13.2's rule against writes that span several children stays |
+| R4 | `available` is clamped at 0, so comparing before with after could hide a child who has been promised more than they have | Non-blocking | Fixed. The reconciliation reports a child who is newly over-committed (`committed > total`); a child already over-committed in legacy data is not a new finding. Every `agree()` in the tests also asserts `committed ≤ total`. The boundary (equal) is tested |
+| R5 | Test gaps: the "concurrent" test does not race real endpoint locks; delete/recreate always gets a new UUID; the ledger helper shares the generation formula with `reconcile.js` | Recorded | The R2 insert test covers reuse of an id. Real lock races are tested with the save endpoints (R3). Against the shared-formula risk, JavaScript `goalGeneration` and SQL are already compared in every `agree()` |
+| R6 | `assigned_child_ids` were stored as written (capitals, or another family's ids). A child given in capitals lost the goal and their epoch moved on: savings ended, not revived (safe, but surprising) | Non-blocking | Lower-cased on create and update (test). An id from another family never matches a child, so it has no effect. Rejecting such ids outright is left to the D1 feature's reward form |
+
+**Not covered by any test:** two save requests from two devices racing a real un-mark. These are tested once the save endpoint exists, under the R3 lock order.
+
+## 15. Post-build code review of `3722728` (v1.6)
+
+| # | Finding | Severity | Resolution |
+| --- | --- | --- | --- |
+| C1 | The trigger and the reconciliation still compared assignments in exact case. Rewards written before the app lower-cased assignments can hold capitals. In the reviewer's probe, the app showed saved 60 while the reconciliation showed 0; a reassignment away and back did not move the child's epoch, so the 60 came back (O6 broken) | Major | Both compare `lower(...)` of the stored ids. Test with a legacy capital assignment written straight into the table: the app and the reconciliation agree, and away-and-back expires the savings. Mutations (either side reverted) fail it. The reconciliation CLI reports `rewards_with_mixed_case_assignments` as a pre-flight count. Client-side assignment checks are made case-insensitive in V1-E (top of the stack) |
+| C2 | `router.param` does not reach the Today's Goals sub-router | Minor | The sub-router lower-cases its own `:id`. Test: a completion with the id in capitals replays under the lower-case id. Mutation fails it |
+| C3 | Reward ids in a body or query were compared in exact case (fail-safe 404/409) | Minor | Lower-cased where read: redeem, `stack/add`, stack remove, `stack/confirm` `expected`. Test (add and confirm in capitals). Mutation fails it |
+| C4 | A data-only restore (COPY) fires the insert trigger and would reset every generation, dropping all current savings | Minor | The trigger keeps restored values when the session sets `percy.restoring = 'on'` (the app never does). **Restore runbook:** a data-only restore of `rewards` sets that flag or uses `--disable-triggers`; a full `pg_dump`/`pg_restore` is unaffected. Test. Mutation fails it |
+| C5 | The over-commit line adds a label, not a new detection; children that only appear were skipped | Nit | Comment corrected; appearing children are checked too |
+| C6 | Each half of the `:id` fix alone passes the capitals test | Nit | Recorded: two layers on purpose (route and rule); the test fails only when both go |
+
+## 16. The restored-backup run on a copy at migration 012 (v1.7)
+
+**Finding (release preparation, 2026-11-20).** Railway's production app service has only ever deployed the default branch. Its live commit, `498e798`, ends at migration 012 (checked through the Railway deployment list and `git ls-tree`). A restored copy of production therefore has 014 (Today's Goals) and 015 (reward icons) pending as well as 016. The CLI refused that case: it required 016 to be the only pending migration. The owner's run would have stopped before proving anything.
+
+**Fix.**
+- `scripts/d1-reconcile.mjs` accepts exactly the V1 migrations pending: 014 and 015, each optional and in order, then 016 last. Anything else pending is refused.
+- **First step:** the CLI applies the pending prerequisites. It checks that nothing families have changed, and that the only new schema is Today's Goals' tables and indexes plus `rewards.icon_key` with its CHECK.
+- **Then:** it runs the existing 016 cycle from that point (apply, roll back, re-apply).
+- **Report:** lists `pending` and each step.
+
+**Test.** `server/test/d1-reconcile-cli.test.js` builds a database exactly at 012 (base schema plus 001–012), adds family data including a legacy capital-letter assignment, and marks it as a copy. Then it runs the CLI:
+- the steps are `apply 014 and 015 (V1 prerequisites)`, `apply 016`, `roll 016 back` and `apply 016 again`, each with no changes;
+- a second run is refused (016 already present).
+
+Both tests fail on the previous script.
+
+**Migration 015 compatibility (owner's precaution, 2026-11-20).** No persistent database has run the earlier 71-id draft of 015:
+- production's app deploys only the default branch, which has no 015;
+- the Railway design-selector service serves static files and connects to no database;
+- there is one environment;
+- CI and the test databases are rebuilt on every run.
+
+**Runbook for the owner's run (unchanged otherwise):**
+1. Restore the backup to an isolated database.
+2. Write the marker token into the copy.
+3. Run `node scripts/d1-reconcile.mjs --database-url <copy> --i-confirm-this-is-a-copy --copy-token <token>`.
+4. Keep `d1-reconcile-report.json`.
+
+The run passes only if it exits 0 with every step unchanged.
+
+**After any error, restore a fresh copy before running again** (§17). A failed run can leave the copy part-way.
+
+## 17. Post-build code review of `8fa4d35` (v1.8)
+
+A fresh-context reviewer read the §16 change. It found nothing Major and six smaller findings. All six are fixed.
+
+| # | Finding | Fix | Test (red on `8fa4d35` or by mutation) |
+| --- | --- | --- | --- |
+| 1 | A gap was accepted. With 015 recorded and 014 not, the pending list (014, 016) passed, though production cannot reach that state | `pending` must be exactly a tail of `014, 015, 016` | "refuses a gap in the V1 migrations"; mutation M2 restores the old rule and the test goes red |
+| 2 | An applied record with no file on this branch was ignored. A copy with the unmerged 013 would be proved against a schema this branch never built | Any applied record this branch has no file for is refused, and the record is named | "refuses a copy with an applied migration this branch does not have"; mutation M1 |
+| 3 | The allowlists were unanchored. `/today_goal/` would have hidden a stray `children.today_goal_flag` column, and the 016 pattern had the same shape | `PREREQ_SCHEMA` and `SAVINGS_SCHEMA` in `server/reconcile.js` match on the object kind and name only | `server/test/reconcile-allowlist.test.js`, 29 cases: each real object allowed, and look-alikes reported. Mutations M3 and M4 restore the old patterns and the tests go red |
+| 4 | Only a copy at 012 was tested | A copy built at 014 runs with 015 as its only prerequisite | "applies only 015 as the prerequisite, then proves 016" |
+| 5 | The temporary migration folder leaked when a prerequisite failed | Removed in `finally` | Read-only check. A failing prerequisite already ends the run |
+| 6 | No guidance after a failed run | The CLI prints "Restore a fresh copy before running again"; runbook note above | Read-only check |
+
+What these tests do not cover: a restored copy whose schema differs from its migration records (for example, a hand-made change on production). The fingerprint compares data and the objects added by each step. It does not compare the copy's whole schema against a freshly built 012. The real backup run is the check for that.
+
+## 18. One-command restored-backup run (design, v1.9)
+
+**Why.** The owner's inspection of 2026-11-21 (#60 comment) confirmed the 20 Nov archive and its `schema_migrations` at 001–012. It also found that the run is blocked because no tool both restores and reconciles. The existing drill `scripts/verify-r2-restore.sh` (unmerged branch `feat/batch-c-pr5-recoverable-account-deletion`) restores into a network-isolated PostgreSQL 17 container, then deletes it on exit. The reconcile CLI is a Node script that needs a URL to the copy. Done by hand, the operator has to keep the container, reach it without a network, write the marker and run the CLI at the right commit. Each of those is a chance for an error.
+
+**Contract.** `scripts/d1-restore-reconcile.sh`, run by the owner on a trusted machine with Docker:
+- **Input:** either the drill's R2 variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET`, `AWS_S3_ENDPOINT`, `PERCY_R2_BACKUP_KEY`; read-only) or `PERCY_BACKUP_FILE` (an archive already downloaded). It also requires `PERCY_RESTORE_DRILL_ACK=isolated-docker-only`.
+- **Preconditions** (each refused with exit 2 before anything is restored):
+  - a clean git tree (`git status --porcelain` empty);
+  - `PERCY_EXPECT_HEAD` equal to `git rev-parse HEAD`, when it is set;
+  - a `node_modules` directory holding `pg` (a symlink is resolved and mounted by its real path);
+  - an output directory that is outside the git work tree, so family data cannot be committed;
+  - `DATABASE_URL` unset.
+- **Steps:**
+  1. Download or read the archive, then run `gzip -t` and record its SHA-256.
+  2. Start `postgres:17` with `--network none` and no ports. The image's own data volume is removed with the container (`docker rm -v`).
+  3. `pg_restore --list`, then restore with the drill's flags.
+  4. Check that the core tables are present.
+  5. Write `percy_restore_marker` with a random 32-byte token. `restored_from` holds the archive key or file name and its SHA-256.
+  6. Run the CLI in a second container, `node:22-bookworm-slim`, with `--network container:<pg>`. It shares only the database container's loopback, so it has no outside network. The repository is mounted read-only at `/app` and the output directory read-write at `/out`. No environment variables are passed through.
+  7. Write `d1-reconcile-report.json` plus a `run.json` that records the git head, both image digests, the archive SHA-256 and the UTC start and end times.
+- **Cleanup:** removes both containers and the temporary files on exit, interrupt or error.
+- **Result:** the CLI's exit code (0 means every step unchanged).
+- **Output privacy:** `umask 077`. The terminal shows step names, counts and the outcome. The report, run record and CLI log can quote values from the data (PostgreSQL error text), so they stay private (§18.2).
+
+**Edge cases (input → expected).**
+| Input | Expected |
+| --- | --- |
+| Dirty tree, or the head differs from `PERCY_EXPECT_HEAD` | Exit 2; nothing downloaded |
+| Output directory inside the repository | Exit 2 |
+| `node_modules` missing `pg` | Exit 2, with "run npm ci" |
+| `DATABASE_URL` set in the shell | Exit 2. It is never passed through in any case |
+| Corrupt archive (`gzip -t` fails) or not a `pg_restore` archive | Exit 3; containers removed |
+| Archive already at 016, at a gap, or holding an unknown 013 | The CLI refuses; exit 1; report kept |
+| Archive at 012 (production) or 014 | The CLI runs prerequisites plus the 016 cycle; exit 0 if unchanged |
+| Ctrl-C mid-run | Trap removes containers and temporary files; the report directory keeps whatever was written |
+
+**Abuse cases.**
+- Pointing it at production is impossible by construction. The only database the CLI can reach is the container's own loopback, and the marker is written by the script into that container alone.
+- A malicious archive runs SQL only inside the disposable container, which has no network. This matches the drill's trust note.
+
+**Test plan.** `scripts/test/d1-restore-reconcile.test.sh`, run where Docker exists:
+- It builds a synthetic archive with no real family data: the 012 schema plus fixture families, dumped with `pg_dump -Ft` and gzipped. The 012 database is built in a `postgres:17` container, and the dump is taken by that same image.
+- Expected outcomes:
+  - the 012 archive gives exit 0, four unchanged steps and a `run.json` head equal to HEAD;
+  - an archive at 016 gives exit 1 with "already has migration 016";
+  - a corrupt archive gives exit 1, with no containers left behind;
+  - a dirty tree, an output directory inside the repository and a missing acknowledgement each give exit 2.
+- CI: a new step in `build-and-test` runs it (GitHub's Ubuntu runners have Docker).
+- Not covered: R2 download (needs credentials; the drill's own code path, unchanged) and a real archive's contents (the owner's run is the check).
+
+**Rollout and reversal.** The script is a new file and changes no app behaviour. Reversal is deleting it. The owner runs it. Engineering reviews `d1-reconcile-report.json` from the owner's private copy, and no family data goes to GitHub.
+
+### 18.1 Design review and build (v1.10)
+
+A fresh-context reviewer found nothing blocking and eight should-fix items. All eight are adopted in the build. Two further problems came up during the build and are fixed too.
+
+| # | Finding | In the build |
+| --- | --- | --- |
+| 1 | The readiness check over the socket can land on the entrypoint's temporary server | `pg_isready -h 127.0.0.1` |
+| 2 | Report files are owned by root and world-readable from inside the container | The CLI container runs as the caller (`--user`), and the files are set to `chmod 600`. Tested |
+| 3 | The archive name was spliced into the marker SQL | Values are passed as psql variables (`:'src'`); the token is `openssl rand -hex 32` |
+| 4 | One exit code covered both a data change and a broken archive | 0 unchanged; 1 the reconcile found a change or refused the copy; 2 precondition; 3 archive, Docker or restore. Tested |
+| 5 | The CLI's output filter was undefined | The CLI's stdout and stderr pass through unchanged (counts and step lines; diffs name ids, not people). PostgreSQL's own restore messages are suppressed, because they can quote rows |
+| 6 | The exact-head claim had gaps: ignored files, `.env`, and the tree changing after the check | The CLI runs from a `git archive HEAD` extract, with `node_modules` mounted read-only beside it. `run.json` records the head, the `package-lock.json` SHA-256 and the `pg` version |
+| 7 | Images were not pinned | Both are pulled by digest |
+| 8 | The CLI container had no name, so Ctrl-C could leave it running | Named, and removed by the trap |
+| 9 | Found in build: the postgres image declares a data volume. Removing the container without `-v` would leave an anonymous volume holding the restored family data | `docker rm -f -v`; the test counts volumes before and after |
+| 10 | Found in build: a report directory inside the repository was created before it was refused | Checked on the resolved path before anything is created; tested |
+
+**Tests.** `scripts/test/d1-restore-reconcile.test.sh` has 17 checks on synthetic archives, built in pinned `postgres:17` from `scripts/test/d1-fixture.mjs`. All pass. CI runs it in `build-and-test`. The checks:
+- Each precondition is refused: acknowledgement, `DATABASE_URL`, report directory in the repository, head mismatch, dirty tree.
+- A non-gzip file and a non-pg archive each fail with exit 3.
+- A copy at 012 passes with all four steps unchanged.
+- A copy at 016 is refused, with the reason in the report.
+- Nothing is left after any run: no containers, no volumes, no work directory.
+- `run.json` matches the real container settings (`docker inspect`): the database has no network and no published ports; the CLI has a read-only `/app`, read-only `node_modules`, a writable `/out`, and only the image's own environment variables.
+
+**Mutations, each red:**
+- M1: the database on the default network.
+- M2: `/app` writable.
+- M3: an environment variable passed to the CLI.
+- M4: removal without `-v`.
+- M5: the work directory kept.
+- M6: no dirty-tree check.
+
+**Not covered:**
+- The R2 download path. It needs credentials, and it is the drill's command unchanged.
+- A real archive's contents. The owner's run is the check.
+- A SIGKILL. The trap cannot run, so the work directory (decompressed backup) and the containers can remain. On a kill, run `docker ps -a --filter name=percy-d1-` and remove what it lists.
+
+**Owner's run:**
+1. On a trusted machine with Docker, check out the PR head and run `npm ci`.
+2. Run:
+   `PERCY_RESTORE_DRILL_ACK=isolated-docker-only PERCY_EXPECT_HEAD=<head> PERCY_REPORT_DIR=<private dir outside the repo> PERCY_BACKUP_FILE=<archive>` (or the R2 variables) `bash scripts/d1-restore-reconcile.sh`.
+3. Keep both JSON files private. Share the step lines, or the report with ids removed if preferred.
+
+### 18.2 Post-build code review of `e108a65`–`0b6f6aa` (v1.11)
+
+A fresh-context reviewer ran the synthetic test (17 passed, tree clean) and found 2 Major, 6 Minor and 4 Nit issues. All are fixed except Nits 9 and 12.
+
+| # | Finding | Fix | Evidence |
+| --- | --- | --- | --- |
+| 1 (Major) | Exit 1 could be a crash; an old report in a reused directory could pass as this run's | Refuse a report directory that is not empty. Exit 1 only with a report that shows a refusal or a change; no report, or neither, is exit 3. A container pre-check confirms Docker can read the temporary folder (Colima and Rancher Desktop share only `$HOME`) | Test "a report directory that is not empty is refused" |
+| 2 (Major) | A remote Docker context or `DOCKER_HOST` would receive the decompressed backup | Refuse unless `DOCKER_HOST` is unset or `unix://` and the current context's endpoint is `unix://` | Test "a remote Docker host is refused" |
+| 3 | A second Ctrl-C during cleanup, or a closed terminal, could leave the container and volume | `cleanup` ignores INT, TERM and HUP; HUP is trapped; a loud warning if anything remains | Read-only check |
+| 4 | CLI error text can quote data on the terminal | The CLI's output goes to `reconcile.log` (private). The terminal shows step names, counts and the outcome; the docs no longer claim the report holds no row values | Test "the terminal shows step lines, not the CLI output" |
+| 5 | The report directory kept its mode | `chmod 700` | Test checks 700 |
+| 6 | `stat -c` is GNU only | Portable mode check in Python | Test runs on Linux; the command has no GNU dependency |
+| 7 | §18 disagreed with the build | Corrected above | — |
+| 8 | Rootless Docker cannot read the private extract | The pre-check fails it with exit 3 and says rootless Docker is not supported | Read-only check |
+| 10 (Nit) | The leftover count included other runs | Counts only containers that appeared during the test | — |
+| 11 (Nit) | Images were pulled after the backup was decompressed | Pulled before any family data is on disk | — |
+| 9, 12 (Nit) | `eval` quoting in the test; `node_modules` not checked against the lock file | Not fixed: the test runs on the project's own temp paths. `run.json` records the lock file's SHA-256 and the `pg` version, which is enough to reproduce the run | — |
+
+The test has 20 checks, all passing.
+
+### 18.3 Owner's test conditions and the protection mutations (v1.12)
+
+The owner's conditions (2026-11-21) were:
+- each locality check exercised on its own, including a remote Docker context;
+- an unsafe environment refused before any restore or database operation;
+- the read-only mount and the other safeguards effective;
+- cleanup even on failure;
+- tests that catch removal of the protections, not incidental setup changes.
+
+**How the test meets them** (`scripts/test/d1-restore-reconcile.test.sh`, 41 checks, all passing):
+- **Refused before any work.** Every precondition case runs against a stand-in `docker` that records each call and does nothing. Each refusal must exit 2, and both of these must hold:
+  - the record holds nothing but `docker context inspect`, so no image pull, container, copy or restore happened;
+  - the archive was never read.
+- **Each locality check alone.** The stand-in can report a local context while `DOCKER_HOST` is remote, which tests the `DOCKER_HOST` check by itself. With the real Docker CLI the two cannot disagree, because `docker context inspect` reflects `DOCKER_HOST`. The stand-in can also report a remote context with no `DOCKER_HOST`, which tests the context check by itself. An `ssh://` context and an unknown (empty) endpoint are covered too. A real remote context created with the Docker CLI is refused as well.
+- **Isolation as run.** For a passing run, `run.json` records the containers' real settings from `docker inspect`:
+  - the database's network is `none`, with no published ports;
+  - the CLI shares only that namespace;
+  - `/app` and `node_modules` are read-only and `/out` is writable;
+  - the CLI sees no environment variables beyond the image's own.
+
+  The test checks each of these.
+- **Cleanup on failure.** Two failures each run with their own `TMPDIR`: a failure after the backup is restored (the copy already has a marker table), and Ctrl-C after the restore. Each must leave no container, no volume and an empty `TMPDIR`, so no decompressed backup remains. Archive failures before the restore also leave no container.
+
+**Mutations.** Each one removes or weakens a protection in the script itself, and each turns a check aimed at that protection red:
+
+| Mutation | Check that went red |
+| --- | --- |
+| M1 database on the default network | isolation record (network `none`) |
+| M2 `/app` writable for the CLI | isolation record (mounts) |
+| M3 an environment variable passed to the CLI | isolation record (environment) |
+| M4 container removed without its volume | no volume left after a failure and after Ctrl-C |
+| M5 work directory (decompressed backup) kept | empty `TMPDIR` after a failure and after Ctrl-C |
+| M6 no dirty-tree check | dirty tree refused before any work |
+| M7 no empty-report-directory check | non-empty report directory refused before any work |
+| M8 no `DOCKER_HOST` check | remote `DOCKER_HOST` with a local context refused |
+| M9 no Docker context check | remote context with no `DOCKER_HOST` refused |
+| M10 CLI output on the terminal | the private log exists, and the terminal shows only step lines |
+| M11 no acknowledgement check | refused before any work |
+| M12 no `DATABASE_URL` check | refused before any work |
+| M13 no expected-head check | refused before any work |
+| M14 report directory inside the repository allowed | refused before any work |
+| M15 no Ctrl-C trap | Ctrl-C exits 130 and cleans up |
+| M16 report files not made private | modes 600 and 700 |
+
+The M14 run, which allowed a report directory inside the repository, left an empty directory there (synthetic data only). That directory also failed the M15 and M16 runs, alongside the checks those mutations target. It was removed, and the clean test passes.
+
+**Still not covered:**
+- **Mapping a CLI crash to exit 3.** No synthetic input makes the CLI crash after the pre-check.
+- **SIGKILL.** No trap can run (§18.1).
+- **The R2 download.** It needs credentials.
+- **A real archive's contents.** The owner's run is the check.
+
