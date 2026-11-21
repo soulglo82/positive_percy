@@ -182,6 +182,18 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     expect((await release(F, kid.id, bike.id, 1)).status).toBe(409);
   });
 
+  it('F5b (O6): a move back from an old generation cannot be undone either', async () => {
+    const kid = await newKid(F, 'Kit', 50);
+    const bike = await newGoal(F, 'Kit bike', 100);
+    await save(F, kid.id, bike.id, 30);
+    const r = (await release(F, kid.id, bike.id, 30)).json.event;
+    await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: false });
+    await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: true });
+    expect((await undo(F, r.id)).status).toBe(409);
+    expect((await ctx.pool.query("SELECT count(*)::int n FROM savings_events WHERE undoes = $1", [r.id])).rows[0].n).toBe(0);
+    expect(await agree(F, kid.id)).toMatchObject({ saved_total: 0, available_points: 50 });
+  });
+
   it('F7/F8: redeem a goal from savings and available; undo restores both (E5/E6)', async () => {
     const kid = await newKid(F, 'Lou', 320);
     const bike = await newGoal(F, 'Lou bike', 300);
