@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.10 |
+| Version | 1.11 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.11 | 2026-11-21 | §18.2: post-build code review of the restore script; findings fixed; §18 corrected to match the build |
 | 1.10 | 2026-11-21 | §18.1: design review adopted (eight findings), and two found in the build; built and tested |
 | 1.9 | 2026-11-21 | §18 (design, before build): one command that restores a backup into an isolated PostgreSQL 17 and runs the reconcile CLI against it |
 | 1.8 | 2026-11-20 | §17: post-build code review of `8fa4d35`; six findings fixed (pending must be a tail of the V1 migrations, unknown applied records refused, allowlists anchored on names, a copy at 014 tested, temp-dir cleanup, restore after any error) |
@@ -402,12 +403,12 @@ What these tests do not cover: a restored copy whose schema differs from its mig
 - **Preconditions** (each refused with exit 2 before anything is restored):
   - a clean git tree (`git status --porcelain` empty);
   - `PERCY_EXPECT_HEAD` equal to `git rev-parse HEAD`, when it is set;
-  - a real `node_modules` directory holding `pg`, not a symlink;
+  - a `node_modules` directory holding `pg` (a symlink is resolved and mounted by its real path);
   - an output directory that is outside the git work tree, so family data cannot be committed;
   - `DATABASE_URL` unset.
 - **Steps:**
   1. Download or read the archive, then run `gzip -t` and record its SHA-256.
-  2. Start `postgres:17` with `--network none`, no ports and no volumes.
+  2. Start `postgres:17` with `--network none` and no ports. The image's own data volume is removed with the container (`docker rm -v`).
   3. `pg_restore --list`, then restore with the drill's flags.
   4. Check that the core tables are present.
   5. Write `percy_restore_marker` with a random 32-byte token. `restored_from` holds the archive key or file name and its SHA-256.
@@ -415,16 +416,16 @@ What these tests do not cover: a restored copy whose schema differs from its mig
   7. Write `d1-reconcile-report.json` plus a `run.json` that records the git head, both image digests, the archive SHA-256 and the UTC start and end times.
 - **Cleanup:** removes both containers and the temporary files on exit, interrupt or error.
 - **Result:** the CLI's exit code (0 means every step unchanged).
-- **Output privacy:** `umask 077`. The script prints only the CLI's counts summary and the step lines, never row contents.
+- **Output privacy:** `umask 077`. The terminal shows step names, counts and the outcome. The report, run record and CLI log can quote values from the data (PostgreSQL error text), so they stay private (§18.2).
 
 **Edge cases (input → expected).**
 | Input | Expected |
 | --- | --- |
 | Dirty tree, or the head differs from `PERCY_EXPECT_HEAD` | Exit 2; nothing downloaded |
 | Output directory inside the repository | Exit 2 |
-| `node_modules` missing, or a symlink (the container cannot follow it) | Exit 2, with "run npm ci" |
+| `node_modules` missing `pg` | Exit 2, with "run npm ci" |
 | `DATABASE_URL` set in the shell | Exit 2. It is never passed through in any case |
-| Corrupt archive (`gzip -t` fails) or not a `pg_restore` archive | Exit 1; containers removed |
+| Corrupt archive (`gzip -t` fails) or not a `pg_restore` archive | Exit 3; containers removed |
 | Archive already at 016, at a gap, or holding an unknown 013 | The CLI refuses; exit 1; report kept |
 | Archive at 012 (production) or 014 | The CLI runs prerequisites plus the 016 cycle; exit 0 if unchanged |
 | Ctrl-C mid-run | Trap removes containers and temporary files; the report directory keeps whatever was written |
@@ -488,4 +489,24 @@ A fresh-context reviewer found nothing blocking and eight should-fix items. All 
 2. Run:
    `PERCY_RESTORE_DRILL_ACK=isolated-docker-only PERCY_EXPECT_HEAD=<head> PERCY_REPORT_DIR=<private dir outside the repo> PERCY_BACKUP_FILE=<archive>` (or the R2 variables) `bash scripts/d1-restore-reconcile.sh`.
 3. Keep both JSON files private. Share the step lines, or the report with ids removed if preferred.
+
+### 18.2 Post-build code review of `e108a65`–`0b6f6aa` (v1.11)
+
+A fresh-context reviewer ran the synthetic test (17 passed, tree clean) and found 2 Major, 6 Minor and 4 Nit issues. All are fixed except Nits 9 and 12.
+
+| # | Finding | Fix | Evidence |
+| --- | --- | --- | --- |
+| 1 (Major) | Exit 1 could be a crash; an old report in a reused directory could pass as this run's | Refuse a report directory that is not empty. Exit 1 only with a report that shows a refusal or a change; no report, or neither, is exit 3. A container pre-check confirms Docker can read the temporary folder (Colima and Rancher Desktop share only `$HOME`) | Test "a report directory that is not empty is refused" |
+| 2 (Major) | A remote Docker context or `DOCKER_HOST` would receive the decompressed backup | Refuse unless `DOCKER_HOST` is unset or `unix://` and the current context's endpoint is `unix://` | Test "a remote Docker host is refused" |
+| 3 | A second Ctrl-C during cleanup, or a closed terminal, could leave the container and volume | `cleanup` ignores INT, TERM and HUP; HUP is trapped; a loud warning if anything remains | Read-only check |
+| 4 | CLI error text can quote data on the terminal | The CLI's output goes to `reconcile.log` (private). The terminal shows step names, counts and the outcome; the docs no longer claim the report holds no row values | Test "the terminal shows step lines, not the CLI output" |
+| 5 | The report directory kept its mode | `chmod 700` | Test checks 700 |
+| 6 | `stat -c` is GNU only | Portable mode check in Python | Test runs on Linux; the command has no GNU dependency |
+| 7 | §18 disagreed with the build | Corrected above | — |
+| 8 | Rootless Docker cannot read the private extract | The pre-check fails it with exit 3 and says rootless Docker is not supported | Read-only check |
+| 10 (Nit) | The leftover count included other runs | Counts only containers that appeared during the test | — |
+| 11 (Nit) | Images were pulled after the backup was decompressed | Pulled before any family data is on disk | — |
+| 9, 12 (Nit) | `eval` quoting in the test; `node_modules` not checked against the lock file | Not fixed: the test runs on the project's own temp paths. `run.json` records the lock file's SHA-256 and the `pg` version, which is enough to reproduce the run | — |
+
+The test has 20 checks, all passing.
 
