@@ -339,9 +339,11 @@ export function rowText(event, timeZone = undefined) {
   // Owner wording (21 Nov): a cancellation, never a success or an earning.
   // The child's name stands in for a pronoun (no pronouns are stored).
   if (event.type === 'savings_ended') {
+    // Owner wording (handover 21 Nov): "{Child}'s {Goal} savings are back in
+    // their points." · "{n} points returned · {reason}".
     const cause = event.note === 'unmarked' ? 'Bigger goal removed'
-      : event.note === 'deleted' ? 'Reward deleted' : `Goal no longer for ${event.child_name}`;
-    return { possessive: true, lead: '', what: event.label, after: `savings are back in ${event.child_name}’s points`,
+      : event.note === 'deleted' ? 'Reward deleted' : 'No longer assigned';
+    return { possessive: true, lead: '', what: event.label, after: 'savings are back in their points.',
       sub: `${event.points} ${pointsWord(event.points)} returned · ${cause} · ${time}` };
   }
   const lead = event.type === 'undo' ? 'undo:' : event.type === 'starting' ? 'started with'

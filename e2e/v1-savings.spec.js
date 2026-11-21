@@ -140,9 +140,32 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     await expect(page.getByText(/0 points to go/)).toHaveCount(0);
     await page.getByRole('heading', { name: 'My next big adventure' }).scrollIntoViewIfNeeded();
     await checkScreen(page, 'child view fully saved', testInfo);
+
+    // Deleting a goal with savings: a per-child warning and confirmation (§21.2).
+    await page.goto('/rewards');
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: `Edit ${tent.title}` }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete Reward' }).click();
+    const delConfirm = page.getByRole('alertdialog');
+    await expect(delConfirm.getByRole('status')).toContainText(`${name}: 100 saved points will become available again.`);
+    await checkScreen(page, 'delete goal with savings', testInfo);
+    await delConfirm.getByRole('button', { name: 'Delete' }).click();
+    await expect(page.getByText('Reward deleted')).toBeVisible();
+    tent = null;
+
+    // Activity: the cancellation line, distinct from success (owner wording).
+    await page.goto('/activity');
+    await page.waitForLoadState('networkidle');
+    const endedRow = page.locator('[data-row-key^="savings_ended-"]').filter({ hasText: `${name}’s` }).first();
+    await expect(endedRow).toContainText('savings are back in their points.');
+    await expect(endedRow).toContainText('100 points returned · Reward deleted');
+    await endedRow.scrollIntoViewIfNeeded();
+    await checkScreen(page, 'activity with savings rows', testInfo);
   } finally {
+    // The child first: its savings go with it, so the goals then delete
+    // without a savings confirmation (§21.2).
+    await page.request.fetch(`/api/children/${kid.id}`, { method: 'DELETE', headers });
     if (tent) await page.request.fetch(`/api/rewards/${tent.id}`, { method: 'DELETE', headers });
     if (bike) await page.request.fetch(`/api/rewards/${bike.id}`, { method: 'DELETE', headers });
-    await page.request.fetch(`/api/children/${kid.id}`, { method: 'DELETE', headers });
   }
 });

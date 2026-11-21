@@ -4,7 +4,7 @@
 // "Bigger rewards" section and form switch, Spend leaving goals out, and the
 // Activity rows. Every figure comes from the server (child.goals).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -173,6 +173,17 @@ describe('Child View', () => {
     expect(childRewards(state.rewards, lara).map((r) => r.id)).toEqual(['r1']);
   });
 
+  it('"Ready to choose your reward!" only where the child can choose an ordinary reward', async () => {
+    mount(<ChildView />, '/childview?child=c1'); // 200 available, Movie night costs 25
+    expect(await screen.findByText('Ready to choose your reward!')).toBeTruthy();
+    cleanup();
+    // Nothing affordable (only goals and an expensive reward): not shown.
+    state.rewards = [R('g1', 'Bike', 300, { is_bigger_goal: true }), R('r9', 'Theme park', 5000)];
+    mount(<ChildView />, '/childview?child=c1');
+    expect(await screen.findByText('Theme park')).toBeTruthy();
+    expect(screen.queryByText('Ready to choose your reward!')).toBeNull();
+  });
+
   it('S5: a goal hidden from children shows on neither the tile nor the card', async () => {
     state.rewards = [R('g1', 'Bike', 300, { is_bigger_goal: true, visible_to_child: false }), R('r1', 'Movie night', 25)];
     expect(visibleGoals(state.rewards, lara)).toEqual([]);
@@ -242,10 +253,10 @@ describe('Home, Rewards, Spend and Activity', () => {
     expect(rowIconKind({ type: 'moved_back' })).toBe('saving');
     // §20.1: why saved points stopped counting, with child, goal, amount and cause.
     const ended = (note, points = 40) => rowText({ type: 'savings_ended', points, label: 'Bike', note, child_name: 'Lara', created_date: t }, 'UTC');
-    // Owner wording (21 Nov): "Lara's Bike savings are back in Lara's points" (a cancellation, not a success).
-    expect(ended('unmarked')).toMatchObject({ possessive: true, what: 'Bike', after: 'savings are back in Lara’s points' });
+    // Owner wording (handover 21 Nov): "Lara's Bike savings are back in their points." (a cancellation, not a success).
+    expect(ended('unmarked')).toMatchObject({ possessive: true, what: 'Bike', after: 'savings are back in their points.' });
     expect(ended('unmarked').sub).toContain('40 points returned · Bigger goal removed');
-    expect(ended('reassigned').sub).toContain('Goal no longer for Lara');
+    expect(ended('reassigned').sub).toContain('40 points returned · No longer assigned');
     expect(ended('deleted').sub).toContain('Reward deleted');
     expect(ended('unmarked', 1).sub).toContain('1 point returned');
     expect(JSON.stringify(ended('unmarked'))).not.toMatch(/earned|redeemed|hit|goal for Bike/);

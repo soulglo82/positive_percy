@@ -203,6 +203,13 @@ export default function ChildView() {
             ) : rewards.length === 0 ? (
               <p className="text-muted-foreground">No rewards created yet.</p>
             ) : (
+              <>
+              {/* Owner wording (handover 21 Nov): only where the child can genuinely
+                  choose, i.e. an ordinary reward they can afford and have not asked
+                  for yet. Bigger goals are never choosable here (a parent redeems). */}
+              {rewards.some((r) => rewardState(r, child).kind === 'ask') && (
+                <p className="font-semibold text-foreground">Ready to choose your reward!</p>
+              )}
               <ul className="space-y-2">
                 {rewards.map((reward) => {
                   const state = rewardState(reward, child);
@@ -231,6 +238,7 @@ export default function ChildView() {
                   );
                 })}
               </ul>
+              </>
             )}
             <p className="text-sm text-muted-foreground">Choosing a reward is a request. Only a parent-authorised confirmation can spend points.</p>
           </CardContent>

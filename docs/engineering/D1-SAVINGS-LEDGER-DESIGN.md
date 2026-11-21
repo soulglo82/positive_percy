@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.23 |
+| Version | 1.24 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.24 | 2026-11-21 | §21.8: the owner's final savings wording (handover 21 Nov) |
 | 1.23 | 2026-11-21 | §21.7: post-build code review of the snapshot confirmation |
 | 1.22 | 2026-11-21 | §21.6: owner wording: success and cancellation kept distinct |
 | 1.21 | 2026-11-21 | §21.5: design review adopted, built, tested, mutations |
@@ -1091,4 +1092,23 @@ A fresh-context reviewer found no Major issue. They could not end savings withou
 | Nit | A deleted child's name was blank in the list | "A child" |
 | Nit | A 409 without a snapshot would ask again forever | It is shown as an error instead |
 | Nit | The server lists are not cleared by a background refetch | Kept: safe, because the server re-checks and asks again |
+
+### 21.8 Final savings wording (owner handover, 21 November) (v1.24)
+
+The owner's handover sets the final strings. They supersede §21.6 where they differ. Achieving a target and ending an allocation are kept distinct, each matching the server's real event.
+
+| Situation | Final wording | Where |
+| --- | --- | --- |
+| A savings target fully funded | "Saved!" | Parent goal rows: Home, Children card and milestone |
+| A child can choose a reward | "Ready to choose your reward!" | Child View, above "Rewards I can choose", only when an ordinary reward is affordable and not yet asked for. Bigger goals are never choosable there; a parent redeems them |
+| A child has saved enough for a bigger goal | "{Child} has saved enough for {Goal}!" | Child View "My next big adventure"; Home under the goal. Not a redemption |
+| The parent redeems a bigger goal | "Redeem" | The savings dialog button and the confirmation. "Ready to redeem" stays beside a funded goal in the parent's dialog |
+| An allocation ended (`savings_ended`) | "{Child}'s {Goal} savings are back in their points." | Activity |
+| Its detail | "{n} points returned · {reason}"; the reason is "Bigger goal removed", "No longer assigned" or "Reward deleted" | Activity |
+
+- "their" replaces the repeated name (§21.6), so the pronoun question is settled.
+- Singular is handled ("1 point returned").
+- Tests: no cancellation line says earned, redeemed or a goal reached. "Ready to choose your reward!" appears only when there is a choosable reward.
+
+**Evidence.** `e2e/v1-savings.spec.js` adds two screenshots at all four sizes, `delete-goal-with-savings` and `activity-with-savings-rows`, and refreshes the rest.
 
