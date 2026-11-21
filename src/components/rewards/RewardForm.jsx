@@ -50,6 +50,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   // warnings, and its snapshot is what the parent then confirms.
   const [serverEnding, setServerEnding] = useState(null);
   const [deleteEnding, setDeleteEnding] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const opened = useRef(false);
 
   // Fresh form on each opening: from the reward, the starter template, or blank.
@@ -102,12 +103,12 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   const shown = serverEnding ? serverEnding.ending.map((e) => ({ id: e.child_id, name: e.name, saved: e.saved })) : losing;
   const endsSavings = shown.length > 0;
   // A delete ends the savings of every child who has some in this goal.
-  const deleting = !reward?.is_bigger_goal ? [] : children
+  const deletingFrom = !reward?.is_bigger_goal ? [] : children
     .filter((c) => hadFor(c.id))
     .map((c) => ({ id: c.id, name: c.name, saved: (c.goals || []).find((g) => String(g.rewardId) === String(reward.id))?.saved ?? 0 }))
     .filter((c) => c.saved > 0);
-  const deleteShown = deleteEnding ? deleteEnding.ending.map((e) => ({ id: e.child_id, name: e.name, saved: e.saved })) : deleting;
-  const releaseLine = (c) => `${c.name}: ${c.saved} saved ${c.saved === 1 ? 'point' : 'points'} will become available again.`;
+  const deleteShown = deleteEnding ? deleteEnding.ending.map((e) => ({ id: e.child_id, name: e.name, saved: e.saved })) : deletingFrom;
+  const releaseLine = (c) => `${c.name || 'A child'}: ${c.saved} saved ${c.saved === 1 ? 'point' : 'points'} will become available again.`;
 
   const save = async (confirmed = false) => {
     if (!valid || saving) return;
@@ -239,7 +240,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+      <AlertDialog open={confirmDelete} onOpenChange={(o) => { if (deleting) return; setConfirmDelete(o); if (!o) setDeleteEnding(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {reward?.title}?</AlertDialogTitle>
@@ -254,15 +255,21 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
             )}
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteEnding(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={async (e) => {
+            <AlertDialogCancel disabled={deleting} onClick={() => setDeleteEnding(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={deleting} onClick={async (e) => {
               e.preventDefault();
-              const confirm = deleteShown.length ? (deleteEnding ? deleteEnding.snapshot : snapshotOf(deleting)) : null;
-              const r = await onDelete(reward, confirm);
-              // The server saw something else: show its list and ask again.
-              if (r?.needsConfirm) { setDeleteEnding(r.needsConfirm); return; }
-              setConfirmDelete(false);
-              setDeleteEnding(null);
+              if (deleting) return; // one request at a time (code review of 2074d55)
+              setDeleting(true);
+              try {
+                const confirm = deleteShown.length ? (deleteEnding ? deleteEnding.snapshot : snapshotOf(deletingFrom)) : null;
+                const r = await onDelete(reward, confirm);
+                // The server saw something else: show its list and ask again.
+                if (r?.needsConfirm) { setDeleteEnding(r.needsConfirm); return; }
+                setConfirmDelete(false);
+                setDeleteEnding(null);
+              } finally {
+                setDeleting(false);
+              }
             }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

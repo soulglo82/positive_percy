@@ -456,6 +456,18 @@ describe('§21: the confirmation is bound to what the parent saw', () => {
     expect(onDelete.mock.calls[1][1]).toEqual(serverSaw.snapshot);
   });
 
+  it('Delete sends one request while it is in flight', async () => {
+    let resolve;
+    const onDelete = vi.fn(() => new Promise((r) => { resolve = r; }));
+    mount(<RewardForm isOpen onClose={() => {}} onSubmit={vi.fn()} onDelete={onDelete} children={[]} reward={R('r1', 'Movie night', 25)} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Reward' }));
+    const del = within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Delete' });
+    fireEvent.click(del);
+    fireEvent.click(del);
+    expect(onDelete).toHaveBeenCalledTimes(1);
+    resolve(true);
+  });
+
   it('deleting a reward with no savings sends no snapshot', async () => {
     const onDelete = vi.fn().mockResolvedValue(true);
     mount(<RewardForm isOpen onClose={() => {}} onSubmit={vi.fn()} onDelete={onDelete} children={[{ id: 'c1', name: 'Lara', goals: [] }]} reward={R('r1', 'Movie night', 25)} />);

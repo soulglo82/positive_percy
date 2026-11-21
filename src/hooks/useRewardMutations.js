@@ -30,6 +30,8 @@ export function useRewardMutations() {
       // children so the form's per-child warning shows the current figures.
       if (err?.code === 'ENDS_SAVINGS') {
         done();
+        // No snapshot to confirm: say so rather than ask again forever.
+        if (!err.snapshot) { toast.error(err.message || "Couldn't save the reward."); return false; }
         return { needsConfirm: { ending: err.ending || [], snapshot: err.snapshot } };
       }
       toast.error(err?.message || "Couldn't save the reward.");
@@ -44,6 +46,8 @@ export function useRewardMutations() {
     } catch (err) {
       if (err?.code === 'ENDS_SAVINGS') {
         done();
+        // No snapshot to confirm: say so rather than ask again forever.
+        if (!err.snapshot) { toast.error(err.message || "Couldn't save the reward."); return false; }
         return { needsConfirm: { ending: err.ending || [], snapshot: err.snapshot } };
       }
       toast.error(err?.message || "Couldn't delete the reward.");

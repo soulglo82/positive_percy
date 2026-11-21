@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.22 |
+| Version | 1.23 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.23 | 2026-11-21 | §21.7: post-build code review of the snapshot confirmation |
 | 1.22 | 2026-11-21 | §21.6: owner wording: success and cancellation kept distinct |
 | 1.21 | 2026-11-21 | §21.5: design review adopted, built, tested, mutations |
 | 1.20 | 2026-11-21 | §21 (design, before build): the confirmation bound to a snapshot; delete confirmed the same way |
@@ -1078,4 +1079,16 @@ The owner gave this as product-copy direction, not merge authorisation.
 - No cancellation line says the points were earned or the reward redeemed, and none uses success wording (tested).
 - **Pronouns:** the owner's example said "her points". No pronouns are stored, so the line repeats the child's name. **Owner to confirm.**
 - **"Ready to choose your reward!"** is for a place where a child genuinely selects a reward. Today Child View's rewards a child can afford carry the approved caption "Ask a parent", and goals are not choosable. So there is no screen to apply it to yet. **Owner to confirm** whether it should replace an existing caption.
+
+### 21.7 Post-build code review of `7100b78..2074d55` (v1.23)
+
+A fresh-context reviewer found no Major issue. They could not end savings without the parent having seen the exact children and amounts. Fixes:
+
+| # | Finding | Fix |
+| --- | --- | --- |
+| Minor 1 | A double click on Delete sent two requests; the second showed "Not found" | A `deleting` guard; Delete and Cancel are disabled while in flight. Tested |
+| Minor 2 | Closing the delete dialog with Escape kept the server's list for the next opening | Cleared on any close |
+| Nit | A deleted child's name was blank in the list | "A child" |
+| Nit | A 409 without a snapshot would ask again forever | It is shown as an error instead |
+| Nit | The server lists are not cleared by a background refetch | Kept: safe, because the server re-checks and asks again |
 
