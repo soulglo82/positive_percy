@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.8 |
+| Version | 1.9 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.9 | 2026-11-21 | §18 (design, before build): one command that restores a backup into an isolated PostgreSQL 17 and runs the reconcile CLI against it |
 | 1.8 | 2026-11-20 | §17: post-build code review of `8fa4d35`; six findings fixed (pending must be a tail of the V1 migrations, unknown applied records refused, allowlists anchored on names, a copy at 014 tested, temp-dir cleanup, restore after any error) |
 | 1.7 | 2026-11-20 | §16: production is at migration 012, so the restored-backup run applies the V1 prerequisites 014 and 015 first; the CLI and its test cover a copy at 012 |
 | 1.0 | 2026-11-19 | First draft |
@@ -390,4 +391,56 @@ A fresh-context reviewer read the §16 change. It found nothing Major and six sm
 | 6 | No guidance after a failed run | The CLI prints "Restore a fresh copy before running again"; runbook note above | Read-only check |
 
 What these tests do not cover: a restored copy whose schema differs from its migration records (for example, a hand-made change on production). The fingerprint compares data and the objects added by each step. It does not compare the copy's whole schema against a freshly built 012. The real backup run is the check for that.
+
+## 18. One-command restored-backup run (design, v1.9)
+
+**Why.** The owner's inspection of 2026-11-21 (#60 comment) confirmed the 20 Nov archive and its `schema_migrations` at 001–012. It also found that the run is blocked because no tool both restores and reconciles. The existing drill `scripts/verify-r2-restore.sh` (unmerged branch `feat/batch-c-pr5-recoverable-account-deletion`) restores into a network-isolated PostgreSQL 17 container, then deletes it on exit. The reconcile CLI is a Node script that needs a URL to the copy. Done by hand, the operator has to keep the container, reach it without a network, write the marker and run the CLI at the right commit. Each of those is a chance for an error.
+
+**Contract.** `scripts/d1-restore-reconcile.sh`, run by the owner on a trusted machine with Docker:
+- **Input:** either the drill's R2 variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET`, `AWS_S3_ENDPOINT`, `PERCY_R2_BACKUP_KEY`; read-only) or `PERCY_BACKUP_FILE` (an archive already downloaded). It also requires `PERCY_RESTORE_DRILL_ACK=isolated-docker-only`.
+- **Preconditions** (each refused with exit 2 before anything is restored):
+  - a clean git tree (`git status --porcelain` empty);
+  - `PERCY_EXPECT_HEAD` equal to `git rev-parse HEAD`, when it is set;
+  - a real `node_modules` directory holding `pg`, not a symlink;
+  - an output directory that is outside the git work tree, so family data cannot be committed;
+  - `DATABASE_URL` unset.
+- **Steps:**
+  1. Download or read the archive, then run `gzip -t` and record its SHA-256.
+  2. Start `postgres:17` with `--network none`, no ports and no volumes.
+  3. `pg_restore --list`, then restore with the drill's flags.
+  4. Check that the core tables are present.
+  5. Write `percy_restore_marker` with a random 32-byte token. `restored_from` holds the archive key or file name and its SHA-256.
+  6. Run the CLI in a second container, `node:22-bookworm-slim`, with `--network container:<pg>`. It shares only the database container's loopback, so it has no outside network. The repository is mounted read-only at `/app` and the output directory read-write at `/out`. No environment variables are passed through.
+  7. Write `d1-reconcile-report.json` plus a `run.json` that records the git head, both image digests, the archive SHA-256 and the UTC start and end times.
+- **Cleanup:** removes both containers and the temporary files on exit, interrupt or error.
+- **Result:** the CLI's exit code (0 means every step unchanged).
+- **Output privacy:** `umask 077`. The script prints only the CLI's counts summary and the step lines, never row contents.
+
+**Edge cases (input → expected).**
+| Input | Expected |
+| --- | --- |
+| Dirty tree, or the head differs from `PERCY_EXPECT_HEAD` | Exit 2; nothing downloaded |
+| Output directory inside the repository | Exit 2 |
+| `node_modules` missing, or a symlink (the container cannot follow it) | Exit 2, with "run npm ci" |
+| `DATABASE_URL` set in the shell | Exit 2. It is never passed through in any case |
+| Corrupt archive (`gzip -t` fails) or not a `pg_restore` archive | Exit 1; containers removed |
+| Archive already at 016, at a gap, or holding an unknown 013 | The CLI refuses; exit 1; report kept |
+| Archive at 012 (production) or 014 | The CLI runs prerequisites plus the 016 cycle; exit 0 if unchanged |
+| Ctrl-C mid-run | Trap removes containers and temporary files; the report directory keeps whatever was written |
+
+**Abuse cases.**
+- Pointing it at production is impossible by construction. The only database the CLI can reach is the container's own loopback, and the marker is written by the script into that container alone.
+- A malicious archive runs SQL only inside the disposable container, which has no network. This matches the drill's trust note.
+
+**Test plan.** `scripts/test/d1-restore-reconcile.test.sh`, run where Docker exists:
+- It builds a synthetic archive with no real family data: the 012 schema plus fixture families, dumped with `pg_dump -Ft` and gzipped. The 012 database is built in a `postgres:17` container, and the dump is taken by that same image.
+- Expected outcomes:
+  - the 012 archive gives exit 0, four unchanged steps and a `run.json` head equal to HEAD;
+  - an archive at 016 gives exit 1 with "already has migration 016";
+  - a corrupt archive gives exit 1, with no containers left behind;
+  - a dirty tree, an output directory inside the repository and a missing acknowledgement each give exit 2.
+- CI: a new step in `build-and-test` runs it (GitHub's Ubuntu runners have Docker).
+- Not covered: R2 download (needs credentials; the drill's own code path, unchanged) and a real archive's contents (the owner's run is the check).
+
+**Rollout and reversal.** The script is a new file and changes no app behaviour. Reversal is deleting it. The owner runs it. Engineering reviews `d1-reconcile-report.json` from the owner's private copy, and no family data goes to GitHub.
 
