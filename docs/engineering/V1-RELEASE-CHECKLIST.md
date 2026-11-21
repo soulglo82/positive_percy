@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.0 |
+| Version | 1.1 |
 | Issued | 2026-11-20 |
 | Owner | Percy V1 engineering |
 | Status | Preparation. No merge or deployment is authorised by this document |
@@ -11,6 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.1 | 2026-11-21 | Owner decision: V1 launches with all three core features, savings included; the reduced first release is removed. Restored-backup run now one command (#60, D1 §18) |
 | 1.0 | 2026-11-20 | First checklist: Railway correction done, migration path established, gates listed |
 
 ## 1. What a release changes in production (checked 2026-11-20)
@@ -37,29 +38,27 @@
 
 | Gate | Owner | State |
 | --- | --- | --- |
-| Restored-backup reconciliation (014, 015 and 016) on a verified, isolated copy, exit 0 with every step unchanged | Owner runs; engineering reviews the report | **Open** |
+| Restored-backup reconciliation (014, 015 and 016) on a verified, isolated copy, exit 0 with every step unchanged | Owner runs `scripts/d1-restore-reconcile.sh` (#60, D1 §18) with read-only R2 credentials kept off GitHub, logs and chat; engineering reviews the report | **Open** |
 | D1 savings features (save, release, goal redeem) and their screens, then a complete UI review | Engineering after the reconciliation; owner review | **Open** |
 | Final visual sign-off of the integrated app | Owner | Main-tab layout supported, artwork accepted; complete sign-off open |
 | Final points-star artwork | Owner or designer | **Open** (placeholder in use) |
 | Fox 1A live-app fidelity sign-off | Owner | **Open** (`RUNTIME_ASSETS.json` notes "live-app fidelity sign-off pending") |
 | Goals empty-state Freepik map: licence evidence | Owner | **Open**; the map stays hidden behind its gate |
+| Backup retention: R2 has no object-expiration rule and no object lock, only the default 7-day incomplete-upload rule (owner's read, 2026-11-21) | Owner | **Open**, tracked in #44; no retention period is claimed |
+| Unexplained count reductions between the 10 and 11 Nov backups (families 9→2, children 12→6, users 10→2, uploads 14→3; owner's archive inspection, 2026-11-21) | Owner | **Open**, tracked in #44; possibly test-family cleanup, cause not established |
 | Privacy and account controls, shared carers | Owner (legal and restore gates) | Shown as "Review" and "Planned"; not features |
 
 ## 4. Release order (when the gates pass)
 
-1. **Choose the scope** (owner decision):
-   - (a) V1 with D1 savings: #57, #58, #59, #61, #62, #63 and #60, with the savings features;
-   - (b) V1 first without 016, then D1 as its own release once it passes.
-
-   Recommendation: **(b)**. 014 and 015 are additive and proved by the same restored-backup run; 016 and the savings features follow once complete.
-2. Merge the stack in order into `claude/percy-v1-integration`: #57, #58, #59, #61, #62, #63, then #60 if in scope. Then open one release-candidate PR from the integration branch into the default branch, with CI green at its head.
+1. **Scope (owner decision, 2026-11-21):** V1 launches with all three core features, including saving points towards bigger goals. The release is #57, #58, #59, #61, #62, #63 and #60, with the savings features and screens built on #60. This is the planning direction. It does not permit any deploy before every gate in §3 passes.
+2. Merge the stack in order into `claude/percy-v1-integration`: #57, #58, #59, #61, #62, #63, then #60. Then open one release-candidate PR from the integration branch into the default branch, with CI green at its head.
 3. Before merging the release candidate:
    - a fresh backup;
    - confirm the Railway app service's build and start settings are unchanged (`vite build`, `node server/index.js`);
    - confirm `railway.json` is absent at the head.
 4. After deploy:
    - `GET /api/health` returns 200;
-   - `schema_migrations` lists 014 and 015 (and 016 if in scope);
+   - `schema_migrations` lists 014, 015 and 016;
    - a parent journey on production: sign in, award, approve a request, open Activity;
    - the design-selector service is unaffected.
 5. **Reversal:**
