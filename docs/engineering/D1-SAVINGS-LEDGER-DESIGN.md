@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.18 |
+| Version | 1.19 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.19 | 2026-11-21 | §20.9: build record of §20; code review fixes (server-side confirmation); #44 findings |
 | 1.18 | 2026-11-21 | §20.8: design review of §20; two blocking lock and CLI findings adopted |
 | 1.17 | 2026-11-21 | §20 (design, before build): the owner's #64 review: a durable record when a goal's savings end (N2, migration 017), "Fully saved!", the per-child warning, the excess after redemption, evidence |
 | 1.16 | 2026-11-21 | §19.9: post-build code review of the screens; 1 Major and 9 Minor fixed |
@@ -903,4 +904,61 @@ The archive shrank from 8.68 MB to 646 kB between 10 and 11 November, and famili
 | S3 | "Which children" | Worked out in JavaScript with `spendableFrom` and `goalGeneration` on the before row and the `RETURNING` row | Writer tests |
 | S4 | Activity type | `reward_removed` gets its own type, `savings_ended`, under All only, never in Goals or as a move back | Activity test |
 | Wording | "available again" is untrue while available is held at 0 | "{n} saved points released" (provisional) | — |
+
+### 20.9 Build record, code review and the #44 findings (v1.19)
+
+**Built** (commits `ca5298d`, `addfe54` and the review fixes):
+- migration 017 and its refusing rollback;
+- `recordEndedSavings` on reward edit and delete;
+- the lock modes (§20.8);
+- the edit retried once on deadlock;
+- the Activity type `savings_ended`;
+- export `ended_by`;
+- the CLI's 016+017 cycle;
+- "Fully saved!";
+- the per-child warning;
+- the excess note;
+- the E12 test;
+- evidence: the card itself on phone sizes, the warning and confirmation, a fully saved goal, and 320 px legibility.
+
+**Tests.** 38 savings server tests, 27 screen tests and the full suite (1,015) pass. So do the restore helper (41/41) and the browser suite (46 passed, 14 skipped as before).
+
+**Mutations:**
+
+| Mutation | Result |
+| --- | --- |
+| Cause always "reassigned" | Red (2) |
+| No `KEY SHARE` pre-read | Red (child delete race) |
+| Records an already-ended generation again | Red |
+| `FOR UPDATE` back on the child (savings paths) | Red (F12) |
+| No server confirmation | Red |
+| Families back to `FOR UPDATE` | **Survives:** the editor takes every child's lock before its first write, so it never holds the family lock while waiting. That ordering already prevents the cycle; `NO KEY UPDATE` on families is a second protection. The deterministic test goes red only when both are removed |
+| No 40P01 retry | **Survives:** no known cycle is left to trigger it. It is a safety net, for example for the cycle in Nit 4 below |
+
+**Post-build code review** (fresh context): no Major findings.
+
+| # | Finding | Status |
+| --- | --- | --- |
+| Minor 1 | The confirmation relied on the page's cached `goals`. A stale page could end savings without asking | **Fixed on the server:** an edit that would end savings returns 409 `ENDS_SAVINGS` with nothing changed, unless the request carries `confirm_end_savings: true`. The form sends that flag only after the parent confirms the per-child warning. On a 409 the client refreshes the children, so the warning shows the current figures. Tested (red without it) |
+| Minor 2 | The Activity line read "Lara savings ended for Bike" | Now "Lara's savings for Bike ended", with "{n} saved points released · {cause}" |
+| Nit 3 | §20.8 B1's premises | Corrected here: `redemptions` has no foreign key to `rewards`, and the editor's lock ordering is what prevents the family cycle |
+| Nit 4 | A rare cycle through a shared photo upload | Covered by the 40P01 retry |
+| Nit 5–7 | The retry comment, a stale CLI comment, React keys | Fixed |
+| Nit 8 | A legacy child with `total_points` NULL has no `goals`, so it gets no warning | Recorded: legacy only; the server confirmation still applies |
+
+**#44 findings** (read-only; no production rows read):
+- **Railway deployments:**
+  - The app service only ever deployed the default branch.
+  - Between the 10 and 11 November backups it deployed 10 releases (A2 PR1 to Batch C PR1, migrations 002–012).
+  - The `db-backup` service was last deployed on 10 November at 02:33 UTC (template update "Update aws sdk") and has not changed since.
+- **No code that ran in production deletes families or users.**
+  - On the default branch, no endpoint, migration or boot step deletes from `families` or `users` (searched).
+  - The only code that does is on `claude/debug-missing-deployed-changes-dA7zP` (March 2026). It is not in the default branch, and Railway never deployed it.
+  - Child deletes cascade only that child's history.
+- **The Railway logs for `db-backup` and `Postgres` hold nothing for 10–11 November**, beyond retention.
+- **Conclusion:** the drop from 9 families to 2 and from 10 users to 2 was not made by the app. It came from outside the app (direct database access, a reset or a restore), or the 11 November archive and everything after it is incomplete. Only the owner can establish which.
+- **Needed for the gate:**
+  - the owner's account of any manual change on 10–11 November;
+  - authoritative production counts of families, children and users, from a read the owner runs or authorises, printing counts only;
+  - the restored copy's counts from the drill, compared with production.
 

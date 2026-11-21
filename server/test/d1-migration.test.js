@@ -207,7 +207,7 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [kite.id]);
     await ledger(B, ann, kite, 30);
     await ledger(B, ben, kite, 40);
-    expect((await call('PUT', `/api/rewards/${kite.id}`, { assigned_child_ids: [ben.id] })).status).toBe(200); // away from Ann
+    expect((await call('PUT', `/api/rewards/${kite.id}`, { assigned_child_ids: [ben.id], confirm_end_savings: true })).status).toBe(200); // away from Ann (the parent confirmed, §20.9)
     expect((await agree(B, ann.id)).saved_total).toBe(0);
     expect((await call('PUT', `/api/rewards/${kite.id}`, { assigned_child_ids: [] })).status).toBe(200); // back to everyone
     expect((await agree(B, ann.id)).saved_total).toBe(0); // not revived

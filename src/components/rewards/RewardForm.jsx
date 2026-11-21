@@ -83,7 +83,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   // child.goals). Nothing saved: nothing is lost, so no warning (§20.3).
   const losing = !reward?.is_bigger_goal ? [] : children
     .filter((c) => hadFor(c.id) && (!biggerGoal || !hasFor(c.id)))
-    .map((c) => ({ name: c.name, saved: (c.goals || []).find((g) => String(g.rewardId) === String(reward.id))?.saved ?? 0 }))
+    .map((c) => ({ id: c.id, name: c.name, saved: (c.goals || []).find((g) => String(g.rewardId) === String(reward.id))?.saved ?? 0 }))
     .filter((c) => c.saved > 0);
   const endsSavings = losing.length > 0;
 
@@ -101,6 +101,8 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
         assigned_child_ids: assigned,
         ...(editing ? {} : { emoji }),
         ...(iconTouched ? { icon_key: iconKey } : {}),
+        // Only after the parent confirmed the per-child warning (§20.3, §20.9).
+        ...(confirmed === true && endsSavings ? { confirm_end_savings: true } : {}),
       };
       const ok = await onSubmit(payload);
       if (ok === false) return;
@@ -165,7 +167,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
               </label>
               {endsSavings && (
                 <div role="status" className="space-y-1 rounded-md border border-border bg-warning p-3 text-sm text-foreground">
-                  {losing.map((c) => <p key={c.name}>{c.name}: {c.saved} saved {c.saved === 1 ? 'point' : 'points'} will become available again.</p>)}
+                  {losing.map((c) => <p key={c.id}>{c.name}: {c.saved} saved {c.saved === 1 ? 'point' : 'points'} will become available again.</p>)}
                   <p>Past savings won't be restored if you re-enable the goal.</p>
                 </div>
               )}

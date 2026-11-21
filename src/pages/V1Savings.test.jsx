@@ -236,7 +236,7 @@ describe('Home, Rewards, Spend and Activity', () => {
     expect(rowIconKind({ type: 'moved_back' })).toBe('saving');
     // §20.1: why saved points stopped counting, with child, goal, amount and cause.
     const ended = (note) => rowText({ type: 'savings_ended', points: 40, label: 'Bike', note, child_name: 'Lara', created_date: t }, 'UTC');
-    expect(ended('unmarked')).toMatchObject({ lead: 'savings ended for', what: 'Bike' });
+    expect(ended('unmarked')).toMatchObject({ possessive: true, lead: 'savings for', what: 'Bike', after: 'ended' });
     expect(ended('unmarked').sub).toContain('40 saved points released · Bigger goal turned off');
     expect(ended('reassigned').sub).toContain('No longer for Lara');
     expect(ended('deleted').sub).toContain('Reward deleted');
@@ -263,7 +263,7 @@ describe('code review of the screens', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
     fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Save reward' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    expect(onSubmit.mock.calls[0][0].is_bigger_goal).toBe(false);
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ is_bigger_goal: false, confirm_end_savings: true });
   });
 
   it('Major: assigning a goal to one child (from all) warns for the one who loses it; nothing saved means no warning', async () => {
@@ -279,6 +279,7 @@ describe('code review of the screens', () => {
     expect(screen.queryByRole('status')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalled()); // no confirmation needed
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('confirm_end_savings');
   });
 
   it('"Fully saved!" instead of "0 to go", for the parent and in Child View; "Ready to redeem" in the dialog', async () => {

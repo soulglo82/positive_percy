@@ -24,6 +24,9 @@ export function useRewardMutations() {
       await saveMutation.mutateAsync({ id, data });
       return true;
     } catch (err) {
+      // D1 §20.9: savings changed since the page loaded. Refresh the
+      // children so the form's per-child warning shows the current figures.
+      if (err?.code === 'ENDS_SAVINGS') queryClient.invalidateQueries({ queryKey: ['children'] });
       toast.error(err?.message || "Couldn't save the reward.");
       return false;
     }

@@ -74,7 +74,14 @@ class Entity {
       headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error(await parseError(res, `Failed to update ${this.endpoint}`));
+    if (!res.ok) {
+      // Keep the status and the server's code (D1 §20.9: ENDS_SAVINGS).
+      const body = await res.clone().json().catch(() => ({}));
+      const err = new Error(await parseError(res, `Failed to update ${this.endpoint}`));
+      err.status = res.status;
+      err.code = body?.code;
+      throw err;
+    }
     return res.json();
   }
 

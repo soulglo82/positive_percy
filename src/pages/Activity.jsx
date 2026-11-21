@@ -339,7 +339,7 @@ export function rowText(event, timeZone = undefined) {
   if (event.type === 'savings_ended') {
     const cause = event.note === 'unmarked' ? 'Bigger goal turned off'
       : event.note === 'deleted' ? 'Reward deleted' : `No longer for ${event.child_name}`;
-    return { lead: 'savings ended for', what: event.label, sub: `${event.points} saved ${pointsWord(event.points)} released · ${cause} · ${time}` };
+    return { possessive: true, lead: 'savings for', what: event.label, after: 'ended', sub: `${event.points} saved ${pointsWord(event.points)} released · ${cause} · ${time}` };
   }
   const lead = event.type === 'undo' ? 'undo:' : event.type === 'starting' ? 'started with'
     : event.type === 'correction' ? 'had a one-off' : event.points < 0 ? 'had an earlier adjustment for' : 'adjusted';
@@ -355,16 +355,17 @@ function NarrativeItem({ event, timeZone, canCorrect, onCorrect }) {
   // An undone award or spend and its undo row are both shown, the amount
   // struck through, so the list still adds up to the balance.
   const undone = !!event.undone;
-  const { lead, what, sub } = rowText(event, timeZone);
+  const { lead, what, sub, possessive = false, after = null } = rowText(event, timeZone);
 
   return (
     <div data-row-key={`${event.type}-${event.id}`} className="flex items-center gap-3 px-3 py-3 border-b border-border last:border-b-0">
       <RowIcon event={event} />
       <div className="flex-1 min-w-0">
         <p className="text-sm leading-snug break-words">
-          <span className="font-semibold text-foreground">{event.child_name}</span>
+          <span className="font-semibold text-foreground">{event.child_name}{possessive ? '’s' : ''}</span>
           {' '}<span className="text-muted-foreground">{lead}</span>{' '}
           <span className="font-medium text-foreground">{what}</span>
+          {after && <>{' '}<span className="text-muted-foreground">{after}</span></>}
         </p>
         <p className="text-xs text-subtle-foreground mt-0.5 break-words">
           {sub}

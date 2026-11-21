@@ -58,8 +58,8 @@ try {
   if (applied.length) throw new Error(`This copy already has migration ${applied.map((n) => n.slice(0, 3)).join(' and ')}. Restore a copy taken before 016.`);
   // The copy must be at a point on production's line before 016: every
   // applied record has a file on this branch (no 013 from another branch),
-  // and what is pending is exactly a tail of the V1 migrations (016, or 015
-  // and 016, or 014, 015 and 016). Anything else is refused, so the run
+  // and what is pending is exactly a tail of the V1 migrations, always
+  // including 016 and 017 (proved together). Anything else is refused, so the run
   // proves exactly these and nothing else (code review of 8fa4d35).
   const files = fs.readdirSync(path.join(ROOT, 'server/migrations')).filter((f) => /^\d{3}_.+\.(sql|js)$/.test(f)).sort();
   const done = new Set((await pool.query('SELECT name FROM schema_migrations')).rows.map((r) => r.name));

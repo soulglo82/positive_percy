@@ -2607,7 +2607,7 @@ export async function referencesAreOwned(db, data, familyCode) {
 // counts, O6), so it changes no balance and is never a save or an earning.
 // Only children with savings in this goal are locked (KEY SHARE, id order,
 // §20.8): a child deleted meanwhile is skipped.
-async function recordEndedSavings(db, familyCode, before, after, cause) {
+async function recordEndedSavings(db, familyCode, before, after, cause, { dryRun = false } = {}) {
   if (!before?.is_bigger_goal) return [];
   const { rows: sums } = await db.query(
     `SELECT child_id, generation, SUM(delta)::int AS saved FROM savings_events
@@ -2626,7 +2626,7 @@ async function recordEndedSavings(db, familyCode, before, after, cause) {
     ended.push({ childId, saved: x.saved, generation: oldGen,
       cause: cause === 'deleted' ? 'deleted' : (after && !after.is_bigger_goal ? 'unmarked' : 'reassigned') });
   }
-  if (!ended.length) return [];
+  if (!ended.length || dryRun) return ended;
   const { rows: alive } = await db.query(
     'SELECT id FROM children WHERE id = ANY($1::uuid[]) AND family_code = $2 ORDER BY id FOR KEY SHARE',
     [ended.map((e) => e.childId), familyCode]);
@@ -2642,7 +2642,7 @@ async function recordEndedSavings(db, familyCode, before, after, cause) {
   return written;
 }
 
-export async function scopedUpdate(db, table, id, familyCode, data) {
+export async function scopedUpdate(db, table, id, familyCode, data, { confirmEndSavings = false } = {}) {
   const clean = table === 'children' ? stripChildBalance(data) : { ...data };
   delete clean.family_code; // never client-settable
   delete clean.id;
@@ -2682,7 +2682,15 @@ export async function scopedUpdate(db, table, id, familyCode, data) {
     values
   );
   if (rows.length === 0) return { status: 404 };
-  if (rewardBefore) await recordEndedSavings(db, familyCode, rewardBefore, rows[0], 'edited');
+  if (rewardBefore) {
+    // Code review of addfe54: a stale page could end savings without the
+    // parent being asked. The server asks: an edit that ends savings needs
+    // the parent's explicit confirmation, or nothing is changed (409).
+    if (!confirmEndSavings && (await recordEndedSavings(db, familyCode, rewardBefore, rows[0], 'edited', { dryRun: true })).length) {
+      return { status: 409 };
+    }
+    await recordEndedSavings(db, familyCode, rewardBefore, rows[0], 'edited');
+  }
 
   // Replaced or cleared photo: delete the old upload if nothing else uses it.
   if (stored) {
@@ -2753,11 +2761,13 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
     let result;
     try {
       // D1 §20.8: Postgres resolves any remaining lock cycle by aborting one
-      // transaction (40P01); a reward edit is retried once, from the start.
+      // transaction (40P01); any entity edit is retried once, from the start
+      // (everything it does is inside the transaction).
       for (let attempt = 0; ; attempt++) {
         try {
           await client.query('BEGIN');
-          result = await scopedUpdate(client, table, req.params.id, req.familyCode, data);
+          result = await scopedUpdate(client, table, req.params.id, req.familyCode, data,
+            { confirmEndSavings: req.body?.confirm_end_savings === true });
           await client.query(result.status === 200 ? 'COMMIT' : 'ROLLBACK');
           break;
         } catch (err) {
@@ -2771,6 +2781,9 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
     }
     if (result.status === 400) return res.status(400).json({ error: 'No valid fields provided' });
     if (result.status === 404) return res.status(404).json({ error: 'Not found' });
+    if (result.status === 409) {
+      return res.status(409).json({ code: 'ENDS_SAVINGS', error: 'Points were saved since this page opened. Check the warning and save again.' });
+    }
 
     broadcastFn(req.familyCode, { type: `${req.params.entity}_updated`, id: req.params.id });
     res.json(table === 'children' ? (await withBalances(pool, req.familyCode, [result.row]))[0] : result.row);
