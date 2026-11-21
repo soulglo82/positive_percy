@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.16 |
+| Version | 1.17 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.17 | 2026-11-21 | §20 (design, before build): the owner's #64 review: a durable record when a goal's savings end (N2, migration 017), "Fully saved!", the per-child warning, the excess after redemption, evidence |
 | 1.16 | 2026-11-21 | §19.9: post-build code review of the screens; 1 Major and 9 Minor fixed |
 | 1.15 | 2026-11-21 | §19.8: built: endpoints, screens, tests, mutations, code review fixes, e2e finding; provisional wording list |
 | 1.14 | 2026-11-21 | §19.7: design review of §19 adopted (7 should-fix, 3 notes); the N8 reason corrected |
@@ -783,4 +784,108 @@ A fresh-context reviewer read the screens diff (`9e674c9..f24b981`). It found 1 
 | Nit | `pointsWord` was duplicated | Activity imports it from `@/lib/savings` | — |
 | Nit | "0 points to go" when a goal is fully saved | Kept: the approved shape. **Owner item** for screen review | — |
 | Nit | "Undone." differed from other Undo toasts | It now names the child and the available points, from the server | Retry test |
+
+## 20. Owner review of #64 (21 Nov): build design (v1.17)
+
+The owner reviewed head `cde97eb`. The copy is kept as built: "Bigger goal", "Save points", "Move points back", the Activity lines and the piggy-bank icon. The owner still has to confirm the final wording. They asked for the five changes below. The release gate in #44 stays separate (§20.6).
+
+### 20.1 N2: a durable, attributable record when a goal's savings end
+
+**The owner's rule.** Savings must not silently become available with no identifiable explanation. When un-marking or reassigning makes savings stop counting, record:
+- the child;
+- the goal;
+- the amount;
+- the cause.
+
+The ledger stays append-only. Keep O6 (no resurrection) and the child-to-reward lock order. Do not relabel an old allocation as a new save or invent earnings.
+
+**Representation.**
+- One `reward_removed` row per affected child, written in the same transaction as the reward change that ended the savings.
+- `delta` is minus the child's saved amount in the **ended** generation, and `generation` is that ended generation.
+- `reward_title` holds the title at the time.
+- A new column, `ended_by`, holds the cause: `unmarked`, `reassigned` or `deleted`.
+
+`reward_removed` is already an allowed kind in 016, with no request id. The row sits in a generation that no longer counts (O6), so it changes no balance: the points were already available by the read-time rule. It records why and how many, and it is neither a save nor an earning.
+
+**Migration 017** (`017_savings_ended_by.sql`). It is additive and changes no row:
+- `ALTER TABLE savings_events ADD COLUMN IF NOT EXISTS ended_by TEXT NULL`;
+- a CHECK limiting `ended_by` to those three values;
+- `CONSTRAINT savings_events_ended_shape CHECK ((kind = 'reward_removed') = (ended_by IS NOT NULL))`. This is valid on all existing data, because no `reward_removed` row has ever been written;
+- a post-check that nothing changed.
+
+Its rollback drops the constraint and the column, and refuses once any `reward_removed` row exists (§13.3).
+
+**Writers.**
+- **Reward edit** (`PUT /api/rewards/:id`):
+  1. Lock the reward `FOR UPDATE` and read it (before).
+  2. Run the UPDATE; the trigger moves the generations (after).
+  3. In one query, read each child's positive sums for this reward by generation.
+  4. For each child of the family for whom the reward **was** a current goal before: if its generation changed, or it is no longer the child's goal, and the child had a positive sum in the old generation, insert the row.
+  
+  The cause is `unmarked` when `is_bigger_goal` went from true to false, and `reassigned` otherwise.
+- **Reward delete:** before the DELETE, the same rows for every child with a positive sum in the current generation, with cause `deleted`.
+- **Cost edits and other edits** end no savings and write nothing.
+
+**Locks (the owner: no multi-child deadlocks).** The editor holds the reward lock, then inserts rows whose foreign key takes `FOR KEY SHARE` on each child. A savings writer holds its child `FOR UPDATE` and waits for the reward `FOR SHARE`. That would be a cycle.
+
+**Fix:** every path that locks a child and then a reward uses `FOR NO KEY UPDATE` on the child. Those paths are save, release, savings undo, goal redeem, and redemption undo through `lockChildOf`. `FOR NO KEY UPDATE` does not conflict with `FOR KEY SHARE`, so the editor never waits on a child. Writers still exclude each other: `NO KEY UPDATE` conflicts with itself and with the `FOR UPDATE` that other child writers use. Paths that lock a child `FOR UPDATE` and never a reward can only make the editor wait, not deadlock.
+
+The child-to-reward order is unchanged for every writer, and the editor touches children only through key-share.
+
+**Concurrency.**
+- A save that committed before the edit's reward lock is in the edit's sum.
+- A save waiting for the reward share lock re-reads the updated row when it proceeds. It then writes in the new generation, or is refused because the reward is no longer a goal. So the edit's sum is final.
+
+**Activity.** `reward_removed` rows appear under All as "{Child}'s savings for {goal} ended", with the sub-line "{n} points available again · {cause}". The cause reads "Bigger goal turned off", "No longer for {Child}" or "Reward deleted" (provisional wording). They are not balance rows, and they do not appear in Earned, Spent or Goals.
+
+**Export.** Includes `ended_by`.
+
+**Reconcile CLI.** The V1 migrations become 014, 015, 016 and 017. The savings cycle applies 016 and 017, rolls back 017 then 016, and applies both again. 017's column and constraint fall within the savings allowlist. **The owner's drill must then run at the #64 head**, not `3ad4332`. The command is the same; only the branch and the expected head change.
+
+### 20.2 "Fully saved!"
+
+- While `to_go > 0`: "{n} to go" (parent) and "{n} points to go" (Child View).
+- At 0: "Fully saved!" in both. The parent's dialog adds "Ready to redeem" when the goal is fully saved.
+- Nothing suggests that points were spent or the reward redeemed.
+
+### 20.3 The warning before un-marking or reassigning, per child
+
+The reward form already receives the children, with their server `goals`. The warning names each affected child who has savings in this goal: "{Child}: {n} saved points will become available again." It is followed by "Past savings won't be restored if you re-enable the goal."
+
+An affected child is one who loses the goal: all assigned children when un-marking, or a child removed from the assignment. No child with savings means no warning and no confirmation, because nothing is lost. The confirmation keeps "Keep saving" as the safe cancel.
+
+### 20.4 The excess over a lowered cost (E12), after redemption
+
+The owner asked to verify that the parent can still see the excess after redemption and move it back, that it is never lost and never counted twice. Server test: save 100 → lower the cost to 60 → redeem. The expected result:
+- spend −60;
+- 40 still saved, shown as "40 of 60 points saved · Fully saved!";
+- 40 can be moved back;
+- `committed ≤ total` throughout.
+
+The redeem confirm says so when the excess is greater than 0: "{n} saved points are more than this goal needs. They stay saved for {goal}, and you can move them back." (provisional wording).
+
+### 20.5 Evidence
+
+- The savings card itself on phone sizes: scrolled into view before the screenshot.
+- The un-mark warning with its confirmation.
+- A fully saved goal.
+- 320 px legibility of the long fixture names: checked on the screenshots.
+
+### 20.6 The #44 gate (separate)
+
+The archive shrank from 8.68 MB to 646 kB between 10 and 11 November, and families fell from 9 to 2. Engineering reads the `db-backup` service's deployment logs around those dates through the read-only Railway connector, to find what changed in the backup job or the data. Engineering does not read production rows. Authoritative production counts need a read of production, which the owner runs or authorises. The run must not print family data.
+
+### 20.7 Test plan
+
+- **017:** applies cleanly and changes nothing; its rollback refuses once a `reward_removed` row exists.
+- **Writers:**
+  - un-mark with two children saved, then reassign away from one child, then delete: one row each, with the right amount, ended generation and cause;
+  - no row for a child with nothing saved, or for a cost edit;
+  - a balance unchanged by the record (`agree()`).
+- **A deadlock race:** 20 rounds of a save racing an un-mark of the same goal. There is no deadlock error, and the outcome agrees with the reconciliation. The mutation that puts `FOR UPDATE` back must show a deadlock or failure; this is probabilistic, and recorded as such.
+- **Activity:** the ended rows under All only, with the cause text.
+- **E12 after redemption** (§20.4).
+- **Screens:** "Fully saved!" in three places; the per-child warning shown only when a child has savings.
+- **CLI:** a copy at 012 runs prerequisites and then the 016+017 cycle.
+- **One class not covered:** a reward edited by direct SQL writes no ended record. The app is the only writer; the trigger still moves the generation, so nothing revives.
 
