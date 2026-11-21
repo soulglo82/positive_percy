@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.14 |
+| Version | 1.15 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.15 | 2026-11-21 | §19.8: built: endpoints, screens, tests, mutations, code review fixes, e2e finding; provisional wording list |
 | 1.14 | 2026-11-21 | §19.7: design review of §19 adopted (7 should-fix, 3 notes); the N8 reason corrected |
 | 1.13 | 2026-11-21 | §19 (design, before build): the savings feature (endpoints, goal redemption, refunds, screens) on branch `claude/percy-v1-i-savings` |
 | 1.12 | 2026-11-21 | §18.3: the owner's test conditions; 41 checks; 16 protection mutations, each red |
@@ -683,4 +684,82 @@ A fresh-context reviewer read §19 against §2–§14, `routes.js` and 016. They
 | N2 | Un-marking or reassigning returns saved points to available with no Activity row | **Owner item** for screen review (Activity wording) | — |
 | N3 | A goal created with the switch on starts at `0:0`. A re-inserted id would also start at `0:0`, and its old savings would count again (R2 protects only other generations) | The app creates a goal unmarked, then marks it in the same transaction, so its first generation is `1:0`. 016 is unchanged | "a new goal starts after generation 0" |
 | N4 | `stack/confirm` still redeems a goal requested before it was marked and with 0 saved: a second path | Kept, documented: it is the way out for legacy rows, and it is safe (no savings to count) | (existing confirm tests) |
+
+### 19.8 Build record (v1.15)
+
+**Commits** on `claude/percy-v1-i-savings`: the merge of #60, §19 and its review, the endpoints, the screens, the backend review fixes and the tests.
+
+**Server** (`server/test/savings-feature.test.js`, 28 tests):
+- F1–F14, E5–E9, S1, S3, S4, S7, N3 and F5b/F9b;
+- the goal cost cap;
+- Activity rows;
+- one savings query per family read;
+- export;
+- a 90-step property test. Its operations are award, save, release, undo, goal redeem, redemption undo, mark and un-mark, reassign, goal cost change, request and confirm, and spend. After every step the app and the SQL reconciliation agree, `committed ≤ total`, and `total = history`, for the child and a sibling.
+
+**Mutations of the server** (each red unless stated):
+
+| Mutation | Result |
+| --- | --- |
+| M1 save without the I2 check | red (4) |
+| M2 release without the I1 check | red (2) |
+| M3 savings undo without the generation check | red after F5b was added. Before that, it survived: the I1 check refused the same input |
+| M4 redemption undo without the same-generation rule | red (F9b) |
+| M5 `/redeem` allowing goals | red |
+| M6 save towards a requested goal | red (S1) |
+| M7 goal created at generation 0 | red (N3) |
+| M8 confirm returning a raw child | red (S4) |
+| M9 savings undo without the undo-once check | **Survives:** `UNIQUE (undoes)` refuses the second undo (409 "Already undone."). These are two protections that a test cannot tell apart |
+| M10 goal redeem not spending the savings | red (4) |
+| M11 undo of a save without the I1 check | red |
+| M12 replay arguments not lower-cased | red (S7) |
+
+**Post-build code review of the backend** (fresh context): no Major findings.
+
+| # | Finding | Status |
+| --- | --- | --- |
+| 1 | A save could exceed the goal's cost ("400 of 100 saved") | Fixed: save and the undo of a release stop at the cost (400 "More than this goal needs" / 409). Tested |
+| 2 | Replays took a second pool connection while holding one (pool starvation) | Fixed: they read on their own connection |
+| 3 | Activity rows had no server feed | Built: `saving` and `moved_back` rows under All only, with undone marked. Tested |
+| 4 | The property test lacked request, confirm, reassign and cost change | Added |
+| 5 | Messages | Fixed: an undo in a changed generation gets "This can no longer be undone."; a move back over saved gets 400 "Not enough points saved" |
+| Nit 1, Nit 5 | Queries scoped by id only | Family-scoped |
+| Nit 2 | The N3 comment overclaimed | Corrected. A reward re-inserted with the same id and then marked reaches `1:0` again. The app cannot write ids, and the restore runbook never restores `rewards` without `savings_events` |
+| Nit 3, Nit 4 | A replay after an undone redemption returns the stored Completed row; a post-commit read failure gives 500 | Same as the existing `/redeem`. Recorded, not changed |
+
+**Screens** (`src/pages/V1Savings.test.jsx`, 15 tests):
+- the Children card and dialog (limits, save with Undo, refusal message, Redeem with its confirm and its disabled state);
+- Child View (figures; the S5 visibility rule; no controls; goals not choosable);
+- the Home goal;
+- Rewards "Bigger rewards" and the form switch;
+- Spend leaving goals out;
+- Activity wording.
+
+Each of four screen mutations goes red: no save cap, Spend showing goals, Child View ignoring visibility, goals in weekly treats.
+
+**End to end** (`e2e/v1-savings.spec.js`, all four sizes): the whole journey runs against the real server. The Batch D checks (axe, 44px targets, 12px text, no sideways scroll, named controls) run on:
+- Children with savings;
+- the savings dialog;
+- Child View;
+- Rewards;
+- the redeem confirm.
+
+The full browser suite gives 46 passed and 14 skipped (the existing skips). Screenshots are in `docs/engineering/evidence/v1-savings/`.
+
+**Found by the end-to-end run, fixed:** a toast's Undo could not be clicked while the savings dialog was open, because a modal dialog blocks the page behind it. The dialog now closes after a save or a move back, as the award dialog does, and a unit test checks this.
+
+**Wording for the owner's screen review** (O4 and new strings; approved strings are not listed):
+
+| Where | String | Status |
+| --- | --- | --- |
+| Reward form | "Bigger goal", "Save points towards this reward over time" | O4 proposed |
+| Savings dialog | "Save points", "Move points back" | O4 proposed |
+| Savings toasts / Activity | "Saved {n} points towards {goal}", "Moved {n} points back from {goal}" | O4 proposed (Activity: "{child} saved {n} points towards {goal}", "Savings · {time}") |
+| Savings dialog | "Set points aside for {child}'s bigger goal. Saved points stay {child}'s; you can move them back.", "Bigger goal" (legend), "Available now" (approved elsewhere), "Points", "Save up to {n} · Move back up to {n}", "Close", "Redeem" | Provisional |
+| Redeem confirm | "Redeem {goal}?", "This will spend {cost} points from {child}'s balance: {n} saved and {n} available.", "{goal} redeemed for {child}" | Provisional |
+| Errors | "That didn't work: the figures changed. Check them and try again.", "Couldn't save that. Check your connection and try again.", "Undone." | Provisional |
+| Children | "No bigger goals yet.", "Mark a reward as a bigger goal", "Nothing saved yet. Use Edit to save points towards a bigger goal.", "{goal}: {n} to go" | Provisional |
+| Server errors | "More than this goal needs", "Not enough points saved" | Provisional (shown only on a stale screen) |
+| Activity icon | Phosphor `piggy-bank` (approved icon set, new placement) | For review |
+| Owner item (N2) | Un-marking or reassigning returns saved points to available with no Activity row | Owner decision at screen review |
 

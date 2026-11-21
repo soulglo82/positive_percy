@@ -47,7 +47,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards }) {
     setConfirmRedeem(false);
     requestRef.current = null;
     setGoalId((cur) => (options.some((o) => o.id === cur) ? cur : (options.slice().sort((a, b) => b.saved - a.saved)[0]?.id ?? null)));
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open]); // reset on each opening only
 
   if (!child) return null;
   const goal = options.find((o) => o.id === goalId) || null;
@@ -99,6 +99,9 @@ export default function SavingsDialog({ open, onClose, child, goalRewards }) {
         ? `Saved ${amount} ${pointsWord(amount)} towards ${goal.name}`
         : `Moved ${amount} ${pointsWord(amount)} back from ${goal.name}`;
       toast.success(message, { duration: UNDO_TOAST_MS, action: { label: 'Undo', onClick: undoMove(r.event.id) } });
+      // Close, as the award dialog does: while a modal dialog is open the
+      // page behind it (the toast and its Undo) cannot be used (e2e, §19.8).
+      onClose();
     } catch (err) {
       if (err.status && err.status < 500) requestRef.current = null; // refused: a new attempt is a new action
       fail(err);
