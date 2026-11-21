@@ -74,25 +74,31 @@ class Entity {
       headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(data),
     });
-    if (!res.ok) {
-      // Keep the status and the server's code (D1 §20.9: ENDS_SAVINGS).
-      const body = await res.clone().json().catch(() => ({}));
-      const err = new Error(await parseError(res, `Failed to update ${this.endpoint}`));
-      err.status = res.status;
-      err.code = body?.code;
-      throw err;
-    }
+    if (!res.ok) throw await entityError(res, `Failed to update ${this.endpoint}`);
     return res.json();
   }
 
-  async delete(id) {
+  // `body` (optional): D1 §21.2, the snapshot of savings a parent confirmed.
+  async delete(id, body) {
     const res = await fetch(`${API_BASE}/${this.endpoint}/${id}`, {
       method: 'DELETE',
-      headers: authHeaders(),
+      headers: body ? authHeaders({ 'Content-Type': 'application/json' }) : authHeaders(),
+      ...(body ? { body: JSON.stringify(body) } : {}),
     });
-    if (!res.ok) throw new Error(await parseError(res, `Failed to delete ${this.endpoint}`));
+    if (!res.ok) throw await entityError(res, `Failed to delete ${this.endpoint}`);
     return res.json();
   }
+}
+
+// Keeps the status and, for D1 §21's ENDS_SAVINGS, the server's list of what
+// would be released and the snapshot to confirm.
+async function entityError(res, fallback) {
+  const body = await res.clone().json().catch(() => ({}));
+  const err = new Error(await parseError(res, fallback));
+  err.status = res.status;
+  err.code = body?.code;
+  if (body?.code === 'ENDS_SAVINGS') { err.ending = body.ending; err.snapshot = body.snapshot; }
+  return err;
 }
 
 export const Child = new Entity('children');

@@ -149,11 +149,12 @@ export default function Rewards() {
       <RewardForm
         isOpen={formOpen}
         onClose={close}
-        reward={editing}
+        // The latest row (current generations, §21), else the one held.
+        reward={editing ? (rewards.find((r) => r.id === editing.id) || editing) : null}
         initialTemplate={starterTemplate}
         children={children}
         onSubmit={submit}
-        onDelete={async (reward) => { if (await remove(reward)) close(); }}
+        onDelete={async (reward, confirm) => { const r = await remove(reward, confirm); if (r === true) close(); return r; }}
       />
     </div>
   );

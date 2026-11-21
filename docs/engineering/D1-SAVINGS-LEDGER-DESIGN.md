@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.20 |
+| Version | 1.21 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.21 | 2026-11-21 | §21.5: design review adopted, built, tested, mutations |
 | 1.20 | 2026-11-21 | §21 (design, before build): the confirmation bound to a snapshot; delete confirmed the same way |
 | 1.19 | 2026-11-21 | §20.9: build record of §20; code review fixes (server-side confirmation); #44 findings |
 | 1.18 | 2026-11-21 | §20.8: design review of §20; two blocking lock and CLI findings adopted |
@@ -1021,4 +1022,41 @@ The form's Delete confirmation lists each affected child: "{Child}: {n} saved po
 - ignoring the epochs;
 - accepting a boolean;
 - delete without the guard.
+
+### 21.5 Design review, build and tests (v1.21)
+
+**Design review** (fresh context). It found lock coverage sound: the dry run and the write run under the same reward lock, which every savings writer shares, and the 40P01 retry re-checks the same snapshot. It found one blocking gap and some should-fixes, all adopted:
+
+| # | Finding | In the build |
+| --- | --- | --- |
+| B1 | Which row's epochs? | Both the check and the 409's snapshot use the reward **as it was before the edit** (the row locked `FOR UPDATE`), never the trigger-advanced row. A re-confirm with the server's snapshot succeeds (tested) |
+| 1 | Epoch comparison | Normalised: lower-case keys, missing treated as 0, numbers, sorted, then compared |
+| 2 | Compute once | The check's list is the list written (`recordEndedSavings(..., { ended })`) |
+| 3 | Delete order | The check runs straight after the reward lock, before pending redemptions are denied; 409 rolls back |
+| 4 | DELETE body | `Reward.delete(id, body)` sends JSON with its content type. Errors keep `code`, `ending` and `snapshot` (shared `entityError`) |
+| 5 | Empty ending | Proceeds with or without a snapshot. A non-empty ending needs a matching snapshot |
+| 6 | 409 loop on a stale page | A 409's list (`serverEnding`) forces the warning and the confirmation even when this page saw no savings. It is cleared when the goal switch or the children change, and when the form opens. `save` and `remove` return `{ needsConfirm }` instead of swallowing the error |
+| 7 | Latest row | The pages pass the latest row by id, and fall back to the held row; saves use the held id, so a reward deleted meanwhile is never re-created |
+
+**Tests.**
+- Server: 43 savings tests, including:
+  - a save after the warning;
+  - a new child becoming affected;
+  - un-mark and re-mark with equal amounts;
+  - a child reassigned away and back with an equal amount;
+  - a boolean refused;
+  - concurrent confirmed edits;
+  - delete: no snapshot, stale, boolean, correct, and a reward without savings.
+- Screens: 30 tests, including a 409 list shown when the page saw nothing, the list dropped on change, and delete per child and on 409.
+- Full suite: 1,024 pass.
+- Browser suite: 46 passed and 14 skipped, as before.
+
+**Mutations** (each red):
+- amounts ignored;
+- goal epoch ignored;
+- child epochs ignored (red after the reassign-away-and-back test was added);
+- boolean accepted;
+- delete without the guard.
+
+**Note.** On delete, denying pending redemptions can still meet a redeem in a lock cycle (child, then reward `FOR SHARE`); the 40P01 retry covers it.
 

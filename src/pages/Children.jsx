@@ -284,10 +284,10 @@ export default function Children() {
       <RewardForm
         isOpen={!!rewardEditing}
         onClose={() => setRewardEditing(null)}
-        reward={rewardEditing}
+        reward={rewardEditing ? (rewards.find((r) => r.id === rewardEditing.id) || rewardEditing) : null}
         children={children}
         onSubmit={(data) => save(rewardEditing?.id, data)}
-        onDelete={async (reward) => { if (await remove(reward)) setRewardEditing(null); }}
+        onDelete={async (reward, confirm) => { const r = await remove(reward, confirm); if (r === true) setRewardEditing(null); return r; }}
       />
     </>
   );

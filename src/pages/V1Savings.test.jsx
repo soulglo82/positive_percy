@@ -248,7 +248,7 @@ describe('code review of the screens', () => {
   it('Major: un-marking a goal, or taking it from a child, warns per child and asks before saving', async () => {
     const onSubmit = vi.fn(async () => true);
     const kids = [{ id: 'c1', name: 'Lara', goals: [goal('g1', 'Bike', 300, 120)] }, { id: 'c2', name: 'Omar', goals: [goal('g1', 'Bike', 300, 1)] }];
-    mount(<RewardForm isOpen onClose={() => {}} onSubmit={onSubmit} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true })} />);
+    mount(<RewardForm isOpen onClose={() => {}} onSubmit={onSubmit} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true, goal_epoch: 1, goal_child_epochs: {} })} />);
     expect(screen.queryByRole('status')).toBeNull();
     fireEvent.click(screen.getByRole('checkbox', { name: /Bigger goal/ }));
     const status = screen.getByRole('status').textContent;
@@ -263,7 +263,9 @@ describe('code review of the screens', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
     fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Save reward' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    expect(onSubmit.mock.calls[0][0]).toMatchObject({ is_bigger_goal: false, confirm_end_savings: true });
+    // §21: the confirmation is the snapshot shown, not a boolean.
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ is_bigger_goal: false, confirm_end_savings: {
+      goal_epoch: 1, goal_child_epochs: {}, children: [{ child_id: 'c1', saved: 120 }, { child_id: 'c2', saved: 1 }] } });
   });
 
   it('Major: assigning a goal to one child (from all) warns for the one who loses it; nothing saved means no warning', async () => {
@@ -388,3 +390,70 @@ describe('code review of the screens', () => {
     expect(toastSuccess).toHaveBeenCalledWith('Undone. Lara has 200 points available.');
   });
 });
+
+describe('§21: the confirmation is bound to what the parent saw', () => {
+  const serverSaw = {
+    ending: [{ child_id: 'c1', name: 'Lara', saved: 70 }, { child_id: 'c2', name: 'Omar', saved: 5 }],
+    snapshot: { goal_epoch: 1, goal_child_epochs: {}, children: [{ child_id: 'c1', saved: 70 }, { child_id: 'c2', saved: 5 }] },
+  };
+
+  it("a 409 shows the server's list, even when this page saw nothing; the next confirmation sends the server's snapshot", async () => {
+    const onSubmit = vi.fn()
+      .mockResolvedValueOnce({ needsConfirm: serverSaw })
+      .mockResolvedValueOnce(true);
+    const kids = [{ id: 'c1', name: 'Lara', goals: [] }, { id: 'c2', name: 'Omar', goals: [] }]; // stale: nothing saved
+    mount(<RewardForm isOpen onClose={() => {}} onSubmit={onSubmit} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true, goal_epoch: 1 })} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: /Bigger goal/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save reward' })); // no local warning: sent unconfirmed
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('confirm_end_savings');
+    const alert = await screen.findByRole('alertdialog');
+    expect(alert.textContent).toContain('Lara: 70 saved points will become available again.');
+    expect(alert.textContent).toContain('Omar: 5 saved points will become available again.');
+    fireEvent.click(within(alert).getByRole('button', { name: 'Save reward' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
+    expect(onSubmit.mock.calls[1][0].confirm_end_savings).toEqual(serverSaw.snapshot);
+  });
+
+  it("changing the goal switch or the children drops the server's list (it no longer describes this change)", async () => {
+    const onSubmit = vi.fn().mockResolvedValueOnce({ needsConfirm: serverSaw });
+    const kids = [{ id: 'c1', name: 'Lara', goals: [] }, { id: 'c2', name: 'Omar', goals: [] }];
+    mount(<RewardForm isOpen onClose={() => {}} onSubmit={onSubmit} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true, goal_epoch: 1 })} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: /Bigger goal/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
+    const alert = await screen.findByRole('alertdialog');
+    fireEvent.click(within(alert).getByRole('button', { name: 'Keep saving' }));
+    expect(screen.getByRole('status').textContent).toContain('Lara: 70');
+    fireEvent.click(screen.getByRole('checkbox', { name: /Bigger goal/ })); // back on: nothing ends
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('delete lists each child who loses savings and sends that snapshot; a 409 shows the server list and asks again', async () => {
+    const onDelete = vi.fn().mockResolvedValueOnce({ needsConfirm: serverSaw }).mockResolvedValueOnce(true);
+    const kids = [{ id: 'c1', name: 'Lara', goals: [goal('g1', 'Bike', 300, 40)] }, { id: 'c2', name: 'Omar', goals: [] }];
+    mount(<RewardForm isOpen onClose={() => {}} onSubmit={vi.fn()} onDelete={onDelete} children={kids}
+      reward={R('g1', 'Bike', 300, { is_bigger_goal: true, goal_epoch: 1, goal_child_epochs: {} })} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Reward' }));
+    let alert = await screen.findByRole('alertdialog');
+    expect(alert.textContent).toContain('Lara: 40 saved points will become available again.');
+    fireEvent.click(within(alert).getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1));
+    expect(onDelete.mock.calls[0][1]).toEqual({ goal_epoch: 1, goal_child_epochs: {}, children: [{ child_id: 'c1', saved: 40 }] });
+    alert = await screen.findByRole('alertdialog');
+    await waitFor(() => expect(alert.textContent).toContain('Lara: 70 saved points'));
+    expect(alert.textContent).toContain('Omar: 5 saved points');
+    fireEvent.click(within(alert).getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(2));
+    expect(onDelete.mock.calls[1][1]).toEqual(serverSaw.snapshot);
+  });
+
+  it('deleting a reward with no savings sends no snapshot', async () => {
+    const onDelete = vi.fn().mockResolvedValue(true);
+    mount(<RewardForm isOpen onClose={() => {}} onSubmit={vi.fn()} onDelete={onDelete} children={[{ id: 'c1', name: 'Lara', goals: [] }]} reward={R('r1', 'Movie night', 25)} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Reward' }));
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(onDelete).toHaveBeenCalled());
+    expect(onDelete.mock.calls[0][1]).toBeNull();
+  });
+});
+

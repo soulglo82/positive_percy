@@ -21,6 +21,17 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
   const release = (fam, id, reward_id, points, request_id = rid()) => call(fam, 'POST', `/api/children/${id}/savings/release`, { reward_id, points, request_id });
   const undo = (fam, eventId, request_id = rid()) => call(fam, 'POST', `/api/savings-events/${eventId}/undo`, { request_id });
   const redeemGoal = (fam, id, reward_id, request_id = rid()) => call(fam, 'POST', `/api/children/${id}/savings/redeem`, { reward_id, request_id });
+  // §21: the parent confirms exactly what the server showed (the 409's snapshot).
+  const putConfirmed = async (fam, id, body) => {
+    let r = await call(fam, 'PUT', `/api/rewards/${id}`, body);
+    if (r.status === 409 && r.json?.code === 'ENDS_SAVINGS') r = await call(fam, 'PUT', `/api/rewards/${id}`, { ...body, confirm_end_savings: r.json.snapshot });
+    return r;
+  };
+  const delConfirmed = async (fam, id) => {
+    let r = await call(fam, 'DELETE', `/api/rewards/${id}`);
+    if (r.status === 409 && r.json?.code === 'ENDS_SAVINGS') r = await call(fam, 'DELETE', `/api/rewards/${id}`, { confirm_end_savings: r.json.snapshot });
+    return r;
+  };
   const newKid = async (fam, name, points) => {
     const kid = (await call(fam, 'POST', '/api/children', { name })).json;
     if (points) expect((await award(fam, kid.id, points)).status).toBe(200);
@@ -174,7 +185,7 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     const kid = await newKid(F, 'Kim', 50);
     const bike = await newGoal(F, 'Kim bike', 100);
     const s = (await save(F, kid.id, bike.id, 30)).json.event;
-    await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: false, confirm_end_savings: true });
+    await putConfirmed(F, bike.id, { is_bigger_goal: false });
     await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: true });
     expect((await undo(F, s.id)).status).toBe(409);
     expect((await agree(F, kid.id)).saved_total).toBe(0);
@@ -199,7 +210,7 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     const bike = await newGoal(F, 'Kit bike', 100);
     await save(F, kid.id, bike.id, 30);
     const r = (await release(F, kid.id, bike.id, 30)).json.event;
-    await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: false, confirm_end_savings: true });
+    await putConfirmed(F, bike.id, { is_bigger_goal: false });
     await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: true });
     expect((await undo(F, r.id)).status).toBe(409);
     expect((await ctx.pool.query("SELECT count(*)::int n FROM savings_events WHERE undoes = $1", [r.id])).rows[0].n).toBe(0);
@@ -231,7 +242,7 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     const bike = await newGoal(F, 'Max bike', 300);
     await save(F, kid.id, bike.id, 120);
     const red = (await redeemGoal(F, kid.id, bike.id)).json;
-    await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: false, confirm_end_savings: true });
+    await putConfirmed(F, bike.id, { is_bigger_goal: false });
     const u = await call(F, 'POST', `/api/redemptions/${red.redemption.id}/undo`, { request_id: rid() });
     expect(u.status).toBe(200);
     expect(await agree(F, kid.id)).toMatchObject({ total_points: 320, saved_total: 0, available_points: 320 });
@@ -243,7 +254,7 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     const bike = await newGoal(F, 'Ned2 bike', 300);
     await save(F, kid.id, bike.id, 120);
     const red = (await redeemGoal(F, kid.id, bike.id)).json;
-    await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: false, confirm_end_savings: true });
+    await putConfirmed(F, bike.id, { is_bigger_goal: false });
     await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: true }); // a new generation
     const u = await call(F, 'POST', `/api/redemptions/${red.redemption.id}/undo`, { request_id: rid() });
     expect(u.status).toBe(200);
@@ -302,7 +313,7 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     for (let round = 0; round < 20; round++) {
       await Promise.all([
         save(F, kid.id, bike.id, 5),
-        call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: round % 2 === 1, confirm_end_savings: true }),
+        putConfirmed(F, bike.id, { is_bigger_goal: round % 2 === 1 }),
       ]);
       const db = (await fingerprint(ctx.pool)).children[kid.id];
       expect(overCommitted(db)).toBe(false);
@@ -334,8 +345,8 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
       else if (op === 4 && events.length) r = await undo(F, events[rand(events.length)]);
       else if (op === 5) r = await redeemGoal(F, kid.id, g.id);
       else if (op === 6 && redemptions.length) r = await call(F, 'POST', `/api/redemptions/${redemptions[rand(redemptions.length)]}/undo`, { request_id: rid() });
-      else if (op === 7) r = await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: rand(3) > 0, confirm_end_savings: true });
-      else if (op === 8) r = await call(F, 'PUT', `/api/rewards/${g.id}`, { assigned_child_ids: [[], [kid.id], [sib.id], [kid.id, sib.id]][rand(4)], confirm_end_savings: true });
+      else if (op === 7) r = await putConfirmed(F, g.id, { is_bigger_goal: rand(3) > 0 });
+      else if (op === 8) r = await putConfirmed(F, g.id, { assigned_child_ids: [[], [kid.id], [sib.id], [kid.id, sib.id]][rand(4)] });
       // Goal costs only: a cost raised on a REQUESTED reward is the known
       // read-time clamp (B4), not a write this test is about.
       else if (op === 9) r = await call(F, 'PUT', `/api/rewards/${g.id}`, { cost_points: 40 + rand(120) });
@@ -471,7 +482,7 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     await save(F, a.id, bike.id, 40);
     await save(F, b.id, bike.id, 25);
     const before = { a: await agree(F, a.id), b: await agree(F, b.id) };
-    expect((await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: false, confirm_end_savings: true })).status).toBe(200);
+    expect((await putConfirmed(F, bike.id, { is_bigger_goal: false })).status).toBe(200);
     const { rows } = await ctx.pool.query("SELECT child_id, delta, ended_by, reward_title FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed' ORDER BY delta", [bike.id]);
     expect(rows).toEqual([
       { child_id: a.id, delta: -40, ended_by: 'unmarked', reward_title: 'Nia bike' },
@@ -502,7 +513,93 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     expect((await agree(F, kid.id)).saved_total).toBe(20);
     // An edit that ends nothing needs no confirmation.
     expect((await call(F, 'PUT', `/api/rewards/${g.id}`, { cost_points: 120 })).status).toBe(200);
-    expect((await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false, confirm_end_savings: true })).status).toBe(200);
+    expect((await putConfirmed(F, g.id, { is_bigger_goal: false })).status).toBe(200);
+  });
+
+  it('§21.1: a confirmation is the snapshot shown; a save after the warning, or a new child, forces a new warning', async () => {
+    const lara = await newKid(F, 'Snl', 200);
+    const omar = await newKid(F, 'Sno', 200);
+    const g = await newGoal(F, 'Snap goal', 300);
+    await save(F, lara.id, g.id, 40);
+    const shown = await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false });
+    expect(shown.status).toBe(409);
+    expect(shown.json.ending).toEqual([{ child_id: lara.id, name: 'Snl', saved: 40 }]);
+    const snapshot = shown.json.snapshot;
+    // A boolean is not a confirmation.
+    expect((await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false, confirm_end_savings: true })).status).toBe(409);
+    // Another parent saves 30 more after the warning: the old snapshot is refused, nothing changes.
+    await save(F, lara.id, g.id, 30);
+    const stale = await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false, confirm_end_savings: snapshot });
+    expect(stale.status).toBe(409);
+    expect(stale.json.ending).toEqual([{ child_id: lara.id, name: 'Snl', saved: 70 }]);
+    expect((await agree(F, lara.id)).saved_total).toBe(70);
+    // Another child becomes affected: refused again.
+    await save(F, omar.id, g.id, 5);
+    const stale2 = await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false, confirm_end_savings: stale.json.snapshot });
+    expect(stale2.status).toBe(409);
+    expect(stale2.json.ending.map((e) => e.saved).sort()).toEqual([5, 70]);
+    // Confirming exactly what is now shown goes through, once.
+    const ok = await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false, confirm_end_savings: stale2.json.snapshot });
+    expect(ok.status).toBe(200);
+    const { rows } = await ctx.pool.query("SELECT child_id, delta FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed' ORDER BY delta", [g.id]);
+    expect(rows).toEqual([{ child_id: lara.id, delta: -70 }, { child_id: omar.id, delta: -5 }]);
+  });
+
+  it('§21.1: un-mark and re-mark by another parent between warning and confirmation (same amounts) is refused', async () => {
+    const kid = await newKid(F, 'Epo', 200);
+    const g = await newGoal(F, 'Epo goal', 300);
+    await save(F, kid.id, g.id, 20);
+    const shown = (await call(F, 'PUT', `/api/rewards/${g.id}`, { title: 'Epo goal 2', is_bigger_goal: false })).json;
+    await putConfirmed(F, g.id, { is_bigger_goal: false }); // another parent ends it...
+    await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: true }); // ...re-marks it...
+    await save(F, kid.id, g.id, 20); // ...and the same amount is saved again
+    const r = await call(F, 'PUT', `/api/rewards/${g.id}`, { title: 'Epo goal 2', is_bigger_goal: false, confirm_end_savings: shown.snapshot });
+    expect(r.status).toBe(409); // a different allocation, though the amount matches
+    expect((await agree(F, kid.id)).saved_total).toBe(20);
+  });
+
+  it('§21.1: a child reassigned away and back between warning and confirmation (same amount) is refused', async () => {
+    const kid = await newKid(F, 'Cep', 200);
+    const sib = await newKid(F, 'Ces', 200);
+    const g = await newGoal(F, 'Cep goal', 300);
+    await save(F, kid.id, g.id, 25);
+    const shown = (await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false })).json;
+    await putConfirmed(F, g.id, { assigned_child_ids: [sib.id] }); // another parent: away from kid...
+    await call(F, 'PUT', `/api/rewards/${g.id}`, { assigned_child_ids: [] }); // ...and back (a new child generation)
+    await save(F, kid.id, g.id, 25); // the same amount again
+    const r = await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false, confirm_end_savings: shown.snapshot });
+    expect(r.status).toBe(409);
+    expect((await agree(F, kid.id)).saved_total).toBe(25);
+  });
+
+  it('§21.1: two concurrent confirmed edits write one record per child', async () => {
+    const kid = await newKid(F, 'Cc', 200);
+    const g = await newGoal(F, 'Cc goal', 300);
+    await save(F, kid.id, g.id, 15);
+    const snap = (await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false })).json.snapshot;
+    const both = await Promise.all([1, 2].map(() => call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false, confirm_end_savings: snap })));
+    expect(both.map((r) => r.status)).toEqual([200, 200]); // the second finds nothing left to end
+    expect((await ctx.pool.query("SELECT count(*)::int n FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed'", [g.id])).rows[0].n).toBe(1);
+  });
+
+  it('§21.2: deleting a goal with savings needs the snapshot (stale client, direct API); without savings it does not', async () => {
+    const a = await newKid(F, 'Dela', 200);
+    const b = await newKid(F, 'Delb', 200);
+    const g = await newGoal(F, 'Del goal', 300);
+    await save(F, a.id, g.id, 10);
+    await save(F, b.id, g.id, 12);
+    const r1 = await call(F, 'DELETE', `/api/rewards/${g.id}`);
+    expect(r1.status).toBe(409);
+    expect(r1.json.ending.map((e) => e.saved).sort()).toEqual([10, 12]);
+    expect((await ctx.pool.query('SELECT count(*)::int n FROM rewards WHERE id = $1', [g.id])).rows[0].n).toBe(1); // kept
+    await save(F, a.id, g.id, 1); // stale snapshot
+    expect((await call(F, 'DELETE', `/api/rewards/${g.id}`, { confirm_end_savings: r1.json.snapshot })).status).toBe(409);
+    expect((await call(F, 'DELETE', `/api/rewards/${g.id}`, { confirm_end_savings: true })).status).toBe(409);
+    expect((await delConfirmed(F, g.id)).status).toBe(200);
+    const { rows } = await ctx.pool.query("SELECT delta, ended_by FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed' ORDER BY delta", [g.id]);
+    expect(rows).toEqual([{ delta: -12, ended_by: 'deleted' }, { delta: -11, ended_by: 'deleted' }]);
+    const plain = await newGoal(F, 'Del plain', 50);
+    expect((await call(F, 'DELETE', `/api/rewards/${plain.id}`)).status).toBe(200); // nothing saved
   });
 
   it('N2: reassigning away from one child records "reassigned" for that child only; deleting records "deleted"', async () => {
@@ -511,11 +608,11 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     const tent = await newGoal(F, 'Ran tent', 200);
     await save(F, a.id, tent.id, 30);
     await save(F, b.id, tent.id, 20);
-    await call(F, 'PUT', `/api/rewards/${tent.id}`, { assigned_child_ids: [b.id.toUpperCase()], confirm_end_savings: true }); // a loses it
+    await putConfirmed(F, tent.id, { assigned_child_ids: [b.id.toUpperCase()] }); // a loses it
     let rows = (await ctx.pool.query("SELECT child_id, delta, ended_by FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed'", [tent.id])).rows;
     expect(rows).toEqual([{ child_id: a.id, delta: -30, ended_by: 'reassigned' }]);
     expect((await agree(F, b.id)).saved_total).toBe(20);
-    expect((await call(F, 'DELETE', `/api/rewards/${tent.id}`)).status).toBe(200);
+    expect((await delConfirmed(F, tent.id)).status).toBe(200);
     rows = (await ctx.pool.query("SELECT child_id, delta, ended_by FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed' ORDER BY ended_by", [tent.id])).rows;
     expect(rows).toEqual([{ child_id: b.id, delta: -20, ended_by: 'deleted' }, { child_id: a.id, delta: -30, ended_by: 'reassigned' }]);
     await agree(F, a.id);
@@ -558,7 +655,7 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
       await save(F, a.id, g.id, 2);
       await save(F, b.id, g.id, 2);
       const [edit, aw1, aw2] = await Promise.all([
-        call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false, confirm_end_savings: true }),
+        putConfirmed(F, g.id, { is_bigger_goal: false }),
         award(F, b.id, 1),
         award(F, a.id, 1),
       ]);
@@ -580,7 +677,7 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
       await conn.query('BEGIN');
       // As the award path does: the child FOR UPDATE first...
       await conn.query('SELECT 1 FROM children WHERE id = $1 FOR UPDATE', [b.id]);
-      const edit = call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false, confirm_end_savings: true });
+      const edit = putConfirmed(F, g.id, { is_bigger_goal: false });
       // ...wait until the edit is blocked on that child...
       for (let i = 0; i < 50; i++) {
         const { rows } = await ctx.pool.query("SELECT count(*)::int n FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE '%FOR KEY SHARE%'");
@@ -606,7 +703,7 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     await ctx.pool.query('UPDATE rewards SET is_bigger_goal = false WHERE id = $1', [g.id]);
     await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [g.id]);
     await save(F, kid.id, g.id, 10); // the current generation
-    await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false, confirm_end_savings: true });
+    await putConfirmed(F, g.id, { is_bigger_goal: false });
     const { rows } = await ctx.pool.query("SELECT delta, ended_by FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed'", [g.id]);
     expect(rows).toEqual([{ delta: -10, ended_by: 'unmarked' }]); // only what this edit ended
   });
@@ -618,11 +715,17 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
       const g = await newGoal(F, `Gone goal ${round}`, 100);
       await save(F, kid.id, g.id, 5);
       await save(F, other.id, g.id, 5);
-      const [edit, del] = await Promise.all([
-        call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false, confirm_end_savings: true }),
+      const [first, del] = await Promise.all([
+        putConfirmed(F, g.id, { is_bigger_goal: false }),
         call(F, 'DELETE', `/api/children/${kid.id}`),
       ]);
-      expect([edit.status, del.status], edit.text).toEqual([200, 200]);
+      expect(del.status).toBe(200);
+      // §21: if the delete landed between the warning and the confirmation, the
+      // affected set changed, so the server asks again (409, nothing changed);
+      // confirming the refreshed warning then goes through. Never a 500.
+      const edit = first.status === 409 ? await putConfirmed(F, g.id, { is_bigger_goal: false }) : first;
+      expect([200, 409]).toContain(first.status);
+      expect(edit.status, edit.text).toBe(200);
       expect((await ctx.pool.query("SELECT count(*)::int n FROM savings_events WHERE child_id = $1 AND kind = 'reward_removed'", [other.id])).rows[0].n).toBe(1);
     }
   }, 120000);

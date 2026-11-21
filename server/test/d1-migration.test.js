@@ -207,7 +207,8 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [kite.id]);
     await ledger(B, ann, kite, 30);
     await ledger(B, ben, kite, 40);
-    expect((await call('PUT', `/api/rewards/${kite.id}`, { assigned_child_ids: [ben.id], confirm_end_savings: true })).status).toBe(200); // away from Ann (the parent confirmed, §20.9)
+    const shown = (await call('PUT', `/api/rewards/${kite.id}`, { assigned_child_ids: [ben.id] })).json; // §21: the warning
+    expect((await call('PUT', `/api/rewards/${kite.id}`, { assigned_child_ids: [ben.id], confirm_end_savings: shown.snapshot })).status).toBe(200); // away from Ann, confirmed
     expect((await agree(B, ann.id)).saved_total).toBe(0);
     expect((await call('PUT', `/api/rewards/${kite.id}`, { assigned_child_ids: [] })).status).toBe(200); // back to everyone
     expect((await agree(B, ann.id)).saved_total).toBe(0); // not revived
@@ -216,7 +217,8 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     await ctx.pool.query("UPDATE rewards SET goal_epoch = 0, goal_child_epochs = '{}'::jsonb WHERE id = $1", [kite.id]);
     expect((await agree(B, ann.id)).saved_total).toBe(0);
     // Delete and recreate with the same title: a different reward; nothing carries over.
-    await call('DELETE', `/api/rewards/${kite.id}`);
+    { const r = await call('DELETE', `/api/rewards/${kite.id}`); // §21.2: confirmed with the snapshot shown
+      if (r.status === 409) await call('DELETE', `/api/rewards/${kite.id}`, { confirm_end_savings: r.json.snapshot }); }
     const kite2 = (await call('POST', '/api/rewards', { title: 'Big kite', cost_points: 100 })).json;
     await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [kite2.id]);
     expect((await agree(B, ben.id)).saved_total).toBe(0);

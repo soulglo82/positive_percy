@@ -45,6 +45,11 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  // D1 §21: what the server says this save (or delete) would release, when it
+  // differs from what this page knew. It replaces the local list in both
+  // warnings, and its snapshot is what the parent then confirms.
+  const [serverEnding, setServerEnding] = useState(null);
+  const [deleteEnding, setDeleteEnding] = useState(null);
   const opened = useRef(false);
 
   // Fresh form on each opening: from the reward, the starter template, or blank.
@@ -63,6 +68,8 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
     setIconTouched(false);
     setPickerOpen(!reward); // approved: a new reward opens the picker; edit starts closed
     setSaving(false);
+    setServerEnding(null);
+    setDeleteEnding(null);
   }, [isOpen, reward, initialTemplate]);
 
   // What the reward looks like now: the chosen icon, else its own image/emoji.
@@ -71,7 +78,8 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   const valid = title.trim().length > 0 && Number.isInteger(costPoints) && costPoints >= 1;
 
   const choose = (id) => { setIconKey(id); setIconTouched(true); };
-  const toggleChild = (id) => setAssigned((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  // A change to what is being saved makes any list from the server stale.
+  const toggleChild = (id) => { setServerEnding(null); setAssigned((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])); };
 
   // O6: un-marking a bigger goal, or taking it away from a child, ends what
   // was saved towards it for good (the points return to available; marking it
@@ -85,7 +93,21 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
     .filter((c) => hadFor(c.id) && (!biggerGoal || !hasFor(c.id)))
     .map((c) => ({ id: c.id, name: c.name, saved: (c.goals || []).find((g) => String(g.rewardId) === String(reward.id))?.saved ?? 0 }))
     .filter((c) => c.saved > 0);
-  const endsSavings = losing.length > 0;
+  // The local snapshot: the reward row's generations and each child's amount.
+  const snapshotOf = (list) => ({
+    goal_epoch: reward?.goal_epoch ?? 0,
+    goal_child_epochs: reward?.goal_child_epochs || {},
+    children: list.map((c) => ({ child_id: c.id, saved: c.saved })),
+  });
+  const shown = serverEnding ? serverEnding.ending.map((e) => ({ id: e.child_id, name: e.name, saved: e.saved })) : losing;
+  const endsSavings = shown.length > 0;
+  // A delete ends the savings of every child who has some in this goal.
+  const deleting = !reward?.is_bigger_goal ? [] : children
+    .filter((c) => hadFor(c.id))
+    .map((c) => ({ id: c.id, name: c.name, saved: (c.goals || []).find((g) => String(g.rewardId) === String(reward.id))?.saved ?? 0 }))
+    .filter((c) => c.saved > 0);
+  const deleteShown = deleteEnding ? deleteEnding.ending.map((e) => ({ id: e.child_id, name: e.name, saved: e.saved })) : deleting;
+  const releaseLine = (c) => `${c.name}: ${c.saved} saved ${c.saved === 1 ? 'point' : 'points'} will become available again.`;
 
   const save = async (confirmed = false) => {
     if (!valid || saving) return;
@@ -101,10 +123,12 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
         assigned_child_ids: assigned,
         ...(editing ? {} : { emoji }),
         ...(iconTouched ? { icon_key: iconKey } : {}),
-        // Only after the parent confirmed the per-child warning (§20.3, §20.9).
-        ...(confirmed === true && endsSavings ? { confirm_end_savings: true } : {}),
+        // Only after the parent confirmed the per-child warning: exactly what
+        // was shown (§21), the server's list when it sent one.
+        ...(confirmed === true && endsSavings ? { confirm_end_savings: serverEnding ? serverEnding.snapshot : snapshotOf(losing) } : {}),
       };
       const ok = await onSubmit(payload);
+      if (ok?.needsConfirm) { setServerEnding(ok.needsConfirm); setConfirmEnd(true); return; }
       if (ok === false) return;
       onClose();
     } finally {
@@ -158,7 +182,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
                   owner; final approval at screen review. Un-marking ends the
                   goal's savings for good (O6), so say so when it is on. */}
               <label htmlFor="reward-bigger-goal" className="flex min-h-11 cursor-pointer items-start gap-3 rounded-md px-1 py-2 hover:bg-accent">
-                <Checkbox id="reward-bigger-goal" checked={biggerGoal} onCheckedChange={(v) => setBiggerGoal(v === true)}
+                <Checkbox id="reward-bigger-goal" checked={biggerGoal} onCheckedChange={(v) => { setServerEnding(null); setBiggerGoal(v === true); }}
                   aria-describedby="reward-bigger-goal-help" className="mt-0.5" />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-foreground">Bigger goal</span>
@@ -167,7 +191,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
               </label>
               {endsSavings && (
                 <div role="status" className="space-y-1 rounded-md border border-border bg-warning p-3 text-sm text-foreground">
-                  {losing.map((c) => <p key={c.id}>{c.name}: {c.saved} saved {c.saved === 1 ? 'point' : 'points'} will become available again.</p>)}
+                  {shown.map((c) => <p key={c.id}>{releaseLine(c)}</p>)}
                   <p>Past savings won't be restored if you re-enable the goal.</p>
                 </div>
               )}
@@ -205,7 +229,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
           <AlertDialogHeader>
             <AlertDialogTitle>End this bigger goal's savings?</AlertDialogTitle>
             <AlertDialogDescription>
-              {losing.map((c) => `${c.name}: ${c.saved} saved ${c.saved === 1 ? 'point' : 'points'} will become available again.`).join(' ')} Past savings won't be restored if you re-enable the goal.
+              {shown.map(releaseLine).join(' ')} Past savings won't be restored if you re-enable the goal.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -222,10 +246,24 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
             <AlertDialogDescription>
               This will permanently delete this reward. Any pending redemptions will be denied. This cannot be undone.
             </AlertDialogDescription>
+            {/* D1 §21.2: what deleting a bigger goal releases, per child. */}
+            {deleteShown.length > 0 && (
+              <div role="status" className="space-y-1 rounded-md border border-border bg-warning p-3 text-sm text-foreground">
+                {deleteShown.map((c) => <p key={c.id}>{releaseLine(c)}</p>)}
+              </div>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setConfirmDelete(false); onDelete(reward); }}>Delete</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setDeleteEnding(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={async (e) => {
+              e.preventDefault();
+              const confirm = deleteShown.length ? (deleteEnding ? deleteEnding.snapshot : snapshotOf(deleting)) : null;
+              const r = await onDelete(reward, confirm);
+              // The server saw something else: show its list and ask again.
+              if (r?.needsConfirm) { setDeleteEnding(r.needsConfirm); return; }
+              setConfirmDelete(false);
+              setDeleteEnding(null);
+            }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

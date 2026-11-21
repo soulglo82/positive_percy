@@ -2607,8 +2607,9 @@ export async function referencesAreOwned(db, data, familyCode) {
 // counts, O6), so it changes no balance and is never a save or an earning.
 // Only children with savings in this goal are locked (KEY SHARE, id order,
 // §20.8): a child deleted meanwhile is skipped.
-async function recordEndedSavings(db, familyCode, before, after, cause, { dryRun = false } = {}) {
+async function recordEndedSavings(db, familyCode, before, after, cause, { dryRun = false, ended: given = null } = {}) {
   if (!before?.is_bigger_goal) return [];
+  if (given) return writeEndedSavings(db, familyCode, before, given);
   const { rows: sums } = await db.query(
     `SELECT child_id, generation, SUM(delta)::int AS saved FROM savings_events
      WHERE family_code = $1 AND reward_id = $2 GROUP BY child_id, generation HAVING SUM(delta) > 0`,
@@ -2627,6 +2628,12 @@ async function recordEndedSavings(db, familyCode, before, after, cause, { dryRun
       cause: cause === 'deleted' ? 'deleted' : (after && !after.is_bigger_goal ? 'unmarked' : 'reassigned') });
   }
   if (!ended.length || dryRun) return ended;
+  return writeEndedSavings(db, familyCode, before, ended);
+}
+
+// Writes exactly the list the check compared (§21 review: computed once).
+async function writeEndedSavings(db, familyCode, before, ended) {
+  if (!ended.length) return [];
   const { rows: alive } = await db.query(
     'SELECT id FROM children WHERE id = ANY($1::uuid[]) AND family_code = $2 ORDER BY id FOR KEY SHARE',
     [ended.map((e) => e.childId), familyCode]);
@@ -2642,7 +2649,37 @@ async function recordEndedSavings(db, familyCode, before, after, cause, { dryRun
   return written;
 }
 
-export async function scopedUpdate(db, table, id, familyCode, data, { confirmEndSavings = false } = {}) {
+// D1 §21: a confirmation is the snapshot the parent was shown, never a
+// boolean. It must equal, under the reward's lock, what the change would end
+// now: the goal's generations and exactly the affected children and amounts.
+const normEpochs = (o) => Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {})
+  .map(([k, v]) => [String(k).toLowerCase(), Number(v) || 0]).filter(([, v]) => v !== 0).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+function snapshotMatches(snap, before, ended) {
+  if (!snap || typeof snap !== 'object' || Array.isArray(snap)) return false;
+  if (Number(snap.goal_epoch) !== Number(before.goal_epoch ?? 0)) return false;
+  if (JSON.stringify(normEpochs(snap.goal_child_epochs)) !== JSON.stringify(normEpochs(before.goal_child_epochs))) return false;
+  if (!Array.isArray(snap.children) || snap.children.length !== ended.length) return false;
+  const want = new Map(ended.map((e) => [e.childId, e.saved]));
+  const seen = new Set();
+  for (const c of snap.children) {
+    const cid = String(c?.child_id || '').toLowerCase();
+    if (seen.has(cid) || !want.has(cid) || want.get(cid) !== c?.saved) return false;
+    seen.add(cid);
+  }
+  return true;
+}
+async function endingReply(db, familyCode, before, ended) {
+  const { rows } = await db.query('SELECT id, name FROM children WHERE id = ANY($1::uuid[]) AND family_code = $2', [ended.map((e) => e.childId), familyCode]);
+  const names = new Map(rows.map((r) => [String(r.id), r.name]));
+  const children = [...ended].sort((a, b) => (a.childId < b.childId ? -1 : 1));
+  return {
+    ending: children.map((e) => ({ child_id: e.childId, name: names.get(e.childId) || '', saved: e.saved })),
+    snapshot: { goal_epoch: before.goal_epoch ?? 0, goal_child_epochs: normEpochs(before.goal_child_epochs),
+      children: children.map((e) => ({ child_id: e.childId, saved: e.saved })) },
+  };
+}
+
+export async function scopedUpdate(db, table, id, familyCode, data, { confirmSnapshot = null } = {}) {
   const clean = table === 'children' ? stripChildBalance(data) : { ...data };
   delete clean.family_code; // never client-settable
   delete clean.id;
@@ -2686,10 +2723,13 @@ export async function scopedUpdate(db, table, id, familyCode, data, { confirmEnd
     // Code review of addfe54: a stale page could end savings without the
     // parent being asked. The server asks: an edit that ends savings needs
     // the parent's explicit confirmation, or nothing is changed (409).
-    if (!confirmEndSavings && (await recordEndedSavings(db, familyCode, rewardBefore, rows[0], 'edited', { dryRun: true })).length) {
-      return { status: 409 };
+    // §21: checked and written under the same reward lock, which every
+    // savings writer must share first, so nothing changes in between.
+    const ending = await recordEndedSavings(db, familyCode, rewardBefore, rows[0], 'edited', { dryRun: true });
+    if (ending.length && !snapshotMatches(confirmSnapshot, rewardBefore, ending)) {
+      return { status: 409, ...(await endingReply(db, familyCode, rewardBefore, ending)) };
     }
-    await recordEndedSavings(db, familyCode, rewardBefore, rows[0], 'edited');
+    if (ending.length) await recordEndedSavings(db, familyCode, rewardBefore, rows[0], 'edited', { ended: ending });
   }
 
   // Replaced or cleared photo: delete the old upload if nothing else uses it.
@@ -2706,7 +2746,7 @@ export async function scopedUpdate(db, table, id, familyCode, data, { confirmEnd
   return { status: 200, row: rows[0] };
 }
 
-export async function scopedDelete(table, id, familyCode) {
+export async function scopedDelete(table, id, familyCode, { confirmSnapshot = null } = {}) {
   if (!isUuid(id)) return { status: 404 };
   const client = await pool.connect();
   try {
@@ -2726,12 +2766,19 @@ export async function scopedDelete(table, id, familyCode) {
       await client.query('DELETE FROM point_events WHERE child_id = $1 AND (family_code = $2 OR family_code IS NULL)', [id, familyCode]);
       await client.query('DELETE FROM redemptions WHERE child_id = $1 AND (family_code = $2 OR family_code IS NULL)', [id, familyCode]);
     } else if (table === 'rewards') {
+      // D1 §20.1, §21.2: the savings this delete ends, per child, checked
+      // straight after the reward lock against the snapshot the parent saw.
+      const ending = await recordEndedSavings(client, familyCode, owned.rows[0], null, 'deleted', { dryRun: true });
+      if (ending.length && !snapshotMatches(confirmSnapshot, owned.rows[0], ending)) {
+        const reply = await endingReply(client, familyCode, owned.rows[0], ending);
+        await client.query('ROLLBACK');
+        return { status: 409, ...reply };
+      }
       await client.query(
         "UPDATE redemptions SET status = 'Denied' WHERE reward_id = $1 AND status = 'Pending' AND (family_code = $2 OR family_code IS NULL)",
         [id, familyCode]
       );
-      // D1 §20.1: record the savings this delete ends, per child.
-      await recordEndedSavings(client, familyCode, owned.rows[0], null, 'deleted');
+      if (ending.length) await recordEndedSavings(client, familyCode, owned.rows[0], null, 'deleted', { ended: ending });
     }
     await client.query(`DELETE FROM ${table} WHERE id = $1 AND family_code = $2`, [id, familyCode]);
     // The row's photo goes with it, unless something else still uses it.
@@ -2767,7 +2814,7 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
         try {
           await client.query('BEGIN');
           result = await scopedUpdate(client, table, req.params.id, req.familyCode, data,
-            { confirmEndSavings: req.body?.confirm_end_savings === true });
+            { confirmSnapshot: req.body?.confirm_end_savings ?? null });
           await client.query(result.status === 200 ? 'COMMIT' : 'ROLLBACK');
           break;
         } catch (err) {
@@ -2782,7 +2829,8 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
     if (result.status === 400) return res.status(400).json({ error: 'No valid fields provided' });
     if (result.status === 404) return res.status(404).json({ error: 'Not found' });
     if (result.status === 409) {
-      return res.status(409).json({ code: 'ENDS_SAVINGS', error: 'Points were saved since this page opened. Check the warning and save again.' });
+      return res.status(409).json({ code: 'ENDS_SAVINGS', error: 'Saved points would be released. Check the warning and confirm.',
+        ending: result.ending, snapshot: result.snapshot });
     }
 
     broadcastFn(req.familyCode, { type: `${req.params.entity}_updated`, id: req.params.id });
@@ -2801,13 +2849,18 @@ router.delete('/api/:entity/:id', authMiddleware, async (req, res) => {
 
   try {
     let result;
+    const opts = { confirmSnapshot: req.body?.confirm_end_savings ?? null };
     try {
-      result = await scopedDelete(table, req.params.id, req.familyCode);
+      result = await scopedDelete(table, req.params.id, req.familyCode, opts);
     } catch (err) {
       if (err.code !== '40P01') throw err;
-      result = await scopedDelete(table, req.params.id, req.familyCode); // D1 §20.8: once
+      result = await scopedDelete(table, req.params.id, req.familyCode, opts); // D1 §20.8: once
     }
     if (result.status === 404) return res.status(404).json({ error: 'Not found' });
+    if (result.status === 409) {
+      return res.status(409).json({ code: 'ENDS_SAVINGS', error: 'Saved points would be released. Check the warning and confirm.',
+        ending: result.ending, snapshot: result.snapshot });
+    }
     broadcastFn(req.familyCode, { type: `${req.params.entity}_deleted`, id: req.params.id });
     res.json({ success: true });
   } catch (err) {
