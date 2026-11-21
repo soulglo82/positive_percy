@@ -59,6 +59,11 @@ run 2 'a head other than PERCY_EXPECT_HEAD is refused' PERCY_BACKUP_FILE="$tmp/a
 touch "$repo/.d1-dirty-test"
 run 2 'a dirty tree is refused' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
 run 2 'a remote Docker host is refused' DOCKER_HOST=tcp://192.0.2.1:2375 PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
+# A remote context with no DOCKER_HOST: the second, independent check.
+docker context rm -f percy-d1-test-remote >/dev/null 2>&1 || true
+docker context create percy-d1-test-remote --docker host=tcp://192.0.2.1:2375 >/dev/null
+run 2 'a remote Docker context is refused' DOCKER_CONTEXT=percy-d1-test-remote PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
+docker context rm -f percy-d1-test-remote >/dev/null
 rm -f "$repo/.d1-dirty-test"
 
 # Broken archives: exit 3, nothing left behind.
