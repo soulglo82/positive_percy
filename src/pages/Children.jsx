@@ -4,6 +4,7 @@
 // and today's completions from GET /api/todays-goals?manage=true. "Saving for
 // something bigger" waits for the savings ledger (owner decision D1).
 import { useState } from 'react';
+import { isAssignedTo } from '@/lib/assignment';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -33,8 +34,7 @@ const pct = (n, d) => (d > 0 ? Math.max(0, Math.min(100, Math.round((n / d) * 10
 
 // Rewards this child can see (assignment). Hidden ones are shown, tagged, for
 // the parent; Child View leaves them out.
-export const rewardsForChild = (rewards, childId) => rewards.filter((r) =>
-  !r.assigned_child_ids || r.assigned_child_ids.length === 0 || r.assigned_child_ids.includes(childId));
+export const rewardsForChild = (rewards, childId) => rewards.filter((r) => isAssignedTo(r, childId));
 
 function SectionHead({ title, children }) {
   return (

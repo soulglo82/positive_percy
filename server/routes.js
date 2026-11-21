@@ -127,8 +127,8 @@ async function loadRewardsById(db, familyCode, ids) {
 function spendableFrom(byId, rewardId, childId) {
   const r = byId.get(String(rewardId || ''));
   if (!r) return null;
-  const assigned = r.assigned_child_ids || [];
-  if (assigned.length > 0 && !assigned.includes(childId)) return null;
+  const assigned = (r.assigned_child_ids || []).map((x) => String(x).toLowerCase());
+  if (assigned.length > 0 && !assigned.includes(String(childId).toLowerCase())) return null;
   return { id: r.id, title: r.title, cost: r.cost_points, icon_key: r.icon_key ?? null, emoji: r.emoji ?? null, image_url: r.image_url ?? null };
 }
 
@@ -482,6 +482,26 @@ router.get('/api/family/timezone', authMiddleware, async (req, res) => {
     res.json({ timezone: rows[0].timezone });
   } catch (err) {
     return serverError(res, 'Read timezone error', err);
+  }
+});
+
+// V1-E (docs/engineering/V1-E-DESIGN.md §3): the family's own name, the one
+// the Family Report and auth/me show. Only the caller's family (from the
+// token). Same rule as creation: trimmed, at most 100 characters, required.
+// Registered before the generic PUT /api/:entity/:id, which would match it.
+router.put('/api/family/name', authMiddleware, async (req, res) => {
+  const raw = req.body?.family_name;
+  // Cut by characters, not UTF-16 units, so an emoji is never split.
+  const family_name = typeof raw === 'string' ? Array.from(raw.trim()).slice(0, 100).join('').trim() : '';
+  if (!family_name) return res.status(400).json({ error: 'Family name is required' });
+  try {
+    const { rows } = await pool.query(
+      'UPDATE families SET family_name = $1 WHERE family_code = $2 RETURNING family_name',
+      [family_name, req.familyCode]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Family not found' });
+    return res.json({ family_name: rows[0].family_name });
+  } catch (err) {
+    return serverError(res, 'Set family name error', err);
   }
 });
 

@@ -4,6 +4,7 @@
 // visibility controls (D8). A parent agrees from Home. The "Saved towards"
 // tile and "My next big adventure" wait for the savings ledger (D1).
 import { useEffect, useRef, useState } from 'react';
+import { isAssignedTo } from '@/lib/assignment';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -38,7 +39,7 @@ export function childRewards(rewards, child) {
   const asked = new Set((child.reward_stack_priced || []).map((item) => item.rewardId));
   return rewards
     .filter((r) => {
-      const assigned = !r.assigned_child_ids || r.assigned_child_ids.length === 0 || r.assigned_child_ids.includes(child.id);
+      const assigned = isAssignedTo(r, child.id);
       return assigned && (r.visible_to_child !== false || asked.has(r.id));
     })
     .sort((a, b) => a.cost_points - b.cost_points);
