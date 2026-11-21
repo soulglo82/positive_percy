@@ -13,7 +13,7 @@ export const COLUMN_WHITELIST = {
   redemptions: new Set(['child_id', 'child_name', 'reward_id', 'reward_title',
     'reward_cost', 'status', 'family_code']),
   rewards: new Set(['title', 'description', 'cost_points', 'image_url',
-    'emoji', 'icon_key', 'visible_to_child', 'assigned_child_ids', 'family_code']),
+    'emoji', 'icon_key', 'visible_to_child', 'assigned_child_ids', 'is_bigger_goal', 'family_code']),
   family_goals: new Set(['title', 'description', 'emoji', 'target_points',
     'current_points', 'status', 'family_code']),
 };

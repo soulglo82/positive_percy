@@ -11,7 +11,9 @@ const pool = new pg.Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-export async function initDb() {
+// `migrationOptions` is for tests only (e.g. a folder without a migration, to build
+// a database that never had it). Production calls initDb() with no argument.
+export async function initDb({ migrationOptions } = {}) {
   const client = await pool.connect();
   try {
     await client.query(`
@@ -185,7 +187,7 @@ export async function initDb() {
     // families get their categories from /api/family/create.
 
     // One-time changes, each applied once and recorded. Throws on failure.
-    await runMigrations(pool);
+    await runMigrations(pool, migrationOptions);
 
     // IMPL-5 (after migrations since Batch D PR2, so icon_key exists): Seed default behavior categories for existing families that don't have any
     await client.query(`

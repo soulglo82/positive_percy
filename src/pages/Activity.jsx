@@ -3,6 +3,7 @@
 // the four filters are server projections of "All" (goal rows are tagged by
 // the completion join). Correct (this week's awards) and the undone marking
 // are kept from A2.
+import { pointsWord } from '@/lib/savings';
 import { useState } from 'react';
 import { Child } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
@@ -297,6 +298,7 @@ export function rowIconKind(event) {
   if (event.type === 'earn') return event.goal_completion_id ? 'goal' : 'earn';
   if (event.type === 'spend') return 'spend';
   if (event.type === 'undo') return 'undo';
+  if (event.type === 'saving' || event.type === 'moved_back' || event.type === 'savings_ended') return 'saving';
   return 'other';
 }
 function RowIcon({ event }) {
@@ -306,6 +308,7 @@ function RowIcon({ event }) {
     case 'earn': return <PercyIcon id="phosphor:hand-heart:duotone" className={cls} />;
     case 'spend': return <PercyIcon id="phosphor:gift:duotone" className={cls} />;
     case 'undo': return <PercyIcon id="phosphor:arrow-counter-clockwise:duotone" className={cls} />;
+    case 'saving': return <PercyIcon id="phosphor:piggy-bank:duotone" className={cls} />;
     default: return <PercyIcon id="phosphor:info:duotone" className={cls} />;
   }
 }
@@ -327,6 +330,22 @@ export function rowText(event, timeZone = undefined) {
   // No parent confirmation is recorded on a redemption (and before V1 a child
   // could redeem directly), so no row claims one (A2).
   if (event.type === 'spend') return { lead: 'redeemed', what: event.label, sub: `Reward redeemed · ${time}` };
+  // D1 savings moves (owner's proposed O4 wording): not balance changes.
+  const pts = `${event.points} ${pointsWord(event.points)}`;
+  if (event.type === 'saving') return { lead: `saved ${pts} towards`, what: event.label, sub: `Savings · ${time}` };
+  if (event.type === 'moved_back') return { lead: `moved ${pts} back from`, what: event.label, sub: `Savings · ${time}` };
+  // D1 §20.1 (owner review of #64, N2): why saved points stopped counting.
+  // Provisional wording (§20.8): "released", not "available again".
+  // Owner wording (21 Nov): a cancellation, never a success or an earning.
+  // The child's name stands in for a pronoun (no pronouns are stored).
+  if (event.type === 'savings_ended') {
+    // Owner wording (handover 21 Nov): "{Child}'s {Goal} savings are back in
+    // their points." · "{n} points returned · {reason}".
+    const cause = event.note === 'unmarked' ? 'Bigger goal removed'
+      : event.note === 'deleted' ? 'Reward deleted' : 'No longer assigned';
+    return { possessive: true, lead: '', what: event.label, after: 'savings are back in their points.',
+      sub: `${event.points} ${pointsWord(event.points)} returned · ${cause} · ${time}` };
+  }
   const lead = event.type === 'undo' ? 'undo:' : event.type === 'starting' ? 'started with'
     : event.type === 'correction' ? 'had a one-off' : event.points < 0 ? 'had an earlier adjustment for' : 'adjusted';
   return { lead, what: event.label, sub: time };
@@ -341,16 +360,17 @@ function NarrativeItem({ event, timeZone, canCorrect, onCorrect }) {
   // An undone award or spend and its undo row are both shown, the amount
   // struck through, so the list still adds up to the balance.
   const undone = !!event.undone;
-  const { lead, what, sub } = rowText(event, timeZone);
+  const { lead, what, sub, possessive = false, after = null } = rowText(event, timeZone);
 
   return (
     <div data-row-key={`${event.type}-${event.id}`} className="flex items-center gap-3 px-3 py-3 border-b border-border last:border-b-0">
       <RowIcon event={event} />
       <div className="flex-1 min-w-0">
         <p className="text-sm leading-snug break-words">
-          <span className="font-semibold text-foreground">{event.child_name}</span>
+          <span className="font-semibold text-foreground">{event.child_name}{possessive ? '’s' : ''}</span>
           {' '}<span className="text-muted-foreground">{lead}</span>{' '}
           <span className="font-medium text-foreground">{what}</span>
+          {after && <>{' '}<span className="text-muted-foreground">{after}</span></>}
         </p>
         <p className="text-xs text-subtle-foreground mt-0.5 break-words">
           {sub}
@@ -358,9 +378,12 @@ function NarrativeItem({ event, timeZone, canCorrect, onCorrect }) {
         </p>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
+        {/* A savings move changes no balance, so it has no amount column. */}
+        {rowIconKind(event) !== 'saving' && (
         <span className={`text-sm font-semibold tabular-nums ${colorClass} ${undone ? 'line-through' : ''}`}>
           {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}
         </span>
+        )}
         {canCorrect && (
           <button type="button" onClick={onCorrect} className="min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Correct ${event.child_name} award of ${event.points} points`}>
             Correct

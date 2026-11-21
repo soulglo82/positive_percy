@@ -15,25 +15,41 @@ export function useRewardMutations() {
     onSuccess: (_, { id }) => { done(); toast.success(id ? 'Reward updated.' : 'Reward created.'); },
   });
   const deleteMutation = useMutation({
-    mutationFn: (id) => Reward.delete(id),
+    mutationFn: ({ id, confirm }) => Reward.delete(id, confirm ? { confirm_end_savings: confirm } : undefined),
     onSuccess: () => { done(); toast.success('Reward deleted'); },
   });
-  // Resolves true when saved (the form then closes), false when not.
+  // Resolves true when saved (the form then closes), false when not, or
+  // { needsConfirm: { ending, snapshot } } when the server must be shown what
+  // would be released (D1 §21): the form then asks again with that list.
   const save = async (id, data) => {
     try {
       await saveMutation.mutateAsync({ id, data });
       return true;
     } catch (err) {
+      // D1 §20.9: savings changed since the page loaded. Refresh the
+      // children so the form's per-child warning shows the current figures.
+      if (err?.code === 'ENDS_SAVINGS') {
+        done();
+        // No snapshot to confirm: say so rather than ask again forever.
+        if (!err.snapshot) { toast.error(err.message || "Couldn't save the reward."); return false; }
+        return { needsConfirm: { ending: err.ending || [], snapshot: err.snapshot } };
+      }
       toast.error(err?.message || "Couldn't save the reward.");
       return false;
     }
   };
-  // Resolves true when deleted.
-  const remove = async (reward) => {
+  // Resolves true when deleted; { needsConfirm } as save (D1 §21.2).
+  const remove = async (reward, confirm = null) => {
     try {
-      await deleteMutation.mutateAsync(reward.id);
+      await deleteMutation.mutateAsync({ id: reward.id, confirm });
       return true;
     } catch (err) {
+      if (err?.code === 'ENDS_SAVINGS') {
+        done();
+        // No snapshot to confirm: say so rather than ask again forever.
+        if (!err.snapshot) { toast.error(err.message || "Couldn't save the reward."); return false; }
+        return { needsConfirm: { ending: err.ending || [], snapshot: err.snapshot } };
+      }
       toast.error(err?.message || "Couldn't delete the reward.");
       return false;
     }

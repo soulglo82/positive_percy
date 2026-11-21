@@ -65,7 +65,8 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
   // O-I1: a requested reward is approved or declined above, not spent here.
   const requestedIds = new Set(requests.map((item) => item.rewardId));
   const availableRewards = rewards
-    .filter(r => r.visible_to_child !== false && !requestedIds.has(r.id))
+    // D1 (B1/O7): a bigger goal is redeemed from the Children page, never spent here.
+    .filter(r => r.visible_to_child !== false && !r.is_bigger_goal && !requestedIds.has(r.id))
     .sort((a, b) => a.cost_points - b.cost_points);
 
   const handleRedeem = async (reward) => {

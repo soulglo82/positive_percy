@@ -1,8 +1,10 @@
 // V1-B Child View (approved design 9de1df2, screen "childview";
 // docs/engineering/V1-B-DESIGN.md §3). Choosing a reward is a request (owner
 // decision D5): this page never spends points, and it has no parent Edit or
-// visibility controls (D8). A parent agrees from Home. The "Saved towards"
-// tile and "My next big adventure" wait for the savings ledger (D1).
+// visibility controls (D8). A parent agrees from Home. "Saved towards" and
+// "My next big adventure" show the child's bigger goal with the most saved,
+// only if that goal is visible to children (D1, savings design §19.3, S5).
+// Nothing here moves points.
 import { useEffect, useRef, useState } from 'react';
 import { isAssignedTo } from '@/lib/assignment';
 import { Link } from 'react-router-dom';
@@ -18,6 +20,8 @@ import { Button } from '@/components/ui/button';
 import Logo from '@/components/brand/Logo';
 import RewardIcon from '../components/rewards/RewardIcon';
 import { FamilyStrip } from '../components/home/HomeSections';
+import GoalProgress from '../components/savings/GoalProgress';
+import { leadingGoal } from '@/lib/savings';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorCard from '../components/ErrorCard';
 
@@ -33,6 +37,13 @@ export function rewardState(reward, child) {
   return { kind: 'need', more: reward.cost_points - available };
 }
 
+// The child's goals they may see (S5): the same visibility rule for the
+// "Saved towards" tile and "My next big adventure".
+export function visibleGoals(rewards, child) {
+  const visible = new Set(rewards.filter((r) => r.visible_to_child !== false).map((r) => r.id));
+  return (child.goals || []).filter((g) => visible.has(g.rewardId));
+}
+
 // The rewards this child may choose: visible and assigned to them, plus any
 // they already asked for (still set aside, even if hidden since), cheapest first.
 export function childRewards(rewards, child) {
@@ -40,7 +51,9 @@ export function childRewards(rewards, child) {
   return rewards
     .filter((r) => {
       const assigned = isAssignedTo(r, child.id);
-      return assigned && (r.visible_to_child !== false || asked.has(r.id));
+      // A bigger goal is saved for, not asked for (B1); one asked for before it
+      // was marked still shows as requested.
+      return assigned && (r.visible_to_child !== false || asked.has(r.id)) && (!r.is_bigger_goal || asked.has(r.id));
     })
     .sort((a, b) => a.cost_points - b.cost_points);
 }
@@ -106,6 +119,7 @@ export default function ChildView() {
   const child = ordered.find((c) => c.id === childId) || ordered[0];
   const available = child.available_points ?? child.total_points ?? 0;
   const rewards = childRewards(allRewards, child);
+  const goal = leadingGoal(visibleGoals(allRewards, child));
 
   const ask = async (reward) => {
     const key = child.id + ':' + reward.id;
@@ -153,9 +167,30 @@ export default function ChildView() {
                 <p className="font-display font-extrabold text-title text-foreground tabular-nums">{available}</p>
                 <p className="text-sm font-medium text-muted-foreground">Ready to use</p>
               </div>
+              {goal && (
+                <div className="rounded-md border border-border p-3">
+                  <p className="font-display font-extrabold text-title text-foreground tabular-nums">{goal.saved}</p>
+                  <p className="text-sm font-medium text-muted-foreground break-words">Saved towards {goal.name}</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
+
+        {goal && (
+          <Card>
+            <CardContent className="p-4 sm:p-5 space-y-3">
+              <h2 className="font-display font-bold text-lg text-primary">My next big adventure</h2>
+              <GoalProgress goal={goal} showToGo={false} />
+              {/* Owner wording (21 Nov): "{n} points to go" while n > 0; at 0 the
+                  celebration of a funded goal. It is not a redemption: a parent
+                  redeems a bigger goal (O7), so nothing here says choose or redeem. */}
+              <p className="text-sm font-semibold text-foreground tabular-nums">
+                {goal.to_go > 0 ? `${goal.to_go} ${pointsWord(goal.to_go)} to go` : `${child.name} has saved enough for ${goal.name}!`}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent className="p-4 sm:p-5 space-y-3">
@@ -168,6 +203,13 @@ export default function ChildView() {
             ) : rewards.length === 0 ? (
               <p className="text-muted-foreground">No rewards created yet.</p>
             ) : (
+              <>
+              {/* Owner wording (handover 21 Nov): only where the child can genuinely
+                  choose, i.e. an ordinary reward they can afford and have not asked
+                  for yet. Bigger goals are never choosable here (a parent redeems). */}
+              {rewards.some((r) => rewardState(r, child).kind === 'ask') && (
+                <p className="font-semibold text-foreground">Ready to choose your reward!</p>
+              )}
               <ul className="space-y-2">
                 {rewards.map((reward) => {
                   const state = rewardState(reward, child);
@@ -196,6 +238,7 @@ export default function ChildView() {
                   );
                 })}
               </ul>
+              </>
             )}
             <p className="text-sm text-muted-foreground">Choosing a reward is a request. Only a parent-authorised confirmation can spend points.</p>
           </CardContent>

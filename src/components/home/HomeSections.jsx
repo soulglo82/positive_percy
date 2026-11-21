@@ -1,7 +1,7 @@
 // V1 Home sections (approved design 18769f7; plan docs/engineering/V1-IMPLEMENTATION-PLAN.md).
 // Every figure comes from the server: week_points, weekly_target and
-// available_points on the child, the family streak, the reward stack. No
-// savings figures are shown until the savings ledger (owner decision D1).
+// available_points on the child, the family streak, the reward stack and
+// the child's bigger goals (D1, savings design §19.3).
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,8 @@ import PercyIcon from '@/components/icons/PercyIcon';
 import CategoryIcon from '@/components/CategoryIcon';
 import RewardIcon from '@/components/rewards/RewardIcon';
 import ChildAvatar from '@/components/child/ChildAvatar';
+import GoalProgress from '@/components/savings/GoalProgress';
+import { leadingGoal } from '@/lib/savings';
 import { childColour } from '@/lib/childColour';
 
 // Approved: "{n}-day family streak · Keep the good stuff going!". Hidden at 0
@@ -89,16 +91,20 @@ export function LittleWins({ child }) {
   );
 }
 
-// "What you're working towards": the child's chosen (stacked) rewards at
-// current names and costs (server reward_stack_priced, the same stack that
-// available_points is computed from). No savings bar or "saved" figures until
-// owner decision D1.
+// "What you're working towards": the selected child's bigger goal with the
+// most saved (D1 N7), then the chosen (stacked) rewards at current names and
+// costs (server reward_stack_priced, the same stack available_points is
+// computed from).
 export function WorkingTowards({ child }) {
   const stack = child.reward_stack_priced ?? [];
+  const goal = leadingGoal(child.goals);
   return (
     <Card>
       <CardContent className="p-4 sm:p-5 space-y-3">
         <h2 className="font-display font-bold text-lg text-primary">What you're working towards</h2>
+        {goal && <GoalProgress goal={goal} label="Saving for something bigger" />}
+        {/* Owner wording (21 Nov): the funded-goal celebration (not a redemption). */}
+        {goal && goal.to_go === 0 && <p className="text-sm font-semibold text-foreground">{child.name} has saved enough for {goal.name}!</p>}
         {stack.map((item, i) => (
           <div key={item.rewardId + '-' + i} className="flex items-center gap-3">
             <RewardIcon reward={item} size="md" />
