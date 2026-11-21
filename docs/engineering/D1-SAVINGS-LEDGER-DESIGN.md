@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.9 |
+| Version | 1.10 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.10 | 2026-11-21 | §18.1: design review adopted (eight findings), and two found in the build; built and tested |
 | 1.9 | 2026-11-21 | §18 (design, before build): one command that restores a backup into an isolated PostgreSQL 17 and runs the reconcile CLI against it |
 | 1.8 | 2026-11-20 | §17: post-build code review of `8fa4d35`; six findings fixed (pending must be a tail of the V1 migrations, unknown applied records refused, allowlists anchored on names, a copy at 014 tested, temp-dir cleanup, restore after any error) |
 | 1.7 | 2026-11-20 | §16: production is at migration 012, so the restored-backup run applies the V1 prerequisites 014 and 015 first; the CLI and its test cover a copy at 012 |
@@ -443,4 +444,48 @@ What these tests do not cover: a restored copy whose schema differs from its mig
 - Not covered: R2 download (needs credentials; the drill's own code path, unchanged) and a real archive's contents (the owner's run is the check).
 
 **Rollout and reversal.** The script is a new file and changes no app behaviour. Reversal is deleting it. The owner runs it. Engineering reviews `d1-reconcile-report.json` from the owner's private copy, and no family data goes to GitHub.
+
+### 18.1 Design review and build (v1.10)
+
+A fresh-context reviewer found nothing blocking and eight should-fix items. All eight are adopted in the build. Two further problems came up during the build and are fixed too.
+
+| # | Finding | In the build |
+| --- | --- | --- |
+| 1 | The readiness check over the socket can land on the entrypoint's temporary server | `pg_isready -h 127.0.0.1` |
+| 2 | Report files are owned by root and world-readable from inside the container | The CLI container runs as the caller (`--user`), and the files are set to `chmod 600`. Tested |
+| 3 | The archive name was spliced into the marker SQL | Values are passed as psql variables (`:'src'`); the token is `openssl rand -hex 32` |
+| 4 | One exit code covered both a data change and a broken archive | 0 unchanged; 1 the reconcile found a change or refused the copy; 2 precondition; 3 archive, Docker or restore. Tested |
+| 5 | The CLI's output filter was undefined | The CLI's stdout and stderr pass through unchanged (counts and step lines; diffs name ids, not people). PostgreSQL's own restore messages are suppressed, because they can quote rows |
+| 6 | The exact-head claim had gaps: ignored files, `.env`, and the tree changing after the check | The CLI runs from a `git archive HEAD` extract, with `node_modules` mounted read-only beside it. `run.json` records the head, the `package-lock.json` SHA-256 and the `pg` version |
+| 7 | Images were not pinned | Both are pulled by digest |
+| 8 | The CLI container had no name, so Ctrl-C could leave it running | Named, and removed by the trap |
+| 9 | Found in build: the postgres image declares a data volume. Removing the container without `-v` would leave an anonymous volume holding the restored family data | `docker rm -f -v`; the test counts volumes before and after |
+| 10 | Found in build: a report directory inside the repository was created before it was refused | Checked on the resolved path before anything is created; tested |
+
+**Tests.** `scripts/test/d1-restore-reconcile.test.sh` has 17 checks on synthetic archives, built in pinned `postgres:17` from `scripts/test/d1-fixture.mjs`. All pass. CI runs it in `build-and-test`. The checks:
+- Each precondition is refused: acknowledgement, `DATABASE_URL`, report directory in the repository, head mismatch, dirty tree.
+- A non-gzip file and a non-pg archive each fail with exit 3.
+- A copy at 012 passes with all four steps unchanged.
+- A copy at 016 is refused, with the reason in the report.
+- Nothing is left after any run: no containers, no volumes, no work directory.
+- `run.json` matches the real container settings (`docker inspect`): the database has no network and no published ports; the CLI has a read-only `/app`, read-only `node_modules`, a writable `/out`, and only the image's own environment variables.
+
+**Mutations, each red:**
+- M1: the database on the default network.
+- M2: `/app` writable.
+- M3: an environment variable passed to the CLI.
+- M4: removal without `-v`.
+- M5: the work directory kept.
+- M6: no dirty-tree check.
+
+**Not covered:**
+- The R2 download path. It needs credentials, and it is the drill's command unchanged.
+- A real archive's contents. The owner's run is the check.
+- A SIGKILL. The trap cannot run, so the work directory (decompressed backup) and the containers can remain. On a kill, run `docker ps -a --filter name=percy-d1-` and remove what it lists.
+
+**Owner's run:**
+1. On a trusted machine with Docker, check out the PR head and run `npm ci`.
+2. Run:
+   `PERCY_RESTORE_DRILL_ACK=isolated-docker-only PERCY_EXPECT_HEAD=<head> PERCY_REPORT_DIR=<private dir outside the repo> PERCY_BACKUP_FILE=<archive>` (or the R2 variables) `bash scripts/d1-restore-reconcile.sh`.
+3. Keep both JSON files private. Share the step lines, or the report with ids removed if preferred.
 
