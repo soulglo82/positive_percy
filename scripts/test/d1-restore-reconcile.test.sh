@@ -58,13 +58,14 @@ check '... and nothing was created in the repository' "[[ ! -e '$repo/d1-report-
 run 2 'a head other than PERCY_EXPECT_HEAD is refused' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz" PERCY_EXPECT_HEAD=0000000000000000000000000000000000000000
 touch "$repo/.d1-dirty-test"
 run 2 'a dirty tree is refused' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
+rm -f "$repo/.d1-dirty-test"
+check 'the tree is clean again' "[[ -z \$(git status --porcelain) ]]"
 run 2 'a remote Docker host is refused' DOCKER_HOST=tcp://192.0.2.1:2375 PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
 # A remote context with no DOCKER_HOST: the second, independent check.
 docker context rm -f percy-d1-test-remote >/dev/null 2>&1 || true
 docker context create percy-d1-test-remote --docker host=tcp://192.0.2.1:2375 >/dev/null
 run 2 'a remote Docker context is refused' DOCKER_CONTEXT=percy-d1-test-remote PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
 docker context rm -f percy-d1-test-remote >/dev/null
-rm -f "$repo/.d1-dirty-test"
 
 # Broken archives: exit 3, nothing left behind.
 run 3 'an archive that is not gzip fails' PERCY_BACKUP_FILE="$tmp/not-gzip.tar.gz" PERCY_REPORT_DIR="$tmp/r-bad1"
