@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.12 |
+| Version | 1.13 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.13 | 2026-11-21 | §19 (design, before build): the savings feature (endpoints, goal redemption, refunds, screens) on branch `claude/percy-v1-i-savings` |
 | 1.12 | 2026-11-21 | §18.3: the owner's test conditions; 41 checks; 16 protection mutations, each red |
 | 1.11 | 2026-11-21 | §18.2: post-build code review of the restore script; findings fixed; §18 corrected to match the build |
 | 1.10 | 2026-11-21 | §18.1: design review adopted (eight findings), and two found in the build; built and tested |
@@ -562,4 +563,105 @@ The M14 run, which allowed a report directory inside the repository, left an emp
 - **SIGKILL.** No trap can run (§18.1).
 - **The R2 download.** It needs credentials.
 - **A real archive's contents.** The owner's run is the check.
+
+## 19. The savings feature: build design (v1.13)
+
+**Scope** (owner, 2026-11-21): V1 launches with savings. Endpoints, goal redemption and refunds, and the Home, Children, Child View, Rewards and Activity surfaces. Branch `claude/percy-v1-i-savings`: the top of the stack (`e-settings`) with #60 merged in, as its own draft PR. Nothing here changes migration 016. The owner's restored-backup run stays valid at `3ad4332`.
+
+**Already built and unchanged** (#60):
+- `balanceOf`, `withBalances` (`goals[]`, `saved_total`, `available_points`), generations and the trigger;
+- `stack/add` refuses a bigger goal;
+- `redeem` refuses a reward with current savings;
+- `stack/confirm` refuses a requested reward with savings;
+- `reverseAward` counts savings as committed.
+
+### 19.1 Endpoints
+
+All of these are parent-only (the family token, as every write), family-scoped and idempotent. The `request_id` is required and is claimed in `idempotency_keys` by `priorRequest` and `rememberRequest`; the same id on another endpoint, or with other arguments, gets 409. **Lock order (R3):** the child `FOR UPDATE`, then the reward `FOR SHARE`. The generation is read from that locked reward row.
+
+| Endpoint | Accepts | Refuses |
+| --- | --- | --- |
+| `POST /api/children/:id/savings/save {reward_id, points, request_id}` | Writes `save +points` in the current generation | 400 when `points` is not a whole number in 1..`MAX_AWARD`. 404 for a child or reward not in the family, or a reward not for this child. 409 when the reward is not a bigger goal (I4). 400 "Not enough points" when `points > available` (I2/I3, write-time rule B4) |
+| `POST /api/children/:id/savings/release {reward_id, points, request_id}` | Writes `release −points` | 400 for invalid points. 404 as above. 409 when `points > saved` in the current generation (I1). A goal no longer current has saved = 0, so any release is refused |
+| `POST /api/savings-events/:id/undo {request_id}` | Undoes a `save` or `release` written in the last 10 minutes: an `undo` row with the opposite delta, `undoes` = that event, the same generation | 404 for an unknown event, older than 10 minutes, or a kind other than save or release. 409 "Already undone." (also caught by the `UNIQUE (undoes)` race). 409 when the event's generation is no longer current (O6: never revive). 409 `SPENT_ALREADY` when undoing a save would take saved below 0 (I1, after a later release or a goal redemption). 409 when undoing a release would exceed available (I2) |
+| `POST /api/children/:id/savings/redeem {reward_id, request_id}` (O7: a parent, from the Children page) | `from_saved = min(saved, cost)`; `from_available = cost − from_saved`. In one transaction: `total_points −cost`, `points_spent +cost`, one `redemptions` row (Completed), and a `spend −from_saved` row linked by `redemption_id` (none when `from_saved` is 0) | 404 as above. 409 when not a bigger goal. 400 "Not enough points" when `from_available > available`. 409 "The requests changed. Check them again." when the goal is also in the stack (it cannot be added any more; this covers legacy rows) |
+| Existing `POST /api/redemptions/:id/undo` | Also restores the linked `spend` with an `undo +from_saved` row, **only if** the reward is still a bigger goal for the child in the **same generation** as the spend. Otherwise the points go to available | (unchanged) |
+| Existing `POST /api/children/:id/redeem` | Now also refuses **any** bigger goal (409 "Invalid request"), so goals have one redemption path (B1/O7). Today it refuses only goals with savings | |
+
+Every response carries the child through `withBalances`.
+
+### 19.2 Departures from v1.1, with reasons
+
+1. **N8 (release the excess over cost at redemption) is not built.** 016's shape CHECK allows `release` only with a `request_id` and no link to a redemption. Writing a derived release would need 016 changed, and that would invalidate the owner's pending run at `3ad4332`. The excess instead stays saved towards the same goal, which is E12 of §6. It still counts as committed, so it can never be spent twice, and the parent can move it back. It can only arise when a cost is lowered below what was saved.
+2. **B5's `reward_removed` sweep is not built.** §13.2's generations replaced it. Rows of an old generation never count, so there is nothing to sweep. `reward_removed` stays an allowed kind and is never written.
+
+### 19.3 Surfaces
+
+Approved strings are used verbatim. New strings are the owner's proposed O4 wording, or provisional and listed for the owner's screen review.
+
+- **Rewards (V1-D):**
+  - The form gets a "Bigger goal" switch with the helper text "Save points towards this reward over time" (O4). `is_bigger_goal` joins the rewards column whitelist.
+  - The catalogue gets a "Bigger rewards" section (D7) listing goals, ahead of the other rewards.
+  - Home's direct "Spend" list leaves goals out.
+- **Children (V1-B):** a "Saving for something bigger" card with Edit (approved). For each current goal: the goal's title, "{saved} of {cost} points saved", "{to_go} to go" and a progress bar.
+  - **Edit opens a dialog.** Choose the goal from the child's spendable bigger goals. Then "Save points" or "Move points back" (O4), each with a whole-number amount limited by the server's figures: up to `available_points` to save, up to `saved` to move back. A toast offers Undo. The dialog also shows "Saved: {n}" (approved) and a "Redeem" button (provisional) when `saved + available ≥ cost`.
+  - "Weekly treats to choose from" leaves goals out. A goal tile shows "{cost} points · Bigger achievement" (approved).
+  - "Next milestone" gains the approved subtitle "Weekly target and bigger goal" and, when there is a goal, its "{to_go} to go".
+- **Home (V1-A):** "What you're working towards" shows the selected child's goal with the most saved, under the label "Saving for something bigger", with "{saved} of {cost} points saved", "{to_go} to go" and a bar, as well as the requested rewards (N7).
+- **Child View (V1-B):**
+  - The second tile "{saved} Saved towards {goal}" (approved).
+  - "My next big adventure" with "{to_go} points to go" (approved), for the goal with the most saved, listed only if it is visible to children.
+  - "Rewards I can choose" leaves goals out: there is no request button for a goal (B1).
+  - Nothing in Child View moves points (D5).
+- **Activity (V1-C):** `save` and `release` rows appear in All only, as "Saved {n} points towards {goal}" and "Moved {n} points back from {goal}" (O4). They are not balance changes, so they are never in Earned or Spent. An undone row carries the existing "Undone" marker. Spend and refund rows aren't shown, because the redemption row already says "Reward redeemed".
+- **Export:** `savings_events` is included.
+
+### 19.4 Edge cases (input → expected; §6 E1–E14 still apply)
+
+| # | Input | Expected |
+| --- | --- | --- |
+| F1 | points 0, -1, 1.5, "5", 1001 | 400 |
+| F2 | Save more than available, by exactly 1 | 400; nothing written. Saving exactly the available amount succeeds |
+| F3 | A release larger than saved by 1 | 409. Releasing exactly what was saved succeeds and leaves 0 |
+| F4 | Save with a child id in capitals | The same child and the same goal (R1) |
+| F5 | Save, un-mark, re-mark, then undo the save | 409 (generation changed); saved stays 0 |
+| F6 | Save 50, release 30, undo the save | 409 (saved 20 < 50) |
+| F7 | A goal redeem with saved 120, cost 300 and available 200 | Total −300, spend −120, available −180 (E5) |
+| F8 | Undo that redemption | Total +300 and an undo of +120: saved 120, available back (E6) |
+| F9 | Undo it after the goal was un-marked | Total +300, no savings undo, all 300 available |
+| F10 | A goal redeem replayed with the same request id | One redemption; the replay returns it |
+| F11 | Two saves racing for the last points | One succeeds; the other is refused under the child lock |
+| F12 | A save racing an un-mark | Either the save is written in the old generation and doesn't count, or the un-mark waits for the reward share lock. It never over-commits |
+| F13 | `/redeem` of a goal with 0 saved | 409 |
+| F14 | Another family's child, reward or event | 404 |
+
+**Abuse cases:**
+- Request ids are forged across endpoints (409, the existing rule).
+- Writes to `is_bigger_goal` or the epochs by direct SQL are owned by the trigger.
+- A child token: there are no child accounts. Child View has no savings controls, and the API has no child role.
+
+### 19.5 Test plan
+
+- **Server tests** (`server/test/savings-feature.test.js`):
+  - F1–F14 and E1–E14 through the endpoints;
+  - a property test of random operation sequences (award, save, release, undo, request, confirm, redeem a goal, undo a redemption, un-mark, reassign), after each of which `committed ≤ total` and `total_points` equals the history total;
+  - a test that the savings queries stay one per family read;
+  - the export includes `savings_events`;
+  - the column whitelist.
+- **Mutations** (each must go red):
+  - the I2 check in save;
+  - the I1 check in release;
+  - the generation check in savings undo;
+  - the same-generation rule in redemption undo;
+  - `/redeem` refusing goals;
+  - the lock order: the reward is not locked `FOR SHARE`, caught by the F12 race test, which may pass by chance. The race test runs 20 rounds and is recorded as probabilistic.
+- **Client tests:** render tests from server figures for Home, Children and Child View; the Edit dialog's limits, Undo and Redeem; the form switch; the Bigger rewards section; the Activity rows.
+- **End to end:** a parent marks a goal, saves, moves points back, undoes, and redeems; Child View shows "Saved towards"; axe at 320, 390, 834 and 1280; screenshots.
+- **One class not covered:** clock skew on the 10-minute window across app servers (as §7).
+
+### 19.6 Rollout and reversal
+
+- A draft PR; nothing merged or deployed.
+- Reversal before launch: revert the branch. 016 and its ledger are unchanged.
+- After launch: the §13.3 rule applies (no destructive rollback).
 
