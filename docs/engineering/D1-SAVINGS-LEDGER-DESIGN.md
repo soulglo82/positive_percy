@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.19 |
+| Version | 1.20 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.20 | 2026-11-21 | §21 (design, before build): the confirmation bound to a snapshot; delete confirmed the same way |
 | 1.19 | 2026-11-21 | §20.9: build record of §20; code review fixes (server-side confirmation); #44 findings |
 | 1.18 | 2026-11-21 | §20.8: design review of §20; two blocking lock and CLI findings adopted |
 | 1.17 | 2026-11-21 | §20 (design, before build): the owner's #64 review: a durable record when a goal's savings end (N2, migration 017), "Fully saved!", the per-child warning, the excess after redemption, evidence |
@@ -961,4 +962,63 @@ The archive shrank from 8.68 MB to 646 kB between 10 and 11 November, and famili
   - the owner's account of any manual change on 10–11 November;
   - authoritative production counts of families, children and users, from a read the owner runs or authorises, printing counts only;
   - the restored copy's counts from the drill, compared with production.
+
+## 21. Owner follow-up on #64: confirmation bound to what the parent saw (design, v1.20)
+
+The owner reviewed head `7100b78` and approved the wording and visual direction: "Lara's savings for Bike ended", "40 saved points released · Bigger goal turned off", "Fully saved!", "Ready to redeem", and the warning with "Keep saving". Final sign-off stays with the owner. Two integrity fixes are required.
+
+### 21.1 A confirmation is a snapshot, not a boolean
+
+**The race.** The warning showed Lara's 40 points. Another parent then saved 30 more. A boolean confirmation would have released 70. Equally, a child not in the warning could have become affected.
+
+**Contract.** `confirm_end_savings` is the **snapshot** the parent was shown:
+- `goal_epoch`, and the `goal_child_epochs` of the reward row;
+- `children: [{ child_id, saved }]`.
+
+The server works out what the edit would end, under the reward's `FOR UPDATE` lock, before writing anything (a dry run of `recordEndedSavings`). It proceeds only if all three of these hold:
+1. the snapshot's epochs equal the locked row's;
+2. the snapshot's children are exactly the affected children;
+3. each child's `saved` is exactly the amount that would be released.
+
+Otherwise it returns 409 `ENDS_SAVINGS` and changes nothing. The 409 carries the server's current `ending` (`[{ child_id, name, saved }]`) and its `snapshot`. The form shows that list as the refreshed per-child warning, and the parent must confirm again; the form then sends the server's snapshot. A boolean `true` is no longer accepted.
+
+The check runs under the reward lock, and every savings writer takes the reward `FOR SHARE` first (§19.7 S6). So nothing can change between the check and the write.
+
+### 21.2 Deleting a reward is confirmed the same way
+
+`DELETE /api/rewards/:id` takes the same snapshot in its JSON body, with the same dry run under the reward lock (cause `deleted`), and the same 409 with `ending` and `snapshot`.
+
+The form's Delete confirmation lists each affected child: "{Child}: {n} saved points will become available again." It does this from the form's figures first, then from the server's on a 409. A reward with no savings needs no snapshot. The append-only record and the rollback rules are unchanged.
+
+### 21.3 Client
+
+- `Reward.update` and `Reward.delete` keep the 409's `code`, `ending` and `snapshot`.
+- The form keeps a `serverEnding` state. On a 409 it shows that list, both in the warning and in the confirmation, and sends that snapshot when confirmed.
+- The pages pass the form the **latest** reward row (looked up by id in the refreshed list), so the epochs the form sends are current.
+
+### 21.4 Tests
+
+**Server:**
+- a matching snapshot goes through;
+- a save between the warning and the confirmation gets 409, nothing changed, and the refreshed snapshot then goes through;
+- a second child becoming affected gets 409;
+- un-mark and re-mark by another parent, with equal amounts re-saved, gets 409 (the epochs differ);
+- the boolean `true` gets 409;
+- two concurrent confirmed edits produce one record per child;
+- delete:
+  - without a snapshot: 409, reward kept;
+  - stale: 409;
+  - correct: 200, with a `deleted` record per child;
+  - a reward without savings needs no snapshot.
+
+**Screens:**
+- the delete confirmation lists each child;
+- a 409 shows the server's list;
+- the next confirmation sends the server's snapshot.
+
+**Mutations:**
+- comparing only the child ids;
+- ignoring the epochs;
+- accepting a boolean;
+- delete without the guard.
 
