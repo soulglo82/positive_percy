@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.11 |
+| Version | 1.12 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.12 | 2026-11-21 | §18.3: the owner's test conditions; 41 checks; 16 protection mutations, each red |
 | 1.11 | 2026-11-21 | §18.2: post-build code review of the restore script; findings fixed; §18 corrected to match the build |
 | 1.10 | 2026-11-21 | §18.1: design review adopted (eight findings), and two found in the build; built and tested |
 | 1.9 | 2026-11-21 | §18 (design, before build): one command that restores a backup into an isolated PostgreSQL 17 and runs the reconcile CLI against it |
@@ -509,4 +510,56 @@ A fresh-context reviewer ran the synthetic test (17 passed, tree clean) and foun
 | 9, 12 (Nit) | `eval` quoting in the test; `node_modules` not checked against the lock file | Not fixed: the test runs on the project's own temp paths. `run.json` records the lock file's SHA-256 and the `pg` version, which is enough to reproduce the run | — |
 
 The test has 20 checks, all passing.
+
+### 18.3 Owner's test conditions and the protection mutations (v1.12)
+
+The owner's conditions (2026-11-21) were:
+- each locality check exercised on its own, including a remote Docker context;
+- an unsafe environment refused before any restore or database operation;
+- the read-only mount and the other safeguards effective;
+- cleanup even on failure;
+- tests that catch removal of the protections, not incidental setup changes.
+
+**How the test meets them** (`scripts/test/d1-restore-reconcile.test.sh`, 41 checks, all passing):
+- **Refused before any work.** Every precondition case runs against a stand-in `docker` that records each call and does nothing. Each refusal must exit 2, and both of these must hold:
+  - the record holds nothing but `docker context inspect`, so no image pull, container, copy or restore happened;
+  - the archive was never read.
+- **Each locality check alone.** The stand-in can report a local context while `DOCKER_HOST` is remote, which tests the `DOCKER_HOST` check by itself. With the real Docker CLI the two cannot disagree, because `docker context inspect` reflects `DOCKER_HOST`. The stand-in can also report a remote context with no `DOCKER_HOST`, which tests the context check by itself. An `ssh://` context and an unknown (empty) endpoint are covered too. A real remote context created with the Docker CLI is refused as well.
+- **Isolation as run.** For a passing run, `run.json` records the containers' real settings from `docker inspect`:
+  - the database's network is `none`, with no published ports;
+  - the CLI shares only that namespace;
+  - `/app` and `node_modules` are read-only and `/out` is writable;
+  - the CLI sees no environment variables beyond the image's own.
+
+  The test checks each of these.
+- **Cleanup on failure.** Two failures each run with their own `TMPDIR`: a failure after the backup is restored (the copy already has a marker table), and Ctrl-C after the restore. Each must leave no container, no volume and an empty `TMPDIR`, so no decompressed backup remains. Archive failures before the restore also leave no container.
+
+**Mutations.** Each one removes or weakens a protection in the script itself, and each turns a check aimed at that protection red:
+
+| Mutation | Check that went red |
+| --- | --- |
+| M1 database on the default network | isolation record (network `none`) |
+| M2 `/app` writable for the CLI | isolation record (mounts) |
+| M3 an environment variable passed to the CLI | isolation record (environment) |
+| M4 container removed without its volume | no volume left after a failure and after Ctrl-C |
+| M5 work directory (decompressed backup) kept | empty `TMPDIR` after a failure and after Ctrl-C |
+| M6 no dirty-tree check | dirty tree refused before any work |
+| M7 no empty-report-directory check | non-empty report directory refused before any work |
+| M8 no `DOCKER_HOST` check | remote `DOCKER_HOST` with a local context refused |
+| M9 no Docker context check | remote context with no `DOCKER_HOST` refused |
+| M10 CLI output on the terminal | the private log exists, and the terminal shows only step lines |
+| M11 no acknowledgement check | refused before any work |
+| M12 no `DATABASE_URL` check | refused before any work |
+| M13 no expected-head check | refused before any work |
+| M14 report directory inside the repository allowed | refused before any work |
+| M15 no Ctrl-C trap | Ctrl-C exits 130 and cleans up |
+| M16 report files not made private | modes 600 and 700 |
+
+The M14 run, which allowed a report directory inside the repository, left an empty directory there (synthetic data only). That directory also failed the M15 and M16 runs, alongside the checks those mutations target. It was removed, and the clean test passes.
+
+**Still not covered:**
+- **Mapping a CLI crash to exit 3.** No synthetic input makes the CLI crash after the pre-check.
+- **SIGKILL.** No trap can run (§18.1).
+- **The R2 download.** It needs credentials.
+- **A real archive's contents.** The owner's run is the check.
 
