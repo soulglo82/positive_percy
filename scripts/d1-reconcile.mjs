@@ -41,8 +41,12 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL === url) { console.erro
 const pool = new pg.Pool({ connectionString: url });
 // The V1 release's migrations, in order. 014 and 015 are prerequisites of
 // 016 (production is at 012); each is additive.
-const V1_MIGRATIONS = ['014_todays_goals.sql', '015_reward_icon_key.sql', '016_savings_ledger.sql'];
-const DOWN = fs.readFileSync(path.join(ROOT, 'server/rollbacks/016_savings_ledger_down.sql'), 'utf8');
+// 016 and 017 (the savings ledger and its ended-savings record, design §20)
+// are proved together: applied, rolled back (017 first) and applied again.
+const SAVINGS = ['016_savings_ledger.sql', '017_savings_ended_by.sql'];
+const V1_MIGRATIONS = ['014_todays_goals.sql', '015_reward_icon_key.sql', ...SAVINGS];
+const DOWN = ['017_savings_ended_by_down.sql', '016_savings_ledger_down.sql']
+  .map((f) => fs.readFileSync(path.join(ROOT, 'server/rollbacks', f), 'utf8'));
 const report = { steps: [] };
 const step = (name, diffs, extra = {}) => { report.steps.push({ name, changed: diffs, ...extra }); console.log(`${diffs.length ? 'FAIL' : 'ok  '} ${name}${diffs.length ? '\n  ' + diffs.join('\n  ') : ''}`); };
 
@@ -50,8 +54,8 @@ try {
   const marker = await pool.query('SELECT token, restored_from, restored_at FROM percy_restore_marker').catch(() => ({ rows: [] }));
   if (!marker.rows.some((r) => r.token === token)) throw new Error('No matching percy_restore_marker token in this database: it is not a marked restored copy. Refusing.');
   report.restored_from = marker.rows.find((r) => r.token === token).restored_from;
-  const applied = (await pool.query("SELECT name FROM schema_migrations WHERE name = '016_savings_ledger.sql'").catch(() => ({ rows: [] }))).rows.length > 0;
-  if (applied) throw new Error('This copy already has migration 016. Restore a copy taken before 016.');
+  const applied = (await pool.query('SELECT name FROM schema_migrations WHERE name = ANY($1)', [SAVINGS]).catch(() => ({ rows: [] }))).rows.map((r) => r.name);
+  if (applied.length) throw new Error(`This copy already has migration ${applied.map((n) => n.slice(0, 3)).join(' and ')}. Restore a copy taken before 016.`);
   // The copy must be at a point on production's line before 016: every
   // applied record has a file on this branch (no 013 from another branch),
   // and what is pending is exactly a tail of the V1 migrations (016, or 015
@@ -73,7 +77,7 @@ try {
 
   // The V1 prerequisites first (each in its own transaction, recorded),
   // proved to change nothing families have.
-  const prereq = pending.filter((f) => f !== '016_savings_ledger.sql');
+  const prereq = pending.filter((f) => !SAVINGS.includes(f)); // never 017 before 016 (§20.8 B2)
   if (prereq.length) {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'percy-v1-prereq-'));
     try {
@@ -101,28 +105,28 @@ try {
   const after = await fingerprint(pool, before);
   const saved = (await pool.query('SELECT count(*)::int n FROM savings_events')).rows[0].n;
   const goals = (await pool.query('SELECT count(*)::int n FROM rewards WHERE is_bigger_goal')).rows[0].n;
-  const allow = { allowMigrations: ['016_savings_ledger.sql'] };
+  const allow = { allowMigrations: SAVINGS };
   const strayAdded = addedSchema(before, after).filter((o) => !SAVINGS_SCHEMA.test(o));
-  step('apply 016', [...differences(before, after, allow), ...strayAdded.map((o) => `unexpected new schema object: ${o}`)],
+  step('apply 016 and 017', [...differences(before, after, allow), ...strayAdded.map((o) => `unexpected new schema object: ${o}`)],
     { added: after.added, savings_rows: saved, goals_designated: goals });
-  if (saved || goals) step('016 created savings or goals', [`savings rows ${saved}, goals ${goals}`]);
+  if (saved || goals) step('016 and 017 created savings or goals', [`savings rows ${saved}, goals ${goals}`]);
 
   // Rollback and its record removal succeed or fail together.
   const c = await pool.connect();
   try {
     await c.query('BEGIN');
-    await c.query(DOWN);
-    await c.query("DELETE FROM schema_migrations WHERE name = '016_savings_ledger.sql'");
+    for (const sql of DOWN) await c.query(sql); // 017, then 016
+    await c.query('DELETE FROM schema_migrations WHERE name = ANY($1)', [SAVINGS]);
     await c.query('COMMIT');
   } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
   const rolled = await fingerprint(pool, before);
   const leftover = addedSchema(before, rolled);
-  step('roll 016 back', [...differences(before, rolled), ...leftover.map((o) => `left behind: ${o}`)]);
+  step('roll 017 and 016 back', [...differences(before, rolled), ...leftover.map((o) => `left behind: ${o}`)]);
 
   await runMigrations(pool, { log: () => {} });
   const again = await fingerprint(pool, before);
-  const present = (await pool.query("SELECT to_regclass('public.savings_events') IS NOT NULL AS t, (SELECT count(*) FROM information_schema.columns WHERE table_name = 'rewards' AND column_name IN ('is_bigger_goal', 'goal_epoch', 'goal_child_epochs')) = 3 AS c")).rows[0];
-  step('apply 016 again', [...differences(before, again, allow), ...(present.t && present.c ? [] : ['016 objects missing after re-apply'])]);
+  const present = (await pool.query("SELECT to_regclass('public.savings_events') IS NOT NULL AS t, (SELECT count(*) FROM information_schema.columns WHERE table_name = 'rewards' AND column_name IN ('is_bigger_goal', 'goal_epoch', 'goal_child_epochs')) = 3 AS c, EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'savings_events' AND column_name = 'ended_by') AS e")).rows[0];
+  step('apply 016 and 017 again', [...differences(before, again, allow), ...(present.t && present.c && present.e ? [] : ['016 or 017 objects missing after re-apply'])]);
 } catch (err) {
   report.error = err.message;
   console.error('ERROR', err.message);

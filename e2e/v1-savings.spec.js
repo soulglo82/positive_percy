@@ -29,6 +29,7 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
   const me = async () => (await api('GET', '/api/children')).find((c) => c.id === kid.id);
   const kid = await api('POST', '/api/children', { name, weekly_target: 20 });
   let bike;
+  let tent;
   try {
     await api('POST', `/api/children/${kid.id}/award`, { points: 320, category: 'Kindness', request_id: crypto.randomUUID() });
     bike = await api('POST', '/api/rewards', { title: `${name} bike`, cost_points: 300, is_bigger_goal: true, assigned_child_ids: [kid.id] });
@@ -39,6 +40,8 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     await page.waitForLoadState('networkidle');
     await expect(page.getByRole('heading', { name: 'Saving for something bigger' })).toBeVisible();
     await expect(page.getByText('120 of 300 points saved')).toBeVisible();
+    // The card itself, scrolled into view (owner review of #64: on phones it is below the fold).
+    await page.getByRole('heading', { name: 'Saving for something bigger' }).scrollIntoViewIfNeeded();
     await checkScreen(page, 'children with savings', testInfo);
     await page.getByRole('button', { name: `Edit saving for something bigger for ${name}` }).click();
     const dialog = page.getByRole('dialog');
@@ -110,7 +113,35 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     await expect.poll(async () => (await me())).toMatchObject({ total_points: 20, saved_total: 0, available_points: 20 });
     await redeemed.getByRole('button', { name: 'Undo' }).click();
     await expect.poll(async () => (await me())).toMatchObject({ total_points: 320, saved_total: 100, available_points: 220 });
+
+    // Un-marking warns, per child, and asks first (§20.3); Keep saving cancels.
+    await page.goto('/rewards');
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: `Edit ${bike.title}` }).click();
+    const form = page.getByRole('dialog');
+    await form.getByRole('checkbox', { name: /Bigger goal/ }).click();
+    await expect(form.getByRole('status')).toContainText(`${name}: 100 saved points will become available again.`);
+    await form.getByRole('status').scrollIntoViewIfNeeded();
+    await checkScreen(page, 'unmark warning', testInfo);
+    await form.getByRole('button', { name: 'Save reward' }).click();
+    const endConfirm = page.getByRole('alertdialog');
+    await expect(endConfirm.getByText("Past savings won't be restored if you re-enable the goal.", { exact: false })).toBeVisible();
+    await checkScreen(page, 'end savings confirm', testInfo);
+    await endConfirm.getByRole('button', { name: 'Keep saving' }).click();
+    await page.keyboard.press('Escape');
+    expect((await me()).saved_total).toBe(100); // nothing ended
+
+    // A fully saved goal: "Fully saved!", never "0 points to go" (§20.2).
+    tent = await api('POST', '/api/rewards', { title: `${name} tent`, cost_points: 100, is_bigger_goal: true, assigned_child_ids: [kid.id] });
+    await api('POST', `/api/children/${kid.id}/savings/save`, { reward_id: tent.id, points: 100, request_id: crypto.randomUUID() });
+    await page.goto(`/childview?child=${kid.id}`);
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('Fully saved!')).toBeVisible();
+    await expect(page.getByText(/0 points to go/)).toHaveCount(0);
+    await page.getByRole('heading', { name: 'My next big adventure' }).scrollIntoViewIfNeeded();
+    await checkScreen(page, 'child view fully saved', testInfo);
   } finally {
+    if (tent) await page.request.fetch(`/api/rewards/${tent.id}`, { method: 'DELETE', headers });
     if (bike) await page.request.fetch(`/api/rewards/${bike.id}`, { method: 'DELETE', headers });
     await page.request.fetch(`/api/children/${kid.id}`, { method: 'DELETE', headers });
   }

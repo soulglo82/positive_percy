@@ -97,8 +97,8 @@ describe.skipIf(!hasDb)('d1-reconcile CLI on a copy at migration 012', () => {
   it('applies 014 and 015 first, then proves 016, with nothing families have changed', async () => {
     const { r, report } = run();
     expect(report.error, r.stdout + r.stderr).toBeUndefined();
-    expect(report.pending).toEqual(['014_todays_goals.sql', '015_reward_icon_key.sql', '016_savings_ledger.sql']);
-    expect(report.steps.map((s) => s.name)).toEqual(['apply 014 and 015 (V1 prerequisites)', 'apply 016', 'roll 016 back', 'apply 016 again']);
+    expect(report.pending).toEqual(['014_todays_goals.sql', '015_reward_icon_key.sql', '016_savings_ledger.sql', '017_savings_ended_by.sql']);
+    expect(report.steps.map((s) => s.name)).toEqual(['apply 014 and 015 (V1 prerequisites)', 'apply 016 and 017', 'roll 017 and 016 back', 'apply 016 and 017 again']);
     for (const s of report.steps) expect(s.changed, s.name).toEqual([]);
     expect(report.families).toBe(1);
     expect(report.rewards_with_mixed_case_assignments).toBe(1);
@@ -120,8 +120,8 @@ describe.skipIf(!hasDb)('d1-reconcile CLI on a copy already at migration 014', (
   it('applies only 015 as the prerequisite, then proves 016', () => {
     const { r, report } = run();
     expect(report.error, r.stdout + r.stderr).toBeUndefined();
-    expect(report.pending).toEqual(['015_reward_icon_key.sql', '016_savings_ledger.sql']);
-    expect(report.steps.map((s) => s.name)).toEqual(['apply 015 (V1 prerequisites)', 'apply 016', 'roll 016 back', 'apply 016 again']);
+    expect(report.pending).toEqual(['015_reward_icon_key.sql', '016_savings_ledger.sql', '017_savings_ended_by.sql']);
+    expect(report.steps.map((s) => s.name)).toEqual(['apply 015 (V1 prerequisites)', 'apply 016 and 017', 'roll 017 and 016 back', 'apply 016 and 017 again']);
     for (const s of report.steps) expect(s.changed, s.name).toEqual([]);
     expect(r.status).toBe(0);
   }, 180000);

@@ -21,12 +21,17 @@ import { seedLegacyFamilies } from './fixtures/legacyFamilies.js';
 
 const hasDb = !!process.env.TEST_DATABASE_URL;
 const DOWN = fs.readFileSync(path.resolve(__dirname, '../rollbacks/016_savings_ledger_down.sql'), 'utf8');
+// 017 (design §20) sits on 016's table: it is rolled back first, and 016 and
+// 017 are applied together (the reconcile CLI does the same).
+const DOWN_017 = fs.readFileSync(path.resolve(__dirname, '../rollbacks/017_savings_ended_by_down.sql'), 'utf8');
+const SAVINGS = ['016_savings_ledger.sql', '017_savings_ended_by.sql'];
 
 describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () => {
   let ctx, seed, before;
   const rollback = async () => {
+    await ctx.pool.query(DOWN_017);
     await ctx.pool.query(DOWN);
-    await ctx.pool.query("DELETE FROM schema_migrations WHERE name = '016_savings_ledger.sql'"); // test only: lets 016 run again
+    await ctx.pool.query('DELETE FROM schema_migrations WHERE name = ANY($1)', [SAVINGS]); // test only: lets 016 and 017 run again
   };
 
   beforeAll(async () => {
@@ -69,7 +74,7 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
   it('016 changes nothing families have, creates no savings and designates no goals', async () => {
     await runMigrations(ctx.pool, { log: () => {} });
     const after = await fingerprint(ctx.pool, before);
-    expect(differences(before, after, { allowMigrations: ['016_savings_ledger.sql'] })).toEqual([]);
+    expect(differences(before, after, { allowMigrations: SAVINGS })).toEqual([]);
     expect(after.added).toEqual(['savings_events']);
     // What 016 added to the structure: the goal column, the ledger and its
     // constraints and indexes - nothing else.
@@ -109,10 +114,10 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     rolledBackSchema = rolledBack.schema;
     await runMigrations(ctx.pool, { log: () => {} });
     const again = await fingerprint(ctx.pool, before);
-    expect(differences(before, again, { allowMigrations: ['016_savings_ledger.sql'] })).toEqual([]);
+    expect(differences(before, again, { allowMigrations: SAVINGS })).toEqual([]);
     expect(again.added).toEqual(['savings_events']);
     await runMigrations(ctx.pool, { log: () => {} }); // a second boot does nothing
-    expect(differences(before, await fingerprint(ctx.pool, before), { allowMigrations: ['016_savings_ledger.sql'] })).toEqual([]);
+    expect(differences(before, await fingerprint(ctx.pool, before), { allowMigrations: SAVINGS })).toEqual([]);
   });
 
   // Ledger helpers for the tests below (the save endpoints come with the
@@ -430,7 +435,7 @@ describe.skipIf(!hasDb)('D1: migration 016 preserves existing family data', () =
     let fresh;
     try {
       const src = path.resolve(__dirname, '../migrations');
-      for (const f of fs.readdirSync(src)) if (!f.startsWith('016')) fs.copyFileSync(path.join(src, f), path.join(dir, f));
+      for (const f of fs.readdirSync(src)) if (!f.startsWith('016') && !f.startsWith('017')) fs.copyFileSync(path.join(src, f), path.join(dir, f));
       await ctx.pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
       const { initDb } = await import('../db.js');
       await initDb({ migrationOptions: { dir, log: () => {} } });

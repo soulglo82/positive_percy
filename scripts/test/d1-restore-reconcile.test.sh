@@ -131,7 +131,7 @@ run 0 'a copy at 012 passes' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz" PERCY_REPORT
 check 'no containers left after the run' "[[ $(leftovers) == 0 ]]"
 check 'no volumes left after the run (restored data)' "[[ $(docker volume ls -q | wc -l | tr -d ' ') == $volumes_before ]]"
 check 'report, run record and log are private (600, directory 700)' "[[ \$(mode '$tmp/r-012/d1-reconcile-report.json') == 600 && \$(mode '$tmp/r-012/run.json') == 600 && \$(mode '$tmp/r-012/reconcile.log') == 600 && \$(mode '$tmp/r-012') == 700 ]]"
-check 'the terminal shows step lines, not the CLI output' "grep -q '^ok   apply 016 again' '$tmp/out.txt' && ! grep -q 'Sam' '$tmp/out.txt'"
+check 'the terminal shows step lines, not the CLI output' "grep -q '^ok   apply 016 and 017 again' '$tmp/out.txt' && ! grep -q 'Sam' '$tmp/out.txt'"
 run 2 'a report directory that is not empty is refused' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz" PERCY_REPORT_DIR="$tmp/r-012"
 check 'report and run record are what the run claims' "python3 - '$tmp/r-012' '$(git rev-parse HEAD)' <<'PY'
 import json, os, sys
@@ -140,8 +140,8 @@ rep = json.load(open(os.path.join(d, 'd1-reconcile-report.json')))
 run = json.load(open(os.path.join(d, 'run.json')))
 iso = run['isolation']
 assert 'error' not in rep, rep.get('error')
-assert rep['pending'] == ['014_todays_goals.sql', '015_reward_icon_key.sql', '016_savings_ledger.sql'], rep['pending']
-assert [s['name'] for s in rep['steps']] == ['apply 014 and 015 (V1 prerequisites)', 'apply 016', 'roll 016 back', 'apply 016 again'], rep['steps']
+assert rep['pending'] == ['014_todays_goals.sql', '015_reward_icon_key.sql', '016_savings_ledger.sql', '017_savings_ended_by.sql'], rep['pending']
+assert [s['name'] for s in rep['steps']] == ['apply 014 and 015 (V1 prerequisites)', 'apply 016 and 017', 'roll 017 and 016 back', 'apply 016 and 017 again'], rep['steps']
 assert all(s['changed'] == [] for s in rep['steps']), rep['steps']
 assert rep['families'] == 1 and rep['children'] == 1, (rep['families'], rep['children'])
 assert run['git_head'] == head and run['reconcile_exit'] == 0, run

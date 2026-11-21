@@ -619,7 +619,9 @@ router.put('/api/family/timezone', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { rows } = await client.query('SELECT timezone FROM families WHERE family_code = $1 FOR UPDATE', [req.familyCode]);
+    // NO KEY UPDATE: excludes other family writers but not the foreign-key
+    // KEY SHARE a savings record takes (D1 §20.8 B1: no deadlock with a reward edit).
+    const { rows } = await client.query('SELECT timezone FROM families WHERE family_code = $1 FOR NO KEY UPDATE', [req.familyCode]);
     if (rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Family not found' });
@@ -675,7 +677,8 @@ router.get('/api/family/:code', authMiddleware, async (req, res) => {
 const STREAK_MILESTONES = [7, 14, 30, 60, 100];
 export async function recordStreak(db, familyCode) {
   const { rows } = await db.query(
-    'SELECT current_streak, last_active_date, longest_streak, timezone FROM families WHERE family_code = $1 FOR UPDATE',
+    // NO KEY UPDATE (D1 §20.8 B1): see the timezone write.
+    'SELECT current_streak, last_active_date, longest_streak, timezone FROM families WHERE family_code = $1 FOR NO KEY UPDATE',
     [familyCode]
   );
   if (rows.length === 0) return { streak: 0, milestone: false };
@@ -1053,8 +1056,11 @@ const SPENT_ALREADY = "Those points have already been used, so this can't be und
 async function lockChildOf(client, table, id, familyCode) {
   const { rows } = await client.query(`SELECT child_id FROM ${table} WHERE id = $1 AND family_code = $2`, [id, familyCode]);
   if (rows.length === 0) return null;
+  // NO KEY UPDATE (D1 §20.1): this path can go on to lock a reward, and a
+  // reward edit takes the foreign-key KEY SHARE on children; FOR UPDATE would
+  // make a cycle. Still exclusive against every other child writer.
   const { rows: child } = await client.query(
-    'SELECT * FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE', [rows[0].child_id, familyCode]);
+    'SELECT * FROM children WHERE id = $1 AND family_code = $2 FOR NO KEY UPDATE', [rows[0].child_id, familyCode]);
   return child[0] || null;
 }
 
@@ -1274,7 +1280,8 @@ function isCurrentGoal(reward, childId, generation) {
 const savingsPoints = (v) => isWholeNumber(v) && v >= 1 && v <= MAX_AWARD;
 
 async function lockedChild(client, childId, familyCode) {
-  const { rows } = await client.query('SELECT * FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE', [childId, familyCode]);
+  // NO KEY UPDATE (D1 §20.1): child then reward, without a cycle with a reward edit.
+  const { rows } = await client.query('SELECT * FROM children WHERE id = $1 AND family_code = $2 FOR NO KEY UPDATE', [childId, familyCode]);
   return rows[0] || null;
 }
 
@@ -2296,6 +2303,13 @@ router.get('/api/activity-feed', authMiddleware, async (req, res) => {
           EXISTS (SELECT 1 FROM savings_events u WHERE u.undoes = v.id) as undone, NULL::uuid as goal_completion_id
          FROM savings_events v JOIN children c ON c.id = v.child_id AND c.family_code = $1
          WHERE v.family_code = $1 AND v.kind IN ('save', 'release'))
+        UNION ALL
+        -- D1 §20.1: savings ended by un-marking, reassigning or deleting a goal
+        -- (child, goal, amount and cause in the note). Not a balance change.
+        (SELECT v.id, v.child_id, c.name as child_name, abs(v.delta) as points, v.reward_title as label, v.ended_by as note,
+          'savings_ended' as type, v.created_at as created_date, false as undone, NULL::uuid as goal_completion_id
+         FROM savings_events v JOIN children c ON c.id = v.child_id AND c.family_code = $1
+         WHERE v.family_code = $1 AND v.kind = 'reward_removed')
       ) f
       WHERE ${where} AND ($4::uuid IS NULL OR f.child_id = $4::uuid)
       ORDER BY f.created_date DESC, f.type, f.id
@@ -2587,6 +2601,47 @@ export async function referencesAreOwned(db, data, familyCode) {
 // puts the caller's family_code in the WHERE clause of every statement it
 // runs, including cascades, so no handler can forget the scope.
 
+// D1 §20.1 (owner review of #64, N2): when a reward edit or delete ends
+// children's savings towards it, record for each child the amount and the
+// cause, as a 'reward_removed' row in the ENDED generation (which no longer
+// counts, O6), so it changes no balance and is never a save or an earning.
+// Only children with savings in this goal are locked (KEY SHARE, id order,
+// §20.8): a child deleted meanwhile is skipped.
+async function recordEndedSavings(db, familyCode, before, after, cause) {
+  if (!before?.is_bigger_goal) return [];
+  const { rows: sums } = await db.query(
+    `SELECT child_id, generation, SUM(delta)::int AS saved FROM savings_events
+     WHERE family_code = $1 AND reward_id = $2 GROUP BY child_id, generation HAVING SUM(delta) > 0`,
+    [familyCode, before.id]);
+  const was = new Map([[before.id, before]]);
+  const now = after ? new Map([[after.id, after]]) : new Map();
+  const ended = [];
+  for (const x of sums) {
+    const childId = String(x.child_id).toLowerCase();
+    if (!spendableFrom(was, before.id, childId)) continue;
+    const oldGen = goalGeneration(before, childId);
+    if (x.generation !== oldGen) continue; // already an ended generation
+    const stillGoal = after && after.is_bigger_goal && spendableFrom(now, after.id, childId) && goalGeneration(after, childId) === oldGen;
+    if (stillGoal) continue;
+    ended.push({ childId, saved: x.saved, generation: oldGen,
+      cause: cause === 'deleted' ? 'deleted' : (after && !after.is_bigger_goal ? 'unmarked' : 'reassigned') });
+  }
+  if (!ended.length) return [];
+  const { rows: alive } = await db.query(
+    'SELECT id FROM children WHERE id = ANY($1::uuid[]) AND family_code = $2 ORDER BY id FOR KEY SHARE',
+    [ended.map((e) => e.childId), familyCode]);
+  const present = new Set(alive.map((r) => String(r.id)));
+  const written = [];
+  for (const e of ended.filter((x) => present.has(x.childId))) {
+    const { rows: [row] } = await db.query(
+      `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, ended_by)
+       VALUES ($1, $2, $3, $4, $5, $6, 'reward_removed', $7) RETURNING *`,
+      [familyCode, e.childId, before.id, before.title, e.generation, -e.saved, e.cause]);
+    written.push(row);
+  }
+  return written;
+}
+
 export async function scopedUpdate(db, table, id, familyCode, data) {
   const clean = table === 'children' ? stripChildBalance(data) : { ...data };
   delete clean.family_code; // never client-settable
@@ -2612,6 +2667,13 @@ export async function scopedUpdate(db, table, id, familyCode, data) {
     if (ids.length) await db.query('SELECT id FROM uploads WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
   }
   if (!(await uploadsAreOwned(db, clean, familyCode, stored))) return { status: 404 };
+  // D1 §20.1: the reward as it was, locked, to record savings this edit ends.
+  let rewardBefore = null;
+  if (table === 'rewards') {
+    const { rows: cur } = await db.query('SELECT * FROM rewards WHERE id = $1 AND family_code = $2 FOR UPDATE', [id, familyCode]);
+    if (cur.length === 0) return { status: 404 };
+    rewardBefore = cur[0];
+  }
   const values = Object.values(clean);
   const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
   values.push(id, familyCode);
@@ -2620,6 +2682,7 @@ export async function scopedUpdate(db, table, id, familyCode, data) {
     values
   );
   if (rows.length === 0) return { status: 404 };
+  if (rewardBefore) await recordEndedSavings(db, familyCode, rewardBefore, rows[0], 'edited');
 
   // Replaced or cleared photo: delete the old upload if nothing else uses it.
   if (stored) {
@@ -2659,6 +2722,8 @@ export async function scopedDelete(table, id, familyCode) {
         "UPDATE redemptions SET status = 'Denied' WHERE reward_id = $1 AND status = 'Pending' AND (family_code = $2 OR family_code IS NULL)",
         [id, familyCode]
       );
+      // D1 §20.1: record the savings this delete ends, per child.
+      await recordEndedSavings(client, familyCode, owned.rows[0], null, 'deleted');
     }
     await client.query(`DELETE FROM ${table} WHERE id = $1 AND family_code = $2`, [id, familyCode]);
     // The row's photo goes with it, unless something else still uses it.
@@ -2687,12 +2752,20 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
     const client = await pool.connect();
     let result;
     try {
-      await client.query('BEGIN');
-      result = await scopedUpdate(client, table, req.params.id, req.familyCode, data);
-      await client.query(result.status === 200 ? 'COMMIT' : 'ROLLBACK');
-    } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw err;
+      // D1 §20.8: Postgres resolves any remaining lock cycle by aborting one
+      // transaction (40P01); a reward edit is retried once, from the start.
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await client.query('BEGIN');
+          result = await scopedUpdate(client, table, req.params.id, req.familyCode, data);
+          await client.query(result.status === 200 ? 'COMMIT' : 'ROLLBACK');
+          break;
+        } catch (err) {
+          await client.query('ROLLBACK').catch(() => {});
+          if (err.code === '40P01' && attempt === 0) continue;
+          throw err;
+        }
+      }
     } finally {
       client.release();
     }
@@ -2714,7 +2787,13 @@ router.delete('/api/:entity/:id', authMiddleware, async (req, res) => {
   if (HISTORY_TABLES.has(table)) return res.status(405).json({ error: 'Not allowed' });
 
   try {
-    const result = await scopedDelete(table, req.params.id, req.familyCode);
+    let result;
+    try {
+      result = await scopedDelete(table, req.params.id, req.familyCode);
+    } catch (err) {
+      if (err.code !== '40P01') throw err;
+      result = await scopedDelete(table, req.params.id, req.familyCode); // D1 §20.8: once
+    }
     if (result.status === 404) return res.status(404).json({ error: 'Not found' });
     broadcastFn(req.familyCode, { type: `${req.params.entity}_deleted`, id: req.params.id });
     res.json({ success: true });

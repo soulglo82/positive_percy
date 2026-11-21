@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.17 |
+| Version | 1.18 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.18 | 2026-11-21 | §20.8: design review of §20; two blocking lock and CLI findings adopted |
 | 1.17 | 2026-11-21 | §20 (design, before build): the owner's #64 review: a durable record when a goal's savings end (N2, migration 017), "Fully saved!", the per-child warning, the excess after redemption, evidence |
 | 1.16 | 2026-11-21 | §19.9: post-build code review of the screens; 1 Major and 9 Minor fixed |
 | 1.15 | 2026-11-21 | §19.8: built: endpoints, screens, tests, mutations, code review fixes, e2e finding; provisional wording list |
@@ -888,4 +889,18 @@ The archive shrank from 8.68 MB to 646 kB between 10 and 11 November, and famili
 - **Screens:** "Fully saved!" in three places; the per-child warning shown only when a child has savings.
 - **CLI:** a copy at 012 runs prerequisites and then the 016+017 cycle.
 - **One class not covered:** a reward edited by direct SQL writes no ended record. The app is the only writer; the trigger still moves the generation, so nothing revives.
+
+### 20.8 Design review of §20 (adopted before the build)
+
+| # | Finding | Adopted rule | Test |
+| --- | --- | --- | --- |
+| B1 (blocking) | An award deadlocks with the editor through `families`. The award holds the child `FOR UPDATE`, and `recordStreak` then takes the family `FOR UPDATE`. The editor's insert holds the family `KEY SHARE` and waits for the child | `recordStreak` and the timezone write lock `families` with `FOR NO KEY UPDATE`, which is compatible with `KEY SHARE` and still excludes other family writers | An award racing an un-mark with two saved children, 20 rounds (probabilistic) |
+| B1 (found while adopting B1) | `stack/confirm` holds a child `FOR UPDATE`, then inserts a redemption whose foreign key needs `KEY SHARE` on the reward. A reward requested before it was marked can be confirmed with 0 saved (§19.7 N4). If the editor waited on that child, there would be a cycle | The editor locks **only the children with savings in this goal** (`FOR KEY SHARE`, in id order). Such a child cannot have the goal in its stack (S1 and B1 of §10), so its confirm never needs this reward | Covered by the rule; the race test is below |
+| Safety net | Postgres resolves any remaining cycle by aborting one transaction (40P01) | The reward edit and delete retry once on 40P01. Savings writers do not: the client's request id makes them safe to retry | — |
+| B2 (blocking) | The CLI ran 017 as a prerequisite, before 016 | Prerequisites are pending migrations other than 016 and 017. A copy with 016 or 017 already applied is refused. The cycle applies 016+017, rolls back 017 then 016 with both records in one transaction, applies again, and checks `ended_by` | CLI test: a copy at 012 |
+| S1 | A child deleted during the edit made the edit fail (foreign key) | The `FOR KEY SHARE` read skips a child deleted while it waited | Child delete racing an un-mark |
+| S2 | "The #64 head" moves with every push | The handback names the exact commit for the drill | — |
+| S3 | "Which children" | Worked out in JavaScript with `spendableFrom` and `goalGeneration` on the before row and the `RETURNING` row | Writer tests |
+| S4 | Activity type | `reward_removed` gets its own type, `savings_ended`, under All only, never in Goals or as a move back | Activity test |
+| Wording | "available again" is untrue while available is held at 0 | "{n} saved points released" (provisional) | — |
 

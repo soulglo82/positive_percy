@@ -463,6 +463,155 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     expect((await call(G, 'GET', `/api/activity-feed?child_id=${kid.id}`)).json).toEqual([]);
   });
 
+  it('N2 (§20): un-marking records, per child, the amount and cause; nothing revives; no balance change', async () => {
+    const a = await newKid(F, 'Nia', 100);
+    const b = await newKid(F, 'Nob', 100);
+    const c = await newKid(F, 'Nel', 100); // nothing saved: no record
+    const bike = await newGoal(F, 'Nia bike', 300);
+    await save(F, a.id, bike.id, 40);
+    await save(F, b.id, bike.id, 25);
+    const before = { a: await agree(F, a.id), b: await agree(F, b.id) };
+    expect((await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: false })).status).toBe(200);
+    const { rows } = await ctx.pool.query("SELECT child_id, delta, ended_by, reward_title FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed' ORDER BY delta", [bike.id]);
+    expect(rows).toEqual([
+      { child_id: a.id, delta: -40, ended_by: 'unmarked', reward_title: 'Nia bike' },
+      { child_id: b.id, delta: -25, ended_by: 'unmarked', reward_title: 'Nia bike' },
+    ]);
+    const after = { a: await agree(F, a.id), b: await agree(F, b.id) };
+    expect(after.a.available_points).toBe(before.a.available_points + 40); // the read-time rule, unchanged
+    expect(after.a.total_points).toBe(before.a.total_points); // no earning
+    expect((await agree(F, c.id)).saved_total).toBe(0);
+    // Re-marking starts at 0 (O6): the record keeps the old allocation ended.
+    await call(F, 'PUT', `/api/rewards/${bike.id}`, { is_bigger_goal: true });
+    expect((await agree(F, a.id)).saved_total).toBe(0);
+    // A cost edit or an unchanged save records nothing.
+    await save(F, a.id, bike.id, 10);
+    await call(F, 'PUT', `/api/rewards/${bike.id}`, { cost_points: 250, is_bigger_goal: true });
+    expect((await ctx.pool.query("SELECT count(*)::int n FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed'", [bike.id])).rows[0].n).toBe(2);
+  });
+
+  it('N2: reassigning away from one child records "reassigned" for that child only; deleting records "deleted"', async () => {
+    const a = await newKid(F, 'Ran', 100);
+    const b = await newKid(F, 'Rob', 100);
+    const tent = await newGoal(F, 'Ran tent', 200);
+    await save(F, a.id, tent.id, 30);
+    await save(F, b.id, tent.id, 20);
+    await call(F, 'PUT', `/api/rewards/${tent.id}`, { assigned_child_ids: [b.id.toUpperCase()] }); // a loses it
+    let rows = (await ctx.pool.query("SELECT child_id, delta, ended_by FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed'", [tent.id])).rows;
+    expect(rows).toEqual([{ child_id: a.id, delta: -30, ended_by: 'reassigned' }]);
+    expect((await agree(F, b.id)).saved_total).toBe(20);
+    expect((await call(F, 'DELETE', `/api/rewards/${tent.id}`)).status).toBe(200);
+    rows = (await ctx.pool.query("SELECT child_id, delta, ended_by FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed' ORDER BY ended_by", [tent.id])).rows;
+    expect(rows).toEqual([{ child_id: b.id, delta: -20, ended_by: 'deleted' }, { child_id: a.id, delta: -30, ended_by: 'reassigned' }]);
+    await agree(F, a.id);
+    await agree(F, b.id);
+    // Activity: under All, with child, goal, amount and cause; not in the other filters.
+    const feed = (await call(F, 'GET', `/api/activity-feed?child_id=${b.id}`)).json;
+    expect(feed.find((e) => e.type === 'savings_ended')).toMatchObject({ points: 20, label: 'Ran tent', note: 'deleted', child_name: 'Rob' });
+    for (const f of ['earned', 'spent', 'goals']) {
+      expect((await call(F, 'GET', `/api/activity-feed?child_id=${b.id}&filter=${f}`)).json.some((e) => e.type === 'savings_ended'), f).toBe(false);
+    }
+    // Export carries the cause.
+    expect((await call(F, 'GET', '/api/family/export')).json.savingsEvents.some((e) => e.ended_by === 'deleted')).toBe(true);
+  });
+
+  it('017: the scratch rollback refuses once an ended-savings record exists (never lose why savings ended)', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const down = fs.readFileSync(path.resolve(__dirname, '../rollbacks/017_savings_ended_by_down.sql'), 'utf8');
+    expect((await ctx.pool.query("SELECT count(*)::int n FROM savings_events WHERE kind = 'reward_removed'")).rows[0].n).toBeGreaterThan(0);
+    await expect(ctx.pool.query(down)).rejects.toThrow(/ended-savings records exist/);
+  });
+
+  it('017: a cause only on an ended-savings row, and only the three causes', async () => {
+    const kid = await newKid(F, 'Sha', 50);
+    const bike = await newGoal(F, 'Sha bike', 100);
+    const ev = (await save(F, kid.id, bike.id, 5)).json.event;
+    const ins = (kind, ended) => ctx.pool.query(
+      'INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, ended_by) VALUES ($1, $2, $3, $4, $5, -1, $6, $7)',
+      [F.code, kid.id, bike.id, 'x', ev.generation, kind, ended]);
+    await expect(ins('reward_removed', null)).rejects.toThrow(/ended_shape/);
+    await expect(ins('spend', 'unmarked')).rejects.toThrow(/ended_shape/);
+    await expect(ins('reward_removed', 'forgotten')).rejects.toThrow(/ended_by_check/);
+  });
+
+  it('§20.8 B1: an award racing an un-mark with two saved children never deadlocks (probabilistic, 20 rounds)', async () => {
+    const a = await newKid(F, 'Dla', 500);
+    const b = await newKid(F, 'Dlb', 500);
+    for (let round = 0; round < 20; round++) {
+      const g = await newGoal(F, `Dl goal ${round}`, 100);
+      await save(F, a.id, g.id, 2);
+      await save(F, b.id, g.id, 2);
+      const [edit, aw1, aw2] = await Promise.all([
+        call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false }),
+        award(F, b.id, 1),
+        award(F, a.id, 1),
+      ]);
+      expect([edit.status, aw1.status, aw2.status], `round ${round}: ${edit.text}`).toEqual([200, 200, 200]);
+    }
+    await agree(F, a.id);
+    await agree(F, b.id);
+  }, 120000);
+
+  it('§20.8 B1 (deterministic): an award holding a saved child, then taking the family lock, does not deadlock with an un-mark', async () => {
+    const { recordStreak } = await import('../routes.js');
+    const a = await newKid(F, 'Dda', 100);
+    const b = await newKid(F, 'Ddb', 100);
+    const g = await newGoal(F, 'Dd goal', 100);
+    await save(F, a.id, g.id, 5);
+    await save(F, b.id, g.id, 5);
+    const conn = await ctx.pool.connect();
+    try {
+      await conn.query('BEGIN');
+      // As the award path does: the child FOR UPDATE first...
+      await conn.query('SELECT 1 FROM children WHERE id = $1 FOR UPDATE', [b.id]);
+      const edit = call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false });
+      // ...wait until the edit is blocked on that child...
+      for (let i = 0; i < 50; i++) {
+        const { rows } = await ctx.pool.query("SELECT count(*)::int n FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE '%FOR KEY SHARE%'");
+        if (rows[0].n > 0) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      // ...then the family lock (recordStreak), as an award does next.
+      await recordStreak(conn, F.code);
+      await conn.query('COMMIT');
+      const r = await edit;
+      expect(r.status, r.text).toBe(200);
+    } finally {
+      conn.release();
+    }
+    expect((await ctx.pool.query("SELECT count(*)::int n FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed'", [g.id])).rows[0].n).toBe(2);
+  });
+
+  it('N2: an already-ended generation (savings ended before 017, or by direct SQL) is never recorded again or misattributed', async () => {
+    const kid = await newKid(F, 'Old', 100);
+    const g = await newGoal(F, 'Old goal', 100);
+    await save(F, kid.id, g.id, 30);
+    // Ended outside the app: the trigger moves the generation, no record is written.
+    await ctx.pool.query('UPDATE rewards SET is_bigger_goal = false WHERE id = $1', [g.id]);
+    await ctx.pool.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1', [g.id]);
+    await save(F, kid.id, g.id, 10); // the current generation
+    await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false });
+    const { rows } = await ctx.pool.query("SELECT delta, ended_by FROM savings_events WHERE reward_id = $1 AND kind = 'reward_removed'", [g.id]);
+    expect(rows).toEqual([{ delta: -10, ended_by: 'unmarked' }]); // only what this edit ended
+  });
+
+  it('§20.8 S1: a child deleted while a goal is un-marked does not fail the edit', async () => {
+    for (let round = 0; round < 5; round++) {
+      const kid = await newKid(F, `Gone${round}`, 50);
+      const other = await newKid(F, `Stay${round}`, 50);
+      const g = await newGoal(F, `Gone goal ${round}`, 100);
+      await save(F, kid.id, g.id, 5);
+      await save(F, other.id, g.id, 5);
+      const [edit, del] = await Promise.all([
+        call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: false }),
+        call(F, 'DELETE', `/api/children/${kid.id}`),
+      ]);
+      expect([edit.status, del.status], edit.text).toEqual([200, 200]);
+      expect((await ctx.pool.query("SELECT count(*)::int n FROM savings_events WHERE child_id = $1 AND kind = 'reward_removed'", [other.id])).rows[0].n).toBe(1);
+    }
+  }, 120000);
+
   it('every child read costs one savings query for the whole family', async () => {
     const seen = [];
     const orig = ctx.pool.query.bind(ctx.pool);

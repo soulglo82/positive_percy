@@ -234,6 +234,13 @@ describe('Home, Rewards, Spend and Activity', () => {
     expect(rowText({ type: 'moved_back', points: 1, label: 'Bike', created_date: t }, 'UTC')).toMatchObject({ lead: 'moved 1 point back from', what: 'Bike' });
     expect(rowIconKind({ type: 'saving' })).toBe('saving');
     expect(rowIconKind({ type: 'moved_back' })).toBe('saving');
+    // §20.1: why saved points stopped counting, with child, goal, amount and cause.
+    const ended = (note) => rowText({ type: 'savings_ended', points: 40, label: 'Bike', note, child_name: 'Lara', created_date: t }, 'UTC');
+    expect(ended('unmarked')).toMatchObject({ lead: 'savings ended for', what: 'Bike' });
+    expect(ended('unmarked').sub).toContain('40 saved points released · Bigger goal turned off');
+    expect(ended('reassigned').sub).toContain('No longer for Lara');
+    expect(ended('deleted').sub).toContain('Reward deleted');
+    expect(rowIconKind({ type: 'savings_ended' })).toBe('saving');
   });
 });
 

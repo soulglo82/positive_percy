@@ -77,7 +77,7 @@ export async function prepareFamilyExport(pool, familyCode, { includePhotos = tr
     `);
     // D1: the savings ledger (request ids are internal and left out).
     const savingsEvents = await rows(`
-      SELECT id, child_id, reward_id, reward_title, kind, delta, generation, redemption_id, undoes, created_at
+      SELECT id, child_id, reward_id, reward_title, kind, delta, generation, redemption_id, undoes, ended_by, created_at
       FROM savings_events
       WHERE family_code = $1
         AND child_id IN (SELECT id FROM children WHERE family_code = $1)

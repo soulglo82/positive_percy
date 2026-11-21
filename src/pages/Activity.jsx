@@ -298,7 +298,7 @@ export function rowIconKind(event) {
   if (event.type === 'earn') return event.goal_completion_id ? 'goal' : 'earn';
   if (event.type === 'spend') return 'spend';
   if (event.type === 'undo') return 'undo';
-  if (event.type === 'saving' || event.type === 'moved_back') return 'saving';
+  if (event.type === 'saving' || event.type === 'moved_back' || event.type === 'savings_ended') return 'saving';
   return 'other';
 }
 function RowIcon({ event }) {
@@ -334,6 +334,13 @@ export function rowText(event, timeZone = undefined) {
   const pts = `${event.points} ${pointsWord(event.points)}`;
   if (event.type === 'saving') return { lead: `saved ${pts} towards`, what: event.label, sub: `Savings · ${time}` };
   if (event.type === 'moved_back') return { lead: `moved ${pts} back from`, what: event.label, sub: `Savings · ${time}` };
+  // D1 §20.1 (owner review of #64, N2): why saved points stopped counting.
+  // Provisional wording (§20.8): "released", not "available again".
+  if (event.type === 'savings_ended') {
+    const cause = event.note === 'unmarked' ? 'Bigger goal turned off'
+      : event.note === 'deleted' ? 'Reward deleted' : `No longer for ${event.child_name}`;
+    return { lead: 'savings ended for', what: event.label, sub: `${event.points} saved ${pointsWord(event.points)} released · ${cause} · ${time}` };
+  }
   const lead = event.type === 'undo' ? 'undo:' : event.type === 'starting' ? 'started with'
     : event.type === 'correction' ? 'had a one-off' : event.points < 0 ? 'had an earlier adjustment for' : 'adjusted';
   return { lead, what: event.label, sub: time };
