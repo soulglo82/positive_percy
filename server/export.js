@@ -30,7 +30,7 @@ export async function prepareFamilyExport(pool, familyCode, { includePhotos = tr
     `);
     const rewards = await rows(`
       SELECT id, title, description, cost_points, image_url, emoji, icon_key,
-             visible_to_child, assigned_child_ids, created_date
+             visible_to_child, assigned_child_ids, is_bigger_goal, created_date
       FROM rewards WHERE family_code = $1 ORDER BY created_date, id
     `);
     const pointEvents = await rows(`
@@ -71,6 +71,14 @@ export async function prepareFamilyExport(pool, familyCode, { includePhotos = tr
         to_char(scheduled_for, 'YYYY-MM-DD') AS scheduled_for,
         point_event_id, awarded_points, category_name, created_at, undone_at
       FROM today_goal_completions
+      WHERE family_code = $1
+        AND child_id IN (SELECT id FROM children WHERE family_code = $1)
+      ORDER BY created_at, id
+    `);
+    // D1: the savings ledger (request ids are internal and left out).
+    const savingsEvents = await rows(`
+      SELECT id, child_id, reward_id, reward_title, kind, delta, generation, redemption_id, undoes, created_at
+      FROM savings_events
       WHERE family_code = $1
         AND child_id IN (SELECT id FROM children WHERE family_code = $1)
       ORDER BY created_at, id
@@ -128,6 +136,7 @@ export async function prepareFamilyExport(pool, familyCode, { includePhotos = tr
       familyGoals,
       todaysGoals,
       todayGoalCompletions,
+      savingsEvents,
       legacyQuickActions,
       photos,
       photoInformation: {

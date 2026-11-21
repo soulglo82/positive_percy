@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.13 |
+| Version | 1.14 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.14 | 2026-11-21 | §19.7: design review of §19 adopted (7 should-fix, 3 notes); the N8 reason corrected |
 | 1.13 | 2026-11-21 | §19 (design, before build): the savings feature (endpoints, goal redemption, refunds, screens) on branch `claude/percy-v1-i-savings` |
 | 1.12 | 2026-11-21 | §18.3: the owner's test conditions; 41 checks; 16 protection mutations, each red |
 | 1.11 | 2026-11-21 | §18.2: post-build code review of the restore script; findings fixed; §18 corrected to match the build |
@@ -592,7 +593,7 @@ Every response carries the child through `withBalances`.
 
 ### 19.2 Departures from v1.1, with reasons
 
-1. **N8 (release the excess over cost at redemption) is not built.** 016's shape CHECK allows `release` only with a `request_id` and no link to a redemption. Writing a derived release would need 016 changed, and that would invalidate the owner's pending run at `3ad4332`. The excess instead stays saved towards the same goal, which is E12 of §6. It still counts as committed, so it can never be spent twice, and the parent can move it back. It can only arise when a cost is lowered below what was saved.
+1. **N8 (release the excess over cost at redemption) is not built.** E12 of §6 is kept instead: the excess stays saved towards the same goal. A derived `release` would be a row the savings undo endpoint could undo, which separates a goal redemption from its own bookkeeping. (Corrected in §19.7: 016's CHECK does not forbid it.) It still counts as committed, so it can never be spent twice, and the parent can move it back. It can only arise when a cost is lowered below what was saved.
 2. **B5's `reward_removed` sweep is not built.** §13.2's generations replaced it. Rows of an old generation never count, so there is nothing to sweep. `reward_removed` stays an allowed kind and is never written.
 
 ### 19.3 Surfaces
@@ -664,4 +665,22 @@ Approved strings are used verbatim. New strings are the owner's proposed O4 word
 - A draft PR; nothing merged or deployed.
 - Reversal before launch: revert the branch. 016 and its ledger are unchanged.
 - After launch: the §13.3 rule applies (no destructive rollback).
+
+### 19.7 Design review of §19 (adopted before the build)
+
+A fresh-context reviewer read §19 against §2–§14, `routes.js` and 016. They found nothing blocking: no double spend, no revival of an old generation, no deadlock (no path locks a reward and then a child), and every planned insert passes 016's CHECK. Seven should-fix findings and three notes are adopted.
+
+| # | Finding | Adopted rule | Test |
+| --- | --- | --- | --- |
+| S1 | Saving towards a goal that is also requested costs nothing: `balanceOf` counts `max(stacked, saved)`. Example: total 150, a reward costing 100 requested, then marked; three saves of 50 leave available at 50, 50, 0 and "150 of 100 saved" | Save and goal redeem refuse a goal in the child's stack with "The requests changed. Check them again." | "S1: a goal also requested cannot be saved towards" |
+| S2 | §19.2's N8 reason was wrong | Corrected above | — |
+| S3 | `savings_events` must never join `TABLE_MAP` (generic DELETE would break append-only) | Kept out; the export reads it directly | "the generic API cannot touch the ledger" |
+| S4 | Several responses return a raw child without `available_points` or `goals`: the `/redeem` and `/stack/confirm` replays, `replayAfterRace`, the redeem and confirm successes, redemption undo, `reverseAward` | All go through `withBalances` | "every response carries the balance" |
+| S5 | Child View's "Saved towards" tile had no visibility rule | It uses the same filter as "My next big adventure": only goals visible to children | Child View render test |
+| S6 | The goal-redeem endpoint's lock order was unstated | The child `FOR UPDATE`, then the reward `FOR SHARE`. Then `balanceFor`, the I4 check and the generation are read under both locks. The same applies to save, release and undo | F12 race (probabilistic) |
+| S7 | Request-id details | `reward_id` is lower-cased in `args` (a save sent in capitals is a replay, not 409). In the savings undo endpoint, a 23505 on `savings_events_undoes_once` means "Already undone."; on `idempotency_keys` it means replay | "F4 replay in capitals" |
+| N1 | An existing over-committed child | Checks are written unclamped: `total − committed ≥ needed` | (in each write) |
+| N2 | Un-marking or reassigning returns saved points to available with no Activity row | **Owner item** for screen review (Activity wording) | — |
+| N3 | A goal created with the switch on starts at `0:0`. A re-inserted id would also start at `0:0`, and its old savings would count again (R2 protects only other generations) | The app creates a goal unmarked, then marks it in the same transaction, so its first generation is `1:0`. 016 is unchanged | "a new goal starts after generation 0" |
+| N4 | `stack/confirm` still redeems a goal requested before it was marked and with 0 saved: a second path | Kept, documented: it is the way out for legacy rows, and it is safe (no savings to count) | (existing confirm tests) |
 

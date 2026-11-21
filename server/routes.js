@@ -244,6 +244,12 @@ async function withBalances(db, familyCode, rows) {
   return out;
 }
 
+// One child row with its balance (D1 §19.7 S4: every response that returns
+// a child carries available_points, saved_total and goals).
+async function balancedChild(db, familyCode, row) {
+  return row ? (await withBalances(db, familyCode, [row]))[0] : row;
+}
+
 // The stack re-priced from the rewards table, dropping items whose reward is
 // gone or no longer for this child. Saved costs are never trusted.
 async function pricedStack(db, stack, childId, familyCode) {
@@ -304,6 +310,10 @@ function validateCreatePayload(table, data, { isCreate = false } = {}) {
     // (also a database CHECK, migration 015).
     if (data.icon_key !== undefined && data.icon_key !== null && !isRewardIconKey(data.icon_key)) {
       throw Object.assign(new Error(ICON_KEY_MESSAGE), { status: 422 });
+    }
+    // D1 (design §19): a parent marks a reward as a bigger goal (D7).
+    if (data.is_bigger_goal !== undefined && typeof data.is_bigger_goal !== 'boolean') {
+      throw Object.assign(new Error('Invalid request'), { status: 400 });
     }
     // Stored in the one spelling the balance rule and migration 016's
     // trigger compare against (O6 review #6).
@@ -954,7 +964,7 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     if (prior.replay) {
       await client.query('ROLLBACK');
       const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, req.familyCode]);
-      return res.json({ ...prior.replay, child: rows[0], duplicate: true });
+      return res.json({ ...prior.replay, child: await balancedChild(pool, req.familyCode, rows[0]), duplicate: true });
     }
 
     const reward = await loadSpendableReward(client, reward_id, childId, req.familyCode);
@@ -977,7 +987,9 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'The requests changed. Check them again.' });
     }
-    if (bal.goals.some((g) => g.rewardId === reward.id)) {
+    // D1 §19.1: a bigger goal has one redemption path, the goal redeem on
+    // the Children page (B1/O7), with or without savings.
+    if (reward.is_bigger_goal || bal.goals.some((g) => g.rewardId === reward.id)) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Invalid request' });
     }
@@ -1017,7 +1029,7 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     );
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
-    res.json({ child: updatedChild[0], redemption: redemptionRows[0], duplicate: false });
+    res.json({ child: await balancedChild(pool, req.familyCode, updatedChild[0]), redemption: redemptionRows[0], duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505' && req.spend) {
@@ -1115,11 +1127,11 @@ async function reverseAward(req, res, sameWeek = false) {
     const { rows: updated } = await client.query(
       'UPDATE children SET total_points = total_points - $1 WHERE id = $2 AND family_code = $3 RETURNING *',
       [ev.points, child.id, req.familyCode]);
-    const week = (await weekPointsFor(client, req.familyCode, [child.id])).get(child.id);
     await rememberRequest(client, req.familyCode, requestId, endpoint, args, { event: undoRows[0], child_id: child.id });
+    const balanced = await balancedChild(client, req.familyCode, updated[0]); // includes week_points
     await client.query('COMMIT');
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
-    res.json({ event: undoRows[0], child: { ...updated[0], week_points: week }, duplicate: false });
+    res.json({ event: undoRows[0], child: balanced, duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') return res.status(409).json({ error: 'Already undone.' });
@@ -1165,10 +1177,29 @@ router.post('/api/redemptions/:id/undo', authMiddleware, async (req, res) => {
          points_spent = GREATEST(0, COALESCE(points_spent, 0) - $1)
        WHERE id = $2 AND family_code = $3 RETURNING *`,
       [cost, child.id, req.familyCode]);
-    await rememberRequest(client, req.familyCode, requestId, 'undo_spend', args, { redemption: red[0], child_id: child.id });
+    // D1 §19.1: a goal redemption's savings come back only to the same goal
+    // in the same generation (O6: nothing revives). Otherwise all of it is
+    // available. The 'Completed' guard above and UNIQUE (undoes) make this once.
+    const { rows: [spend] } = await client.query(
+      `SELECT * FROM savings_events s WHERE s.redemption_id = $1 AND s.family_code = $2 AND s.kind = 'spend'
+         AND NOT EXISTS (SELECT 1 FROM savings_events u WHERE u.undoes = s.id)`,
+      [red[0].id, req.familyCode]);
+    let refunded = 0;
+    if (spend) {
+      const goal = await lockGoal(client, req.familyCode, spend.reward_id);
+      if (isCurrentGoal(goal, child.id, spend.generation)) {
+        await client.query(
+          `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, undoes)
+           VALUES ($1, $2, $3, $4, $5, $6, 'undo', $7)`,
+          [req.familyCode, child.id, spend.reward_id, spend.reward_title, spend.generation, -spend.delta, spend.id]);
+        refunded = -spend.delta;
+      }
+    }
+    await rememberRequest(client, req.familyCode, requestId, 'undo_spend', args, { redemption: red[0], child_id: child.id, refunded_to_goal: refunded });
+    const balanced = await balancedChild(client, req.familyCode, updated[0]);
     await client.query('COMMIT');
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
-    res.json({ redemption: red[0], child: updated[0], duplicate: false });
+    res.json({ redemption: red[0], child: balanced, refunded_to_goal: refunded, duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') return res.status(409).json({ error: 'Invalid request' });
@@ -1214,8 +1245,219 @@ async function replayAfterRace(res, familyCode, requestId, endpoint, args, child
   const prior = await priorRequest(pool, familyCode, requestId, endpoint, args);
   if (!prior.replay) return res.status(409).json({ error: 'Invalid request' });
   const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, familyCode]);
-  return res.json({ ...prior.replay, child: rows[0], duplicate: true });
+  return res.json({ ...prior.replay, child: await balancedChild(pool, familyCode, rows[0]), duplicate: true });
 }
+
+// ─── D1 savings (docs/engineering/D1-SAVINGS-LEDGER-DESIGN.md §19) ──────────
+// Parent-only, family-scoped and idempotent (request_id claimed in
+// idempotency_keys). Lock order (R3, §19.7 S6): the child FOR UPDATE, then
+// the reward FOR SHARE; the balance, the goal check and the generation are
+// read under both. Checks are unclamped: total - committed >= needed (N1).
+const STALE_REQUESTS = 'The requests changed. Check them again.';
+
+async function lockGoal(db, familyCode, rewardId) {
+  if (!isUuid(String(rewardId || ''))) return null;
+  const { rows } = await db.query(
+    `SELECT id, title, cost_points, assigned_child_ids, icon_key, emoji, image_url, is_bigger_goal, goal_epoch, goal_child_epochs
+     FROM rewards WHERE id = $1 AND family_code = $2 FOR SHARE`, [rewardId, familyCode]);
+  return rows[0] || null;
+}
+
+// A reward is this child's goal in this generation: it exists in the
+// family, is for this child, is a bigger goal, and its generation matches.
+function isCurrentGoal(reward, childId, generation) {
+  if (!reward || !reward.is_bigger_goal) return false;
+  if (!spendableFrom(new Map([[reward.id, reward]]), reward.id, childId)) return false;
+  return generation === undefined || goalGeneration(reward, childId) === generation;
+}
+
+const savingsPoints = (v) => isWholeNumber(v) && v >= 1 && v <= MAX_AWARD;
+
+async function lockedChild(client, childId, familyCode) {
+  const { rows } = await client.query('SELECT * FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE', [childId, familyCode]);
+  return rows[0] || null;
+}
+
+async function freshChild(db, familyCode, childId) {
+  const { rows } = await db.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, familyCode]);
+  return balancedChild(db, familyCode, rows[0]);
+}
+
+async function savingsMove(req, res, kind) {
+  const childId = req.params.id;
+  const rewardId = lowerId(req.body?.reward_id);
+  const { points, request_id: requestId } = req.body || {};
+  if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
+  if (!isUuid(String(requestId || '')) || !savingsPoints(points)) return res.status(400).json({ error: 'Invalid request' });
+  if (!isUuid(String(rewardId || ''))) return res.status(404).json({ error: 'Reward not found' });
+  const endpoint = kind === 'save' ? 'savings_save' : 'savings_release';
+  const args = { child_id: childId, reward_id: rewardId, points };
+  const client = await pool.connect();
+  const fail = async (status, error) => { await client.query('ROLLBACK'); return res.status(status).json({ error }); };
+  try {
+    await client.query('BEGIN');
+    const child = await lockedChild(client, childId, req.familyCode);
+    if (!child) return fail(404, 'Child not found');
+    const prior = await priorRequest(client, req.familyCode, requestId, endpoint, args);
+    if (prior.conflict) return fail(409, 'Invalid request');
+    if (prior.replay) {
+      await client.query('ROLLBACK');
+      return res.json({ ...prior.replay, child: await freshChild(pool, req.familyCode, childId), duplicate: true });
+    }
+    const reward = await lockGoal(client, req.familyCode, rewardId);
+    if (!reward || !spendableFrom(new Map([[reward.id, reward]]), reward.id, childId)) return fail(404, 'Reward not found');
+    if (!reward.is_bigger_goal) return fail(409, 'Invalid request'); // I4
+    const bal = await balanceFor(client, req.familyCode, child);
+    if (bal.stack.some((i) => i.rewardId === reward.id)) return fail(409, STALE_REQUESTS); // S1
+    if (kind === 'save') {
+      if ((child.total_points ?? 0) - bal.committed < points) return fail(400, 'Not enough points'); // I2/I3
+    } else {
+      const saved = bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0;
+      if (points > saved) return fail(409, 'Invalid request'); // I1
+    }
+    const { rows: [event] } = await client.query(
+      `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, request_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [req.familyCode, childId, reward.id, reward.title, goalGeneration(reward, childId), kind === 'save' ? points : -points, kind, requestId]);
+    await rememberRequest(client, req.familyCode, requestId, endpoint, args, { event });
+    const balanced = await balancedChild(client, req.familyCode, child);
+    await client.query('COMMIT');
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
+    res.json({ event, child: balanced, duplicate: false });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23505') return replayAfterRace(res, req.familyCode, requestId, endpoint, args, childId);
+    return serverError(res, `Savings ${kind} error`, err);
+  } finally {
+    client.release();
+  }
+}
+
+router.post('/api/children/:id/savings/save', authMiddleware, (req, res) => savingsMove(req, res, 'save'));
+router.post('/api/children/:id/savings/release', authMiddleware, (req, res) => savingsMove(req, res, 'release'));
+
+// Undo a save or a move back, for 10 minutes, once, and only while the goal
+// is in the same generation (O6) and the result keeps I1 and I2.
+router.post('/api/savings-events/:id/undo', authMiddleware, async (req, res) => {
+  const requestId = req.body?.request_id;
+  if (!isUuid(String(requestId || ''))) return res.status(400).json({ error: 'Invalid request' });
+  if (!isUuid(req.params.id)) return res.status(404).json({ error: 'Not found' });
+  const endpoint = 'savings_undo';
+  const args = { event_id: req.params.id };
+  const client = await pool.connect();
+  let childId = null;
+  const fail = async (status, error) => { await client.query('ROLLBACK'); return res.status(status).json({ error }); };
+  try {
+    await client.query('BEGIN');
+    const { rows: [owner] } = await client.query('SELECT child_id FROM savings_events WHERE id = $1 AND family_code = $2', [req.params.id, req.familyCode]);
+    if (!owner) return fail(404, 'Not found');
+    childId = owner.child_id;
+    const child = await lockedChild(client, childId, req.familyCode);
+    if (!child) return fail(404, 'Not found');
+    const prior = await priorRequest(client, req.familyCode, requestId, endpoint, args);
+    if (prior.conflict) return fail(409, 'Invalid request');
+    if (prior.replay) {
+      await client.query('ROLLBACK');
+      return res.json({ ...prior.replay, child: await freshChild(pool, req.familyCode, childId), duplicate: true });
+    }
+    const { rows: [ev] } = await client.query(
+      `SELECT * FROM savings_events WHERE id = $1 AND family_code = $2 AND kind IN ('save', 'release')
+         AND created_at > now() - ${UNDO_WINDOW}`, [req.params.id, req.familyCode]);
+    if (!ev) return fail(404, 'This can no longer be undone.');
+    const { rowCount: done } = await client.query('SELECT 1 FROM savings_events WHERE undoes = $1', [ev.id]);
+    if (done > 0) return fail(409, 'Already undone.');
+    const reward = await lockGoal(client, req.familyCode, ev.reward_id);
+    if (!isCurrentGoal(reward, childId, ev.generation)) return fail(409, 'Invalid request'); // O6
+    const bal = await balanceFor(client, req.familyCode, child);
+    if (ev.kind === 'save') {
+      const saved = bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0;
+      if (saved < ev.delta) return fail(409, SPENT_ALREADY); // I1
+    } else {
+      if (bal.stack.some((i) => i.rewardId === reward.id)) return fail(409, STALE_REQUESTS);
+      if ((child.total_points ?? 0) - bal.committed < -ev.delta) return fail(409, SPENT_ALREADY); // I2
+    }
+    const { rows: [event] } = await client.query(
+      `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, request_id, undoes)
+       VALUES ($1, $2, $3, $4, $5, $6, 'undo', $7, $8) RETURNING *`,
+      [req.familyCode, childId, ev.reward_id, ev.reward_title, ev.generation, -ev.delta, requestId, ev.id]);
+    await rememberRequest(client, req.familyCode, requestId, endpoint, args, { event });
+    const balanced = await balancedChild(client, req.familyCode, child);
+    await client.query('COMMIT');
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
+    res.json({ event, child: balanced, duplicate: false });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    // S7: the undo-once constraint means already undone; any other unique
+    // violation is the same request committed by a concurrent call.
+    if (err.code === '23505' && err.constraint === 'savings_events_undoes_once') return res.status(409).json({ error: 'Already undone.' });
+    if (err.code === '23505' && childId) return replayAfterRace(res, req.familyCode, requestId, endpoint, args, childId);
+    return serverError(res, 'Savings undo error', err);
+  } finally {
+    client.release();
+  }
+});
+
+// Redeem a bigger goal (O7: a parent, from the Children page). Paid from its
+// savings first, the rest from available, in one transaction.
+router.post('/api/children/:id/savings/redeem', authMiddleware, async (req, res) => {
+  const childId = req.params.id;
+  const rewardId = lowerId(req.body?.reward_id);
+  const requestId = req.body?.request_id;
+  if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
+  if (!isUuid(String(requestId || ''))) return res.status(400).json({ error: 'Invalid request' });
+  if (!isUuid(String(rewardId || ''))) return res.status(404).json({ error: 'Reward not found' });
+  const endpoint = 'redeem_goal';
+  const args = { child_id: childId, reward_id: rewardId };
+  const client = await pool.connect();
+  const fail = async (status, error) => { await client.query('ROLLBACK'); return res.status(status).json({ error }); };
+  try {
+    await client.query('BEGIN');
+    const child = await lockedChild(client, childId, req.familyCode);
+    if (!child) return fail(404, 'Child not found');
+    const prior = await priorRequest(client, req.familyCode, requestId, endpoint, args);
+    if (prior.conflict) return fail(409, 'Invalid request');
+    if (prior.replay) {
+      await client.query('ROLLBACK');
+      return res.json({ ...prior.replay, child: await freshChild(pool, req.familyCode, childId), duplicate: true });
+    }
+    const reward = await lockGoal(client, req.familyCode, rewardId);
+    if (!reward || !spendableFrom(new Map([[reward.id, reward]]), reward.id, childId)) return fail(404, 'Reward not found');
+    if (!reward.is_bigger_goal) return fail(409, 'Invalid request');
+    const bal = await balanceFor(client, req.familyCode, child);
+    if (bal.stack.some((i) => i.rewardId === reward.id)) return fail(409, STALE_REQUESTS); // S1
+    const cost = reward.cost_points;
+    const total = child.total_points ?? 0;
+    const fromSaved = Math.min(bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0, cost);
+    const fromAvailable = cost - fromSaved;
+    if (total - bal.committed < fromAvailable || total < cost) return fail(400, 'Not enough points');
+    await client.query(
+      'UPDATE children SET total_points = total_points - $1, points_spent = COALESCE(points_spent, 0) + $1 WHERE id = $2 AND family_code = $3',
+      [cost, childId, req.familyCode]);
+    const { rows: [redemption] } = await client.query(
+      `INSERT INTO redemptions (child_id, child_name, reward_id, reward_title, reward_cost, status, family_code)
+       VALUES ($1, $2, $3, $4, $5, 'Completed', $6) RETURNING *`,
+      [childId, child.name || '', reward.id, reward.title, cost, req.familyCode]);
+    if (fromSaved > 0) {
+      // A derived row: no request id (016's shape rule), linked to its redemption.
+      await client.query(
+        `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, redemption_id)
+         VALUES ($1, $2, $3, $4, $5, $6, 'spend', $7)`,
+        [req.familyCode, childId, reward.id, reward.title, goalGeneration(reward, childId), -fromSaved, redemption.id]);
+    }
+    await rememberRequest(client, req.familyCode, requestId, endpoint, args, { redemption, from_saved: fromSaved });
+    const { rows: [after] } = await client.query('SELECT * FROM children WHERE id = $1', [childId]);
+    const balanced = await balancedChild(client, req.familyCode, after);
+    await client.query('COMMIT');
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
+    res.json({ redemption, from_saved: fromSaved, child: balanced, duplicate: false });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23505') return replayAfterRace(res, req.familyCode, requestId, endpoint, args, childId);
+    return serverError(res, 'Goal redeem error', err);
+  } finally {
+    client.release();
+  }
+});
 
 // ─── Reward Stack endpoints ──────────────────────────────────────────────────
 
@@ -1379,7 +1621,7 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     if (prior.replay) {
       await client.query('ROLLBACK');
       const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, req.familyCode]);
-      return res.json({ ...prior.replay, child: rows[0], duplicate: true });
+      return res.json({ ...prior.replay, child: await balancedChild(pool, req.familyCode, rows[0]), duplicate: true });
     }
 
     const child = childRows[0];
@@ -1446,7 +1688,7 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     );
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
-    res.json({ child: updatedChild[0], confirmed_count: stack.length, points_deducted: stackTotal, redemption_ids: redemptionIds, duplicate: false });
+    res.json({ child: await balancedChild(pool, req.familyCode, updatedChild[0]), confirmed_count: stack.length, points_deducted: stackTotal, redemption_ids: redemptionIds, duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505' && req.spend) {
@@ -2189,10 +2431,17 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
         await client.query('ROLLBACK');
         return res.status(404).json({ error: 'Not found' });
       }
+      // D1 §19.7 N3: a goal is created unmarked and marked in the same
+      // transaction, so its first generation is 1:0. A re-inserted id (which
+      // 016's insert trigger starts at 0:0) can then never match it.
+      const asGoal = table === 'rewards' && data.is_bigger_goal === true;
       ({ rows } = await client.query(
         `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
-        values
+        asGoal ? values.map((v, i) => (keys[i] === 'is_bigger_goal' ? false : v)) : values
       ));
+      if (asGoal) {
+        ({ rows } = await client.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1 RETURNING *', [rows[0].id]));
+      }
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK').catch(() => {});
