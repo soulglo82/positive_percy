@@ -2,7 +2,6 @@
 // base schema plus migrations 001..N, and fixture family data. No real data.
 //   DATABASE_URL=... node scripts/test/d1-fixture.mjs <N>
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,7 +9,8 @@ const upTo = Number(process.argv[2]);
 if (!Number.isInteger(upTo)) { console.error('usage: d1-fixture.mjs <highest migration number>'); process.exit(2); }
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const { initDb, default: pool } = await import(path.join(ROOT, 'server/db.js'));
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'percy-fixture-'));
+// Inside server/: the .js migrations import their neighbours relatively.
+const dir = fs.mkdtempSync(path.join(ROOT, 'server', '.fixture-migrations-'));
 const src = path.join(ROOT, 'server/migrations');
 for (const f of fs.readdirSync(src)) if (Number(f.slice(0, 3)) <= upTo) fs.copyFileSync(path.join(src, f), path.join(dir, f));
 await initDb({ migrationOptions: { dir, log: () => {} } });

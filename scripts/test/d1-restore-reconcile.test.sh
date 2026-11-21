@@ -23,7 +23,7 @@ make_archive() {
   fx="percy-fixture-$$-$RANDOM"
   docker run -d --network none --name "$fx" -e POSTGRES_HOST_AUTH_METHOD=trust "$PG_IMAGE" >/dev/null
   for _ in $(seq 1 60); do docker exec "$fx" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1 && break; sleep 1; done
-  docker run --rm --network "container:$fx" --user "$(id -u):$(id -g)" -v "$tmp/app-$n:/app:ro" -v "$modules:/app/node_modules:ro" \
+  docker run --rm --network "container:$fx" --user "$(id -u):$(id -g)" -v "$tmp/app-$n:/app" -v "$modules:/app/node_modules:ro" \
     -e DATABASE_URL=postgres://postgres@localhost:5432/postgres "$NODE_IMAGE" node /app/scripts/test/d1-fixture.mjs "$n" >/dev/null
   docker exec "$fx" pg_dump -Ft -h 127.0.0.1 -U postgres postgres | gzip > "$dest"
   docker rm -f -v "$fx" >/dev/null
