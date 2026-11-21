@@ -260,7 +260,7 @@ export default function Children() {
               <p className="font-semibold text-foreground">Next milestone</p>
               <p className="text-sm text-muted-foreground">Weekly target and bigger goal</p>
               <p className="font-display font-bold text-lg text-foreground tabular-nums">{toTarget} weekly points to go</p>
-              {topGoal && <p className="text-sm text-muted-foreground tabular-nums">{topGoal.name}: {topGoal.to_go > 0 ? `${topGoal.to_go} to go` : 'Fully saved!'}</p>}
+              {topGoal && <p className="text-sm text-muted-foreground tabular-nums">{topGoal.name}: {topGoal.to_go > 0 ? `${topGoal.to_go} to go` : 'Saved!'}</p>}
             </div>
           </div>
         </CardContent>

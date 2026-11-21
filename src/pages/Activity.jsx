@@ -336,10 +336,13 @@ export function rowText(event, timeZone = undefined) {
   if (event.type === 'moved_back') return { lead: `moved ${pts} back from`, what: event.label, sub: `Savings · ${time}` };
   // D1 §20.1 (owner review of #64, N2): why saved points stopped counting.
   // Provisional wording (§20.8): "released", not "available again".
+  // Owner wording (21 Nov): a cancellation, never a success or an earning.
+  // The child's name stands in for a pronoun (no pronouns are stored).
   if (event.type === 'savings_ended') {
-    const cause = event.note === 'unmarked' ? 'Bigger goal turned off'
-      : event.note === 'deleted' ? 'Reward deleted' : `No longer for ${event.child_name}`;
-    return { possessive: true, lead: 'savings for', what: event.label, after: 'ended', sub: `${event.points} saved ${pointsWord(event.points)} released · ${cause} · ${time}` };
+    const cause = event.note === 'unmarked' ? 'Bigger goal removed'
+      : event.note === 'deleted' ? 'Reward deleted' : `Goal no longer for ${event.child_name}`;
+    return { possessive: true, lead: '', what: event.label, after: `savings are back in ${event.child_name}’s points`,
+      sub: `${event.points} ${pointsWord(event.points)} returned · ${cause} · ${time}` };
   }
   const lead = event.type === 'undo' ? 'undo:' : event.type === 'starting' ? 'started with'
     : event.type === 'correction' ? 'had a one-off' : event.points < 0 ? 'had an earlier adjustment for' : 'adjusted';

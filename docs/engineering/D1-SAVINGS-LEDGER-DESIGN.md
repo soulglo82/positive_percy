@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.21 |
+| Version | 1.22 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.22 | 2026-11-21 | §21.6: owner wording: success and cancellation kept distinct |
 | 1.21 | 2026-11-21 | §21.5: design review adopted, built, tested, mutations |
 | 1.20 | 2026-11-21 | §21 (design, before build): the confirmation bound to a snapshot; delete confirmed the same way |
 | 1.19 | 2026-11-21 | §20.9: build record of §20; code review fixes (server-side confirmation); #44 findings |
@@ -1059,4 +1060,22 @@ The form's Delete confirmation lists each affected child: "{Child}: {n} saved po
 - delete without the guard.
 
 **Note.** On delete, denying pending redemptions can still meet a redeem in a lock cycle (child, then reward `FOR SHARE`); the 40P01 retry covers it.
+
+### 21.6 Owner wording, 21 November: success and cancellation kept distinct (v1.22)
+
+The owner gave this as product-copy direction, not merge authorisation.
+
+| Event (server's real type) | Where | Wording |
+| --- | --- | --- |
+| A goal funded (`to_go` = 0) | Parent goal rows (Home, Children card and milestone) | "Saved!" (was "Fully saved!") |
+| A goal funded | Child View "My next big adventure"; Home under the goal | "{Child} has saved enough for {goal}!", a celebration and not a redemption. A parent redeems a bigger goal (O7), so nothing child-facing says choose or redeem |
+| A goal funded | Parent's savings dialog | "Ready to redeem": a parent action, shown only to the parent |
+| `savings_ended` (un-marked) | Activity | "{Child}'s {goal} savings are back in {Child}'s points" · "{n} points returned · Bigger goal removed" |
+| `savings_ended` (reassigned) | Activity | the same line · "Goal no longer for {Child}" |
+| `savings_ended` (deleted) | Activity | the same line · "Reward deleted" |
+
+- Singular throughout ("1 point returned").
+- No cancellation line says the points were earned or the reward redeemed, and none uses success wording (tested).
+- **Pronouns:** the owner's example said "her points". No pronouns are stored, so the line repeats the child's name. **Owner to confirm.**
+- **"Ready to choose your reward!"** is for a place where a child genuinely selects a reward. Today Child View's rewards a child can afford carry the approved caption "Ask a parent", and goals are not choosable. So there is no screen to apply it to yet. **Owner to confirm** whether it should replace an existing caption.
 

@@ -15,7 +15,7 @@ export default function GoalProgress({ goal, label = null, showToGo = true }) {
           <p className="font-semibold text-foreground break-words">{goal.name}</p>
           <p className="text-sm text-muted-foreground tabular-nums">{goal.saved} of {goal.cost} points saved</p>
         </div>
-        {showToGo && <p className="shrink-0 text-sm font-semibold text-foreground tabular-nums">{goal.to_go > 0 ? `${goal.to_go} to go` : 'Fully saved!'}</p>}
+        {showToGo && <p className="shrink-0 text-sm font-semibold text-foreground tabular-nums">{goal.to_go > 0 ? `${goal.to_go} to go` : 'Saved!'}</p>}
       </div>
       <div className="h-2 rounded-full bg-muted overflow-hidden" aria-hidden="true">
         <div className="h-full rounded-full bg-sunrise" style={{ width: pct(goal.saved, goal.cost) + '%' }} />

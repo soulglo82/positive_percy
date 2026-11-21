@@ -103,6 +103,8 @@ export function WorkingTowards({ child }) {
       <CardContent className="p-4 sm:p-5 space-y-3">
         <h2 className="font-display font-bold text-lg text-primary">What you're working towards</h2>
         {goal && <GoalProgress goal={goal} label="Saving for something bigger" />}
+        {/* Owner wording (21 Nov): the funded-goal celebration (not a redemption). */}
+        {goal && goal.to_go === 0 && <p className="text-sm font-semibold text-foreground">{child.name} has saved enough for {goal.name}!</p>}
         {stack.map((item, i) => (
           <div key={item.rewardId + '-' + i} className="flex items-center gap-3">
             <RewardIcon reward={item} size="md" />

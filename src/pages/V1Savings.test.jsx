@@ -184,6 +184,12 @@ describe('Child View', () => {
 });
 
 describe('Home, Rewards, Spend and Activity', () => {
+  it('Home: a funded goal shows the celebration (not a redemption)', () => {
+    mount(<WorkingTowards child={{ ...lara, goals: [goal('g1', 'Bike', 300, 300)] }} />);
+    expect(screen.getByText('Lara has saved enough for Bike!')).toBeTruthy();
+    expect(screen.getByText('Saved!')).toBeTruthy();
+  });
+
   it('Home shows the goal with the most saved, labelled, above the requests', () => {
     const child = { ...lara, goals: [goal('g2', 'Tent', 80, 10), goal('g1', 'Bike', 300, 120)], reward_stack_priced: [{ rewardId: 'r1', name: 'Movie night', cost: 25, stackIndex: 0 }] };
     mount(<WorkingTowards child={child} />);
@@ -235,11 +241,14 @@ describe('Home, Rewards, Spend and Activity', () => {
     expect(rowIconKind({ type: 'saving' })).toBe('saving');
     expect(rowIconKind({ type: 'moved_back' })).toBe('saving');
     // §20.1: why saved points stopped counting, with child, goal, amount and cause.
-    const ended = (note) => rowText({ type: 'savings_ended', points: 40, label: 'Bike', note, child_name: 'Lara', created_date: t }, 'UTC');
-    expect(ended('unmarked')).toMatchObject({ possessive: true, lead: 'savings for', what: 'Bike', after: 'ended' });
-    expect(ended('unmarked').sub).toContain('40 saved points released · Bigger goal turned off');
-    expect(ended('reassigned').sub).toContain('No longer for Lara');
+    const ended = (note, points = 40) => rowText({ type: 'savings_ended', points, label: 'Bike', note, child_name: 'Lara', created_date: t }, 'UTC');
+    // Owner wording (21 Nov): "Lara's Bike savings are back in Lara's points" (a cancellation, not a success).
+    expect(ended('unmarked')).toMatchObject({ possessive: true, what: 'Bike', after: 'savings are back in Lara’s points' });
+    expect(ended('unmarked').sub).toContain('40 points returned · Bigger goal removed');
+    expect(ended('reassigned').sub).toContain('Goal no longer for Lara');
     expect(ended('deleted').sub).toContain('Reward deleted');
+    expect(ended('unmarked', 1).sub).toContain('1 point returned');
+    expect(JSON.stringify(ended('unmarked'))).not.toMatch(/earned|redeemed|hit|goal for Bike/);
     expect(rowIconKind({ type: 'savings_ended' })).toBe('saving');
   });
 });
@@ -284,18 +293,18 @@ describe('code review of the screens', () => {
     expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('confirm_end_savings');
   });
 
-  it('"Fully saved!" instead of "0 to go", for the parent and in Child View; "Ready to redeem" in the dialog', async () => {
+  it('Child View: at 0 to go, the celebration "{Child} has saved enough for {goal}!" (owner wording), never "0 points to go"', async () => {
     state.children = [{ ...lara, goals: [goal('g1', 'Bike', 300, 300)], available_points: 20, saved_total: 300 }];
     mount(<ChildView />, '/childview?child=c1');
-    expect(await screen.findByText('Fully saved!')).toBeTruthy();
+    expect(await screen.findByText('Lara has saved enough for Bike!')).toBeTruthy();
     expect(screen.queryByText(/0 points to go/)).toBeNull();
   });
 
-  it('Children: "Fully saved!" on the card and in the milestone; dialog shows Ready to redeem and the excess note', async () => {
+  it('Children: "Saved!" on the card and in the milestone; dialog shows Ready to redeem and the excess note', async () => {
     state.children = [{ ...lara, goals: [{ ...goal('g1', 'Bike', 300, 340) }], available_points: 0, saved_total: 340 }];
     mount(<Children />);
-    expect((await screen.findAllByText('Fully saved!')).length).toBeGreaterThan(0);
-    expect(screen.getByText('Bike: Fully saved!')).toBeTruthy();
+    expect((await screen.findAllByText('Saved!')).length).toBeGreaterThan(0);
+    expect(screen.getByText('Bike: Saved!')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Edit saving for something bigger for Lara' }));
     const d = await screen.findByRole('dialog');
     expect(within(d).getByText('340 of 300 points saved · Ready to redeem')).toBeTruthy();

@@ -131,12 +131,12 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     await page.keyboard.press('Escape');
     expect((await me()).saved_total).toBe(100); // nothing ended
 
-    // A fully saved goal: "Fully saved!", never "0 points to go" (§20.2).
+    // A funded goal: the owner's celebration, never "0 points to go" (§20.2, owner wording 21 Nov).
     tent = await api('POST', '/api/rewards', { title: `${name} tent`, cost_points: 100, is_bigger_goal: true, assigned_child_ids: [kid.id] });
     await api('POST', `/api/children/${kid.id}/savings/save`, { reward_id: tent.id, points: 100, request_id: crypto.randomUUID() });
     await page.goto(`/childview?child=${kid.id}`);
     await page.waitForLoadState('networkidle');
-    await expect(page.getByText('Fully saved!')).toBeVisible();
+    await expect(page.getByText(`${name} has saved enough for ${tent.title}!`)).toBeVisible();
     await expect(page.getByText(/0 points to go/)).toHaveCount(0);
     await page.getByRole('heading', { name: 'My next big adventure' }).scrollIntoViewIfNeeded();
     await checkScreen(page, 'child view fully saved', testInfo);

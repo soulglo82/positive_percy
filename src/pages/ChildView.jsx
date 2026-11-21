@@ -182,8 +182,12 @@ export default function ChildView() {
             <CardContent className="p-4 sm:p-5 space-y-3">
               <h2 className="font-display font-bold text-lg text-primary">My next big adventure</h2>
               <GoalProgress goal={goal} showToGo={false} />
-              {/* Owner review of #64: "Fully saved!" at 0, never "0 points to go". */}
-              <p className="text-sm font-semibold text-foreground tabular-nums">{goal.to_go > 0 ? `${goal.to_go} ${pointsWord(goal.to_go)} to go` : 'Fully saved!'}</p>
+              {/* Owner wording (21 Nov): "{n} points to go" while n > 0; at 0 the
+                  celebration of a funded goal. It is not a redemption: a parent
+                  redeems a bigger goal (O7), so nothing here says choose or redeem. */}
+              <p className="text-sm font-semibold text-foreground tabular-nums">
+                {goal.to_go > 0 ? `${goal.to_go} ${pointsWord(goal.to_go)} to go` : `${child.name} has saved enough for ${goal.name}!`}
+              </p>
             </CardContent>
           </Card>
         )}
