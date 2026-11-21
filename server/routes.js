@@ -13,6 +13,18 @@ import { createTodaysGoalsRouter } from './todaysGoals.js';
 
 const router = Router();
 
+// One spelling of every id from here on (O6 review #1). Postgres accepts a
+// UUID in any letter case, but ids are compared as text in JavaScript (the
+// balance rule, generations, assignments), so a capitalised :id would miss
+// the child's own savings and requests. Every :id route on this router sees
+// the lower case (the Today's Goals sub-router has its own); reward ids from
+// a body or query are lower-cased where they are read.
+const lowerId = (v) => (typeof v === 'string' ? v.toLowerCase() : v);
+router.param('id', (req, _res, next, id) => {
+  if (typeof id === 'string') req.params.id = id.toLowerCase();
+  next();
+});
+
 // Every route with an :id expects a UUID. Anything else is not found, so a
 // malformed id never reaches the database.
 router.param('id', (req, res, next, id) => {
@@ -116,7 +128,7 @@ async function loadRewardsById(db, familyCode, ids) {
   const wanted = [...new Set(ids.map((id) => String(id || '')).filter(isUuid))];
   if (wanted.length === 0) return new Map();
   const { rows } = await db.query(
-    'SELECT id, title, cost_points, assigned_child_ids, icon_key, emoji, image_url FROM rewards WHERE id = ANY($1::uuid[]) AND family_code = $2',
+    'SELECT id, title, cost_points, assigned_child_ids, icon_key, emoji, image_url, is_bigger_goal, goal_epoch, goal_child_epochs FROM rewards WHERE id = ANY($1::uuid[]) AND family_code = $2',
     [wanted, familyCode]
   );
   return new Map(rows.map((r) => [r.id, r]));
@@ -129,7 +141,7 @@ function spendableFrom(byId, rewardId, childId) {
   if (!r) return null;
   const assigned = (r.assigned_child_ids || []).map((x) => String(x).toLowerCase());
   if (assigned.length > 0 && !assigned.includes(String(childId).toLowerCase())) return null;
-  return { id: r.id, title: r.title, cost: r.cost_points, icon_key: r.icon_key ?? null, emoji: r.emoji ?? null, image_url: r.image_url ?? null };
+  return { id: r.id, title: r.title, cost: r.cost_points, icon_key: r.icon_key ?? null, emoji: r.emoji ?? null, image_url: r.image_url ?? null, is_bigger_goal: !!r.is_bigger_goal };
 }
 
 // The priced stack also carries how to draw each reward (V1-D: icon_key,
@@ -138,7 +150,8 @@ function spendableFrom(byId, rewardId, childId) {
 // rewards since deleted), so a remove uses the right position (V1-D).
 function priceStackFrom(byId, stack, childId) {
   const out = [];
-  (stack || []).forEach((item, stackIndex) => {
+  // Legacy rows may hold a non-array stack (it was once client-writable).
+  (Array.isArray(stack) ? stack : []).forEach((item, stackIndex) => {
     const reward = spendableFrom(byId, item.rewardId, childId);
     if (reward) out.push({ rewardId: reward.id, name: reward.title, cost: reward.cost, icon_key: reward.icon_key, emoji: reward.emoji, image_url: reward.image_url, stackIndex });
   });
@@ -154,15 +167,79 @@ const stackTotalOf = (stack) => (stack || []).reduce((sum, item) => sum + (Numbe
 // reward_stack_priced (the stack at current names and costs, without rewards
 // that are gone or no longer for this child) and available_points =
 // total_points minus that stack's cost. One rewards query for all children.
+// D1: savings per (child, reward), one query. Only positive sums: a release
+// can never take a goal below zero, and a negative sum (which no endpoint can
+// write) is ignored rather than turned into spendable points.
+async function savingsSums(db, familyCode, childIds) {
+  if (!childIds.length) return [];
+  const { rows } = await db.query(
+    `SELECT child_id, reward_id, generation, SUM(delta)::int AS saved FROM savings_events
+     WHERE family_code = $1 AND child_id = ANY($2::uuid[]) GROUP BY child_id, reward_id, generation HAVING SUM(delta) > 0`,
+    [familyCode, childIds]);
+  return rows;
+}
+
+// A goal's current allocation generation for a child (migration 016's
+// trigger moves it forward on mark/un-mark and when the reward stops being
+// for the child). Savings of any other generation are expired history (O6).
+function goalGeneration(reward, childId) {
+  const epochs = reward?.goal_child_epochs || {};
+  return `${reward?.goal_epoch ?? 0}:${epochs[String(childId).toLowerCase()] ?? 0}`;
+}
+
+// THE balance rule (D1, design §3, §11 and §13), used by every read and write:
+//   committed = points set aside for requests + points saved towards goals,
+//   available = total - committed.
+// Savings count only towards a reward that is still a bigger goal for this
+// child. A goal that is also requested is counted once: its savings add only
+// what exceeds the requested cost (max(stacked, saved), never the sum).
+function balanceOf(byId, sums, child) {
+  const stack = priceStackFrom(byId, child.reward_stack, child.id);
+  const stacked = new Map();
+  for (const item of stack) stacked.set(item.rewardId, (stacked.get(item.rewardId) || 0) + item.cost);
+  const goals = [];
+  let savedCounted = 0;
+  for (const x of sums) {
+    if (String(x.child_id).toLowerCase() !== String(child.id).toLowerCase()) continue;
+    const reward = spendableFrom(byId, x.reward_id, child.id);
+    if (!reward || !reward.is_bigger_goal) continue;
+    // Only the current generation counts: un-marking, re-marking or taking the
+    // goal away from the child expires earlier savings for good.
+    if (x.generation !== goalGeneration(byId.get(String(x.reward_id)), child.id)) continue;
+    goals.push({ rewardId: reward.id, name: reward.title, cost: reward.cost, saved: x.saved, to_go: Math.max(0, reward.cost - x.saved),
+      icon_key: reward.icon_key, emoji: reward.emoji, image_url: reward.image_url });
+    savedCounted += Math.max(0, x.saved - (stacked.get(reward.id) || 0));
+  }
+  const committed = stackTotalOf(stack) + savedCounted;
+  return { stack, goals, saved_total: goals.reduce((n, g) => n + g.saved, 0), committed,
+    available: Math.max(0, (child.total_points ?? 0) - committed) };
+}
+
+// The balance of one child inside a write, under its row lock.
+async function balanceFor(db, familyCode, child) {
+  const sums = await savingsSums(db, familyCode, [child.id]);
+  const byId = await loadRewardsById(db, familyCode, [
+    ...(Array.isArray(child.reward_stack) ? child.reward_stack : []).map((i) => i.rewardId), ...sums.map((x) => x.reward_id)]);
+  return balanceOf(byId, sums, child);
+}
+
 async function withBalances(db, familyCode, rows) {
   const out = await withWeekPoints(db, familyCode, rows);
   if (!out) return out;
-  const byId = await loadRewardsById(db, familyCode,
-    out.flatMap((r) => (r.reward_stack || []).map((item) => item.rewardId)));
+  const sums = await savingsSums(db, familyCode, out.map((r) => r.id).filter(Boolean));
+  const byId = await loadRewardsById(db, familyCode, [
+    ...out.flatMap((r) => (Array.isArray(r.reward_stack) ? r.reward_stack : []).map((item) => item.rewardId)),
+    ...sums.map((x) => x.reward_id),
+  ]);
   for (const r of out) {
     if (r.total_points == null) continue;
-    r.reward_stack_priced = priceStackFrom(byId, r.reward_stack, r.id);
-    r.available_points = Math.max(0, r.total_points - stackTotalOf(r.reward_stack_priced));
+    const b = balanceOf(byId, sums, r);
+    r.reward_stack_priced = b.stack;
+    r.goals = b.goals;
+    r.saved_total = b.saved_total;
+    // Available now = total - set aside for requests - saved towards goals.
+    // Moving points into a goal lowers this, never total_points.
+    r.available_points = b.available;
   }
   return out;
 }
@@ -227,6 +304,11 @@ function validateCreatePayload(table, data, { isCreate = false } = {}) {
     // (also a database CHECK, migration 015).
     if (data.icon_key !== undefined && data.icon_key !== null && !isRewardIconKey(data.icon_key)) {
       throw Object.assign(new Error(ICON_KEY_MESSAGE), { status: 422 });
+    }
+    // Stored in the one spelling the balance rule and migration 016's
+    // trigger compare against (O6 review #6).
+    if (Array.isArray(data.assigned_child_ids)) {
+      data.assigned_child_ids = data.assigned_child_ids.map((x) => (typeof x === 'string' ? x.toLowerCase() : x));
     }
   }
   if (table === 'point_events') {
@@ -843,7 +925,7 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
 router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { reward_id } = req.body || {};
+    const reward_id = lowerId(req.body?.reward_id);
     const childId = req.params.id;
     if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
     const rq = spendRequestId(req.body);
@@ -884,16 +966,22 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     const reward_title = reward.title;
     const child_name = childRows[0].name;
 
-    // Points already set aside in the reward stack are not spendable twice.
-    const stack = await pricedStack(client, childRows[0].reward_stack, childId, req.familyCode);
+    // Points set aside for requests or saved towards goals are not spendable
+    // twice (D1: the one balance rule). A reward with savings is redeemed
+    // through its goal, not spent here.
+    const bal = await balanceFor(client, req.familyCode, { id: childId, ...childRows[0] });
     // O-I1 (owner, 2026-11-20): a reward the child has asked for is approved
     // or declined, never spent directly (a stale screen gets the approved
     // stale-view message; nothing is spent or remembered).
-    if (stack.some((item) => item.rewardId === reward.id)) {
+    if (bal.stack.some((item) => item.rewardId === reward.id)) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'The requests changed. Check them again.' });
     }
-    const reserved = stackTotalOf(stack);
+    if (bal.goals.some((g) => g.rewardId === reward.id)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
+    }
+    const reserved = bal.committed;
     if (childRows[0].total_points - reserved < reward_cost) {
       await client.query('ROLLBACK');
       return res.status(400).json({
@@ -1008,8 +1096,8 @@ async function reverseAward(req, res, sameWeek = false) {
     // Only undoing a positive award lowers the balance, so only then can the
     // points already be used. Undoing a deduction gives points back.
     const after = child.total_points - ev.points;
-    const reserved = ev.points > 0
-      ? stackTotalOf(await pricedStack(client, child.reward_stack, child.id, req.familyCode)) : 0;
+    // D1: requests and savings both hold points the undo would take away.
+    const reserved = ev.points > 0 ? (await balanceFor(client, req.familyCode, child)).committed : 0;
     if (ev.points > 0 && (after < 0 || after < reserved)) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: SPENT_ALREADY });
@@ -1135,7 +1223,7 @@ async function replayAfterRace(res, familyCode, requestId, endpoint, args, child
 router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { reward_id } = req.body || {};
+    const reward_id = lowerId(req.body?.reward_id);
     const childId = req.params.id;
     if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
 
@@ -1159,10 +1247,17 @@ router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Child not found' });
     }
 
-    const stack = await pricedStack(client, childRows[0].reward_stack, childId, req.familyCode);
+    // D1 (design v1.1 B1): a bigger goal is saved for and redeemed by a
+    // parent, never requested through the stack.
+    if (reward.is_bigger_goal) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
+    }
+    const bal = await balanceFor(client, req.familyCode, { id: childId, ...childRows[0] });
+    const stack = bal.stack;
     const stackTotal = stackTotalOf(stack);
 
-    if (stackTotal + reward_cost > childRows[0].total_points) {
+    if (bal.committed + reward_cost > childRows[0].total_points) {
       await client.query('ROLLBACK');
       return res.status(400).json({
         error: 'Not enough points',
@@ -1214,7 +1309,7 @@ router.delete('/api/children/:id/stack/:index', authMiddleware, async (req, res)
     const stack = childRows[0].reward_stack || [];
     // V1-D: the caller names the reward it means; if the stack changed since
     // it looked, nothing is removed (409) rather than the wrong item.
-    const expected = req.query.reward_id;
+    const expected = lowerId(req.query.reward_id);
     if (typeof expected !== 'string' || !isUuid(expected)) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Invalid request' });
@@ -1251,7 +1346,9 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     // V1-D: the parent agrees to exactly the requests they saw
     // ([{reward_id, stack_index}], in stack order). Anything else changed in
     // between is refused (409), never charged.
-    const expected = req.body?.expected;
+    const expected = Array.isArray(req.body?.expected)
+      ? req.body.expected.map((e) => (e && typeof e === 'object' ? { ...e, reward_id: lowerId(e.reward_id) } : e))
+      : req.body?.expected;
     const validExpected = Array.isArray(expected) && expected.length >= 1 && expected.length <= 100
       && expected.every((e) => e && typeof e.reward_id === 'string' && isUuid(e.reward_id)
         && Number.isInteger(e.stack_index) && e.stack_index >= 0
@@ -1301,10 +1398,18 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Invalid request' });
     }
+    // D1: a requested reward that has savings is redeemed through its goal
+    // (so its savings are spent with it); and requests plus savings must fit
+    // in the balance (the one balance rule).
+    const bal = await balanceFor(client, req.familyCode, { id: childId, ...child });
+    if (priced.some((p) => bal.goals.some((g) => g.rewardId === p.rewardId))) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
+    }
     stack.splice(0, stack.length, ...priced);
     const stackTotal = stackTotalOf(stack);
 
-    if (stackTotal > child.total_points) {
+    if (bal.committed > child.total_points) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Not enough points for stacked rewards' });
     }
