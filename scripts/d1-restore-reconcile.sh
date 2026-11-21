@@ -97,7 +97,10 @@ started="$(now)"
 # Before any family data is on disk: the images, this commit's code, and a
 # check that Docker can see this machine's temporary folder (Colima and
 # Rancher Desktop share only $HOME by default).
-docker pull -q "$PG_IMAGE" >/dev/null && docker pull -q "$NODE_IMAGE" >/dev/null || broken 'could not pull the pinned images'
+# Pinned by digest, so an image already present is exactly the one wanted.
+for image in "$PG_IMAGE" "$NODE_IMAGE"; do
+  docker image inspect "$image" >/dev/null 2>&1 || docker pull -q "$image" >/dev/null || broken "could not pull $image"
+done
 mkdir "$work/app"
 git archive HEAD | tar -x -C "$work/app"
 mkdir "$work/app/node_modules"

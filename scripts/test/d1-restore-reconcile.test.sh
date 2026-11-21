@@ -52,7 +52,7 @@ mkdir -p "$tmp/shim"
 cat > "$tmp/shim/docker" <<'SHIM'
 #!/usr/bin/env bash
 echo "$*" >> "$SHIM_LOG"
-if [[ "${1:-} ${2:-}" == 'context inspect' ]]; then echo "${SHIM_CONTEXT_HOST:-unix:///var/run/docker.sock}"; exit 0; fi
+if [[ "${1:-} ${2:-}" == 'context inspect' ]]; then echo "${SHIM_CONTEXT_HOST-unix:///var/run/docker.sock}"; exit 0; fi
 exit 97
 SHIM
 chmod +x "$tmp/shim/docker"
