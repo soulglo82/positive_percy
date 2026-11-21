@@ -38,7 +38,10 @@ run() { # run <expected exit> <label> [VAR=value ...]
   set -e
   check "$label (exit $want)" "[[ $got == $want ]] || { cat '$tmp/out.txt'; false; }"
 }
-leftovers() { docker ps -aq --filter name=percy-d1- | wc -l | tr -d ' '; }
+mode() { python3 -c 'import os,sys;print(oct(os.stat(sys.argv[1]).st_mode & 0o777)[2:])' "$1"; }
+# Containers this test's runs left (others' runs are not counted).
+before_ids="$(docker ps -aq --filter name=percy-d1- | sort)"
+leftovers() { comm -13 <(echo "$before_ids") <(docker ps -aq --filter name=percy-d1- | sort) | grep -c . || true; }
 
 echo 'Building synthetic archives at 012 and 016...'
 make_archive 12 "$tmp/at-012.tar.gz"
@@ -55,6 +58,7 @@ check '... and nothing was created in the repository' "[[ ! -e '$repo/d1-report-
 run 2 'a head other than PERCY_EXPECT_HEAD is refused' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz" PERCY_EXPECT_HEAD=0000000000000000000000000000000000000000
 touch "$repo/.d1-dirty-test"
 run 2 'a dirty tree is refused' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
+run 2 'a remote Docker host is refused' DOCKER_HOST=tcp://192.0.2.1:2375 PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
 rm -f "$repo/.d1-dirty-test"
 
 # Broken archives: exit 3, nothing left behind.
@@ -67,7 +71,9 @@ volumes_before="$(docker volume ls -q | wc -l | tr -d ' ')"
 run 0 'a copy at 012 passes' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz" PERCY_REPORT_DIR="$tmp/r-012" PERCY_EXPECT_HEAD="$(git rev-parse HEAD)"
 check 'no containers left after the run' "[[ $(leftovers) == 0 ]]"
 check 'no volumes left after the run (restored data)' "[[ $(docker volume ls -q | wc -l | tr -d ' ') == $volumes_before ]]"
-check 'report and run record are private (600)' "[[ \$(stat -c %a '$tmp/r-012/d1-reconcile-report.json') == 600 && \$(stat -c %a '$tmp/r-012/run.json') == 600 ]]"
+check 'report, run record and log are private (600, directory 700)' "[[ \$(mode '$tmp/r-012/d1-reconcile-report.json') == 600 && \$(mode '$tmp/r-012/run.json') == 600 && \$(mode '$tmp/r-012/reconcile.log') == 600 && \$(mode '$tmp/r-012') == 700 ]]"
+check 'the terminal shows step lines, not the CLI output' "grep -q '^ok   apply 016 again' '$tmp/out.txt' && ! grep -q 'Sam' '$tmp/out.txt'"
+run 2 'a report directory that is not empty is refused' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz" PERCY_REPORT_DIR="$tmp/r-012"
 check 'report and run record are what the run claims' "python3 - '$tmp/r-012' '$(git rev-parse HEAD)' <<'PY'
 import json, os, sys
 d, head = sys.argv[1:]

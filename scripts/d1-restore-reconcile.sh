@@ -18,7 +18,11 @@
 #
 # Exit: 0 every step unchanged; 1 the reconcile found a change or refused the
 # copy (see the report); 2 a precondition failed, nothing restored; 3 the
-# archive, Docker or the restore failed.
+# archive, Docker, the restore or the CLI itself failed (no valid report).
+#
+# The report directory must be new or empty. The report, the run record and
+# the CLI's log can quote values from the data (PostgreSQL error text): keep
+# them private. The terminal shows only step names, counts and exit codes.
 set -euo pipefail
 umask 077
 
@@ -32,6 +36,11 @@ now() { python3 -c 'import datetime;print(datetime.datetime.now(datetime.timezon
 
 for cmd in docker git gzip tar python3 openssl; do command -v "$cmd" >/dev/null || refuse "missing $cmd"; done
 [[ "${PERCY_RESTORE_DRILL_ACK:-}" == 'isolated-docker-only' ]] || refuse 'set PERCY_RESTORE_DRILL_ACK=isolated-docker-only after confirming isolation'
+# The Docker daemon must be this machine's: a remote context would receive the
+# decompressed backup (code review of e108a65).
+if [[ -n "${DOCKER_HOST:-}" && "$DOCKER_HOST" != unix://* ]]; then refuse "DOCKER_HOST is $DOCKER_HOST; use the local Docker daemon"; fi
+docker_host="$(docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null || true)"
+[[ "$docker_host" == unix://* ]] || refuse "the Docker context is not local (${docker_host:-unknown}); use the local daemon"
 [[ -z "${DATABASE_URL:-}" ]] || refuse 'DATABASE_URL is set in this shell; unset it (it is never passed on, but its presence suggests the wrong shell)'
 
 repo="$(git rev-parse --show-toplevel 2>/dev/null)" || refuse 'run this from inside the positive_percy checkout'
@@ -48,12 +57,14 @@ if [[ -n "$out" ]]; then
   # Checked before anything is created, so a refused run leaves nothing.
   out="$(python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$out")"
   case "$out/" in "$repo_real/"*) refuse "the report directory $out is inside the repository; family data must not be committable";; esac
+  if [[ -d "$out" && -n "$(ls -A "$out")" ]]; then refuse "the report directory $out is not empty; an old report could be mistaken for this run's"; fi
   mkdir -p "$out"
 else
   out="$(mktemp -d "${TMPDIR:-/tmp}/percy-d1-report-XXXXXX")"
   out="$(cd "$out" && pwd -P)"
   case "$out/" in "$repo_real/"*) refuse "TMPDIR is inside the repository; set PERCY_REPORT_DIR";; esac
 fi
+chmod 700 "$out"
 
 if [[ -n "${PERCY_BACKUP_FILE:-}" ]]; then
   [[ -f "$PERCY_BACKUP_FILE" ]] || refuse "no file at PERCY_BACKUP_FILE"
@@ -70,14 +81,29 @@ work="$(mktemp -d)"
 pg="percy-d1-pg-$$-$RANDOM"
 runner="percy-d1-cli-$$-$RANDOM"
 cleanup() {
+  trap '' INT TERM HUP # a second Ctrl-C must not interrupt the removal
   # -v: the postgres image declares a data volume; without it the anonymous
   # volume, holding the restored family data, would outlive the run.
   docker rm -f -v "$pg" "$runner" >/dev/null 2>&1 || true
   rm -rf -- "$work"
+  if [[ -n "$(docker ps -aq --filter "name=^$pg\$" 2>/dev/null)" || -e "$work" ]]; then
+    echo "WARNING: restored family data may remain. Remove container $pg (docker rm -f -v $pg) and $work by hand." >&2
+  fi
 }
 trap cleanup EXIT
-trap 'exit 130' INT TERM
+trap 'exit 130' INT TERM HUP
 started="$(now)"
+
+# Before any family data is on disk: the images, this commit's code, and a
+# check that Docker can see this machine's temporary folder (Colima and
+# Rancher Desktop share only $HOME by default).
+docker pull -q "$PG_IMAGE" >/dev/null && docker pull -q "$NODE_IMAGE" >/dev/null || broken 'could not pull the pinned images'
+mkdir "$work/app"
+git archive HEAD | tar -x -C "$work/app"
+mkdir "$work/app/node_modules"
+docker run --rm --network none --user "$(id -u):$(id -g)" -v "$work/app:/app:ro" -v "$modules:/app/node_modules:ro" "$NODE_IMAGE" \
+  test -r /app/scripts/d1-reconcile.mjs -a -r /app/node_modules/pg/package.json >/dev/null 2>&1 \
+  || broken "Docker cannot read $work (share this folder with Docker, or set TMPDIR under \$HOME); rootless Docker is not supported"
 
 echo 'Reading the archive...'
 if [[ -n "${PERCY_BACKUP_FILE:-}" ]]; then
@@ -91,12 +117,8 @@ sha="$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb"
 rm -f -- "$work/backup.tar.gz"
 echo "Archive SHA-256: $sha"
 
-# The code that runs is exactly HEAD (nothing ignored, no .env), plus the
-# installed dependencies, both read-only.
-mkdir "$work/app"
-git archive HEAD | tar -x -C "$work/app"
-mkdir "$work/app/node_modules"
-
+# The code that runs (extracted above) is exactly HEAD (nothing ignored, no
+# .env), plus the installed dependencies, both read-only.
 docker run -d --network none --name "$pg" -e POSTGRES_HOST_AUTH_METHOD=trust "$PG_IMAGE" >/dev/null || broken 'could not start PostgreSQL 17'
 # TCP, not the socket: the image's entrypoint first runs a socket-only
 # temporary server, then restarts (design review of §18).
@@ -135,7 +157,7 @@ docker inspect "$pg" > "$work/pg.json"
 docker inspect "$runner" > "$work/runner.json"
 echo 'Running the D1 reconciliation...'
 set +e
-docker start -a "$runner"
+docker start -a "$runner" > "$out/reconcile.log" 2>&1
 code=$?
 set -e
 finished="$(now)"
@@ -168,9 +190,27 @@ json.dump(run, open(dest, 'w'), indent=2)
 open(dest, 'a').write('\n')
 PY
 chmod 600 "$out"/* 2>/dev/null || true
-echo "Report: $out/d1-reconcile-report.json and $out/run.json (private; do not upload family data)"
-case "$code" in
-  0) exit 0 ;;
-  1) exit 1 ;;
-  *) broken "the reconcile CLI exited $code" ;;
+# Only names, counts and the outcome on the terminal. Exit 1 must come with a
+# report showing a refusal or a change; a crash (no report, or neither) is 3.
+verdict="$(python3 - "$out/d1-reconcile-report.json" "$code" <<'PY'
+import json, os, sys
+path, code = sys.argv[1], int(sys.argv[2])
+if not os.path.exists(path):
+    print('crash'); sys.exit()
+rep = json.load(open(path))
+for st in rep.get('steps', []):
+    print(('FAIL' if st['changed'] else 'ok  ') + ' ' + st['name'] + (f" ({len(st['changed'])} changes)" if st['changed'] else ''), file=sys.stderr)
+print(f"families {rep.get('families')}, children {rep.get('children')}", file=sys.stderr)
+if 'error' in rep: print('The reconcile refused or stopped; the reason is in the private report and log.', file=sys.stderr)
+changed = any(st['changed'] for st in rep.get('steps', []))
+if code == 0 and not changed and 'error' not in rep: print('pass')
+elif code == 1 and (changed or 'error' in rep): print('fail')
+else: print('crash')
+PY
+)"
+echo "Report: $out (d1-reconcile-report.json, run.json, reconcile.log; private, may quote family data)"
+case "$verdict" in
+  pass) exit 0 ;;
+  fail) exit 1 ;;
+  *) broken "the reconcile CLI exited $code without a valid report; see $out/reconcile.log" ;;
 esac
