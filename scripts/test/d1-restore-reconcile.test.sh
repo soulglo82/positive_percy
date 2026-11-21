@@ -17,7 +17,7 @@ check() { if eval "$2"; then echo "ok   $1"; passed=$((passed + 1)); else echo "
 
 # A synthetic copy at migration N, dumped as production's backups are (pg_dump -Ft, gzipped).
 make_archive() {
-  local n="$1" dest="$2"
+  local n="$1" dest="$2" extra="${3:-}"
   mkdir -p "$tmp/app-$n/node_modules"
   git archive HEAD | tar -x -C "$tmp/app-$n"
   fx="percy-fixture-$$-$RANDOM"
@@ -25,6 +25,7 @@ make_archive() {
   for _ in $(seq 1 60); do docker exec "$fx" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1 && break; sleep 1; done
   docker run --rm --network "container:$fx" --user "$(id -u):$(id -g)" -v "$tmp/app-$n:/app" -v "$modules:/app/node_modules:ro" \
     -e DATABASE_URL=postgres://postgres@localhost:5432/postgres "$NODE_IMAGE" node /app/scripts/test/d1-fixture.mjs "$n" >/dev/null
+  [[ -z "$extra" ]] || docker exec "$fx" psql -q -h 127.0.0.1 -U postgres -d postgres -c "$extra" >/dev/null
   docker exec "$fx" pg_dump -Ft -h 127.0.0.1 -U postgres postgres | gzip > "$dest"
   docker rm -f -v "$fx" >/dev/null
   fx=''
@@ -42,35 +43,87 @@ mode() { python3 -c 'import os,sys;print(oct(os.stat(sys.argv[1]).st_mode & 0o77
 # Containers this test's runs left (others' runs are not counted).
 before_ids="$(docker ps -aq --filter name=percy-d1- | sort)"
 leftovers() { comm -13 <(echo "$before_ids") <(docker ps -aq --filter name=percy-d1- | sort) | grep -c . || true; }
+volumes() { docker volume ls -q | wc -l | tr -d ' '; }
+
+# A stand-in docker that records every call and does nothing else. Refusals run
+# against it, so a test proves the refusal came before ANY Docker work (no
+# image pull, container, copy or restore), not merely that it ended in exit 2.
+mkdir -p "$tmp/shim"
+cat > "$tmp/shim/docker" <<'SHIM'
+#!/usr/bin/env bash
+echo "$*" >> "$SHIM_LOG"
+if [[ "${1:-} ${2:-}" == 'context inspect' ]]; then echo "${SHIM_CONTEXT_HOST:-unix:///var/run/docker.sock}"; exit 0; fi
+exit 97
+SHIM
+chmod +x "$tmp/shim/docker"
+refused_before_work() { # refused_before_work <label> [VAR=value ...]
+  local label="$1"; shift
+  : > "$tmp/shim.log"
+  set +e
+  env -u DATABASE_URL PERCY_RESTORE_DRILL_ACK=isolated-docker-only PATH="$tmp/shim:$PATH" SHIM_LOG="$tmp/shim.log" "$@" bash "$script" > "$tmp/out.txt" 2>&1
+  local got=$?
+  set -e
+  check "$label: refused (exit 2)" "[[ $got == 2 ]] || { cat '$tmp/out.txt'; false; }"
+  check "$label: before any Docker work or archive read" "! grep -qv '^context inspect' '$tmp/shim.log' && ! grep -q 'Reading the archive' '$tmp/out.txt'"
+}
 
 echo 'Building synthetic archives at 012 and 016...'
 make_archive 12 "$tmp/at-012.tar.gz"
 make_archive 16 "$tmp/at-016.tar.gz"
+make_archive 12 "$tmp/with-marker.tar.gz" 'CREATE TABLE percy_restore_marker (token text)'
 printf 'not gzip' > "$tmp/not-gzip.tar.gz"
 echo 'hello' | gzip > "$tmp/not-pg.tar.gz"
 
-# Preconditions: refused, nothing restored.
-set +e; env -u DATABASE_URL -u PERCY_RESTORE_DRILL_ACK PERCY_BACKUP_FILE="$tmp/at-012.tar.gz" bash "$script" >/dev/null 2>&1; code=$?; set -e
-check 'no acknowledgement is refused (exit 2)' "[[ $code == 2 ]]"
-run 2 'DATABASE_URL in the shell is refused' DATABASE_URL=postgres://x PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
-run 2 'a report directory inside the repository is refused' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz" PERCY_REPORT_DIR="$repo/d1-report-test"
+# Preconditions: each refused before any Docker work or archive read.
+A="$tmp/at-012.tar.gz"
+refused_before_work 'no acknowledgement' PERCY_RESTORE_DRILL_ACK= PERCY_BACKUP_FILE="$A"
+refused_before_work 'DATABASE_URL in the shell' DATABASE_URL=postgres://x PERCY_BACKUP_FILE="$A"
+# The two locality checks, each on its own: DOCKER_HOST remote while the
+# context reports local, and the context remote with no DOCKER_HOST.
+refused_before_work 'a remote DOCKER_HOST (context local)' DOCKER_HOST=tcp://192.0.2.1:2375 PERCY_BACKUP_FILE="$A"
+refused_before_work 'a remote Docker context (no DOCKER_HOST)' SHIM_CONTEXT_HOST=tcp://192.0.2.1:2375 PERCY_BACKUP_FILE="$A"
+refused_before_work 'an ssh Docker context' SHIM_CONTEXT_HOST=ssh://someone@example.invalid PERCY_BACKUP_FILE="$A"
+refused_before_work 'an unknown Docker context' SHIM_CONTEXT_HOST= PERCY_BACKUP_FILE="$A"
+refused_before_work 'a report directory inside the repository' PERCY_BACKUP_FILE="$A" PERCY_REPORT_DIR="$repo/d1-report-test"
 check '... and nothing was created in the repository' "[[ ! -e '$repo/d1-report-test' ]]"
-run 2 'a head other than PERCY_EXPECT_HEAD is refused' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz" PERCY_EXPECT_HEAD=0000000000000000000000000000000000000000
+refused_before_work 'a head other than PERCY_EXPECT_HEAD' PERCY_BACKUP_FILE="$A" PERCY_EXPECT_HEAD=0000000000000000000000000000000000000000
+mkdir -p "$tmp/not-empty" && echo old > "$tmp/not-empty/d1-reconcile-report.json"
+refused_before_work 'a report directory that is not empty' PERCY_BACKUP_FILE="$A" PERCY_REPORT_DIR="$tmp/not-empty"
 touch "$repo/.d1-dirty-test"
-run 2 'a dirty tree is refused' PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
+refused_before_work 'a dirty tree' PERCY_BACKUP_FILE="$A"
 rm -f "$repo/.d1-dirty-test"
 check 'the tree is clean again' "[[ -z \$(git status --porcelain) ]]"
-run 2 'a remote Docker host is refused' DOCKER_HOST=tcp://192.0.2.1:2375 PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
-# A remote context with no DOCKER_HOST: the second, independent check.
+# The same remote-context refusal with the real Docker CLI.
 docker context rm -f percy-d1-test-remote >/dev/null 2>&1 || true
-docker context create percy-d1-test-remote --docker host=tcp://192.0.2.1:2375 >/dev/null
-run 2 'a remote Docker context is refused' DOCKER_CONTEXT=percy-d1-test-remote PERCY_BACKUP_FILE="$tmp/at-012.tar.gz"
-docker context rm -f percy-d1-test-remote >/dev/null
+docker context create percy-d1-test-remote --docker host=tcp://192.0.2.1:2375 >/dev/null 2>&1
+run 2 'a remote Docker context is refused by the real CLI' DOCKER_CONTEXT=percy-d1-test-remote PERCY_BACKUP_FILE="$A"
+docker context rm -f percy-d1-test-remote >/dev/null 2>&1
 
 # Broken archives: exit 3, nothing left behind.
 run 3 'an archive that is not gzip fails' PERCY_BACKUP_FILE="$tmp/not-gzip.tar.gz" PERCY_REPORT_DIR="$tmp/r-bad1"
 run 3 'a gzip that is not a pg_dump archive fails' PERCY_BACKUP_FILE="$tmp/not-pg.tar.gz" PERCY_REPORT_DIR="$tmp/r-bad2"
 check 'no containers left after failures' "[[ $(leftovers) == 0 ]]"
+
+# Cleanup on failure AFTER the backup is restored (the copy already has a
+# marker table, so writing the marker fails), and on Ctrl-C mid-run. Each
+# run gets its own TMPDIR, which must be empty afterwards (no decompressed
+# backup), with no container or volume left.
+v0="$(volumes)"
+mkdir -p "$tmp/t-after"
+run 3 'a failure after the restore' TMPDIR="$tmp/t-after" PERCY_BACKUP_FILE="$tmp/with-marker.tar.gz" PERCY_REPORT_DIR="$tmp/r-after"
+check '... got past the restore first' "grep -q 'Restoring into' '$tmp/out.txt'"
+check '... left no container, volume or temporary file' "[[ $(leftovers) == 0 && $(volumes) == $v0 && -z \$(ls -A '$tmp/t-after') ]]"
+mkdir -p "$tmp/t-int"
+# Background jobs start with SIGINT ignored, and bash cannot trap a signal
+# ignored on entry, so restore its default first (as a terminal would have it).
+env -u DATABASE_URL PERCY_RESTORE_DRILL_ACK=isolated-docker-only TMPDIR="$tmp/t-int" PERCY_BACKUP_FILE="$A" PERCY_REPORT_DIR="$tmp/r-int" \
+  python3 -c 'import os,signal,sys;signal.signal(signal.SIGINT,signal.SIG_DFL);os.execvp("bash",["bash",sys.argv[1]])' "$script" > "$tmp/int.txt" 2>&1 &
+pid=$!
+for _ in $(seq 1 300); do grep -q 'Restoring into' "$tmp/int.txt" && break; sleep 0.2; done
+kill -INT "$pid"
+set +e; wait "$pid"; code=$?; set -e
+check 'Ctrl-C after the restore stops the run (exit 130)' "[[ $code == 130 ]] || { cat '$tmp/int.txt'; false; }"
+check '... and left no container, volume or temporary file' "[[ $(leftovers) == 0 && $(volumes) == $v0 && -z \$(ls -A '$tmp/t-int') ]]"
 
 # A copy at 012 (production): the full proof.
 volumes_before="$(docker volume ls -q | wc -l | tr -d ' ')"
