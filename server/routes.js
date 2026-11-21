@@ -1301,19 +1301,24 @@ async function savingsMove(req, res, kind) {
     const prior = await priorRequest(client, req.familyCode, requestId, endpoint, args);
     if (prior.conflict) return fail(409, 'Invalid request');
     if (prior.replay) {
+      // On this request's own connection (as undoReplay): waiting for a second
+      // pool connection here could starve the pool (code review of 9e674c9).
       await client.query('ROLLBACK');
-      return res.json({ ...prior.replay, child: await freshChild(pool, req.familyCode, childId), duplicate: true });
+      return res.json({ ...prior.replay, child: await freshChild(client, req.familyCode, childId), duplicate: true });
     }
     const reward = await lockGoal(client, req.familyCode, rewardId);
     if (!reward || !spendableFrom(new Map([[reward.id, reward]]), reward.id, childId)) return fail(404, 'Reward not found');
     if (!reward.is_bigger_goal) return fail(409, 'Invalid request'); // I4
     const bal = await balanceFor(client, req.familyCode, child);
     if (bal.stack.some((i) => i.rewardId === reward.id)) return fail(409, STALE_REQUESTS); // S1
+    const saved = bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0;
     if (kind === 'save') {
       if ((child.total_points ?? 0) - bal.committed < points) return fail(400, 'Not enough points'); // I2/I3
-    } else {
-      const saved = bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0;
-      if (points > saved) return fail(409, 'Invalid request'); // I1
+      // Never more than the goal needs (code review of 9e674c9): an excess can
+      // only come from a cost lowered later (E12).
+      if (saved + points > reward.cost_points) return fail(400, 'More than this goal needs');
+    } else if (points > saved) {
+      return fail(400, 'Not enough points saved'); // I1
     }
     const { rows: [event] } = await client.query(
       `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, request_id)
@@ -1357,17 +1362,19 @@ router.post('/api/savings-events/:id/undo', authMiddleware, async (req, res) => 
     const prior = await priorRequest(client, req.familyCode, requestId, endpoint, args);
     if (prior.conflict) return fail(409, 'Invalid request');
     if (prior.replay) {
+      // On this request's own connection (as undoReplay): waiting for a second
+      // pool connection here could starve the pool (code review of 9e674c9).
       await client.query('ROLLBACK');
-      return res.json({ ...prior.replay, child: await freshChild(pool, req.familyCode, childId), duplicate: true });
+      return res.json({ ...prior.replay, child: await freshChild(client, req.familyCode, childId), duplicate: true });
     }
     const { rows: [ev] } = await client.query(
       `SELECT * FROM savings_events WHERE id = $1 AND family_code = $2 AND kind IN ('save', 'release')
          AND created_at > now() - ${UNDO_WINDOW}`, [req.params.id, req.familyCode]);
     if (!ev) return fail(404, 'This can no longer be undone.');
-    const { rowCount: done } = await client.query('SELECT 1 FROM savings_events WHERE undoes = $1', [ev.id]);
+    const { rowCount: done } = await client.query('SELECT 1 FROM savings_events WHERE undoes = $1 AND family_code = $2', [ev.id, req.familyCode]);
     if (done > 0) return fail(409, 'Already undone.');
     const reward = await lockGoal(client, req.familyCode, ev.reward_id);
-    if (!isCurrentGoal(reward, childId, ev.generation)) return fail(409, 'Invalid request'); // O6
+    if (!isCurrentGoal(reward, childId, ev.generation)) return fail(409, 'This can no longer be undone.'); // O6
     const bal = await balanceFor(client, req.familyCode, child);
     if (ev.kind === 'save') {
       const saved = bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0;
@@ -1375,6 +1382,8 @@ router.post('/api/savings-events/:id/undo', authMiddleware, async (req, res) => 
     } else {
       if (bal.stack.some((i) => i.rewardId === reward.id)) return fail(409, STALE_REQUESTS);
       if ((child.total_points ?? 0) - bal.committed < -ev.delta) return fail(409, SPENT_ALREADY); // I2
+      const saved = bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0;
+      if (saved - ev.delta > reward.cost_points) return fail(409, 'More than this goal needs');
     }
     const { rows: [event] } = await client.query(
       `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, request_id, undoes)
@@ -1417,8 +1426,10 @@ router.post('/api/children/:id/savings/redeem', authMiddleware, async (req, res)
     const prior = await priorRequest(client, req.familyCode, requestId, endpoint, args);
     if (prior.conflict) return fail(409, 'Invalid request');
     if (prior.replay) {
+      // On this request's own connection (as undoReplay): waiting for a second
+      // pool connection here could starve the pool (code review of 9e674c9).
       await client.query('ROLLBACK');
-      return res.json({ ...prior.replay, child: await freshChild(pool, req.familyCode, childId), duplicate: true });
+      return res.json({ ...prior.replay, child: await freshChild(client, req.familyCode, childId), duplicate: true });
     }
     const reward = await lockGoal(client, req.familyCode, rewardId);
     if (!reward || !spendableFrom(new Map([[reward.id, reward]]), reward.id, childId)) return fail(404, 'Reward not found');
@@ -1445,7 +1456,7 @@ router.post('/api/children/:id/savings/redeem', authMiddleware, async (req, res)
         [req.familyCode, childId, reward.id, reward.title, goalGeneration(reward, childId), -fromSaved, redemption.id]);
     }
     await rememberRequest(client, req.familyCode, requestId, endpoint, args, { redemption, from_saved: fromSaved });
-    const { rows: [after] } = await client.query('SELECT * FROM children WHERE id = $1', [childId]);
+    const { rows: [after] } = await client.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, req.familyCode]);
     const balanced = await balancedChild(client, req.familyCode, after);
     await client.query('COMMIT');
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
@@ -2275,6 +2286,16 @@ router.get('/api/activity-feed', authMiddleware, async (req, res) => {
           COALESCE(reversed_at, created_date) as created_date, true as undone, NULL::uuid as goal_completion_id
          FROM redemptions
          WHERE family_code = $1 AND status = 'Reversed')
+        UNION ALL
+        -- D1 (§19.3): a parent's savings moves. Not balance changes (total
+        -- points don't move), so they are their own types and only in All.
+        -- Their undo rows are not listed; the move is marked undone instead.
+        -- Spends and refunds of a goal show through the redemption rows.
+        (SELECT v.id, v.child_id, c.name as child_name, abs(v.delta) as points, v.reward_title as label, NULL::text as note,
+          CASE WHEN v.kind = 'save' THEN 'saving' ELSE 'moved_back' END as type, v.created_at as created_date,
+          EXISTS (SELECT 1 FROM savings_events u WHERE u.undoes = v.id) as undone, NULL::uuid as goal_completion_id
+         FROM savings_events v JOIN children c ON c.id = v.child_id AND c.family_code = $1
+         WHERE v.family_code = $1 AND v.kind IN ('save', 'release'))
       ) f
       WHERE ${where} AND ($4::uuid IS NULL OR f.child_id = $4::uuid)
       ORDER BY f.created_date DESC, f.type, f.id
@@ -2432,15 +2453,17 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
         return res.status(404).json({ error: 'Not found' });
       }
       // D1 §19.7 N3: a goal is created unmarked and marked in the same
-      // transaction, so its first generation is 1:0. A re-inserted id (which
-      // 016's insert trigger starts at 0:0) can then never match it.
+      // transaction, so its first generation is 1:0, never the 0:0 that 016's
+      // insert trigger gives any row. This narrows, but does not close, the
+      // re-inserted-id case (§19.8): the app cannot write ids, and the restore
+      // runbook never restores rewards without savings_events.
       const asGoal = table === 'rewards' && data.is_bigger_goal === true;
       ({ rows } = await client.query(
         `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
         asGoal ? values.map((v, i) => (keys[i] === 'is_bigger_goal' ? false : v)) : values
       ));
       if (asGoal) {
-        ({ rows } = await client.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1 RETURNING *', [rows[0].id]));
+        ({ rows } = await client.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1 AND family_code = $2 RETURNING *', [rows[0].id, req.familyCode]));
       }
       await client.query('COMMIT');
     } catch (err) {

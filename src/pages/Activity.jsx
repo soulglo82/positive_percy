@@ -297,6 +297,7 @@ export function rowIconKind(event) {
   if (event.type === 'earn') return event.goal_completion_id ? 'goal' : 'earn';
   if (event.type === 'spend') return 'spend';
   if (event.type === 'undo') return 'undo';
+  if (event.type === 'saving' || event.type === 'moved_back') return 'saving';
   return 'other';
 }
 function RowIcon({ event }) {
@@ -306,6 +307,7 @@ function RowIcon({ event }) {
     case 'earn': return <PercyIcon id="phosphor:hand-heart:duotone" className={cls} />;
     case 'spend': return <PercyIcon id="phosphor:gift:duotone" className={cls} />;
     case 'undo': return <PercyIcon id="phosphor:arrow-counter-clockwise:duotone" className={cls} />;
+    case 'saving': return <PercyIcon id="phosphor:piggy-bank:duotone" className={cls} />;
     default: return <PercyIcon id="phosphor:info:duotone" className={cls} />;
   }
 }
@@ -327,6 +329,10 @@ export function rowText(event, timeZone = undefined) {
   // No parent confirmation is recorded on a redemption (and before V1 a child
   // could redeem directly), so no row claims one (A2).
   if (event.type === 'spend') return { lead: 'redeemed', what: event.label, sub: `Reward redeemed · ${time}` };
+  // D1 savings moves (owner's proposed O4 wording): not balance changes.
+  const pts = `${event.points} ${event.points === 1 ? 'point' : 'points'}`;
+  if (event.type === 'saving') return { lead: `saved ${pts} towards`, what: event.label, sub: `Savings · ${time}` };
+  if (event.type === 'moved_back') return { lead: `moved ${pts} back from`, what: event.label, sub: `Savings · ${time}` };
   const lead = event.type === 'undo' ? 'undo:' : event.type === 'starting' ? 'started with'
     : event.type === 'correction' ? 'had a one-off' : event.points < 0 ? 'had an earlier adjustment for' : 'adjusted';
   return { lead, what: event.label, sub: time };
@@ -358,9 +364,12 @@ function NarrativeItem({ event, timeZone, canCorrect, onCorrect }) {
         </p>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
+        {/* A savings move changes no balance, so it has no amount column. */}
+        {rowIconKind(event) !== 'saving' && (
         <span className={`text-sm font-semibold tabular-nums ${colorClass} ${undone ? 'line-through' : ''}`}>
           {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}
         </span>
+        )}
         {canCorrect && (
           <button type="button" onClick={onCorrect} className="min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Correct ${event.child_name} award of ${event.points} points`}>
             Correct

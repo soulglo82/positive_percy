@@ -1,7 +1,7 @@
 // V1-D reward catalogue (approved design 9de1df2, screen "rewards";
-// docs/engineering/V1-D-DESIGN.md §4.1). "Bigger rewards" is not built: it
-// needs explicit goal designation, which arrives with the savings design
-// (owner decisions D1/D7).
+// docs/engineering/V1-D-DESIGN.md §4.1). "Bigger rewards" lists the rewards a
+// parent marked as bigger goals (D1/D7, explicit designation; savings design
+// §19.3), ahead of the rest of the catalogue.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -59,6 +59,8 @@ export default function Rewards() {
   const submit = (data) => save(editing?.id, data);
 
   const shown = sortRewardsForParent(rewards).filter(FILTERS.find((f) => f.key === filter).keep);
+  const bigger = shown.filter((r) => r.is_bigger_goal);
+  const others = shown.filter((r) => !r.is_bigger_goal);
 
   return (
     <div className="min-h-screen">
@@ -114,9 +116,21 @@ export default function Rewards() {
               {shown.length === 0 ? (
                 <p className="text-muted-foreground">No rewards match this filter.</p>
               ) : (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {shown.map((reward) => <RewardTile key={reward.id} reward={reward} onEdit={openEdit} />)}
-                </div>
+                <>
+                  {bigger.length > 0 && (
+                    <section aria-labelledby="bigger-rewards" className="space-y-3">
+                      <h3 id="bigger-rewards" className="font-display font-bold text-foreground">Bigger rewards</h3>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                        {bigger.map((reward) => <RewardTile key={reward.id} reward={reward} onEdit={openEdit} />)}
+                      </div>
+                    </section>
+                  )}
+                  {others.length > 0 && (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                      {others.map((reward) => <RewardTile key={reward.id} reward={reward} onEdit={openEdit} />)}
+                    </div>
+                  )}
+                </>
               )}
               <div className="flex justify-end">
                 <Button asChild variant="outline">

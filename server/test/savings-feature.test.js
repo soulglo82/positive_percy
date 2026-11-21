@@ -84,7 +84,7 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     const kid = await newKid(F, 'Cal', 60);
     const bike = await newGoal(F, 'Cal bike', 300);
     expect((await save(F, kid.id, bike.id, 40)).status).toBe(200);
-    expect((await release(F, kid.id, bike.id, 41)).status).toBe(409);
+    expect((await release(F, kid.id, bike.id, 41)).status).toBe(400);
     const r = await release(F, kid.id, bike.id, 40);
     expect(r.status).toBe(200);
     expect(r.json.event).toMatchObject({ kind: 'release', delta: -40 });
@@ -179,7 +179,19 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     expect((await undo(F, s.id)).status).toBe(409);
     expect((await agree(F, kid.id)).saved_total).toBe(0);
     // And a release can't take points from an old generation either.
-    expect((await release(F, kid.id, bike.id, 1)).status).toBe(409);
+    expect((await release(F, kid.id, bike.id, 1)).status).toBe(400);
+  });
+
+  it('a goal never holds more than it needs: saves and undos stop at its cost', async () => {
+    const kid = await newKid(F, 'Zed', 500);
+    const bike = await newGoal(F, 'Zed bike', 100);
+    expect((await save(F, kid.id, bike.id, 101)).status).toBe(400);
+    expect((await save(F, kid.id, bike.id, 100)).status).toBe(200); // exactly the cost
+    expect((await save(F, kid.id, bike.id, 1)).status).toBe(400);
+    const r = (await release(F, kid.id, bike.id, 40)).json.event;
+    expect((await save(F, kid.id, bike.id, 40)).status).toBe(200); // back to 100
+    expect((await undo(F, r.id)).status).toBe(409); // would make 140 of 100
+    expect(await agree(F, kid.id)).toMatchObject({ saved_total: 100 });
   });
 
   it('F5b (O6): a move back from an old generation cannot be undone either', async () => {
@@ -307,13 +319,14 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     let seed = 20261121;
     const rand = (n) => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
     const kid = await newKid(F, 'Rae', 50);
+    const sib = await newKid(F, 'Ray', 20);
     const goals = [await newGoal(F, 'Rae bike', 120), await newGoal(F, 'Rae tent', 80)];
     const treat = (await call(F, 'POST', '/api/rewards', { title: 'Rae treat', cost_points: 15 })).json;
     const events = [];
     const redemptions = [];
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 90; i++) {
       const g = goals[rand(2)];
-      const op = rand(9);
+      const op = rand(13);
       let r;
       if (op === 0) r = await award(F, kid.id, 1 + rand(40));
       else if (op === 1 || op === 2) r = await save(F, kid.id, g.id, 1 + rand(40));
@@ -322,11 +335,23 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
       else if (op === 5) r = await redeemGoal(F, kid.id, g.id);
       else if (op === 6 && redemptions.length) r = await call(F, 'POST', `/api/redemptions/${redemptions[rand(redemptions.length)]}/undo`, { request_id: rid() });
       else if (op === 7) r = await call(F, 'PUT', `/api/rewards/${g.id}`, { is_bigger_goal: rand(3) > 0 });
+      else if (op === 8) r = await call(F, 'PUT', `/api/rewards/${g.id}`, { assigned_child_ids: [[], [kid.id], [sib.id], [kid.id, sib.id]][rand(4)] });
+      // Goal costs only: a cost raised on a REQUESTED reward is the known
+      // read-time clamp (B4), not a write this test is about.
+      else if (op === 9) r = await call(F, 'PUT', `/api/rewards/${g.id}`, { cost_points: 40 + rand(120) });
+      else if (op === 10) r = await call(F, 'POST', `/api/children/${kid.id}/stack/add`, { reward_id: treat.id });
+      else if (op === 11) {
+        const items = (await child(F, kid.id)).reward_stack_priced;
+        r = items.length
+          ? await call(F, 'POST', `/api/children/${kid.id}/stack/confirm`, { request_id: rid(), expected: items.map((x) => ({ reward_id: x.rewardId, stack_index: x.stackIndex, cost: x.cost })) })
+          : await award(F, kid.id, 5);
+      }
       else r = await call(F, 'POST', `/api/children/${kid.id}/redeem`, { reward_id: treat.id, request_id: rid() });
       expect(r.status, `step ${i} op ${op}: ${r.text}`).toBeLessThan(500);
       if (r.status === 200 && r.json?.event?.kind && ['save', 'release'].includes(r.json.event.kind)) events.push(r.json.event.id);
       if (r.status === 200 && r.json?.redemption?.id && !r.json.duplicate) redemptions.push(r.json.redemption.id);
       await agree(F, kid.id);
+      await agree(F, sib.id);
     }
   }, 120000);
 
@@ -393,10 +418,31 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     expect((await agree(F, kid.id)).saved_total).toBe(10);
   });
 
-  it('N3: a goal created with the switch on starts after generation 0, so a re-inserted id cannot revive savings', async () => {
+  it('N3: a goal created with the switch on starts after generation 0 (the 0:0 every inserted row gets)', async () => {
     const bike = await newGoal(F, 'Wren bike', 100);
     const { rows: [r] } = await ctx.pool.query('SELECT goal_epoch FROM rewards WHERE id = $1', [bike.id]);
     expect(r.goal_epoch).toBeGreaterThan(0);
+  });
+
+  it('Activity: savings moves are listed under All only, never as Earned or Spent; an undone move is marked', async () => {
+    const kid = await newKid(F, 'Abe', 60);
+    const bike = await newGoal(F, 'Abe bike', 100);
+    const s = (await save(F, kid.id, bike.id, 20)).json.event;
+    const m = (await release(F, kid.id, bike.id, 5)).json.event;
+    await undo(F, m.id);
+    const feed = async (filter) => (await call(F, 'GET', `/api/activity-feed?child_id=${kid.id}&filter=${filter}`)).json;
+    const all = await feed('all');
+    expect(all.find((e) => e.id === s.id)).toMatchObject({ type: 'saving', points: 20, label: 'Abe bike', undone: false });
+    expect(all.find((e) => e.id === m.id)).toMatchObject({ type: 'moved_back', points: 5, undone: true });
+    expect(all.filter((e) => e.type === 'saving' || e.type === 'moved_back')).toHaveLength(2); // the undo row itself is not listed
+    for (const f of ['earned', 'spent', 'goals']) {
+      expect((await feed(f)).some((e) => e.type === 'saving' || e.type === 'moved_back'), f).toBe(false);
+    }
+    // The balance rows still add up to the total: savings rows are not counted.
+    const balanceRows = all.filter((e) => !['saving', 'moved_back'].includes(e.type));
+    const sum = balanceRows.reduce((n, e) => n + (e.type === 'spend' ? -Math.abs(e.points) : e.points), 0);
+    expect(sum).toBe((await child(F, kid.id)).total_points);
+    expect((await call(G, 'GET', `/api/activity-feed?child_id=${kid.id}`)).json).toEqual([]);
   });
 
   it('every child read costs one savings query for the whole family', async () => {

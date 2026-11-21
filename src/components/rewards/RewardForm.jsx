@@ -37,6 +37,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   const [costPoints, setCostPoints] = useState(50);
   const [description, setDescription] = useState('');
   const [visible, setVisible] = useState(true);
+  const [biggerGoal, setBiggerGoal] = useState(false);
   const [assigned, setAssigned] = useState([]);
   const [iconKey, setIconKey] = useState(null);
   const [iconTouched, setIconTouched] = useState(false);
@@ -55,6 +56,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
     setCostPoints(src.cost_points ?? 50);
     setDescription(src.description || '');
     setVisible(reward ? reward.visible_to_child !== false : true);
+    setBiggerGoal(!!reward?.is_bigger_goal);
     setAssigned(reward?.assigned_child_ids || []);
     setIconKey(reward?.icon_key ?? null);
     setIconTouched(false);
@@ -79,6 +81,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
         cost_points: costPoints,
         description: description.trim(),
         visible_to_child: visible,
+        is_bigger_goal: biggerGoal,
         assigned_child_ids: assigned,
         ...(editing ? {} : { emoji }),
         ...(iconTouched ? { icon_key: iconKey } : {}),
@@ -132,6 +135,17 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
               <label htmlFor="reward-visible" className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-1 hover:bg-accent">
                 <Checkbox id="reward-visible" checked={visible} onCheckedChange={(v) => setVisible(v === true)} />
                 <span className="text-sm font-medium text-foreground">Visible to children</span>
+              </label>
+              {/* D1 (D7): a parent marks a bigger goal. Wording O4, proposed by the
+                  owner; final approval at screen review. Un-marking ends the
+                  goal's savings for good (O6), so say so when it is on. */}
+              <label htmlFor="reward-bigger-goal" className="flex min-h-11 cursor-pointer items-start gap-3 rounded-md px-1 py-2 hover:bg-accent">
+                <Checkbox id="reward-bigger-goal" checked={biggerGoal} onCheckedChange={(v) => setBiggerGoal(v === true)}
+                  aria-describedby="reward-bigger-goal-help" className="mt-0.5" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-foreground">Bigger goal</span>
+                  <span id="reward-bigger-goal-help" className="block text-xs text-muted-foreground">Save points towards this reward over time</span>
+                </span>
               </label>
               {children.length > 0 && (
                 <div>

@@ -72,10 +72,14 @@ describe('Children page (§2)', () => {
     expect(screen.getByText("7 to reach this week's target")).toBeTruthy();
     expect(screen.getByText('7 weekly points to go')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'All rewards' })).toBeTruthy();
-    // No savings section until D1; the design-only note never ships.
-    expect(document.body.textContent).not.toContain('Saving for something bigger');
+    // D1 (savings §19.3): the savings section and the approved milestone
+    // subtitle; with no bigger goals there is nothing to Edit. The
+    // design-only note never ships.
+    expect(screen.getByRole('heading', { name: 'Saving for something bigger' })).toBeTruthy();
+    expect(screen.getByText('No bigger goals yet.', { exact: false })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Edit saving for something bigger/ })).toBeNull();
     expect(document.body.textContent).not.toContain('Multiple rewards can be shown');
-    expect(document.body.textContent).not.toContain('Weekly target and bigger goal');
+    expect(screen.getByText('Weekly target and bigger goal')).toBeTruthy();
   });
 
   it('goals of this child only, with today\'s completions counted', async () => {
