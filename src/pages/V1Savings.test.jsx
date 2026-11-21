@@ -238,13 +238,16 @@ describe('Home, Rewards, Spend and Activity', () => {
 });
 
 describe('code review of the screens', () => {
-  it('Major: un-marking a goal, or taking it from a child, warns and asks before saving', async () => {
+  it('Major: un-marking a goal, or taking it from a child, warns per child and asks before saving', async () => {
     const onSubmit = vi.fn(async () => true);
-    const kids = [{ id: 'c1', name: 'Lara' }, { id: 'c2', name: 'Omar' }];
+    const kids = [{ id: 'c1', name: 'Lara', goals: [goal('g1', 'Bike', 300, 120)] }, { id: 'c2', name: 'Omar', goals: [goal('g1', 'Bike', 300, 1)] }];
     mount(<RewardForm isOpen onClose={() => {}} onSubmit={onSubmit} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true })} />);
     expect(screen.queryByRole('status')).toBeNull();
     fireEvent.click(screen.getByRole('checkbox', { name: /Bigger goal/ }));
-    expect(screen.getByRole('status').textContent).toContain('Marking it again starts from 0.');
+    const status = screen.getByRole('status').textContent;
+    expect(status).toContain('Lara: 120 saved points will become available again.');
+    expect(status).toContain('Omar: 1 saved point will become available again.');
+    expect(status).toContain("Past savings won't be restored if you re-enable the goal.");
     fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
     const alert = await screen.findByRole('alertdialog');
     expect(onSubmit).not.toHaveBeenCalled();
@@ -256,12 +259,39 @@ describe('code review of the screens', () => {
     expect(onSubmit.mock.calls[0][0].is_bigger_goal).toBe(false);
   });
 
-  it('Major: assigning a goal to one child (from all) warns too; an unchanged goal does not', async () => {
-    const kids = [{ id: 'c1', name: 'Lara' }, { id: 'c2', name: 'Omar' }];
-    mount(<RewardForm isOpen onClose={() => {}} onSubmit={vi.fn(async () => true)} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true })} />);
+  it('Major: assigning a goal to one child (from all) warns for the one who loses it; nothing saved means no warning', async () => {
+    const kids = [{ id: 'c1', name: 'Lara', goals: [] }, { id: 'c2', name: 'Omar', goals: [goal('g1', 'Bike', 300, 40)] }];
+    const onSubmit = vi.fn(async () => true);
+    mount(<RewardForm isOpen onClose={() => {}} onSubmit={onSubmit} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true })} />);
     expect(screen.queryByRole('status')).toBeNull();
-    fireEvent.click(screen.getByRole('checkbox', { name: /Lara/ }));
-    expect(screen.getByRole('status')).toBeTruthy(); // Omar loses it
+    fireEvent.click(screen.getByRole('checkbox', { name: /Lara/ })); // Omar loses it
+    expect(screen.getByRole('status').textContent).toContain('Omar: 40 saved points');
+    expect(screen.getByRole('status').textContent).not.toContain('Lara');
+    fireEvent.click(screen.getByRole('checkbox', { name: /Lara/ })); // back to all
+    fireEvent.click(screen.getByRole('checkbox', { name: /Omar/ })); // Lara loses it, but has nothing saved
+    expect(screen.queryByRole('status')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled()); // no confirmation needed
+  });
+
+  it('"Fully saved!" instead of "0 to go", for the parent and in Child View; "Ready to redeem" in the dialog', async () => {
+    state.children = [{ ...lara, goals: [goal('g1', 'Bike', 300, 300)], available_points: 20, saved_total: 300 }];
+    mount(<ChildView />, '/childview?child=c1');
+    expect(await screen.findByText('Fully saved!')).toBeTruthy();
+    expect(screen.queryByText(/0 points to go/)).toBeNull();
+  });
+
+  it('Children: "Fully saved!" on the card and in the milestone; dialog shows Ready to redeem and the excess note', async () => {
+    state.children = [{ ...lara, goals: [{ ...goal('g1', 'Bike', 300, 340) }], available_points: 0, saved_total: 340 }];
+    mount(<Children />);
+    expect((await screen.findAllByText('Fully saved!')).length).toBeGreaterThan(0);
+    expect(screen.getByText('Bike: Fully saved!')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    const d = await screen.findByRole('dialog');
+    expect(within(d).getByText('340 of 300 points saved · Ready to redeem')).toBeTruthy();
+    fireEvent.click(within(d).getByRole('button', { name: 'Redeem Bike' }));
+    const confirm = await screen.findByRole('alertdialog');
+    expect(within(confirm).getByText('40 saved points are more than this goal needs. They stay saved for Bike, and you can move them back.')).toBeTruthy();
   });
 
   it('a goal already requested is not offered (S1); the server message is shown when it refuses', async () => {

@@ -182,7 +182,8 @@ export default function ChildView() {
             <CardContent className="p-4 sm:p-5 space-y-3">
               <h2 className="font-display font-bold text-lg text-primary">My next big adventure</h2>
               <GoalProgress goal={goal} showToGo={false} />
-              <p className="text-sm font-semibold text-foreground tabular-nums">{goal.to_go} {pointsWord(goal.to_go)} to go</p>
+              {/* Owner review of #64: "Fully saved!" at 0, never "0 points to go". */}
+              <p className="text-sm font-semibold text-foreground tabular-nums">{goal.to_go > 0 ? `${goal.to_go} ${pointsWord(goal.to_go)} to go` : 'Fully saved!'}</p>
             </CardContent>
           </Card>
         )}

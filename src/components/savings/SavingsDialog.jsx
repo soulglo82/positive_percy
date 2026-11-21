@@ -187,7 +187,9 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
                   <RewardIcon reward={o.reward} size="sm" />
                   <span className="min-w-0 flex-1">
                     <span className="block font-semibold text-foreground break-words">{o.name}</span>
-                    <span className="block text-sm text-muted-foreground tabular-nums">{o.saved} of {o.cost} points saved</span>
+                    <span className="block text-sm text-muted-foreground tabular-nums">
+                      {o.saved} of {o.cost} points saved{o.saved >= o.cost ? ' · Ready to redeem' : ''}
+                    </span>
                   </span>
                 </label>
               ))}
@@ -237,6 +239,12 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
             <AlertDialogDescription>
               This will spend {goal?.cost} points from {child.name}'s balance: {fromSaved} saved and {(goal?.cost ?? 0) - fromSaved} available.
             </AlertDialogDescription>
+            {/* E12 (owner review of #64): an excess over a lowered cost stays saved, never lost or counted twice. */}
+            {saved > (goal?.cost ?? 0) && (
+              <p className="text-sm text-muted-foreground" data-excess>
+                {saved - goal.cost} saved points are more than this goal needs. They stay saved for {goal.name}, and you can move them back.
+              </p>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>

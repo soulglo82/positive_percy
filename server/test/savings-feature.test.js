@@ -424,6 +424,24 @@ describe.skipIf(!hasDb)('D1 savings feature', () => {
     expect(r.goal_epoch).toBeGreaterThan(0);
   });
 
+  it('E12 after redemption: an excess over a lowered cost stays saved, visible and movable; never lost or counted twice', async () => {
+    const kid = await newKid(F, 'Exa', 100);
+    const bike = await newGoal(F, 'Exa bike', 100);
+    expect((await save(F, kid.id, bike.id, 100)).status).toBe(200);
+    await call(F, 'PUT', `/api/rewards/${bike.id}`, { cost_points: 60 }); // lowered below saved
+    const before = await agree(F, kid.id);
+    expect(before).toMatchObject({ total_points: 100, saved_total: 100, available_points: 0 });
+    const red = await redeemGoal(F, kid.id, bike.id);
+    expect(red.status).toBe(200);
+    expect(red.json.from_saved).toBe(60);
+    const after = await agree(F, kid.id); // committed <= total, total = history
+    expect(after).toMatchObject({ total_points: 40, saved_total: 40, available_points: 0 });
+    expect(after.goals[0]).toMatchObject({ saved: 40, cost: 60, to_go: 20 });
+    const back = await release(F, kid.id, bike.id, 40);
+    expect(back.status).toBe(200);
+    expect(await agree(F, kid.id)).toMatchObject({ total_points: 40, saved_total: 0, available_points: 40 });
+  });
+
   it('Activity: savings moves are listed under All only, never as Earned or Spent; an undone move is marked', async () => {
     const kid = await newKid(F, 'Abe', 60);
     const bike = await newGoal(F, 'Abe bike', 100);

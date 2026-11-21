@@ -79,7 +79,13 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   const lower = (ids) => (ids || []).map((x) => String(x).toLowerCase());
   const hadFor = (id) => { const was = lower(reward?.assigned_child_ids); return was.length === 0 || was.includes(String(id).toLowerCase()); };
   const hasFor = (id) => { const now = lower(assigned); return now.length === 0 || now.includes(String(id).toLowerCase()); };
-  const endsSavings = !!reward?.is_bigger_goal && (!biggerGoal || children.some((c) => hadFor(c.id) && !hasFor(c.id)));
+  // Who loses the goal, and how much each has saved towards it (server figures,
+  // child.goals). Nothing saved: nothing is lost, so no warning (§20.3).
+  const losing = !reward?.is_bigger_goal ? [] : children
+    .filter((c) => hadFor(c.id) && (!biggerGoal || !hasFor(c.id)))
+    .map((c) => ({ name: c.name, saved: (c.goals || []).find((g) => String(g.rewardId) === String(reward.id))?.saved ?? 0 }))
+    .filter((c) => c.saved > 0);
+  const endsSavings = losing.length > 0;
 
   const save = async (confirmed = false) => {
     if (!valid || saving) return;
@@ -158,9 +164,10 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
                 </span>
               </label>
               {endsSavings && (
-                <p role="status" className="rounded-md border border-border bg-warning p-3 text-sm text-foreground">
-                  Points saved towards this goal will go back to the child's available points. Marking it again starts from 0.
-                </p>
+                <div role="status" className="space-y-1 rounded-md border border-border bg-warning p-3 text-sm text-foreground">
+                  {losing.map((c) => <p key={c.name}>{c.name}: {c.saved} saved {c.saved === 1 ? 'point' : 'points'} will become available again.</p>)}
+                  <p>Past savings won't be restored if you re-enable the goal.</p>
+                </div>
               )}
               {children.length > 0 && (
                 <div>
@@ -196,7 +203,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
           <AlertDialogHeader>
             <AlertDialogTitle>End this bigger goal's savings?</AlertDialogTitle>
             <AlertDialogDescription>
-              Points saved towards {reward?.title} will go back to the child's available points. Marking it again starts from 0.
+              {losing.map((c) => `${c.name}: ${c.saved} saved ${c.saved === 1 ? 'point' : 'points'} will become available again.`).join(' ')} Past savings won't be restored if you re-enable the goal.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
