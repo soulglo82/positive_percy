@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.4 |
+| Version | 1.5 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-c-activity`, stacked on V1-B `claude/percy-v1-b-children`) |
 | Status | Reviewed (§8); build may start |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.5 | 2026-11-22 | Owner's visual review: a row's second line no longer repeats its kind ("Today's Goal ·", "Reward redeemed ·", "Savings ·"); a time never breaks across lines; "started with {n} points"; Undo on a redemption for 10 minutes. The approved row shapes of §3 are otherwise unchanged. Detail: V1-B design §12 and the release assessment §3.2 |
 | 1.4 | 2026-11-19 | Post-build code review (§10); §2, §3.1 and §6 brought in line with §9 |
 | 1.3 | 2026-11-19 | Owner review of PR #62 (§9): A1 accepted with the year when not this year; A2 changed to "Reward redeemed"; A3 kept; A4 changed to the title at completion (from the award's note, linked rows only, "a goal" otherwise); days, Today/Yesterday and times in the family's zone |
 | 1.2 | 2026-11-19 | Build: approved row icons (tick, heart, gift; Undo arrow or info for other kinds); "This week" numbers stay centred (owner's earlier direction); feed `limit` capped at 200 |
@@ -40,9 +41,9 @@
 
 | Row | Line 1 | Line 2 | Amount |
 | --- | --- | --- | --- |
-| A goal completion (award with a completion) | `{Child} completed “{goal title}”` | `Today’s Goal · {category} · {time}` | `+n` |
+| A goal completion (award with a completion) | `{Child} completed “{goal title}”` | `{category} · {time}` (v1.5: the kind is no longer repeated; it was `Today’s Goal · {category} · {time}`) | `+n` |
 | Other award | `{Child} earned {category}` | `{note} · {time}`, or `{time}` when there is no note | `+n` |
-| Spend | `{Child} redeemed {reward}` | `Reward redeemed · {time}` (A2, §9) | `−n` |
+| Spend | `{Child} redeemed {reward}` | `{time}` (v1.5; it was `Reward redeemed · {time}`, A2, §9) | `−n` |
 | Starting, correction, undo, deduction | The shipped wording ("started with", "had a one-off", "undo:", "had an earlier adjustment for", "adjusted") | `{time}` | Signed |
 
   - Time is `h:mm a` in the family's zone (§9; a change from the shipped "MMM d, h:mm a": the date is now in the group header, as approved).

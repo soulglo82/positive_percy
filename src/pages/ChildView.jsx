@@ -216,8 +216,8 @@ export default function ChildView() {
                         <p className="font-semibold text-foreground break-words">{reward.title}</p>
                         <p className="text-sm text-muted-foreground rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={-1}
                           ref={(el) => { captions.current[child.id + ':' + reward.id] = el; }}>
-                          {state.kind === 'requested' ? `${cost} · Ready when a parent agrees`
-                            : state.kind === 'ask' ? `${cost} · Ask a parent` : cost}
+                          {/* "Ask a parent" is on the button; it is not repeated here (owner, 22 Nov). */}
+                          {state.kind === 'requested' ? `${cost} · Ready when a parent agrees` : cost}
                         </p>
                       </div>
                       {state.kind === 'ask' && (

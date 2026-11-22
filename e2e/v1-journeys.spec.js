@@ -4,7 +4,7 @@
 //
 // Child: asks a parent for a reward in Child View (nothing is spent).
 // Parent: sees the request on Home with its exact total, approves it, sees it
-// in Activity as "Reward redeemed"; completes a goal and finds it under Goals;
+// in Activity as a redemption with its time; completes a goal and finds it under Goals;
 // renames the family in Settings and finds the new name after a reload.
 import { test, expect } from '@playwright/test';
 import { checkScreen } from './checks.js';
@@ -74,7 +74,8 @@ test('child asks, parent approves, history and settings follow', async ({ page }
     await page.goto('/activity');
     const log = page.getByRole('group', { name: 'Show activity' });
     await log.getByRole('button', { name: 'Spent' }).click();
-    await expect(page.locator('[data-row-key^="spend-"]').filter({ hasText: `${name} redeemed ${reward.title}` }).first()).toContainText('Reward redeemed');
+    await expect(page.locator('[data-row-key^="spend-"]').filter({ hasText: `${name} redeemed ${reward.title}` }).first()).toContainText(/\d{1,2}:\d{2}\s[AP]M/); // its time; "redeemed" is said once, in the first line
+    await expect(page.locator('[data-row-key^="spend-"]').filter({ hasText: `${name} redeemed ${reward.title}` }).first()).not.toContainText('Reward redeemed');
     await log.getByRole('button', { name: 'Goals' }).click();
     await expect(page.getByText(`“${name} tidies up”`).first()).toBeVisible();
     await log.getByRole('button', { name: 'Earned' }).click();

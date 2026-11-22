@@ -70,7 +70,9 @@ describe('Children page (§2)', () => {
     expect(await screen.findByRole('heading', { name: 'Children' })).toBeTruthy();
     expect(screen.getByText("See what every child has achieved and what they're saving for.")).toBeTruthy();
     expect(screen.getByRole('heading', { name: "Lara's page" })).toBeTruthy();
-    expect(screen.getByText('18 of 25 weekly points · 90 available')).toBeTruthy();
+    // The page header no longer repeats the weekly-target card below it (owner, 22 Nov: trim repetition).
+    expect(document.body.textContent).not.toContain('weekly points ·');
+    expect(screen.getByRole('heading', { name: "Lara's page" }).closest('.rounded-lg').textContent).toBe("LLara's pageView as child");
     expect(screen.getByRole('link', { name: 'View as child' }).getAttribute('href')).toBe('/childview?child=c1');
     expect(screen.getByRole('heading', { name: "Lara's weekly target" })).toBeTruthy();
     // The same figure as Child View's points card (owner, 22 Nov): an icon, the
@@ -204,7 +206,10 @@ describe('Child View page (§3)', () => {
     expect(picture.parentElement.closest('[aria-hidden="true"]')).toBeTruthy(); // the tile around it, not the svg's own attribute
     expect(document.querySelector('img[src*="stickies-star"]')).toBeNull();
     expect(screen.getByText('25 points · Ready when a parent agrees')).toBeTruthy();
-    expect(screen.getByText('20 points · Ask a parent')).toBeTruthy();
+    // The price in the line; "Ask a parent" once, on the button (owner, 22 Nov: trim repetition).
+    expect(screen.getByText('20 points')).toBeTruthy();
+    expect(document.body.textContent).not.toContain('· Ask a parent');
+    expect(screen.getAllByRole('button', { name: /^Ask a parent for / }).length).toBeGreaterThan(0);
     expect(screen.getByText('Choosing a reward is a request. Only a parent-authorised confirmation can spend points.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Spend|Edit/ })).toBeNull();
     expect(document.body.textContent).not.toMatch(/Visible to children|Hidden from children|Saved towards|My next big adventure/);

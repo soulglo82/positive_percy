@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.5 |
+| Version | 1.6 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-b-children`, stacked on V1-D `claude/percy-v1-d-rewards`) |
 | Status | Reviewed (§8); build may start. Owner items in §7 |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.6 | 2026-11-22 | §12: repeated text removed on Children, Home, Child View and Activity (owner's approval of option A, with conditions) |
 | 1.5 | 2026-11-22 | §10.8: the points figure is one shared component on Child View, Home and Children (owner: apply it consistently). §11: the Achievements card redrawn as two plain rows (owner: "cramped and looks bad") |
 | 1.4 | 2026-11-22 | §10: Child View points card reworked at the owner's request (visual review, 22 November). Design for review before the build |
 | 1.3 | 2026-11-19 | Post-build code review (§9): New goal used the previous child's behaviour (Major, fixed); focus, refresh, loading and lock fixes |
@@ -250,4 +251,25 @@ Reviewed after the build (release assessment §4.6): a missing weekly target sho
 **Tests.** The two rows' titles and icons, and that neither row is a bordered box; the bar's name, spoken value, figures and width at 18 of 25 and at 30 of 25; the sentence is no longer on the page. The shared screen checks (clipped text, sideways scroll, text size, accessibility) run on the Children page at four sizes. **Not covered by a test:** how it looks; the before-and-after picture went to the owner.
 
 **Rollout and reversal.** One commit; reverting it restores the two boxes. No data, server or migration change.
+
+## 12. Repetition removed (owner, 22 November) (v1.6)
+
+**Owner's finding.** "There is a lot of repetition on the pages." Mock-ups of each screen with the repeats removed were shown (option A, trim; option B, merge). **The owner approved option A on all four screens**, with these conditions: keep the "Next milestone" row and its progress bar; keep the distinction between weekly progress and bigger-goal savings; keep Today's Goals, Quick Points and the reward-request actions; on Activity keep points, child, reward, time and correction history; **no new wording, no restructured cards, no functionality removed**. Both tabs, Home and Children, stay with their responsibilities; the information architecture is reviewed in V1.1 (#66).
+
+**Contract.** Each of the four changes removes text that is said elsewhere on the same screen. Nothing is added or moved, and no action changes.
+
+| Screen | Removed | Where the same fact still is |
+| --- | --- | --- |
+| Children | The line "{week} of {target} weekly points · {available} available" under "{Name}'s page" | The weekly-target card directly below: "{week} / {target}, Earned this week" and "{n} points, Available now" |
+| Home | The "{week} / {target}, This week" figure in "Little wins, big adventures!" | The selected child's tile above: "{week} / {target} this week" with its bar |
+| Child View | "· Ask a parent" after the price of a reward the child can ask for | The "Ask a parent" button beside it. A reward already asked for still says "· Ready when a parent agrees" |
+| Activity | The kind repeated at the start of a row's second line: "Today's Goal ·", "Reward redeemed ·", "Savings ·" | The row's first line: "completed", "redeemed", "saved … towards", "moved … back from", with the row's icon |
+
+**Kept, as the owner required:** the "Next milestone" row and bar on Children (so the week still appears there and in the weekly-target card); the savings card; on Activity the points, the child, the reward or behaviour, a note where there is one, the time, the "savings ended" detail, Undo and Correct.
+
+**Edge cases.** One child: Home's tile still shows the week. A reward the child cannot afford: its line is unchanged. A goal completion with no behaviour name: the second line shows the label and the time as before.
+
+**Tests.** For each trim, that the removed text is gone and the surviving place still shows the fact: the Children header; Home's single figure and the tile; Child View's price and button; Activity's second lines for a goal, a redemption and an award with a note. The browser tests run the shared screen checks on all four screens at four sizes.
+
+**Rollout and reversal.** One commit; reverting it restores the lines. No data, server or migration change.
 

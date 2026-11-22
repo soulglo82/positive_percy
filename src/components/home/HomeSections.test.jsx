@@ -36,19 +36,24 @@ describe('WorkingTowards', () => {
 });
 
 describe('LittleWins', () => {
-  it('shows this week and available now from the server', () => {
+  it('shows the points available now from the server, and does not repeat the week', () => {
     const { container } = wrap(<LittleWins child={lara} />);
-    expect(container.textContent).toContain('18 / 25');
-    expect(container.textContent).toContain('90 points');
     // The same figure as Child View and Children (owner, 22 Nov): icon, figure with its unit, approved label.
+    // The week is in the child's tile above, so it is not said again here (owner, 22 Nov: trim repetition).
     expect([...container.querySelectorAll('[data-figure]')].map((f) => f.querySelector('p').textContent))
-      .toEqual(['18 / 25 This week', '90 points Available now']);
+      .toEqual(['90 points Available now']);
     expect([...container.querySelectorAll('[data-figure] [data-icon]')].map((i) => i.getAttribute('data-icon')))
-      .toEqual(['phosphor:target:duotone', 'phosphor:piggy-bank:duotone']);
+      .toEqual(['phosphor:piggy-bank:duotone']);
+    expect(container.textContent).not.toContain('18 / 25');
+    expect(container.textContent).not.toContain('This week');
   });
-  it('a child with no weekly target stored shows 0, never "null" (code review)', () => {
-    const { container } = wrap(<LittleWins child={{ ...lara, weekly_target: null, week_points: 0 }} />);
-    expect(container.querySelector('[data-figure] p').textContent).toBe('0 / 0 This week');
+  it('the week is in the selected child\'s tile, once', () => {
+    const { container } = wrap(<FamilyStrip children={[lara]} selectedId={lara.id} onSelect={() => {}} />);
+    expect(container.textContent).toContain('18 / 25 this week');
+  });
+  it('a child with no weekly target stored shows 0 in the tile, never a blank (code review)', () => {
+    const { container } = wrap(<FamilyStrip children={[{ ...lara, weekly_target: null }]} selectedId={lara.id} onSelect={() => {}} />);
+    expect(container.textContent).toContain('18 / 0 this week');
   });
   it('1 available point is singular', () => {
     const { container } = wrap(<LittleWins child={{ ...lara, available_points: 1 }} />);

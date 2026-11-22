@@ -266,8 +266,8 @@ describe('Home, Rewards, Spend and Activity', () => {
 
   it('Activity: savings rows use the proposed wording and are not balance rows', () => {
     const t = '2026-11-21T10:00:00Z';
-    expect(rowText({ type: 'saving', points: 20, label: 'Bike', created_date: t }, 'UTC')).toMatchObject({ lead: 'saved 20 points towards', what: 'Bike' });
-    expect(rowText({ type: 'moved_back', points: 1, label: 'Bike', created_date: t }, 'UTC')).toMatchObject({ lead: 'moved 1 point back from', what: 'Bike' });
+    expect(rowText({ type: 'saving', points: 20, label: 'Bike', created_date: t }, 'UTC')).toMatchObject({ lead: 'saved 20 points towards', what: 'Bike', sub: '10:00\u00a0AM' }); // the time alone: "saved" is in the first line
+    expect(rowText({ type: 'moved_back', points: 1, label: 'Bike', created_date: t }, 'UTC')).toMatchObject({ lead: 'moved 1 point back from', what: 'Bike', sub: '10:00\u00a0AM' });
     expect(rowIconKind({ type: 'saving' })).toBe('saving');
     expect(rowIconKind({ type: 'moved_back' })).toBe('saving');
     // §20.1: why saved points stopped counting, with child, goal, amount and cause.

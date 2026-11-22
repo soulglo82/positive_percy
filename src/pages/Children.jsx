@@ -146,10 +146,9 @@ export default function Children() {
         <CardContent className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <ChildAvatar name={child.name} url={child.avatar_url} colour={childColour(child, ordered)} decorative />
-            <div className="min-w-0">
-            <h2 className="font-display font-bold text-lg text-primary break-words">{child.name}'s page</h2>
-            <p className="text-sm text-muted-foreground tabular-nums">{week} of {target} weekly points · {available} available</p>
-            </div>
+            {/* No figures here: the weekly-target card directly below shows the
+                week and the points available (owner, 22 Nov: trim repetition). */}
+            <h2 className="min-w-0 font-display font-bold text-lg text-primary break-words">{child.name}'s page</h2>
           </div>
           <Button asChild variant="outline">
             <Link to={createPageUrl('ChildView') + '?child=' + encodeURIComponent(child.id)}>View as child</Link>

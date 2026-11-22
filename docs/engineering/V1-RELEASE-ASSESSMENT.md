@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.2 |
+| Version | 1.3 |
 | Issued | 2026-11-22 |
 | Owner | Percy V1 engineering |
 | Status | For the owner's release decision. Nothing has been merged or deployed |
@@ -11,6 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.3 | 2026-11-22 | Achievements card on Children redesigned at the owner's instruction (two plain rows, a weekly progress bar); the owner-approved repetition trims on Children, Home, Child View and Activity (§4.7) and their focused review (§4.8); results restated at the final commit (§2, §7) |
 | 1.2 | 2026-11-22 | Owner's final release handover: the real-backup restore is waived as a mandatory gate (owner-accepted residual risk); the November change is explained (approved maintenance); four targeted items handled (§3.4); the points figure applied consistently to Home and Children at the owner's instruction; operational and privacy findings (§5) |
 | 1.1 | 2026-11-22 | Owner's visual decisions built (icons, default Quick Points, Child View points box); the design critique of every page (§3.2); the owner's review of #65 (rollback write freeze, the cause of the archive change not called deliberate, legal and privacy split from technical security); the points-star statement corrected |
 | 1.0 | 2026-11-22 | First issue: the final integrated validation of V1 (#57–#64), its findings, the open gates and the release candidate |
@@ -319,7 +320,20 @@ Scope: the five small changes of §3.4 and nothing else. **No blocking defect.**
 
 Confirmed: every other string, the condition for the goal line and the data sources are unchanged; both icons are approved and hidden from assistive technology; `server/`, `scripts/` and `e2e/` are untouched.
 
-**Open with the owner (not built):** the repetition across the screens. Mock-ups with it removed were sent on 22 November (Children, Home, Child View, Activity; option A trims, option B merges). Engineering's recommendation is option A for V1 and option B for V1.1. Nothing is changed until the owner chooses.
+**Repetition across the screens (owner, 22 November).** The owner approved option A (trim) on Children, Home, Child View and Activity, with conditions: the "Next milestone" row and its bar stay; no new wording, no restructured cards, no functionality removed; both tabs keep their responsibilities, and the information architecture is reviewed in V1.1 (#66). Built as four removals of repeated text (V1-B design §12).
+
+### 4.8 Focused independent review of the repetition trims
+
+**No blocking defect.** The review confirmed the change is only the four removals and their tests: no new wording, no restructured card, no removed function, and `server/` and `scripts/` untouched. It also confirmed, for each removal, where the same fact still appears on that screen, and that nothing else reads the removed text (filters, exports and screen-reader labels are independent of it).
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Should fix | With the week removed from "Little wins", a child's tile is the only place Home shows the weekly target, and for a child with none stored it read "18 /  this week" | Fixed: the tile shows 0; a test covers it |
+| 2 | Should fix | Nothing tested the trimmed second line of the saving and moved-back rows | Fixed: both are asserted to be the time alone |
+| 3 | Note | The goal row's test guarded only against the old prefix | Fixed: the line is asserted exactly |
+| 4 | Note | The Children header's test was one missing substring | Fixed: the header's whole text is asserted |
+| 5 | Note | The browser journey's check would also pass with the old text | Fixed: it asserts the old phrase is gone |
+| 6 | Note | The Activity design table still showed the old second lines | Fixed (V1-C design v1.5) |
 
 ## 5. Gates: what is complete and what is not
 

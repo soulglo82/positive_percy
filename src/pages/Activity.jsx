@@ -341,7 +341,9 @@ export function rowText(event, timeZone = undefined) {
   const time = timeIn(event.created_date, timeZone);
   if (event.type === 'earn' && event.goal_completion_id) {
     const title = goalTitleOf(event);
-    return { lead: 'completed', what: title ? `“${title}”` : 'a goal', sub: `Today’s Goal · ${event.label} · ${time}` };
+    // The second line holds only what the first does not say (owner, 22 Nov:
+    // trim repetition): "completed" already says it was a goal.
+    return { lead: 'completed', what: title ? `“${title}”` : 'a goal', sub: `${event.label} · ${time}` };
   }
   if (event.type === 'earn') {
     const swap = event.label === 'Other' && event.note;
@@ -351,11 +353,11 @@ export function rowText(event, timeZone = undefined) {
   }
   // No parent confirmation is recorded on a redemption (and before V1 a child
   // could redeem directly), so no row claims one (A2).
-  if (event.type === 'spend') return { lead: 'redeemed', what: event.label, sub: `Reward redeemed · ${time}` };
+  if (event.type === 'spend') return { lead: 'redeemed', what: event.label, sub: time };
   // D1 savings moves (owner's proposed O4 wording): not balance changes.
   const pts = `${event.points} ${pointsWord(event.points)}`;
-  if (event.type === 'saving') return { lead: `saved ${pts} towards`, what: event.label, sub: `Savings · ${time}` };
-  if (event.type === 'moved_back') return { lead: `moved ${pts} back from`, what: event.label, sub: `Savings · ${time}` };
+  if (event.type === 'saving') return { lead: `saved ${pts} towards`, what: event.label, sub: time };
+  if (event.type === 'moved_back') return { lead: `moved ${pts} back from`, what: event.label, sub: time };
   // D1 §20.1 (owner review of #64, N2): why saved points stopped counting.
   // Provisional wording (§20.8): "released", not "available again".
   // Owner wording (21 Nov): a cancellation, never a success or an earning.

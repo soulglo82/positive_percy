@@ -58,7 +58,7 @@ export function FamilyStrip({ children, selectedId, onSelect }) {
               selected ? 'border-2 border-selected-border' : 'border border-border hover:bg-accent')}>
             <ChildAvatar name={child.name} url={child.avatar_url} size="sm" colour={childColour(child, children)} decorative />
             <span className="block font-semibold text-sm text-foreground break-words">{child.name}</span>
-            <span className="block text-xs text-muted-foreground tabular-nums">{week} / {child.weekly_target} this week</span>
+            <span className="block text-xs text-muted-foreground tabular-nums">{week} / {child.weekly_target ?? 0} this week</span>
             <ProgressBar value={week} max={child.weekly_target} />
           </button>
         );
@@ -67,9 +67,8 @@ export function FamilyStrip({ children, selectedId, onSelect }) {
   );
 }
 
-// "Little wins, big adventures!" with This week and Available now.
+// "Little wins, big adventures!" with the points available now.
 export function LittleWins({ child }) {
-  const week = child.week_points ?? 0;
   const available = child.available_points ?? child.total_points ?? 0;
   return (
     <Card>
@@ -78,13 +77,11 @@ export function LittleWins({ child }) {
           <h2 className="font-display font-bold text-lg text-primary">Little wins, big adventures!</h2>
           <p className="text-sm text-muted-foreground">Every positive step counts.</p>
         </div>
-        {/* The same figure as Child View's points card (owner, 22 Nov): one under the other on a phone, side by side from 640px. */}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <PointsFigure icon={<PercyIcon id="phosphor:target:duotone" className="h-7 w-7" />}
-            value={week} unit={`/ ${child.weekly_target ?? 0}`} label="This week" />
-          <PointsFigure icon={<PercyIcon id="phosphor:piggy-bank:duotone" className="h-7 w-7" />}
-            value={available} valueProps={{ 'data-available': true }} unit={available === 1 ? 'point' : 'points'} label="Available now" />
-        </div>
+        {/* The same figure as Child View's points card (owner, 22 Nov). The week
+            is not repeated here: the selected child's tile above shows it with
+            its bar (owner, 22 Nov: trim repetition). */}
+        <PointsFigure icon={<PercyIcon id="phosphor:piggy-bank:duotone" className="h-7 w-7" />}
+          value={available} valueProps={{ 'data-available': true }} unit={available === 1 ? 'point' : 'points'} label="Available now" />
       </CardContent>
     </Card>
   );
