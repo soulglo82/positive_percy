@@ -58,24 +58,51 @@ beforeEach(() => {
 });
 
 describe('Children page (§2)', () => {
+  it('1 available point is singular on the weekly-target card (code review)', async () => {
+    state.children = [{ ...lara, available_points: 1 }];
+    mount(Children);
+    await screen.findByRole('heading', { name: "Lara's page" });
+    expect([...document.querySelectorAll('[data-figure]')].map((f) => f.querySelector('p').textContent)[1]).toBe('1 point Available now');
+  });
+
   it('approved copy and server figures for the oldest child', async () => {
     mount(Children);
     expect(await screen.findByRole('heading', { name: 'Children' })).toBeTruthy();
     expect(screen.getByText("See what every child has achieved and what they're saving for.")).toBeTruthy();
     expect(screen.getByRole('heading', { name: "Lara's page" })).toBeTruthy();
-    expect(screen.getByText('18 of 25 weekly points · 90 available')).toBeTruthy();
+    // The page header no longer repeats the weekly-target card below it (owner, 22 Nov: trim repetition).
+    expect(document.body.textContent).not.toContain('weekly points ·');
+    expect(screen.getByRole('heading', { name: "Lara's page" }).closest('.rounded-lg').textContent).toBe("LLara's pageView as child");
     expect(screen.getByRole('link', { name: 'View as child' }).getAttribute('href')).toBe('/childview?child=c1');
     expect(screen.getByRole('heading', { name: "Lara's weekly target" })).toBeTruthy();
-    expect(screen.getByText('18 / 25')).toBeTruthy();
-    expect(screen.getByText('Earned this week')).toBeTruthy();
-    expect(screen.getByText('Available now')).toBeTruthy();
+    // The same figure as Child View's points card (owner, 22 Nov): an icon, the
+    // figure with its unit, and the approved label beneath.
+    const figures = [...document.querySelectorAll('[data-figure]')].map((f) => f.querySelector('p').textContent);
+    expect(figures).toEqual(['18 / 25 Earned this week', '90 points Available now']);
+    expect([...document.querySelectorAll('[data-figure] [data-icon]')].map((i) => i.getAttribute('data-icon')))
+      .toEqual(['phosphor:target:duotone', 'phosphor:piggy-bank:duotone']);
     expect(screen.getByText("7 to reach this week's target")).toBeTruthy();
-    expect(screen.getByText('7 weekly points to go')).toBeTruthy();
+    // Next milestone: a small bar for the weekly target, not a sentence (owner, 22 Nov).
+    // A screen reader still hears "7 weekly points to go".
+    const bar = screen.getByRole('progressbar', { name: 'Weekly target' });
+    expect(bar.getAttribute('aria-valuetext')).toBe('7 weekly points to go');
+    expect([bar.getAttribute('aria-valuenow'), bar.getAttribute('aria-valuemax')]).toEqual(['18', '25']);
+    expect(bar.firstElementChild.style.width).toBe('72%');
+    expect(screen.queryByText('7 weekly points to go')).toBeNull();
+    // Achievements: two plain rows with a picture each, no boxes inside the card (owner, 22 Nov; design §11).
+    const rows = [...document.querySelectorAll('[data-achievements] > div')];
+    expect(rows.map((r) => r.querySelector('[data-icon]').getAttribute('data-icon'))).toEqual(['phosphor:check-circle:duotone', 'phosphor:trophy:duotone']);
+    expect(rows.map((r) => r.querySelector('p').textContent)).toEqual(['Goals completed', 'Next milestone']);
+    expect(rows.some((r) => /(^|\s)border(\s|$)/.test(r.className) || /rounded-md/.test(r.className))).toBe(false); // neither a border nor a box, in any class order
     expect(screen.getByRole('link', { name: 'All rewards' })).toBeTruthy();
-    // No savings section until D1; the design-only note never ships.
-    expect(document.body.textContent).not.toContain('Saving for something bigger');
+    // D1 (savings §19.3): the savings section and the approved milestone
+    // subtitle; with no bigger goals there is nothing to Edit. The
+    // design-only note never ships.
+    expect(screen.getByRole('heading', { name: 'Saving for something bigger' })).toBeTruthy();
+    expect(screen.getByText('No bigger goals yet.', { exact: false })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Edit saving for something bigger/ })).toBeNull();
     expect(document.body.textContent).not.toContain('Multiple rewards can be shown');
-    expect(document.body.textContent).not.toContain('Weekly target and bigger goal');
+    expect(screen.getByText('Weekly target and bigger goal')).toBeTruthy();
   });
 
   it('goals of this child only, with today\'s completions counted', async () => {
@@ -102,7 +129,11 @@ describe('Children page (§2)', () => {
     state.children = [{ ...lara, week_points: 30 }];
     mount(Children);
     expect(await screen.findByText("0 to reach this week's target")).toBeTruthy();
-    expect(screen.getByText('0 weekly points to go')).toBeTruthy();
+    // The milestone bar is full, never past the end (30 of 25).
+    const bar = screen.getByRole('progressbar', { name: 'Weekly target' });
+    expect(bar.getAttribute('aria-valuetext')).toBe('0 weekly points to go');
+    expect([bar.getAttribute('aria-valuenow'), bar.getAttribute('aria-valuemax')]).toEqual(['25', '25']);
+    expect(bar.firstElementChild.style.width).toBe('100%');
   });
 
   it('?child= picks the child; an unknown id falls back to the oldest (E2)', async () => {
@@ -166,12 +197,40 @@ describe('Child View page (§3)', () => {
     expect(screen.getByRole('link', { name: '← Back to Home' })).toBeTruthy();
     expect(screen.getByText('A child-friendly view of goals, points and rewards. No independent child account.')).toBeTruthy();
     expect(screen.getByRole('heading', { name: "You're doing great, Lara!" })).toBeTruthy();
-    expect(screen.getByText('Ready to use')).toBeTruthy();
+    // Owner review 22 Nov (design §10): one figure with a piggy bank, its unit beside it and the label beneath.
+    const figure = document.querySelector('[data-available]');
+    expect(figure.textContent).toBe('90');
+    expect(figure.closest('p').textContent).toBe('90 points Ready to use'); // real spaces, not "90points"
+    const picture = figure.closest('[data-figure]').querySelector('[data-icon]');
+    expect(picture.getAttribute('data-icon')).toBe('phosphor:piggy-bank:duotone');
+    expect(picture.parentElement.closest('[aria-hidden="true"]')).toBeTruthy(); // the tile around it, not the svg's own attribute
+    expect(document.querySelector('img[src*="stickies-star"]')).toBeNull();
     expect(screen.getByText('25 points · Ready when a parent agrees')).toBeTruthy();
-    expect(screen.getByText('20 points · Ask a parent')).toBeTruthy();
+    // The price in the line; "Ask a parent" once, on the button (owner, 22 Nov: trim repetition).
+    expect(screen.getByText('20 points')).toBeTruthy();
+    expect(document.body.textContent).not.toContain('· Ask a parent');
+    expect(screen.getAllByRole('button', { name: /^Ask a parent for / }).length).toBeGreaterThan(0);
     expect(screen.getByText('Choosing a reward is a request. Only a parent-authorised confirmation can spend points.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Spend|Edit/ })).toBeNull();
     expect(document.body.textContent).not.toMatch(/Visible to children|Hidden from children|Saved towards|My next big adventure/);
+  });
+
+  it('the points figure is singular for 1, plain for 0, and falls back when the server sends none (design §10.4)', async () => {
+    const sentence = () => document.querySelector('[data-available]').closest('p').textContent;
+    state.children = [{ ...lara, available_points: 1 }];
+    mount(ChildView);
+    await screen.findByRole('heading', { name: "You're doing great, Lara!" });
+    expect(sentence()).toBe('1 point Ready to use');
+    cleanup();
+    state.children = [{ ...lara, available_points: 0 }];
+    mount(ChildView);
+    await screen.findByRole('heading', { name: "You're doing great, Lara!" });
+    expect(sentence()).toBe('0 points Ready to use');
+    cleanup();
+    state.children = [{ ...lara, available_points: undefined, total_points: undefined }];
+    mount(ChildView);
+    await screen.findByRole('heading', { name: "You're doing great, Lara!" });
+    expect(sentence()).toBe('0 points Ready to use');
   });
 
   it('E4: one request per reward, through the POST and the refetch after it', async () => {

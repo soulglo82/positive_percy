@@ -104,7 +104,7 @@ export function undoAction(kind, id, queryClient, requestId = newRequestId()) {
     running = true;
     try {
       const r = await (kind === 'spend' ? undoSpend(id, requestId) : undoAward(id, requestId));
-      toast.success(`Undone. ${r.child.name} has ${r.child.total_points} points.`);
+      toast.success(`Undone. ${r.child.name} has ${r.child.total_points} ${r.child.total_points === 1 ? 'point' : 'points'}.`);
     } catch (err) {
       if (err.status === 409 || err.status === 404) {
         toast.error(err.message);

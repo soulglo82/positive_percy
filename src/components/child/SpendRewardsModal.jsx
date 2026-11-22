@@ -65,7 +65,8 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
   // O-I1: a requested reward is approved or declined above, not spent here.
   const requestedIds = new Set(requests.map((item) => item.rewardId));
   const availableRewards = rewards
-    .filter(r => r.visible_to_child !== false && !requestedIds.has(r.id))
+    // D1 (B1/O7): a bigger goal is redeemed from the Children page, never spent here.
+    .filter(r => r.visible_to_child !== false && !r.is_bigger_goal && !requestedIds.has(r.id))
     .sort((a, b) => a.cost_points - b.cost_points);
 
   const handleRedeem = async (reward) => {
@@ -158,7 +159,8 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
                   >
                     <RewardIcon reward={reward} size="sm" className={canAfford ? "" : "bg-card"} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground text-sm truncate">{reward.title}</p>
+                      {/* Wraps, never cut to "Scr…": on a narrow phone the name is how a parent tells rewards apart (final validation 2026-11-22). */}
+                      <p className="font-medium text-foreground text-sm break-words">{reward.title}</p>
                       <Points value={reward.cost_points} className="text-sm text-muted-foreground mt-0.5" />
                     </div>
                     <Button

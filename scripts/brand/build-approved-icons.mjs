@@ -39,6 +39,24 @@ export function collect(register) {
       add(e.asset_id, e.source_file, e.source_url, e.license);
     }
   }
+  // E03 section 11 (owner decision 2026-11-22): the 16 legacy behaviour keys
+  // draw Phosphor Duotone glyphs too. Each entry says why that glyph: the
+  // owner's own choice, or the same subject restyled. Anything else stops the
+  // build, so an entry cannot arrive without a recorded basis.
+  const LEGACY_BASIS = ['owner_choice_2026-11-22', 'same_subject_restyle_2026-11-22'];
+  const LEGACY_KEYS = ['star', 'heart', 'handshake', 'shield', 'mountain', 'hand-heart', 'brush', 'book-open',
+    'palette', 'footprints', 'music', 'brain', 'bed', 'check', 'sparkles', 'circle'];
+  if (!register.decisions.behaviors_legacy) throw new Error('behaviors_legacy is missing from the register');
+  for (const key of LEGACY_KEYS) {
+    if (!register.decisions.behaviors_legacy[key]) throw new Error(`behaviors_legacy/${key} is missing: the app draws every legacy key`);
+  }
+  contexts.legacy = {};
+  for (const [key, e] of Object.entries(register.decisions.behaviors_legacy)) {
+    if (e.status !== 'selected') throw new Error(`behaviors_legacy/${key} is not selected (${e.status})`);
+    if (!LEGACY_BASIS.includes(e.basis)) throw new Error(`behaviors_legacy/${key} has no recognised basis (${e.basis})`);
+    contexts.legacy[key] = e.asset_id;
+    add(e.asset_id, e.source_file, e.source_url, e.license);
+  }
   contexts.goals = {};
   for (const [ctx, v] of Object.entries(register.decisions.goals_interactions)) {
     const e = v.exact_source_svg;

@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 vi.mock('@/api/entities', () => ({ Child: { list: vi.fn(async () => kids) } }));
 vi.mock('@/lib/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u' } }), getToken: () => 't' }));
@@ -67,11 +68,14 @@ describe('Activity screen', () => {
     expect(await screen.findByText('“Finish homework”')).toBeTruthy();
     const text = document.body.textContent;
     expect(text).toContain('Lara completed “Finish homework”');
-    expect(text).toMatch(/Today’s Goal · Learning · 12:15 AM/);
+    // The second line holds only what the first does not say (owner, 22 Nov: trim repetition).
+    expect(text).toMatch(/Learning · 12:15\u00a0AM/);
+    expect(text).not.toContain('Today’s Goal ·');
     expect(text).toContain('Omar earned Kindness');
-    expect(text).toMatch(/Helped a friend · 12:10 AM/);
+    expect(text).toMatch(/Helped a friend · 12:10\u00a0AM/);
     expect(text).toContain('Lara redeemed Movie night');
-    expect(text).toMatch(/Reward redeemed · 7:10 PM/);
+    expect(text).toMatch(/7:10\u00a0PM/);
+    expect(text).not.toContain('Reward redeemed');
     expect(text).not.toContain('Parent-confirmed');
     expect(screen.getByRole('heading', { name: /^Today · / })).toBeTruthy();
     expect(screen.getByRole('heading', { name: /^Yesterday · / })).toBeTruthy();
@@ -157,7 +161,51 @@ describe('Correct (A2 history)', () => {
     mount();
     await screen.findByText('Movie night');
     const names = screen.getAllByRole('button', { name: /^Correct / }).map((b) => b.getAttribute('aria-label'));
-    expect(names).toEqual(['Correct Lara award of 1 points', 'Correct Omar award of 1 points']);
+    expect(names).toEqual(['Correct Lara award of 1 point', 'Correct Omar award of 1 point']);
+    // The dialog says "1 point" too (final validation: it said "1 points").
+    fireEvent.click(screen.getByRole('button', { name: 'Correct Lara award of 1 point' }));
+    expect(await screen.findByText(/Remove 1 mistakenly awarded point from Lara\?/)).toBeTruthy();
+  });
+});
+
+describe('Undo a redeemed reward (V1-D §10 R3; final validation 2026-11-22)', () => {
+  const recent = (minsAgo, extra = {}) => ({ id: 'red-' + minsAgo, child_id: 'c1', child_name: 'Lara', points: -25, label: 'Movie night', note: null, type: 'spend',
+    created_date: new Date(Date.now() - minsAgo * 60000).toISOString(), undone: false, goal_completion_id: null, ...extra });
+
+  it('offered on a redemption from the last 10 minutes only; not once undone; it calls the redemption undo once', async () => {
+    const said = vi.spyOn(toast, 'success').mockImplementation(() => {});
+    const calls = [];
+    global.fetch = vi.fn(async (url, opts = {}) => {
+      if (url.startsWith('/api/summary')) return { ok: true, json: async () => ({ childStats: [], goalsCompleted: 0 }) };
+      if (url.startsWith('/api/redemptions/')) { calls.push([url, JSON.parse(opts.body)]); return { ok: true, status: 200, json: async () => ({ child: { name: 'Lara', total_points: 1 }, redemption: {} }) }; }
+      // A fresh award too: only its type keeps Undo off it (review: the old row was hours old, so the window hid it anyway).
+      return { ok: true, json: async () => [recent(9), recent(11), recent(3, { id: 'red-undone', undone: true }), recent(4, { label: 'Ice cream' }), { ...ROWS[1], created_date: recent(1).created_date }] };
+    });
+    mount();
+    const undo = await screen.findAllByRole('button', { name: 'Undo Lara redeemed Movie night' });
+    expect(undo).toHaveLength(1); // 9 minutes old: offered; 11 minutes old and the undone one: not
+    expect(undo[0].closest('[data-row-key]').getAttribute('data-row-key')).toBe('spend-red-9');
+    expect(screen.queryByRole('button', { name: /^Undo Omar/ })).toBeNull(); // never on an award
+    fireEvent.click(undo[0]);
+    fireEvent.click(undo[0]); // a double tap is one undo
+    await waitFor(() => expect(calls).toHaveLength(1));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0]).toBe('/api/redemptions/red-9/undo');
+    expect(calls[0][1].request_id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(said).toHaveBeenCalledWith('Undone. Lara has 1 point.'); // singular
+    // A later tap, after the list has refreshed, replays the same undo: the
+    // same request id, so the server answers it as a duplicate (code review).
+    await waitFor(() => expect(global.fetch.mock.calls.filter(([u]) => u.startsWith('/api/activity-feed')).length).toBeGreaterThan(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Undo Lara redeemed Movie night' }));
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1][1].request_id).toBe(calls[0][1].request_id);
+    // Another redemption has its own undo: its own address and its own id (code review).
+    fireEvent.click(screen.getByRole('button', { name: 'Undo Lara redeemed Ice cream' }));
+    await waitFor(() => expect(calls).toHaveLength(3));
+    expect(calls[2][0]).toBe('/api/redemptions/red-4/undo');
+    expect(calls[2][1].request_id).not.toBe(calls[0][1].request_id);
+    said.mockRestore();
   });
 });
 
@@ -183,12 +231,13 @@ describe('row text and day labels', () => {
     const now = new Date('2026-11-19T02:00:00Z');
     expect(dayLabel(ev, now, 'Asia/Singapore')).toBe('Today · Thursday 19 November');
     expect(dayLabel(ev, now, 'Europe/London')).toBe('Yesterday · Wednesday 18 November');
-    expect(rowText({ type: 'spend', label: 'Movie night', created_date: ev }, 'Asia/Singapore').sub).toBe('Reward redeemed · 12:30 AM');
+    expect(rowText({ type: 'spend', label: 'Movie night', created_date: ev }, 'Asia/Singapore').sub).toBe('12:30\u00a0AM'); // the time alone ("redeemed" is in the first line), and it never breaks across lines
   });
   it('a goal row names the goal as it was when completed; never invented (A4)', () => {
     const base = { type: 'earn', label: 'Learning', created_date: '2026-11-18T09:00:00Z', goal_completion_id: 'x' };
     expect(goalTitleOf({ ...base, note: 'Today’s Goal: Old name' })).toBe('Old name');
     expect(rowText({ ...base, note: 'Today’s Goal: Old name' }, 'UTC').what).toBe('“Old name”');
+    expect(rowText({ ...base, note: 'Today’s Goal: Old name' }, 'UTC').sub).toBe('Learning · 9:00\u00a0AM'); // the behaviour and the time; no kind repeated
     expect(rowText({ ...base, note: null }, 'UTC').what).toBe('a goal');
     expect(rowText({ ...base, note: 'Today’s Goal: ' }, 'UTC').what).toBe('a goal');
     // Not linked to a completion: the note is just a note.
@@ -196,9 +245,11 @@ describe('row text and day labels', () => {
   });
   it('an award with no note shows only the time; "Other" shows its note', () => {
     const base = { type: 'earn', created_date: new Date(2026, 10, 18, 16, 15).toISOString(), goal_completion_id: null };
-    expect(rowText({ ...base, label: 'Kindness', note: null })).toEqual({ lead: 'earned', what: 'Kindness', sub: '4:15 PM' });
-    expect(rowText({ ...base, label: 'Other', note: 'Fed the cat' })).toEqual({ lead: 'earned', what: 'Fed the cat', sub: '4:15 PM' });
+    expect(rowText({ ...base, label: 'Kindness', note: null })).toEqual({ lead: 'earned', what: 'Kindness', sub: '4:15\u00a0PM' });
+    expect(rowText({ ...base, label: 'Other', note: 'Fed the cat' })).toEqual({ lead: 'earned', what: 'Fed the cat', sub: '4:15\u00a0PM' });
     expect(rowText({ ...base, type: 'starting', label: 'Starting points', points: 10 }).lead).toBe('started with');
+    expect(rowText({ ...base, type: 'starting', label: 'Starting points', points: 10 }).what).toBe('10 points'); // not "started with Starting points"
+    expect(rowText({ ...base, type: 'starting', label: 'Starting points', points: 1 }).what).toBe('1 point');
   });
   it('row icons follow the approved kinds: goal tick, award heart, spend gift', () => {
     expect(rowIconKind({ type: 'earn', goal_completion_id: 'x' })).toBe('goal');

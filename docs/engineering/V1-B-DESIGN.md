@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.3 |
+| Version | 1.6 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-b-children`, stacked on V1-D `claude/percy-v1-d-rewards`) |
 | Status | Reviewed (§8); build may start. Owner items in §7 |
@@ -12,6 +12,9 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.6 | 2026-11-22 | §12: repeated text removed on Children, Home, Child View and Activity (owner's approval of option A, with conditions) |
+| 1.5 | 2026-11-22 | §10.8: the points figure is one shared component on Child View, Home and Children (owner: apply it consistently). §11: the Achievements card redrawn as two plain rows (owner: "cramped and looks bad") |
+| 1.4 | 2026-11-22 | §10: Child View points card reworked at the owner's request (visual review, 22 November). Design for review before the build |
 | 1.3 | 2026-11-19 | Post-build code review (§9): New goal used the previous child's behaviour (Major, fixed); focus, refresh, loading and lock fixes |
 | 1.2 | 2026-11-19 | Owner decisions: B1 approved for now (full milestone wording restored when D1 lands); B3 approved ("Ask a parent"; after pressing, "Ready when a parent agrees"; nothing charged until a parent confirms) |
 | 1.1 | 2026-11-19 | Fresh-context peer review (§8): 3 blocking and 7 non-blocking findings adopted. The request button label becomes an owner item; the lock is held until fresh data arrives; contract corrected; requested rewards win over affordability; reached state kept as approved ("0 to reach") |
@@ -50,7 +53,7 @@
 ## 3. Child View (approved strings verbatim)
 
 - "← Back to Home", "My Percy adventure", "A child-friendly view of goals, points and rewards. No independent child account.", then the family strip.
-- **"You're doing great, {Name}!"** with "{available}" and "Ready to use".
+- **"You're doing great, {Name}!"** with "{available}" and "Ready to use". **Superseded on 22 November by §10:** one figure with a piggy bank; the second tile below is gone and savings show once, in "My next big adventure".
   - The approved second tile ("{saved} Saved towards {goal}") and the "My next big adventure" card wait for D1.
 - **"Rewards I can choose"**: the rewards visible to the child (`visible_to_child`, assignment), cheapest first, each with its icon, title and a status. **Precedence, first match wins:**
   1. **Requested** (its `rewardId` is in the child's `reward_stack_priced`): "{cost} point(s) · Ready when a parent agrees". A requested reward is shown **even if it was hidden afterwards**, because its cost is still set aside and the child must see why "Ready to use" is lower.
@@ -146,4 +149,127 @@
 | 9 | Raw "Could not request" could reach a toast | Nit | Empty message: callers show the shipped wording |
 | 10 | Test hygiene: an empty assertion, no RTL cleanup, e2e cleanup not in `finally` | Nit | Fixed |
 | 11 | Children imported `RewardTile` from the Rewards page | Nit | Moved to `components/rewards/RewardTile.jsx` (Rewards re-exports it) |
+
+## 10. Child View points card (owner review, 22 November) (v1.4)
+
+**Owner's finding.** "The box which shows the kids current points tally is very full looking … This section needs rework. Wording and the look is poor. No icon or imagery."
+
+**What is there now.** The card "You're doing great, {Name}!" holds two bordered tiles, "{available} / Ready to use" and "{saved} / Saved towards {goal}", with no picture. This is the approved design (blob `9de1df2`) as drawn; the owner is changing an approved screen and its wording.
+
+**Prior decisions found.** §3 (the strings above are approved verbatim); D1 design §19.3 and S5 (the second tile shows only a goal visible to children); V1-F §"Removed" (the star sticker left the app with the old Home hero and stays in `public/`); the approval register (the star is selected for "Home welcome" and "small decorative sticker"; a dedicated points star is **not yet approved**).
+
+### 10.1 Contract
+
+The card shows **one** figure, the child's available points (`available_points` from the server), with a piggy-bank icon and the label "Ready to use". A child's savings are shown **once**, in "My next big adventure" directly below, which already carries the goal's picture, "{saved} of {cost} points saved", the bar and the points to go. No figure is computed in the browser.
+
+**Owner's decisions (22 November, after the options sheet).** Layout C ("option c is good"). The star is "not appropriate – use a piggy bank". "Alignment is off with the wording and numbers" on the mock-up: fixed in §10.2.
+
+**Wording.** "{n} points" with "Ready to use" beneath. "Ready to use" is the approved string. The mock-up's "points ready to spend" is dropped: the owner's review of the release candidate noted that "Ready to use" is more precise while requests and savings are held, and that wording must not suggest a child spends without a parent.
+
+### 10.2 Build
+
+`src/pages/ChildView.jsx`, the first card only:
+
+- heading unchanged: "You're doing great, {Name}!";
+- one row, vertically centred: the icon in a tile (the same tile as a reward's picture: 56 px, warm ground), then one paragraph;
+- the paragraph's first line is the figure in the largest text token with "point" or "points" beside it **on the same baseline**; its second line is "Ready to use" in the small muted style. Both lines start at the same left edge;
+- the paragraph's text is "{n} points Ready to use" with real spaces (design review: without one the text ran together as "90points");
+- the "Saved towards {goal}" tile is removed. `visibleGoals` and "My next big adventure" are unchanged.
+
+Not changed: Home's "Little wins, big adventures!" tiles and the Children page's "Earned this week / Available now" tiles (see the design check in the release assessment).
+
+### 10.3 Artwork
+
+The piggy bank is `phosphor:piggy-bank:duotone`, already one of the 71 approved picker icons (the exact pinned upstream file, MIT, in `approvedIcons.js`). Nothing is drawn or generated, and no new asset is added. The star sticker is not used.
+
+### 10.4 Edge cases (input → expected)
+
+| Input | Expected |
+| --- | --- |
+| 0 available | "0 points", "Ready to use" |
+| 1 available | "1 point", "Ready to use" |
+| 12345 available at 320 px | "12345 points" on one line beside the icon; nothing clipped |
+| `available_points` missing | Falls back to `total_points`, then 0 (as now) |
+| A 100-character child name with no spaces | The heading breaks inside the card (as now) |
+| No bigger goal, or a goal hidden from children (S5) | The card alone; nothing about savings on the page (as now) |
+| Savings in two goals | "My next big adventure" shows the leading goal (D1 O5), as now |
+| A fully saved goal | Unchanged: "{Name} has saved enough for {Goal}!" in the card below |
+| Points held for a requested reward | Left out of the figure, as now; the reward row says "Ready when a parent agrees" |
+
+### 10.5 Tests
+
+- Unit (`V1Children.test.jsx`, `V1Savings.test.jsx`): the text for 0, 1 and many points; the piggy-bank icon present and hidden from assistive technology; no "Saved towards" text; the saved figure appears once, in "My next big adventure"; S5 unchanged.
+- Browser (`e2e/v1-savings.spec.js`): the figure and label on Child View. `e2e/ui.spec.js` runs the shared screen checks on Child View at four sizes; its fixture child has a four-digit total.
+- New shared check: in a figure block (`[data-figure]`), the figure and its unit share a baseline, and the label starts at the figure's left edge (to a pixel). This is the alignment the owner found off.
+- Shown red first against the current card.
+- **Not covered by a test:** whether it looks right (the owner's sign-off, G2); what a screen reader says (two lines may be read as two phrases; the text itself is correct).
+
+### 10.6 Design review (independent, before the build)
+
+One blocking finding, adopted: no space between the two parts of the sentence. Also adopted: the stated edge cases (missing values, the 100-character name), an honest list of which tests assert what, and the list of documents and comments that the change makes stale (updated in the same commit). Confirmed: no saved figure visible today disappears from the page, because the removed tile and the card below show the same goal.
+
+### 10.7 Rollout and reversal
+
+One commit on the release-candidate branch. Reverting it restores the approved two-tile card. No data, server or migration change.
+
+### 10.8 The same figure on Home and Children (owner, 22 November)
+
+**Owner's finding.** "Why is the home page and child page points / icons different? The changes we just made … need to be consistently applied."
+
+The figure of §10.2 is now one component, `src/components/PointsFigure.jsx`, used by Child View's points card, Home's "Little wins, big adventures!" and the Children weekly-target card. Each shows an icon in a tile, the figure with its unit on one baseline, and the approved label beneath:
+
+| Screen | Figures |
+| --- | --- |
+| Child View | piggy bank: "{n} points", "Ready to use" |
+| Home | target: "{week} / {target}", "This week"; piggy bank: "{n} points", "Available now" |
+| Children | target: "{week} / {target}", "Earned this week"; piggy bank: "{n} points", "Available now" |
+
+Labels are unchanged per screen. Both icons are approved Phosphor icons already in the app (the target is the Goals control's icon; the piggy bank is a picker icon). The bordered tiles inside those two cards are gone. The figures sit one under the other on a phone and side by side from 640 px. The shared screen check measures every figure's baseline, left edge and centring on every screen it opens.
+
+Reviewed after the build (release assessment §4.6): a missing weekly target shows 0, never "null"; the singular is tested on each screen.
+
+## 11. Achievements card on Children (owner, 22 November) (v1.5)
+
+**Owner's finding.** "Achievements boxes in children is cramped and looks bad. Redesign."
+
+**What was there.** Two bordered boxes inside the card, holding sentences rather than figures. On a phone each box was about 150 px wide, so "Goals completed", "7 weekly points to go" and "New bike: 180 to go" each broke over two lines, the last leaving "go" alone.
+
+**Contract.** The same information and the same words, laid out so that nothing breaks awkwardly: two plain rows, each with a picture, with no box inside the card.
+
+**Build** (`src/pages/Children.jsx`, the Achievements card only):
+
+- row 1, a circled tick: "Goals completed", "Recognise effort over time", "{n} today";
+- row 2, a trophy: "Next milestone", "Weekly target and bigger goal", **a small progress bar for the weekly target** (the owner, on seeing the first version: "instead of 25 weekly points to go put a small progress bar"), and "{goal}: {n} to go" (or "Saved!") when the child has a bigger goal. The bar is the same bar as on the weekly-target card; a screen reader hears "Weekly target: {n} weekly points to go";
+- one under the other with a line between on a phone; side by side from 640 px, with no line;
+- the icon tile is the one used for a reward's picture and for the points figures, so the page's pictures share one size and one left edge;
+- both icons are approved Phosphor icons already in the app, hidden from assistive technology.
+
+**Unchanged:** every other string, every figure's source, and when the goal line appears. The sentence "{n} weekly points to go" is no longer shown; it is the bar's spoken value.
+
+**Edge cases.** A 100-character goal name with no spaces breaks inside the row. No bigger goal: the row has three lines. Target reached or passed: the bar is full, never beyond its end. A target of 0: the bar is empty.
+
+**Tests.** The two rows' titles and icons, and that neither row is a bordered box; the bar's name, spoken value, figures and width at 18 of 25 and at 30 of 25; the sentence is no longer on the page. The shared screen checks (clipped text, sideways scroll, text size, accessibility) run on the Children page at four sizes. **Not covered by a test:** how it looks; the before-and-after picture went to the owner.
+
+**Rollout and reversal.** One commit; reverting it restores the two boxes. No data, server or migration change.
+
+## 12. Repetition removed (owner, 22 November) (v1.6)
+
+**Owner's finding.** "There is a lot of repetition on the pages." Mock-ups of each screen with the repeats removed were shown (option A, trim; option B, merge). **The owner approved option A on all four screens**, with these conditions: keep the "Next milestone" row and its progress bar; keep the distinction between weekly progress and bigger-goal savings; keep Today's Goals, Quick Points and the reward-request actions; on Activity keep points, child, reward, time and correction history; **no new wording, no restructured cards, no functionality removed**. Both tabs, Home and Children, stay with their responsibilities; the information architecture is reviewed in V1.1 (#66).
+
+**Contract.** Each of the four changes removes text that is said elsewhere on the same screen. Nothing is added or moved, and no action changes.
+
+| Screen | Removed | Where the same fact still is |
+| --- | --- | --- |
+| Children | The line "{week} of {target} weekly points · {available} available" under "{Name}'s page" | The weekly-target card directly below: "{week} / {target}, Earned this week" and "{n} points, Available now" |
+| Home | The "{week} / {target}, This week" figure in "Little wins, big adventures!" | The selected child's tile above: "{week} / {target} this week" with its bar |
+| Child View | "· Ask a parent" after the price of a reward the child can ask for | The "Ask a parent" button beside it. A reward already asked for still says "· Ready when a parent agrees" |
+| Activity | The kind repeated at the start of a row's second line: "Today's Goal ·", "Reward redeemed ·", "Savings ·" | The row's first line: "completed", "redeemed", "saved … towards", "moved … back from", with the row's icon |
+
+**Kept, as the owner required:** the "Next milestone" row and bar on Children (so the week still appears there and in the weekly-target card); the savings card; on Activity the points, the child, the reward or behaviour, a note where there is one, the time, the "savings ended" detail, Undo and Correct.
+
+**Edge cases.** One child: Home's tile still shows the week. A reward the child cannot afford: its line is unchanged. A goal completion with no behaviour name: the second line shows the label and the time as before.
+
+**Tests.** For each trim, that the removed text is gone and the surviving place still shows the fact: the Children header; Home's single figure and the tile; Child View's price and button; Activity's second lines for a goal, a redemption and an award with a note. The browser tests run the shared screen checks on all four screens at four sizes.
+
+**Rollout and reversal.** One commit; reverting it restores the lines. No data, server or migration change.
 

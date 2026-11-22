@@ -256,7 +256,7 @@ export default function BehaviorCategoryManager({ embedded = false, mode = 'all'
                       {quickOnly ? (
                         <div className="flex flex-1 min-w-0 min-h-11 items-center gap-3 px-3 py-2.5">
                           <span className="shrink-0 w-7 flex justify-center text-muted-foreground"><CategoryIcon iconKey={cat.icon_key} className="w-5 h-5" /></span>
-                          <span className="font-medium text-foreground flex-1 min-w-0 truncate text-sm">{cat.name}</span>
+                          <span className="font-medium text-foreground flex-1 min-w-0 break-words text-sm">{cat.name}</span>
                           <span className="text-sm text-earn font-semibold tabular-nums shrink-0 w-14 text-right">{formatPointsBadge(cat.points ?? 1)}</span>
                         </div>
                       ) : (
@@ -269,7 +269,7 @@ export default function BehaviorCategoryManager({ embedded = false, mode = 'all'
                         className="flex flex-1 min-w-0 min-h-11 items-center gap-3 px-3 py-2.5 text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                       >
                         <span className="shrink-0 w-7 flex justify-center text-muted-foreground"><CategoryIcon iconKey={cat.icon_key} className="w-5 h-5" /></span>
-                        <span className="font-medium text-foreground flex-1 min-w-0 truncate text-sm">{cat.name}</span>
+                        <span className="font-medium text-foreground flex-1 min-w-0 break-words text-sm">{cat.name}</span>
                         <span className="text-sm text-earn font-semibold tabular-nums shrink-0 w-14 text-right">{formatPointsBadge(cat.points ?? 1)}</span>
                         <span className="shrink-0 text-muted-foreground" aria-hidden="true">
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

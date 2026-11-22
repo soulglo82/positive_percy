@@ -2,8 +2,9 @@
 // docs/engineering/V1-B-DESIGN.md §2). Every figure comes from the server:
 // week_points, weekly_target and available_points on the child, the goals
 // and today's completions from GET /api/todays-goals?manage=true. "Saving for
-// something bigger" waits for the savings ledger (owner decision D1).
-import { useState } from 'react';
+// something bigger" shows the child's bigger goals from child.goals (D1,
+// savings design §19.3); its Edit opens the savings dialog.
+import { useRef, useState } from 'react';
 import { isAssignedTo } from '@/lib/assignment';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ import { useRewardMutations } from '@/hooks/useRewardMutations';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PercyIcon from '@/components/icons/PercyIcon';
+import PointsFigure from '@/components/PointsFigure';
 import { FamilyStrip } from '../components/home/HomeSections';
 import WelcomeCard from '../components/home/WelcomeCard';
 import AddChildModal from '../components/child/AddChildModal';
@@ -25,6 +27,9 @@ import EditChildModal from '../components/child/EditChildModal';
 import ManageGoalsDialog from '../components/dashboard/ManageGoalsDialog';
 import RewardForm from '../components/rewards/RewardForm';
 import RewardTile from '../components/rewards/RewardTile';
+import GoalProgress from '../components/savings/GoalProgress';
+import SavingsDialog from '../components/savings/SavingsDialog';
+import { leadingGoal, goalRewardsFor, goalOrder } from '@/lib/savings';
 import { buildChildCreatePayload } from '@/lib/childPayload';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorCard from '../components/ErrorCard';
@@ -33,14 +38,16 @@ const linkClass = 'inline-flex items-center min-h-11 text-sm font-semibold text-
 const pct = (n, d) => (d > 0 ? Math.max(0, Math.min(100, Math.round((n / d) * 100))) : 0);
 
 // Rewards this child can see (assignment). Hidden ones are shown, tagged, for
-// the parent; Child View leaves them out.
-export const rewardsForChild = (rewards, childId) => rewards.filter((r) => isAssignedTo(r, childId));
+// the parent; Child View leaves them out. Bigger goals are listed under
+// "Saving for something bigger" instead (D1).
+export const rewardsForChild = (rewards, childId) => rewards.filter((r) => isAssignedTo(r, childId) && !r.is_bigger_goal);
 
 function SectionHead({ title, children }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 className="font-display font-bold text-lg text-primary break-words">{title}</h2>
-      {children}
+    <div className="flex items-center justify-between gap-2">
+      {/* The heading wraps; its button stays on the right (design critique: the button dropped under the heading on phones, in some cards and not others). */}
+      <h2 className="min-w-0 font-display font-bold text-lg text-primary break-words">{title}</h2>
+      {children && <div className="shrink-0">{children}</div>}
     </div>
   );
 }
@@ -55,6 +62,8 @@ export default function Children() {
   const [showAddChild, setShowAddChild] = useState(false);
   const [goalsStart, setGoalsStart] = useState(null); // null: closed; else the dialog's `start`
   const [rewardEditing, setRewardEditing] = useState(null);
+  const [savingsOpen, setSavingsOpen] = useState(false);
+  const savingsEdit = useRef(null);
   const { save, remove } = useRewardMutations();
 
   const { data: children = [], isLoading, isError, refetch } = useQuery({
@@ -115,6 +124,15 @@ export default function Children() {
   const goals = (goalsData?.goals || []).filter((g) => g.child_id === child.id);
   const doneToday = goals.filter((g) => !!g.completion_id).length;
   const treats = rewardsForChild(rewards, child.id);
+  const goalRewards = goalRewardsFor(rewards, child.id, isAssignedTo);
+  const savedGoals = child.goals || [];
+  const topGoal = leadingGoal(savedGoals);
+  // Every current goal, at the server's figures when it has savings, else 0
+  // saved (code review: a goal with nothing saved is still listed).
+  const byGoal = new Map(savedGoals.map((g) => [g.rewardId, g]));
+  const goalRows = goalRewards.map((r) => byGoal.get(r.id) || {
+    rewardId: r.id, name: r.title, cost: r.cost_points, saved: 0, to_go: r.cost_points, icon_key: r.icon_key, emoji: r.emoji, image_url: r.image_url,
+  }).sort(goalOrder);
 
   return page(
     <>
@@ -128,10 +146,9 @@ export default function Children() {
         <CardContent className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <ChildAvatar name={child.name} url={child.avatar_url} colour={childColour(child, ordered)} decorative />
-            <div className="min-w-0">
-            <h2 className="font-display font-bold text-lg text-primary break-words">{child.name}'s page</h2>
-            <p className="text-sm text-muted-foreground tabular-nums">{week} of {target} weekly points · {available} available</p>
-            </div>
+            {/* No figures here: the weekly-target card directly below shows the
+                week and the points available (owner, 22 Nov: trim repetition). */}
+            <h2 className="min-w-0 font-display font-bold text-lg text-primary break-words">{child.name}'s page</h2>
           </div>
           <Button asChild variant="outline">
             <Link to={createPageUrl('ChildView') + '?child=' + encodeURIComponent(child.id)}>View as child</Link>
@@ -144,15 +161,12 @@ export default function Children() {
           <SectionHead title={`${child.name}'s weekly target`}>
             <Button variant="outline" aria-label={`Edit ${child.name}'s weekly target`} onClick={() => setEditingChild(true)}>Edit</Button>
           </SectionHead>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-md border border-border p-3">
-              <p className="font-display font-extrabold text-title text-foreground tabular-nums">{week} / {target}</p>
-              <p className="text-sm font-medium text-muted-foreground">Earned this week</p>
-            </div>
-            <div className="rounded-md border border-border p-3">
-              <p className="font-display font-extrabold text-title text-foreground tabular-nums">{available}</p>
-              <p className="text-sm font-medium text-muted-foreground">Available now</p>
-            </div>
+          {/* The same figure as Child View's points card and Home's (owner, 22 Nov). */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <PointsFigure icon={<PercyIcon id="phosphor:target:duotone" className="h-7 w-7" />}
+              value={week} unit={`/ ${target}`} label="Earned this week" />
+            <PointsFigure icon={<PercyIcon id="phosphor:piggy-bank:duotone" className="h-7 w-7" />}
+              value={available} valueProps={{ 'data-available': true }} unit={available === 1 ? 'point' : 'points'} label="Available now" />
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden" aria-hidden="true">
             <div className="h-full rounded-full bg-sunrise" style={{ width: pct(week, target) + '%' }} />
@@ -182,6 +196,26 @@ export default function Children() {
 
       <Card>
         <CardContent className="p-4 sm:p-5 space-y-3">
+          <SectionHead title="Saving for something bigger">
+            {goalRewards.length > 0 && (
+              <Button ref={savingsEdit} variant="outline" aria-label={`Edit saving for something bigger for ${child.name}`} onClick={() => setSavingsOpen(true)}>Edit</Button>
+            )}
+          </SectionHead>
+          {goalRewards.length === 0 ? (
+            <p className="text-muted-foreground">
+              No bigger goals yet.{' '}
+              <Link to={createPageUrl('Rewards')} className={linkClass}>Mark a reward as a bigger goal</Link>
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {goalRows.map((g) => <GoalProgress key={g.rewardId} goal={g} />)}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4 sm:p-5 space-y-3">
           <SectionHead title={`${child.name}'s goals`}>
             <Button onClick={() => setGoalsStart({ view: 'form' })}>
               <PercyIcon id="phosphor:plus-circle:duotone" className="h-5 w-5" />
@@ -204,7 +238,7 @@ export default function Children() {
             </ul>
           )}
           <div className="flex justify-end">
-            <Button variant="link" size="goal" onClick={() => setGoalsStart({ view: 'list' })} aria-label={'Manage all goals for ' + child.name}>
+            <Button variant="link" size="goal" className="-mr-3" onClick={() => setGoalsStart({ view: 'list' })} aria-label={'Manage all goals for ' + child.name}>
               Manage all goals
             </Button>
           </div>
@@ -214,15 +248,37 @@ export default function Children() {
       <Card>
         <CardContent className="p-4 sm:p-5 space-y-3">
           <SectionHead title="Achievements" />
-          <div className="grid gap-3 xs:grid-cols-2">
-            <div className="rounded-md border border-border p-3">
-              <p className="font-semibold text-foreground">Goals completed</p>
-              <p className="text-sm text-muted-foreground">Recognise effort over time</p>
-              <p className="font-display font-bold text-lg text-foreground tabular-nums">{doneToday} today</p>
+          {/* Two plain rows with a picture each, not two boxes inside the card
+              (owner, 22 Nov: "cramped and looks bad"; V1-B design §11). One
+              under the other on a phone, with a line between; side by side
+              from 640px. The weekly sentence became a bar at the owner's word. */}
+          <div className="grid gap-4 sm:grid-cols-2" data-achievements>
+            <div className="flex min-w-0 items-start gap-3">
+              <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-warning text-primary">
+                <PercyIcon id="phosphor:check-circle:duotone" className="h-7 w-7" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-foreground">Goals completed</p>
+                <p className="text-sm text-muted-foreground">Recognise effort over time</p>
+                <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">{doneToday} today</p>
+              </div>
             </div>
-            <div className="rounded-md border border-border p-3">
-              <p className="font-semibold text-foreground">Next milestone</p>
-              <p className="font-display font-bold text-lg text-foreground tabular-nums">{toTarget} weekly points to go</p>
+            <div className="flex min-w-0 items-start gap-3 border-t border-border pt-4 sm:border-t-0 sm:pt-0">
+              <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-warning text-primary">
+                <PercyIcon id="phosphor:trophy:duotone" className="h-7 w-7" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-foreground">Next milestone</p>
+                <p className="text-sm text-muted-foreground">Weekly target and bigger goal</p>
+                {/* A small bar, not the sentence "{n} weekly points to go" (owner, 22 Nov).
+                    The sentence is still what a screen reader hears. */}
+                <div className="mt-2 h-2 w-full max-w-xs rounded-full bg-muted overflow-hidden" role="progressbar" aria-label="Weekly target"
+                  aria-valuemin={0} aria-valuemax={Math.max(target, 0)} aria-valuenow={Math.max(0, Math.min(week, target))}
+                  aria-valuetext={`${toTarget} weekly points to go`} data-milestone-bar>
+                  <div className="h-full rounded-full bg-sunrise" style={{ width: pct(week, target) + '%' }} />
+                </div>
+                {topGoal && <p className="mt-1.5 text-sm font-semibold text-foreground tabular-nums break-words">{topGoal.name}: {topGoal.to_go > 0 ? `${topGoal.to_go} to go` : 'Saved!'}</p>}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -240,15 +296,16 @@ export default function Children() {
           toast.success(`${data.name}'s profile updated.`);
         }}
       />}
+      <SavingsDialog open={savingsOpen} onClose={() => setSavingsOpen(false)} child={child} goalRewards={goalRewards} returnFocusRef={savingsEdit} />
       <ManageGoalsDialog open={!!goalsStart} onClose={() => setGoalsStart(null)} start={goalsStart}
         child={child} children={children} categories={behaviorCategories} today={today} />
       <RewardForm
         isOpen={!!rewardEditing}
         onClose={() => setRewardEditing(null)}
-        reward={rewardEditing}
+        reward={rewardEditing ? (rewards.find((r) => r.id === rewardEditing.id) || rewardEditing) : null}
         children={children}
         onSubmit={(data) => save(rewardEditing?.id, data)}
-        onDelete={async (reward) => { if (await remove(reward)) setRewardEditing(null); }}
+        onDelete={async (reward, confirm) => { const r = await remove(reward, confirm); if (r === true) setRewardEditing(null); return r; }}
       />
     </>
   );

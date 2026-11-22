@@ -77,7 +77,13 @@ export default function ParentDashboard() {
   });
 
   // Fetch behavior categories (quick actions are now derived from categories)
-  const { data: behaviorCategories } = useQuery({
+  // Quick Points is the first card on Home, so the page waits for the first
+  // load of the behaviours as it does for the children: otherwise the card
+  // says "No quick points yet" for a moment and then swaps to the tiles.
+  // Only the first attempt (with its one retry) holds the page back. If that
+  // fails, the page is shown, and a later refetch must not take it away again
+  // (it would close an open Manage goals dialog): hence the error count.
+  const { data: behaviorCategories, isLoading: categoriesLoading, errorUpdateCount: categoriesErrors } = useQuery({
     queryKey: ['behaviorCategories'],
     queryFn: async () => {
       const token = getToken();
@@ -89,6 +95,8 @@ export default function ParentDashboard() {
     },
     enabled: !!user,
   });
+
+  const waitingForBehaviours = categoriesLoading && categoriesErrors === 0;
 
   // Derive quick actions from categories with is_quick_action=true
   const categoryQuickActions = (behaviorCategories || [])
@@ -228,6 +236,8 @@ export default function ParentDashboard() {
           <LoadingSpinner message="Loading your family..." />
         ) : isError ? (
           <ErrorCard message="Couldn't load children" onRetry={refetch} />
+        ) : waitingForBehaviours ? (
+          <LoadingSpinner message="Loading your family..." />
         ) : children.length === 0 ? (
           <WelcomeCard onAddFirstChild={() => setShowAddChild(true)} />
         ) : (
@@ -238,23 +248,24 @@ export default function ParentDashboard() {
               <p className="text-muted-foreground">Good things are happening, one small step at a time.</p>
             </div>
             <FamilyStrip children={ordered} selectedId={homeChild.id} onSelect={setHomeChildId} />
-            {/* The DOM is in reading order (Goals, Little wins, Working towards,
-                Quick Points), so Tab and screen readers follow what phones
-                show. Desktop places the same cards in two columns:
-                Goals + Quick Points | Little wins + Working towards. */}
+            {/* Owner, 22 November: awarding points is the point of this page,
+                so Quick Points comes straight after the child picker, then
+                Today's Goals, the available points and what the child is
+                working towards. The DOM is in that reading order, so Tab and
+                screen readers follow what phones show. Desktop sets the same
+                cards in two columns, each read top to bottom:
+                Quick Points + Goals | Little wins + Working towards. */}
             <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-              <div className="lg:col-start-1 lg:row-start-1">
-                <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} selectedChildId={homeChild.id} />
-              </div>
-              <div className="flex flex-col gap-5 lg:col-start-2 lg:row-start-1 lg:row-span-2">
-                <LittleWins child={homeChild} />
-                <WorkingTowards child={homeChild} />
-              </div>
-              <div className="lg:col-start-1 lg:row-start-2">
+              <div className="flex flex-col gap-5">
                 <QuickPoints child={homeChild} actions={homeActions} awarding={awardingIds.includes(homeChild.id)}
                   onAward={handleQuickAction}
                   onOpenAward={() => handleAddPoints(homeChild)}
                   onOpenRewards={() => handleSpendRewards(homeChild)} />
+                <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} selectedChildId={homeChild.id} />
+              </div>
+              <div className="flex flex-col gap-5">
+                <LittleWins child={homeChild} />
+                <WorkingTowards child={homeChild} />
               </div>
             </div>
           </>

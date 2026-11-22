@@ -37,12 +37,20 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   const [costPoints, setCostPoints] = useState(50);
   const [description, setDescription] = useState('');
   const [visible, setVisible] = useState(true);
+  const [biggerGoal, setBiggerGoal] = useState(false);
   const [assigned, setAssigned] = useState([]);
   const [iconKey, setIconKey] = useState(null);
   const [iconTouched, setIconTouched] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(true);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  // D1 §21: what the server says this save (or delete) would release, when it
+  // differs from what this page knew. It replaces the local list in both
+  // warnings, and its snapshot is what the parent then confirms.
+  const [serverEnding, setServerEnding] = useState(null);
+  const [deleteEnding, setDeleteEnding] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const opened = useRef(false);
 
   // Fresh form on each opening: from the reward, the starter template, or blank.
@@ -55,23 +63,59 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
     setCostPoints(src.cost_points ?? 50);
     setDescription(src.description || '');
     setVisible(reward ? reward.visible_to_child !== false : true);
+    setBiggerGoal(!!reward?.is_bigger_goal);
     setAssigned(reward?.assigned_child_ids || []);
     setIconKey(reward?.icon_key ?? null);
     setIconTouched(false);
     setPickerOpen(!reward); // approved: a new reward opens the picker; edit starts closed
     setSaving(false);
+    setServerEnding(null);
+    setDeleteEnding(null);
   }, [isOpen, reward, initialTemplate]);
 
   // What the reward looks like now: the chosen icon, else its own image/emoji.
-  const emoji = reward?.emoji || initialTemplate?.emoji || DEFAULT_EMOJI;
+  // An existing reward shows what its tile shows: its own emoji, or the gift
+  // icon when it has none (design critique: the form showed a gift emoji for a
+  // reward whose tile shows the gift icon). A new reward starts with the default.
+  const emoji = reward ? (reward.emoji || null) : (initialTemplate?.emoji || DEFAULT_EMOJI);
   const preview = { icon_key: iconKey, image_url: reward?.image_url || null, emoji };
   const valid = title.trim().length > 0 && Number.isInteger(costPoints) && costPoints >= 1;
 
   const choose = (id) => { setIconKey(id); setIconTouched(true); };
-  const toggleChild = (id) => setAssigned((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  // A change to what is being saved makes any list from the server stale.
+  const toggleChild = (id) => { setServerEnding(null); setAssigned((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])); };
 
-  const save = async () => {
+  // O6: un-marking a bigger goal, or taking it away from a child, ends what
+  // was saved towards it for good (the points return to available; marking it
+  // again starts from 0). Say so before saving (code review of the screens).
+  const lower = (ids) => (ids || []).map((x) => String(x).toLowerCase());
+  const hadFor = (id) => { const was = lower(reward?.assigned_child_ids); return was.length === 0 || was.includes(String(id).toLowerCase()); };
+  const hasFor = (id) => { const now = lower(assigned); return now.length === 0 || now.includes(String(id).toLowerCase()); };
+  // Who loses the goal, and how much each has saved towards it (server figures,
+  // child.goals). Nothing saved: nothing is lost, so no warning (§20.3).
+  const losing = !reward?.is_bigger_goal ? [] : children
+    .filter((c) => hadFor(c.id) && (!biggerGoal || !hasFor(c.id)))
+    .map((c) => ({ id: c.id, name: c.name, saved: (c.goals || []).find((g) => String(g.rewardId) === String(reward.id))?.saved ?? 0 }))
+    .filter((c) => c.saved > 0);
+  // The local snapshot: the reward row's generations and each child's amount.
+  const snapshotOf = (list) => ({
+    goal_epoch: reward?.goal_epoch ?? 0,
+    goal_child_epochs: reward?.goal_child_epochs || {},
+    children: list.map((c) => ({ child_id: c.id, saved: c.saved })),
+  });
+  const shown = serverEnding ? serverEnding.ending.map((e) => ({ id: e.child_id, name: e.name, saved: e.saved })) : losing;
+  const endsSavings = shown.length > 0;
+  // A delete ends the savings of every child who has some in this goal.
+  const deletingFrom = !reward?.is_bigger_goal ? [] : children
+    .filter((c) => hadFor(c.id))
+    .map((c) => ({ id: c.id, name: c.name, saved: (c.goals || []).find((g) => String(g.rewardId) === String(reward.id))?.saved ?? 0 }))
+    .filter((c) => c.saved > 0);
+  const deleteShown = deleteEnding ? deleteEnding.ending.map((e) => ({ id: e.child_id, name: e.name, saved: e.saved })) : deletingFrom;
+  const releaseLine = (c) => `${c.name || 'A child'}: ${c.saved} saved ${c.saved === 1 ? 'point' : 'points'} will become available again.`;
+
+  const save = async (confirmed = false) => {
     if (!valid || saving) return;
+    if (endsSavings && confirmed !== true) { setConfirmEnd(true); return; }
     setSaving(true);
     try {
       const payload = {
@@ -79,11 +123,16 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
         cost_points: costPoints,
         description: description.trim(),
         visible_to_child: visible,
+        is_bigger_goal: biggerGoal,
         assigned_child_ids: assigned,
         ...(editing ? {} : { emoji }),
         ...(iconTouched ? { icon_key: iconKey } : {}),
+        // Only after the parent confirmed the per-child warning: exactly what
+        // was shown (§21), the server's list when it sent one.
+        ...(confirmed === true && endsSavings ? { confirm_end_savings: serverEnding ? serverEnding.snapshot : snapshotOf(losing) } : {}),
       };
       const ok = await onSubmit(payload);
+      if (ok?.needsConfirm) { setServerEnding(ok.needsConfirm); setConfirmEnd(true); return; }
       if (ok === false) return;
       onClose();
     } finally {
@@ -133,6 +182,23 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
                 <Checkbox id="reward-visible" checked={visible} onCheckedChange={(v) => setVisible(v === true)} />
                 <span className="text-sm font-medium text-foreground">Visible to children</span>
               </label>
+              {/* D1 (D7): a parent marks a bigger goal. Wording O4, proposed by the
+                  owner; final approval at screen review. Un-marking ends the
+                  goal's savings for good (O6), so say so when it is on. */}
+              <label htmlFor="reward-bigger-goal" className="flex min-h-11 cursor-pointer items-start gap-3 rounded-md px-1 py-2 hover:bg-accent">
+                <Checkbox id="reward-bigger-goal" checked={biggerGoal} onCheckedChange={(v) => { setServerEnding(null); setBiggerGoal(v === true); }}
+                  aria-describedby="reward-bigger-goal-help" className="mt-0.5" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-foreground">Bigger goal</span>
+                  <span id="reward-bigger-goal-help" className="block text-xs text-muted-foreground">Save points towards this reward over time</span>
+                </span>
+              </label>
+              {endsSavings && (
+                <div role="status" className="space-y-1 rounded-md border border-border bg-warning p-3 text-sm text-foreground">
+                  {shown.map((c) => <p key={c.id}>{releaseLine(c)}</p>)}
+                  <p>Past savings won't be restored if you re-enable the goal.</p>
+                </div>
+              )}
               {children.length > 0 && (
                 <div>
                   <p className="mb-1 text-sm font-medium text-foreground">Assign to Children</p>
@@ -157,22 +223,58 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={saving}>Cancel</Button>
-            <Button type="button" className="flex-1" onClick={save} disabled={!valid || saving}>Save reward</Button>
+            <Button type="button" className="flex-1" onClick={() => save()} disabled={!valid || saving}>Save reward</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+      <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End this bigger goal's savings?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {shown.map(releaseLine).join(' ')} Past savings won't be restored if you re-enable the goal.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep saving</AlertDialogCancel>
+            {/* "End savings", not "Save reward": beside "Keep saving" two "save" labels meant opposite things (owner's handover, 22 Nov, W3). It saves the reward and ends the savings, as before. */}
+            <AlertDialogAction onClick={() => { setConfirmEnd(false); save(true); }}>End savings</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmDelete} onOpenChange={(o) => { if (deleting) return; setConfirmDelete(o); if (!o) setDeleteEnding(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {reward?.title}?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete this reward. Any pending redemptions will be denied. This cannot be undone.
             </AlertDialogDescription>
+            {/* D1 §21.2: what deleting a bigger goal releases, per child. */}
+            {deleteShown.length > 0 && (
+              <div role="status" className="space-y-1 rounded-md border border-border bg-warning p-3 text-sm text-foreground">
+                {deleteShown.map((c) => <p key={c.id}>{releaseLine(c)}</p>)}
+              </div>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setConfirmDelete(false); onDelete(reward); }}>Delete</AlertDialogAction>
+            <AlertDialogCancel disabled={deleting} onClick={() => setDeleteEnding(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" disabled={deleting} onClick={async (e) => {
+              e.preventDefault();
+              if (deleting) return; // one request at a time (code review of 2074d55)
+              setDeleting(true);
+              try {
+                const confirm = deleteShown.length ? (deleteEnding ? deleteEnding.snapshot : snapshotOf(deletingFrom)) : null;
+                const r = await onDelete(reward, confirm);
+                // The server saw something else: show its list and ask again.
+                if (r?.needsConfirm) { setDeleteEnding(r.needsConfirm); return; }
+                setConfirmDelete(false);
+                setDeleteEnding(null);
+              } finally {
+                setDeleting(false);
+              }
+            }}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

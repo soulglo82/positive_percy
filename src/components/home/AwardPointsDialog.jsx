@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import CategoryIcon from '@/components/CategoryIcon';
+import BehaviourTileParts, { TILE_GRID, TILE_LAYOUT } from '@/components/home/BehaviourTile';
 import { FamilyStrip } from '@/components/home/HomeSections';
 
 // A1: unassigned behaviours, or ones assigned to this child.
@@ -87,16 +87,14 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
             {offered.length === 0 ? (
               <p className="text-sm text-muted-foreground">Add a behaviour in Family settings first.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="award-behaviour">
+              <div className={TILE_GRID} role="group" aria-labelledby="award-behaviour" data-tile-grid>
                 {offered.map((cat) => {
                   const on = cat.id === chosen?.id;
                   return (
-                    <button key={cat.id} type="button" aria-pressed={on} onClick={() => setCategoryId(cat.id)}
-                      className={cn('flex items-center gap-1.5 min-h-11 rounded-md px-2 py-3 text-left text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                    <button key={cat.id} type="button" aria-pressed={on} onClick={() => setCategoryId(cat.id)} data-tile
+                      className={cn(TILE_LAYOUT, 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                         on ? 'border-2 border-selected-border bg-selected' : 'border border-border bg-card hover:bg-accent')}>
-                      <span aria-hidden="true" className="text-primary"><CategoryIcon iconKey={cat.icon_key} className="h-5 w-5" /></span>
-                      <span className="flex-1 min-w-0">{cat.name}</span>{' '}
-                      <span className="shrink-0 rounded-md bg-star px-1.5 py-0.5 text-sm font-semibold tabular-nums">+{cat.points ?? 1}</span>
+                      <BehaviourTileParts iconKey={cat.icon_key} name={cat.name} points={cat.points ?? 1} />
                     </button>
                   );
                 })}

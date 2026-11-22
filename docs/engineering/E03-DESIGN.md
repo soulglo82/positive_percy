@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.2 |
 | Issued | 2026-11-17 |
 | Owner | Percy v2 engineering, on branch `claude/percy-v2-e03-icons-illustrations` (stacked on PR #51) |
 | Status | Reviewed design; being built on the branch; not merged or deployed |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.2 | 2026-11-22 | §11: owner decision on the legacy behaviour icons (decision 1) and on the default Quick Points (decision 2, in part). Legacy keys are now drawn in the approved icon family; no stored key changes |
 | 1.0 | 2026-11-17 | First design, for peer review |
 | 1.1 | 2026-11-17 | Peer review adopted (6 blocking, 7 non-blocking; see "Peer review record"). Inferred mappings moved from build into owner decisions. Reward-context icons removed from the runtime module. Placements narrowed to those with a real, single-instance home |
 
@@ -211,3 +212,91 @@ The fresh-context review of v1.0 (2026-11-17) raised 6 blocking and 7 non-blocki
 | `npx playwright test` (4 viewports, axe) | 31 passed, 9 skipped (single-viewport specs) |
 | `/licenses/CREDITS.txt` served by the app without login | 200 with the credits text. Before E03 the same path returned the app's fallback page |
 | Screenshots | `docs/engineering/evidence/e03/`, before (PR #51 head `ef21435`) and after, at 390 px |
+
+## 11. Legacy behaviour icons in one style; default Quick Points (owner decision, 22 November) (v1.2)
+
+**Owner's findings (visual review of the release candidate).** "The logos for kindness and bravery also look out of place and not in the same style as the others." After seeing the options: "icon update is good" (K1 heart for Kindness, B1 shield with star for Bravery, the four starting behaviours restyled). And: "kindness and caring are almost the same thing, choose another option as the default quick points."
+
+**Prior rulings found.** §1 contract 2 ("no stored key is rewritten, no default seed changes, and no legacy key is re-pointed") and §9 decisions 1 and 2, which left the mapping and the defaults to the owner. Review finding B6: mapping Kindness and Caring to the same hand-and-heart drawing would duplicate it. The owner has now decided; this section replaces the "no legacy key is re-pointed" and "no default seed changes" parts of contract 2. **"No stored key is rewritten" stands.**
+
+### 11.1 Contract
+
+1. **Every behaviour icon is drawn in the one icon family the app uses (Phosphor Duotone).** Each of the 16 legacy keys draws the Phosphor Duotone glyph of the same subject. An unknown key draws the Phosphor circle.
+2. **Nothing stored changes.** The key list (27 keys, app and server) is unchanged; no migration; a family's behaviours keep their keys and their meaning. Only the drawing changes, for existing families too.
+3. **Every glyph is the exact pinned upstream file** (Phosphor core `2b75f3a`), recorded in the register and in `UPSTREAM_VERIFICATION.json`, as §1 contract 1 requires. Nothing is drawn or generated.
+4. **New families' default Quick Points** are Kindness, Helpfulness, Bravery and Resilience. Caring stays a default behaviour but is no longer a default Quick Point. Existing families' own choices are not touched.
+
+### 11.2 The mapping
+
+| Legacy key | Used by default for | Phosphor Duotone glyph | Basis |
+| --- | --- | --- | --- |
+| `heart` | Kindness | `heart` | Owner's choice K1 |
+| `shield` | Bravery | `shield-star` | Owner's choice B1 |
+| `handshake` | Helpfulness | `handshake` | Owner: the recommended set. Already approved for Helping |
+| `hand-heart` | Caring | `hand-heart` | Owner: the recommended set. Already approved art |
+| `mountain` | Resilience | `mountains` | Same subject |
+| `brush` | Chores | `broom` | Same subject. The key was seeded with the broom emoji for Chores, and the broom is the art already approved for Chores; the paint brush is Creativity's (design review) |
+| `book-open` | Homework | `book-open` | Same subject |
+| `sparkles` | Adventurous | `star-four` | Same subject. Not `sparkle`: that is the Today's Goals header accent (design review) |
+| `star` | New behaviours | `star` | Same subject |
+| `palette`, `brain`, `bed` | – | `palette`, `brain`, `bed` | Same subject |
+| `footprints` | – | `footprints` | Same subject |
+| `music` | – | `music-notes` | Same subject |
+| `check` | – | `check` | Same subject. Not `check-circle`: that is the "Done" mark on a completed goal and keeps that one meaning (design review) |
+| `circle` and any unknown key | – | `circle` | Same subject |
+
+The owner chose four of these by name. The other twelve follow the owner's direction that behaviour icons share one style: restyling only four would leave Resilience, Chores, Homework and Adventurous in the old style beside them in "Give Percy Points". They are shown to the owner on the real screens for sign-off (G2).
+
+**One drawing, one meaning.** No two legacy keys draw the same glyph, and none draws a navigation, control or goal mark (guarded).
+
+**Look-alikes between a legacy key and an approved key.** Five legacy keys draw the same glyph as an approved key: `hand-heart` and `kindness`, `handshake` and `helping`, `brain` and `learning`, `bed` and `sleep`, `brush` and `chores`. When a behaviour stores one of those legacy keys, the picker leaves its twin out, so every tap on "Change icon" changes the drawing (design review B3: otherwise the first tap on Caring's icon appeared to do nothing). A parent can still give two behaviours the same icon by choice, for example Kindness changed to the hand-and-heart that Caring starts with; the picker has always allowed that.
+
+### 11.3 Build
+
+- **Register** (`design/stage1/APPROVAL_REGISTER.json`): a new group `decisions.behaviors_legacy`, one entry per legacy key, each with its `basis` (`owner_choice_2026-11-22` or `same_subject_restyle_2026-11-22`). The 11 entries of `decisions.behaviors` are untouched.
+- **Sources:** `star`, `shield-star`, `footprints`, `circle`, `check` and `star-four` are added to `design/assets/phosphor/duotone/` from the pinned commit; `heart` and `book-open` are already there. All eight get a record in `UPSTREAM_VERIFICATION.json` (fetched on 22 November and compared by SHA-256).
+- **Generator** (`scripts/brand/build-approved-icons.mjs`): reads the new group into a `legacy` context. A missing or unrecognised `basis` stops the build.
+- **App** (`src/lib/categoryIcons.js`): the 16 legacy keys map to their approved icons from the `legacy` context; the fallback is the Phosphor circle. The Lucide behaviour imports go, and may not come back (the retired-glyph guard). `pickerChoices` leaves out a stored key's twin. Screen-reader labels follow the drawings ("Shield with star", "Broom", "Mountains", "Sparkle").
+- **Every drawing of a behaviour goes through `CategoryIcon`** (the tiles, Today's Goals, Manage goals, the behaviour settings). The family report draws no icons, and Activity rows use fixed icons by kind, so neither changes.
+- **Browser tests:** the long-name tile test swaps Resilience, not Caring, out of Quick Points (Caring is no longer one, and a fifth would be refused).
+- **History rows:** `Starting points` (flag) and `Balance correction` (scale) keep their Lucide glyphs; they are not behaviours and have no approved context.
+- **Default Quick Points** (`server/routes.js`, family creation): `is_quick_action` true for Resilience and false for Caring. `server/db.js` seeds no Quick Point flags and is unchanged.
+
+### 11.4 Edge cases (input → expected)
+
+| Input | Expected |
+| --- | --- |
+| A family whose behaviour has key `heart` | The Phosphor heart; the stored key is still `heart` after any edit |
+| A key not in the list (`zzz`, an old emoji, `constructor`) | The Phosphor circle |
+| Editing a behaviour with a legacy key | The picker still offers the stored key first, then the 11 approved keys (unchanged) |
+| A family created before this change | Its Quick Points are whatever it had. Nothing is changed for it |
+| A new family | Quick Points: Kindness, Helpfulness, Bravery, Resilience; eight default behaviours as before |
+| The family report (PDF) and Activity rows | Unchanged: the report draws no behaviour icons and Activity uses fixed icons by kind |
+| A behaviour with key `check` used for a goal | The plain tick in the goal's row; the "Done" mark stays the circled tick |
+| Caring (stored `hand-heart`), "Change icon" tapped once | The next icon is a different drawing (not `kindness`, its twin) |
+| A family left with no Quick Points (pre-existing: the creation seed is not one transaction) | Unchanged by this design; the parent chooses them in Settings |
+
+### 11.5 Guards
+
+- Each legacy key draws an approved icon with the id in the table (a swap back to Lucide, or a wrong glyph, fails).
+- The generated module equals a fresh build; every icon equals its source file, which equals the recorded upstream hash (existing guards, now covering the six new records).
+- The generator refuses an entry without a recognised basis (counter-example in the test).
+- No two legacy keys share a glyph; none uses a navigation, control or goal glyph (the test first proves the "Done" mark is in the reserved set).
+- For every legacy key, each step round the picker changes the drawing and the cycle returns to the stored key.
+- A new family has exactly four Quick Points and they are the four named; Caring exists and is not one.
+- Not covered by a test: whether the glyphs look right together. That is the owner's sign-off.
+
+### 11.6 Rollout and reversal
+
+One commit on the release candidate. No data or migration. Reverting it restores the Lucide drawings and the old default; no stored value depends on it. Families created in between keep the Quick Points they were given.
+
+### 11.7 Design review (independent, before the build finished)
+
+Three blocking findings, all adopted: the browser test fixture swapped Caring, which would now be a fifth Quick Point (it swaps Resilience); `check` drew the "Done" mark (it draws the plain tick); a stored key's look-alike made "Change icon" appear to do nothing (the twin is left out). Also adopted: the broom for `brush`; the four-point star for `sparkles`; the corrected statement about the family report and Activity; labels; a guard that one drawing has one meaning.
+
+**Superseded by this section:** §1 contract 2 ("no default seed changes, and no legacy key is re-pointed"), §2.3's statement that legacy keys stay Lucide, the "Legacy behaviour" row of §6, the first row of §7, and decisions 1 and 2 of §9.
+
+**For the owner's attention.**
+- Existing families, including the owner's, keep the Quick Points they have: Caring stays a Quick Point there until changed in Settings › Quick Points. Only new families get the new default.
+- Twelve of the sixteen glyphs are engineering's same-subject mapping, not individual owner picks. The ones a new family sees are Resilience (mountains), Chores (broom), Homework (open book) and Adventurous (four-point star).
+

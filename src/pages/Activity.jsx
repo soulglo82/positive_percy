@@ -3,13 +3,14 @@
 // the four filters are server projections of "All" (goal rows are tagged by
 // the completion join). Correct (this week's awards) and the undone marking
 // are kept from A2.
-import { useState } from 'react';
+import { pointsWord } from '@/lib/savings';
+import { useRef, useState } from 'react';
 import { Child } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { correctAward, refreshPoints } from "@/lib/points";
+import { correctAward, refreshPoints, undoAction } from "@/lib/points";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
@@ -71,7 +72,8 @@ export function dayLabel(dateStr, now = new Date(), timeZone = undefined) {
 }
 
 export function timeIn(dateStr, timeZone = undefined) {
-  return new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(dateStr));
+  // No break inside a time: "4:34" on one line and "AM" on the next read badly on a phone (design critique).
+  return new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(dateStr)).replace(/\s/g, '\u00a0');
 }
 
 // The goal's name when it was completed: the completion writes it into the
@@ -87,6 +89,7 @@ export function goalTitleOf(event) {
 export default function Activity() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const undoHandlers = useRef(new Map()); // one Undo handler per redemption (see undoSpendFor)
   const [correctionTarget, setCorrectionTarget] = useState(null);
   const [correcting, setCorrecting] = useState(false);
   const [selectedChildId, setSelectedChildId] = useState("all");
@@ -162,6 +165,21 @@ export default function Activity() {
   const canCorrect = (event) => event.type === 'earn' && !event.undone &&
     !!summary?.weekStart && new Date(event.created_date) >= new Date(summary.weekStart);
 
+  // A redeemed reward can be undone for 10 minutes (V1-D §10 R3: approving a
+  // request has no Undo in its toast; "each redemption is undone one at a
+  // time in Activity"). The server enforces the window; this only decides
+  // whether to offer it. Final validation 2026-11-22: the control was missing.
+  const canUndoSpend = (event) => event.type === 'spend' && !event.undone &&
+    Date.now() - new Date(event.created_date).getTime() < UNDO_WINDOW_MS;
+  // One handler per redemption for the life of the page (code review, 22 Nov):
+  // made during render it was new on every render, so its one-tap guard and
+  // its request id did not survive a refetch, and a second tap sent a second
+  // undo with a new id ("Undone" then "Already undone").
+  const undoSpendFor = (id) => {
+    if (!undoHandlers.current.has(id)) undoHandlers.current.set(id, undoAction('spend', id, queryClient));
+    return undoHandlers.current.get(id);
+  };
+
   const confirmCorrection = async () => {
     if (!correctionTarget || correcting) return;
     setCorrecting(true);
@@ -188,6 +206,7 @@ export default function Activity() {
         <Card>
           <CardContent className="p-4 sm:p-5 space-y-3">
             <h2 className="font-display font-bold text-lg text-primary">This week</h2>
+            {/* Number and label centred in each box: the owner's direction (V1-C design v1.2). A design critique on 22 Nov suggested left-aligned, full-width tiles; that is the owner's to decide, so it is unchanged. */}
             <div className="grid grid-cols-2 gap-3 max-w-md" data-week-boxes>
               <div className="rounded-md border border-border p-3 text-center">
                 <p className="font-display font-extrabold text-title text-foreground tabular-nums">{pointsEarned}</p>
@@ -208,7 +227,7 @@ export default function Activity() {
               <div className="flex flex-wrap gap-2" role="group" aria-label="Show activity">
                 {FILTERS.map(({ key, label }) => (
                   <button key={key} type="button" aria-pressed={activeFilter === key} onClick={() => setActiveFilter(key)}
-                    className={cn('min-h-11 rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                    className={cn('min-h-10 touch:min-h-11 rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                       activeFilter === key ? 'border-2 border-selected-border bg-selected text-primary' : 'border border-border bg-card text-foreground hover:bg-accent')}>
                     {label}
                   </button>
@@ -246,7 +265,8 @@ export default function Activity() {
                     <div>
                       {group.events.map((event) => (
                         <NarrativeItem key={`${event.type}-${event.id}`} event={event} timeZone={timeZone}
-                          canCorrect={canCorrect(event)} onCorrect={() => setCorrectionTarget(event)} />
+                          canCorrect={canCorrect(event)} onCorrect={() => setCorrectionTarget(event)}
+                          onUndoSpend={canUndoSpend(event) ? undoSpendFor(event.id) : null} />
                       ))}
                     </div>
                   </section>
@@ -276,7 +296,7 @@ export default function Activity() {
           <AlertDialogHeader>
             <AlertDialogTitle>Correct mistaken award?</AlertDialogTitle>
             <AlertDialogDescription>
-              Remove {correctionTarget?.points} mistakenly awarded points from {correctionTarget?.child_name}?
+              Remove {correctionTarget?.points} mistakenly awarded {pointsWord(correctionTarget?.points)} from {correctionTarget?.child_name}?
               This corrects only the selected award, keeps an Activity record, and cannot be done if those points have been spent or reserved.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -290,6 +310,9 @@ export default function Activity() {
   );
 }
 
+// Matches the server's undo window (routes.js UNDO_WINDOW).
+const UNDO_WINDOW_MS = 10 * 60 * 1000;
+
 // The approved row icons: a tick for a goal, a heart for an award, a gift for
 // a spend (approved icon set). Other kinds: Undo's arrow, or the info mark.
 // Literal ids only (release gate: no computed PercyIcon ids).
@@ -297,6 +320,7 @@ export function rowIconKind(event) {
   if (event.type === 'earn') return event.goal_completion_id ? 'goal' : 'earn';
   if (event.type === 'spend') return 'spend';
   if (event.type === 'undo') return 'undo';
+  if (event.type === 'saving' || event.type === 'moved_back' || event.type === 'savings_ended') return 'saving';
   return 'other';
 }
 function RowIcon({ event }) {
@@ -306,6 +330,7 @@ function RowIcon({ event }) {
     case 'earn': return <PercyIcon id="phosphor:hand-heart:duotone" className={cls} />;
     case 'spend': return <PercyIcon id="phosphor:gift:duotone" className={cls} />;
     case 'undo': return <PercyIcon id="phosphor:arrow-counter-clockwise:duotone" className={cls} />;
+    case 'saving': return <PercyIcon id="phosphor:piggy-bank:duotone" className={cls} />;
     default: return <PercyIcon id="phosphor:info:duotone" className={cls} />;
   }
 }
@@ -316,7 +341,9 @@ export function rowText(event, timeZone = undefined) {
   const time = timeIn(event.created_date, timeZone);
   if (event.type === 'earn' && event.goal_completion_id) {
     const title = goalTitleOf(event);
-    return { lead: 'completed', what: title ? `“${title}”` : 'a goal', sub: `Today’s Goal · ${event.label} · ${time}` };
+    // The second line holds only what the first does not say (owner, 22 Nov:
+    // trim repetition): "completed" already says it was a goal.
+    return { lead: 'completed', what: title ? `“${title}”` : 'a goal', sub: `${event.label} · ${time}` };
   }
   if (event.type === 'earn') {
     const swap = event.label === 'Other' && event.note;
@@ -326,13 +353,31 @@ export function rowText(event, timeZone = undefined) {
   }
   // No parent confirmation is recorded on a redemption (and before V1 a child
   // could redeem directly), so no row claims one (A2).
-  if (event.type === 'spend') return { lead: 'redeemed', what: event.label, sub: `Reward redeemed · ${time}` };
+  if (event.type === 'spend') return { lead: 'redeemed', what: event.label, sub: time };
+  // D1 savings moves (owner's proposed O4 wording): not balance changes.
+  const pts = `${event.points} ${pointsWord(event.points)}`;
+  if (event.type === 'saving') return { lead: `saved ${pts} towards`, what: event.label, sub: time };
+  if (event.type === 'moved_back') return { lead: `moved ${pts} back from`, what: event.label, sub: time };
+  // D1 §20.1 (owner review of #64, N2): why saved points stopped counting.
+  // Provisional wording (§20.8): "released", not "available again".
+  // Owner wording (21 Nov): a cancellation, never a success or an earning.
+  // The child's name stands in for a pronoun (no pronouns are stored).
+  if (event.type === 'savings_ended') {
+    // Owner wording (handover 21 Nov): "{Child}'s {Goal} savings are back in
+    // their points." · "{n} points returned · {reason}".
+    const cause = event.note === 'unmarked' ? 'Bigger goal removed'
+      : event.note === 'deleted' ? 'Reward deleted' : 'No longer assigned';
+    return { possessive: true, lead: '', what: event.label, after: 'savings are back in their points.',
+      sub: `${event.points} ${pointsWord(event.points)} returned · ${cause} · ${time}` };
+  }
   const lead = event.type === 'undo' ? 'undo:' : event.type === 'starting' ? 'started with'
     : event.type === 'correction' ? 'had a one-off' : event.points < 0 ? 'had an earlier adjustment for' : 'adjusted';
+  // "Joud started with 8 points", not "started with Starting points" (design critique: the label is the row's kind, not what was given).
+  if (event.type === 'starting') return { lead, what: `${event.points} ${pointsWord(event.points)}`, sub: time };
   return { lead, what: event.label, sub: time };
 }
 
-function NarrativeItem({ event, timeZone, canCorrect, onCorrect }) {
+function NarrativeItem({ event, timeZone, canCorrect, onCorrect, onUndoSpend = null }) {
   const isEarn = event.type === 'earn';
   const isSpend = event.type === 'spend';
   // Earned in green; spends in muted ink; deductions, undo and corrections in
@@ -341,16 +386,17 @@ function NarrativeItem({ event, timeZone, canCorrect, onCorrect }) {
   // An undone award or spend and its undo row are both shown, the amount
   // struck through, so the list still adds up to the balance.
   const undone = !!event.undone;
-  const { lead, what, sub } = rowText(event, timeZone);
+  const { lead, what, sub, possessive = false, after = null } = rowText(event, timeZone);
 
   return (
     <div data-row-key={`${event.type}-${event.id}`} className="flex items-center gap-3 px-3 py-3 border-b border-border last:border-b-0">
       <RowIcon event={event} />
       <div className="flex-1 min-w-0">
         <p className="text-sm leading-snug break-words">
-          <span className="font-semibold text-foreground">{event.child_name}</span>
+          <span className="font-semibold text-foreground">{event.child_name}{possessive ? '’s' : ''}</span>
           {' '}<span className="text-muted-foreground">{lead}</span>{' '}
           <span className="font-medium text-foreground">{what}</span>
+          {after && <>{' '}<span className="text-muted-foreground">{after}</span></>}
         </p>
         <p className="text-xs text-subtle-foreground mt-0.5 break-words">
           {sub}
@@ -358,12 +404,20 @@ function NarrativeItem({ event, timeZone, canCorrect, onCorrect }) {
         </p>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
+        {/* A savings move changes no balance, so it has no amount column. */}
+        {rowIconKind(event) !== 'saving' && (
         <span className={`text-sm font-semibold tabular-nums ${colorClass} ${undone ? 'line-through' : ''}`}>
           {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}
         </span>
+        )}
         {canCorrect && (
-          <button type="button" onClick={onCorrect} className="min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Correct ${event.child_name} award of ${event.points} points`}>
+          <button type="button" onClick={onCorrect} className="-mr-2 min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Correct ${event.child_name} award of ${event.points} ${pointsWord(event.points)}`}>
             Correct
+          </button>
+        )}
+        {onUndoSpend && (
+          <button type="button" onClick={onUndoSpend} className="-mr-2 min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Undo ${event.child_name} redeemed ${event.label}`}>
+            Undo
           </button>
         )}
       </div>
