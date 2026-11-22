@@ -29,20 +29,20 @@ The merge is the deployment. Nothing is merged without the owner's approval of t
 
 ## 2. What was validated
 
-**Every result below was produced on a clean checkout of commit `96f5462`**, the release candidate's code. The commit after it adds only this document's results and the checklist; CI then ran everything again at that final commit (§7).
+**Every result below was produced on a clean checkout of commit `6d0698f`**, the release candidate's code. The commit after it adds only these results to this document; CI then ran everything again at that final commit (§7). (The same checks passed at `96f5462` before the final-handover changes: 1,035 unit and server tests, 52 browser tests.)
 
-| Check | Result at `96f5462` | Where |
+| Check | Result at `6d0698f` | Where |
 | --- | --- | --- |
-| Unit and server tests | 1,035 passed in 53 files; none skipped | `npm test` with a test database |
+| Unit and server tests | 1,039 passed in 53 files; none skipped | `npm test` with a test database |
 | Browser tests at 320, 390, 834 and 1280 px | 52 passed, 16 skipped by design | `npx playwright test`; the skips are explained in §4.2 |
 | Reward forms and confirmation dialogs at 320, 359, 360, 390, 834 and 1280 px | Passed (part of the browser run; §3.3) | `e2e/responsive-dialogs.spec.js` |
 | Accessibility (axe: nothing serious or critical), 44 px touch targets, 12 px text floor, no sideways scroll, no clipped text, no wrapped navigation, aligned tiles and figures, on every screen and dialog the browser tests open | Passed (asserted inside the browser tests) | `e2e/checks.js` |
 | Lint | 0 errors (3 old warnings) | `npm run lint` |
-| Design tokens | OK (85 files) | `npm run check:tokens` |
+| Design tokens | OK (86 files) | `npm run check:tokens` |
 | Release gates (no gated artwork in the build) | OK: no gated file in the build | `npm run check:release-gates` |
 | Generated icon module is current | Current | `node scripts/brand/build-approved-icons.mjs --check` |
 | Restore-and-reconcile tool, **synthetic data** | 41 passed, 0 failed; no container left | `scripts/test/d1-restore-reconcile.test.sh` |
-| Rollback write-freeze rehearsal, **synthetic data** | 166 checks, 0 failed (run on the same scripts before the commit) | `V1-ROLLBACK-FREEZE-DESIGN.md` §10–§11 |
+| Rollback write-freeze rehearsal, **synthetic data** | 166 checks, 0 failed (run on these scripts at `96f5462`; `scripts/` and `server/` are unchanged since) | `V1-ROLLBACK-FREEZE-DESIGN.md` §10–§11 |
 | Integrated functional review against issue #56 | No critical finding; one major and five minor, all fixed (§3) | Independent reviewer |
 | Design critique of every page at four sizes | 16 defects fixed; the rest listed as open (§3.2) | Three independent reviewers |
 | Design reviews before each build, code reviews after | Nothing blocking left open (§4.3–§4.5) | Independent reviewers |
@@ -313,7 +313,7 @@ Scope: the five small changes of §3.4 and nothing else. **No blocking defect.**
 
 | Gate | State |
 | --- | --- |
-| G1 Functional | **Passed** at `96f5462` (§2, §3) |
+| G1 Functional | **Passed** at `6d0698f` (§2, §3) |
 | G7a Security (technical) | **Passed:** every route checked is scoped to the signed-in family; no secrets or family data in the repository or evidence; permanent deletion stays off |
 | Responsive and accessibility checks | **Passed** at four sizes, and at six for reward forms and confirmations (§3.3) |
 | Rollback procedure | **Designed, reviewed and rehearsed on synthetic data** (write freeze). Its use depends on §5.5 |
@@ -380,7 +380,7 @@ Engineering items still open, none of them functional: the eight smaller build d
 | Branch | `claude/percy-v1-rc` |
 | Base | `claude/migrate-base64-percy-code-PNAym` (the default and production branch, at `498e798`) |
 | Contents | #57, #58, #59, #60, #61, #62, #63 and #64. The base is an ancestor, so the candidate only adds commits |
-| Exact commit | Code and tests: `96f5462`. The head of the release-candidate pull request is the documents-only commit after it (this file and the checklist); a file cannot name its own commit, so the pull request and the hand-back carry that SHA, read from GitHub, with CI's result at it |
+| Exact commit | Code and tests: `6d0698f`. The head of the release-candidate pull request is the documents-only commit after it (this file and the checklist); a file cannot name its own commit, so the pull request and the hand-back carry that SHA, read from GitHub, with CI's result at it |
 | Migrations | 014, 015, 016, 017 |
 | Railway files | No `railway.json` or `railway.toml` is tracked |
 | Deployment plan | Release checklist §4 and §5 |
