@@ -22,7 +22,7 @@
 
 | Area | Result |
 | --- | --- |
-| Order | Matches: streak, "Welcome back!", family strip, Today's Goals, Little wins, What you're working towards, Quick Points. Desktop uses the same two columns. The page source is in this reading order too, so keyboard and screen-reader order match the phone layout (checked in the browser tests) |
+| Order | **Superseded 22 November:** the owner moved Quick Points directly under the family strip, above Today's Goals (release assessment §3.5). As recorded at V1-A: Matches: streak, "Welcome back!", family strip, Today's Goals, Little wins, What you're working towards, Quick Points. Desktop uses the same two columns. The page source is in this reading order too, so keyboard and screen-reader order match the phone layout (checked in the browser tests) |
 | Family strip | Matches: oldest first, avatar, name, "N / T this week", bar. **Intended deviation:** the selected child is marked with a purple border instead of orange, because orange is 2.87:1 and a selection indicator needs 3:1 (WCAG 1.4.11) |
 | Today's Goals | Matches: done count, "{Name}'s checklist", short date, category icon, "Category · Today/Daily/days · +N point", Done pill, outlined Complete, Manage goals |
 | Little wins | Matches: "N / T This week" and "N points Available now". Available now comes from the server (`available_points`) |

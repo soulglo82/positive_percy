@@ -27,6 +27,28 @@ async function closeDialog(page) {
   await page.waitForTimeout(250);
 }
 
+// Quick Points is now the first card, so what it shows while the family's
+// behaviours are still loading is the first thing a parent sees. It must not
+// say "No quick points yet" and then swap to the tiles a moment later.
+test('home does not show the empty Quick Points message while behaviours load', async ({ page }) => {
+  await page.route('**/api/behavior-categories', async (route) => {
+    await new Promise((done) => setTimeout(done, 1200));
+    await route.continue();
+  });
+  let sawEmpty = false;
+  await page.goto('/');
+  const tiles = page.locator('[data-tile-grid]').first();
+  const empty = page.getByText('No quick points yet.');
+  const deadline = Date.now() + 15000;
+  while (Date.now() < deadline && !(await tiles.isVisible())) {
+    if (await empty.isVisible()) sawEmpty = true;
+    await page.waitForTimeout(50);
+  }
+  await expect(tiles).toBeVisible();
+  expect(sawEmpty, 'the empty message was shown while the behaviours were loading').toBe(false);
+  await expect(empty).toHaveCount(0);
+});
+
 test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await go(page, '/');
   await checkScreen(page, 'home', testInfo);
@@ -36,19 +58,66 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await sam.click();
   await expect(sam).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText("Sam's checklist")).toBeVisible();
-  // Review of PR #57: the DOM (Tab and screen-reader) order is the reading
-  // order Goals, Little wins, Working towards, Quick Points; on one-column
-  // layouts it is also the visual order.
+  // Owner, 22 November: awarding points is the point of this page. The order
+  // is the child picker, then Quick Points, Today's Goals, the available
+  // points ("Little wins") and what the child is working towards. The DOM
+  // (Tab and screen-reader) order is that reading order (review of PR #57).
+  // One column (under 1024px): the cards stack in that order. Two columns:
+  // Quick Points then Today's Goals on the left, Little wins then Working
+  // towards on the right, the two columns equally wide.
+  // Nothing sits between the child picker and Quick Points. On a screen at
+  // least 800px tall the card starts on the first screen. (This fixture's
+  // long child name makes the picker tall: at 320x568 the heading starts at
+  // about 570px here, and at about 430px for a family with short names.)
   const order = await page.evaluate(() => {
-    const titles = ["Today's Goals", 'Little wins, big adventures!', "What you're working towards", 'Quick Points'];
+    window.scrollTo(0, 0);
+    const titles = ['Quick Points', "Today's Goals", 'Little wins, big adventures!', "What you're working towards"];
     const hs = titles.map((t) => [...document.querySelectorAll('h2')].find((h) => h.textContent.trim() === t));
     if (hs.some((h) => !h)) return { missing: titles.filter((_, i) => !hs[i]) };
-    const domOrdered = hs.every((h, i) => i === 0 || (hs[i - 1].compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING));
-    const tops = hs.map((h) => h.getBoundingClientRect().top);
-    return { domOrdered, visuallyOrdered: tops.every((t, i) => i === 0 || t > tops[i - 1]), oneColumn: window.innerWidth < 1024 };
+    const domOrdered = hs.every((h, i) => i === 0 || !!(hs[i - 1].compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING));
+    // The column that holds two cards: the nearest element containing both headings.
+    const columnOf = (a, b) => { let el = a.parentElement; while (el && !el.contains(b)) el = el.parentElement; return el; };
+    const left = columnOf(hs[0], hs[1]);
+    const right = columnOf(hs[2], hs[3]);
+    const box = (el) => { const r = el.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width) }; };
+    const picker = document.querySelector('[role="group"][aria-label="Choose a child"]').getBoundingClientRect();
+    const boxes = hs.map((h) => h.getBoundingClientRect());
+    return { domOrdered, tops: boxes.map((b) => Math.round(b.top)), lefts: boxes.map((b) => Math.round(b.left)),
+      pickerBottom: Math.round(picker.bottom), screen: window.innerHeight, oneColumn: window.innerWidth < 1024,
+      separateColumns: left !== right && !left.contains(right) && !right.contains(left),
+      left: box(left), right: box(right),
+      leftCards: [...left.children].map(box), rightCards: [...right.children].map(box),
+      quickCardHasAward: !!left.children[0] && left.children[0].contains(hs[0]) && [...left.children[0].querySelectorAll('button')].some((b) => b.textContent.trim() === 'Award points') };
   });
-  expect(order.domOrdered).toBe(true);
-  if (order.oneColumn) expect(order.visuallyOrdered).toBe(true);
+  expect(order.missing, 'every Home section is present').toBeUndefined();
+  expect(order.domOrdered, 'DOM order: Quick Points, Goals, Little wins, Working towards').toBe(true);
+  const [quickTop, goalsTop, winsTop, towardsTop] = order.tops;
+  const [quickLeft, goalsLeft, winsLeft, towardsLeft] = order.lefts;
+  expect(quickTop, 'Quick Points comes after the child picker').toBeGreaterThan(order.pickerBottom);
+  // The gap between cards (20px) plus the card's own padding, and nothing else.
+  expect(quickTop - order.pickerBottom, 'Quick Points is the first thing under the child picker').toBeLessThanOrEqual(48);
+  if (order.screen >= 800) expect(quickTop, 'Quick Points starts on the first screen').toBeLessThan(order.screen);
+  expect(quickTop, "Quick Points is above Today's Goals").toBeLessThan(goalsTop);
+  expect(winsTop, 'Little wins is above Working towards').toBeLessThan(towardsTop);
+  // Two cards a column, nothing between them but the gap, and the Quick
+  // Points card is the whole card (its Award points button is in it).
+  expect(order.separateColumns, 'the two pairs of cards are in separate columns').toBe(true);
+  expect(order.leftCards.length, 'left column: Quick Points and Goals only').toBe(2);
+  expect(order.rightCards.length, 'right column: Little wins and Working towards only').toBe(2);
+  expect(order.quickCardHasAward, 'the first card is Quick Points, with its Award points button').toBe(true);
+  expect(order.leftCards[1].top - order.leftCards[0].bottom, 'the gap between Quick Points and Goals').toBe(20);
+  expect(order.rightCards[1].top - order.rightCards[0].bottom, 'the gap between Little wins and Working towards').toBe(20);
+  if (order.oneColumn) {
+    expect(goalsTop, "one column: Today's Goals is above Little wins").toBeLessThan(winsTop);
+    expect(new Set(order.lefts).size, 'one column: every card starts at the same left edge').toBe(1);
+    expect(order.right.top - order.left.bottom, 'one column: the gap between Goals and Little wins').toBe(20);
+  } else {
+    expect(goalsLeft, "two columns: Today's Goals is under Quick Points, in the left column").toBe(quickLeft);
+    expect(towardsLeft, 'two columns: Working towards is under Little wins, in the right column').toBe(winsLeft);
+    expect(order.right.left, 'two columns: the right column starts after the left one ends').toBeGreaterThan(order.left.right);
+    expect(Math.abs(order.left.width - order.right.width), 'two columns: equally wide').toBeLessThanOrEqual(1);
+    expect(Math.abs(order.right.top - order.left.top), 'two columns: the columns start level').toBeLessThanOrEqual(1);
+  }
 
   // V1-D (D5): a child's request shows in the parent's Rewards dialog; "Not this time" removes it.
   const headers = { Authorization: `Bearer ${family.token}` };

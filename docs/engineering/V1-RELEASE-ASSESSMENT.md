@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.4 |
+| Version | 1.5 |
 | Issued | 2026-11-22 |
 | Owner | Percy V1 engineering |
 | Status | For the owner's release decision. Nothing has been merged or deployed |
@@ -11,6 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.5 | 2026-11-22 | Home: Quick Points moved directly under the child picker, above Today's Goals, in the order the owner approved after comparing it with the live Home (§3.5, §4.10) |
 | 1.4 | 2026-11-22 | The intermittent Settings failure returned on CI at `a9bc57b` (one of two runs of the same commit). Its cause is reproduced and the first fix shown to be wrong; the test now waits for the right signal (§4.1, §4.9). No app code changed |
 | 1.3 | 2026-11-22 | Achievements card on Children redesigned at the owner's instruction (two plain rows, a weekly progress bar); the owner-approved repetition trims on Children, Home, Child View and Activity (§4.7) and their focused review (§4.8); results restated at the final commit (§2, §7) |
 | 1.2 | 2026-11-22 | Owner's final release handover: the real-backup restore is waived as a mandatory gate (owner-accepted residual risk); the November change is explained (approved maintenance); four targeted items handled (§3.4); the points figure applied consistently to Home and Children at the owner's instruction; operational and privacy findings (§5) |
@@ -214,6 +215,44 @@ The test can fail: narrowing the form dialog on the smallest phones made it red 
 
 **Deferred to V1.1 (issue #66)** at the owner's direction: the remaining cosmetic items of §3.2 (W1, W2, W4–W6; D2's nested boxes, D3–D5; E2–E4, E6–E8).
 
+### 3.5 Home: Quick Points moved up (owner, 22 November)
+
+**Owner's instruction.** "On the home page the award points box needs to come above the points available and working toward sections it's the critical part of this page. Need to make it really quick and easy to give kids points so parents keep doing it". The owner then compared the live Home, the first reorder (Quick Points under Today's Goals) and a variant with Quick Points directly under the child picker, and approved the variant: "Final V1 Home order: Family streak and welcome. Child picker. Quick Points. Today's Goals. Weekly progress and points. Bigger goals and rewards… No further Home layout changes for V1."
+
+**This departs from the approved Home design** (blob `9de1df2`), which put Quick Points last. The change is the owner's.
+
+**Why.** On a 390 px phone the earlier V1 Home had no award button on the first screen; the owner's screenshot of the live app shows four. With the approved order, for the family in the evidence pack (three children with short names), all four Quick Points and "Award points" are on the first screen at 390 px, and awarding to any child is at most two taps.
+
+**Contract.** After the family streak, the welcome and the child picker, Home shows four cards in this reading order: Quick Points, Today's Goals, "Little wins, big adventures!" (available points), "What you're working towards". The order in the page's markup is the same, so Tab and screen readers follow it. Nothing sits between the child picker and Quick Points. Nothing inside any card changes: same wording, same buttons, same data, same width.
+
+| Layout | Before | After |
+| --- | --- | --- |
+| One column (under 1024 px wide) | Goals, Little wins, Working towards, Quick Points | Quick Points, Goals, Little wins, Working towards |
+| Two columns (1024 px and wider) | Left: Goals, Quick Points. Right: Little wins, Working towards | Left: Quick Points, Goals. Right: Little wins, Working towards. Only the left column's two cards swap |
+
+**Code path.** `src/pages/ParentDashboard.jsx` only: the order of four components, in two plain columns; and the page now waits for the first load of the family's behaviours before it draws, as it already waits for the children (see "While the behaviours load" below). No component, server, style token or wording changed. The two columns are now two wrappers read top to bottom, so on desktop the Tab order is the left column and then the right (before, it ran Goals, Little wins, Working towards, Quick Points while Quick Points sat under Goals).
+
+**Edge cases.**
+
+| Case | What happens |
+| --- | --- |
+| No Quick Points chosen | The card keeps its own empty state and its "Award points" and "Rewards" buttons; the order does not depend on a card's content |
+| No goals today, or nothing being worked towards | Each card keeps its own empty state; no card can render nothing, so no card moves into another's place |
+| Many goals today | Today's Goals grows downwards in the left column; nothing is pushed below it except the end of the page on desktop, and the two lower cards on phones |
+| While the behaviours load | Before this change the Quick Points card said "No quick points yet. Choose them in Settings" until the behaviours arrived, then swapped to the tiles. That was at the foot of the page; as the first card it would be the first thing a parent saw, with Today's Goals jumping down after it. The page now shows its loading state until the behaviours' first load finishes. If that request fails, the page appears after one retry (about a second) with the card's empty state, as before, and a later reload of the behaviours does not take the page away again. A failure to load the children is still reported at once. If the behaviours request never answers, the loading state stays until the browser gives up; the children request already behaved that way |
+| How far down Quick Points starts | It depends on the height of the child picker, which depends on the children's names. Evidence-pack family (short names): at 320 × 568 the heading starts at 429 px and the tiles are below the bottom navigation, so they need a short scroll; at 390 × 844 the whole card, with both buttons, is above the bottom navigation. Browser-test family (one 41-character name, so a taller picker): the heading starts at about 570 px at 320 × 568, and at 390 × 844 the two buttons are cut by the bottom navigation |
+| Uneven columns on desktop | The shorter column ends first, at the end of the page, as before; there is no card below the two columns |
+
+**Tests.** Two browser tests, at all four sizes.
+
+The order test asserts: the markup order; that Quick Points is the first thing under the child picker (no more than the gap and the card's padding between them) and that the first card holds the "Award points" button; that each column holds exactly two cards with the normal 20 px gap between them. On one column: the four cards stack in order at the same left edge. On two columns: Today's Goals is under Quick Points on the left, Working towards under Little wins on the right, and the columns are equally wide and start level. On screens at least 800 px tall: Quick Points starts on the first screen. It was written first and failed on the old build at all four sizes; with the desktop columns swapped on purpose it fails on desktop only.
+
+The loading test delays the behaviours' reply by 1.2 seconds and asserts that "No quick points yet" is never shown before the tiles appear. It was written first and failed at all four sizes before the fix.
+
+**Not covered by the tests:** the exact 1024 px breakpoint (the test sizes are 320, 390, 834 and 1280); how far down the page Quick Points starts for a family with more than three children or with long names (see the table above); landscape phones; the failed-request path of the loading state.
+
+**Reversal.** Restore the one block.
+
 ### Accepted deferrals (not in V1)
 
 - Permanent family deletion (Batch C) stays off; there is no code path for it in the release candidate.
@@ -366,6 +405,22 @@ Confirmed: every other string, the condition for the goal line and the data sour
 | 4 | Note | My probe never showed a real key press being lost | Fixed: `escape-real-key/run.cjs` does, and is kept with the evidence |
 | 5 | Note | That the handler is live as soon as the mark appears rests on an incidental detail of this library version | Recorded in the test; two frames are allowed after the mark |
 | 6 | Note | An unused variable in the probe; mismatched figures between two comments; the evidence README did not list the probe; the recorder ignored confirmation dialogs; the nested close had no failure message | All fixed |
+
+### 4.10 Independent reviews of the Home order
+
+Two reviews, each with no blocking finding: one of the first reorder (Quick Points under Today's Goals, since replaced) and one of the approved order as built. Both confirmed that the four components receive exactly the properties they did before, that no wording, handler or component file changed, that the markup order matches the order on screen at every layout, and that on desktop the Tab order is now the left column and then the right.
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Should fix (first reorder) | The record claimed a short Goals card left no hole above a full-width "Working towards" card; it left 69 px | The approved layout has no full-width card: two plain columns, every card at its earlier width |
+| 2 | Note (first reorder) | "Working towards" became twice as wide on desktop, stretching "no change inside any card" | As above; measured the same widths and heights as before at all four sizes |
+| 3 | Should fix | The record gave the 320 px figure (570 px) for the browser-test family as if it were the evidence family's, and said the whole card is on the first screen at 390 px without saying for which family | Fixed: both families' figures are given, with the bottom navigation allowed for (§3.5) |
+| 4 | Should fix | The change log cited a section that did not exist yet; the integrated evidence README did not list this departure from the approved design | Fixed: this section; the README lists it |
+| 5 | Should fix | The test assumed the page had not scrolled before measuring | Fixed: it scrolls to the top first |
+| 6 | Should fix | Wrong layouts the test would pass: unequal columns, an extra element between cards, a stretched gap, a Quick Points card without its buttons | Fixed: column widths, the number of cards a column, the gaps and the "Award points" button are asserted. Still not covered: a two-column breakpoint other than 1024 px between the test sizes |
+| 7 | Note | While the behaviours load, the card's empty message would now be the first thing on the page | Fixed in the page, with a test written first (§3.5) |
+| 8 | Should fix (review of the loading fix) | After a failed first load, any later reload of the behaviours would have put the whole page back to its loading state, closing an open Manage goals dialog; and a failure to load the children would have waited for the behaviours before being shown | Fixed: only the first attempt holds the page back, and the children's error is checked first |
+| 9 | Note | The last recorded browser run was the deliberate-failure run, not a pass of the final state | The final state passed at all four sizes afterwards, and again in the full validation (§2) |
 
 ## 5. Gates: what is complete and what is not
 

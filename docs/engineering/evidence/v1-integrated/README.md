@@ -32,11 +32,14 @@
 | `tools/` | `run.sh` rebuilds the pack: `capture.cjs` seeds a synthetic family and photographs the app, `reference.cjs` photographs the approved design (git blob `9de1df2`), `compose.py` sets them side by side. `rollback-rehearsal.cjs` is the app rollback rehearsal (release checklist §5). `escape-timing-probe.playwright.js` and `escape-real-key/` are the two measurements behind the Settings test's wait before Escape (release assessment §4.1) |
 | `../v1-savings/` | The savings dialogs and confirmations at the four sizes (40 images) |
 
+**Retaken again on 22 November** for the Achievements card, the repetition trims and Home's new order (release assessment §3.5, §4.7, §4.8).
+
 **Retaken on 22 November** after the owner's visual decisions (behaviour icons, default Quick Points, the Child View points card) and the design critique (release assessment §3.1 and §3.2). The capture scripts also include the write-freeze rehearsal, `tools/rollback-freeze-rehearsal.cjs`.
 
 **The fixture** matches the approved design's figures: Lara has 18 of 25 this week, 90 ready to use and 120 of 300 saved towards New bike, with Movie night asked for.
 
 **Differences from the approved design that are intended** (owner decisions or recorded items; unchanged from v2.3 except savings, which is now built):
+- Home's order: Quick Points sits directly under the child picker, above Today's Goals (owner, 22 November; release assessment §3.5). The approved design has it last.
 - No reward subtitles ("Weekly treat", "Family reward"): there is no stored field for them (plan §8.4).
 - The Welcome screen has no map: the Freepik map stays behind its licence gate.
 - Savings wording follows the owner's final wording (D1 design §21.8), where it differs from the approved file's sample text.
