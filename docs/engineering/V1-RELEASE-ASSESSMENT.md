@@ -16,26 +16,34 @@
 
 ## 1. Recommendation
 
-**Conditional go.** The code passes every engineering check. Two visual changes the owner asked for on 22 November are still to be built (§3.1). Production release then waits on the owner's gates in §5; three of them (the drill on real data, a fresh backup with the 10–11 November change explained, and approval of the exact commit) must pass before the merge, because the merge is the deployment.
+**Conditional go. Not ready to deploy.** The engineering validation is complete at the commit named in §2. Deployment waits on gates only the owner can pass (§5): the restore and reconciliation of a real production backup, a fresh and complete backup with the 10–11 November change explained, the owner's visual sign-off, access to run the rollback scripts, the legal and privacy review, and approval of the exact commit. The merge is the deployment, so all of them come before it.
+
+A passing write-freeze rehearsal is **not** evidence about real data. It does not replace the restore and reconciliation of a production backup.
 
 ## 2. What was validated
 
-Everything below was run on commit `0d8a662`, the app code of the release candidate. The commit after it changes test guards and documents only (§4.4); the UI browser tests (32) and the Activity unit tests were run again on it, and CI runs everything at the head (§7).
+**Every result below was produced on a clean checkout of commit `96f5462`**, the release candidate's code. The commit after it adds only this document's results and the checklist; CI then ran everything again at that final commit (§7).
 
-| Check | Result | Where |
+| Check | Result at `96f5462` | Where |
 | --- | --- | --- |
-| Unit and server tests | 1,031 passed in 53 files; none skipped | `npm test` with a test database |
-| Browser tests at 320, 390, 834 and 1280 px | 50 passed, 14 skipped by design | `npx playwright test`; the skips are explained in §4.2 |
-| Accessibility (axe: nothing serious or critical), 44 px touch targets, 12 px text floor, no sideways scroll, no clipped text, no wrapped navigation, on every screen and dialog the browser tests open | Passed | `e2e/checks.js` |
-| Lint, design tokens, release gates | 0 errors (3 old warnings); tokens OK; no gated file in the build | `npm run lint`, `check:tokens`, `check:release-gates` |
-| Restore-and-reconcile tool on synthetic data | 41 passed, 0 failed, on a clean checkout of `0d8a662`; no container or volume left | `scripts/test/d1-restore-reconcile.test.sh` |
-| Integrated functional review against issue #56, by behaviour | No critical finding; one major and three minor, all fixed (§3) | Independent reviewer, fresh context |
-| Integrated visual review at the four sizes | Layout defects fixed (§3); no open defect | Independent reviewer over `evidence/v1-integrated/` and `evidence/v1-savings/` |
-| Post-build code review of this round's changes | Two reviews, nothing blocking in either. Every should-fix and note fixed except two recorded (§4.3, §4.4) | Independent reviewers, fresh context |
-| App rollback rehearsal | With a write freeze: 166 checks, none failed. The old app serves reads and every change is refused; four controls show what it does to savings with writes on, and that the savings check catches each | `V1-ROLLBACK-FREEZE-DESIGN.md` §10 |
+| Unit and server tests | 1,035 passed in 53 files; none skipped | `npm test` with a test database |
+| Browser tests at 320, 390, 834 and 1280 px | 52 passed, 16 skipped by design | `npx playwright test`; the skips are explained in §4.2 |
+| Reward forms and confirmation dialogs at 320, 359, 360, 390, 834 and 1280 px | Passed (part of the browser run; §3.3) | `e2e/responsive-dialogs.spec.js` |
+| Accessibility (axe: nothing serious or critical), 44 px touch targets, 12 px text floor, no sideways scroll, no clipped text, no wrapped navigation, aligned tiles and figures, on every screen and dialog the browser tests open | Passed (asserted inside the browser tests) | `e2e/checks.js` |
+| Lint | 0 errors (3 old warnings) | `npm run lint` |
+| Design tokens | OK (85 files) | `npm run check:tokens` |
+| Release gates (no gated artwork in the build) | OK: no gated file in the build | `npm run check:release-gates` |
+| Generated icon module is current | Current | `node scripts/brand/build-approved-icons.mjs --check` |
+| Restore-and-reconcile tool, **synthetic data** | 41 passed, 0 failed; no container left | `scripts/test/d1-restore-reconcile.test.sh` |
+| Rollback write-freeze rehearsal, **synthetic data** | 166 checks, 0 failed (run on the same scripts before the commit) | `V1-ROLLBACK-FREEZE-DESIGN.md` §10–§11 |
+| Integrated functional review against issue #56 | No critical finding; one major and five minor, all fixed (§3) | Independent reviewer |
+| Design critique of every page at four sizes | 16 defects fixed; the rest listed as open (§3.2) | Three independent reviewers |
+| Design reviews before each build, code reviews after | Nothing blocking left open (§4.3–§4.5) | Independent reviewers |
 | Migration order | 014, 015, 016, 017 apply in name order on a database at 012, each once, each in its own transaction | `server/migrate.js`; the restore tool's tests |
 
-**Evidence.** `docs/engineering/evidence/v1-integrated/` (14 screens × 4 sizes, 48 side-by-side comparisons with the approved design, the Fox 1A comparison, the capture scripts) and `docs/engineering/evidence/v1-savings/` (10 savings screens × 4 sizes). All data in them is synthetic.
+**Not validated by any of this:** real production data (G3), the live backup (G4), Railway's behaviour during a deploy or rollback, and the owner's access to the production database.
+
+**Evidence.** `docs/engineering/evidence/v1-integrated/` (14 screens × 4 sizes, 48 side-by-side comparisons with the approved design, the Fox 1A comparison, the capture and rehearsal scripts), `docs/engineering/evidence/v1-savings/` (10 savings screens × 4 sizes) and `docs/engineering/evidence/v1-owner-review/` (the option sheets and the owner's decisions). All data in them is synthetic.
 
 ## 3. Findings
 
@@ -207,7 +215,7 @@ The test can fail: narrowing the form dialog on the smallest phones made it red 
 | Export (two tests) | 6 | An API check and one layout check; one size each is enough |
 | Journeys | 2 of 4 sizes | A phone and a desktop cover them |
 
-That is the 14 skipped browser tests. Each test runs at one size or more. There is no `.only`, and no test is skipped outright.
+That is 14 skipped browser tests; the six-width dialog test adds two (it runs in the touch phone project for 320 to 834 px and in the desktop project for 1280 px, and is skipped in the other two), making 16. Each test runs at one size or more. There is no `.only`, and no test is skipped outright.
 
 ### 4.3 Post-build code review of this round
 
@@ -265,21 +273,58 @@ No defect in the app code. Four findings, all in the tests, all fixed:
 
 **Deliberate breaks shown red in this round:** five for the tile layout, two for the tile guard's additions, seven for the first review's fixes, one for the Undo handler, three for the points figure, two for the six-width dialog test.
 
-## 5. Gates and what is still open
+## 5. Gates: what is complete and what is not
 
-| Gate | State | Who | Blocks |
-| --- | --- | --- | --- |
-| G1 Functional | Passed | Engineering | – |
-| G2 Visual | Engineering review done. **Owner review, 22 November: two changes asked for** (§3.1); sign-off open | Owner picks from the options; engineering builds | V1 deployment |
-| G3 Data preservation | **Open.** The drill has run on synthetic data only | Owner runs it at the release-candidate commit (`V1-OPERATIONS-BACKUP.md` §4) | V1 deployment |
-| G4 Backup safety | **Open.** The 10–11 November change is consistent with records removed directly in the database; who and why is unproven. The live counts have not been compared with a restored copy. A fresh, complete backup is needed on the day | Owner (`V1-OPERATIONS-BACKUP.md` §1) | V1 deployment |
-| G5 Operational | Rollback with a write freeze rehearsed; Railway settings read on 22 November. **Open:** the owner's access to run SQL on the production database, tried once read-only | Engineering; owner for the access | V1 deployment (without it there is no safe rollback once savings are in use) |
-| G6 Assets | 49 runtime assets match the register; gated map absent; no AI-generated artwork. Fox 1A live fidelity and the final points-star are **open with the owner** | Owner | Not V1 deployment unless the owner rejects the current fox or star; neither needs code |
-| G7a Security (technical) | Passed: every route checked is scoped to the signed-in family; no secrets or family data in the repository or evidence | Engineering | – |
-| G7b Legal and privacy for a public launch | **Not reviewed. This is separate from G7a and is not covered by any engineering check.** Open with the owner: the privacy policy, the list of data processors (Railway, Cloudflare R2 and any other), the rights and contact wording, and the working procedure for a privacy request while permanent deletion is deliberately switched off | Owner, with legal advice | The owner decides whether it blocks V1 deployment or only a public launch |
-| G8 Release | **Open** | Owner approves the exact commit | V1 deployment |
+### 5.1 Complete: engineering validation
 
-**Blocks permanent deletion later, not V1:** the backup hardening PR (one blocking finding, `V1-OPERATIONS-BACKUP.md` §3) and the R2 expiry rule (§2 there). **Enhancements:** r1, and stronger backup validation.
+| Gate | State |
+| --- | --- |
+| G1 Functional | **Passed** at `96f5462` (§2, §3) |
+| G7a Security (technical) | **Passed:** every route checked is scoped to the signed-in family; no secrets or family data in the repository or evidence; permanent deletion stays off |
+| Responsive and accessibility checks | **Passed** at four sizes, and at six for reward forms and confirmations (§3.3) |
+| Rollback procedure | **Designed, reviewed and rehearsed on synthetic data** (write freeze). Its use depends on §5.5 |
+
+Engineering items still open, none of them functional: the eight smaller build defects from the design critique (§3.2, E1–E8) and the tests listed as missing in §4.5 (#8).
+
+### 5.2 Not complete: production backup (G4) — owner
+
+- The 10–11 November change (families 9 → 2, children 12 → 6, users 10 → 2; archive 8.68 MB → 646 kB) is consistent with records removed directly in the database. **Who and why is unproven; whether they were real families is unknown.**
+- The live counts have not been compared with a restored copy.
+- The 10 November archive is to be kept under restricted storage until its status is decided.
+- A fresh, complete backup must be taken and checked before the merge.
+- Detail: `V1-OPERATIONS-BACKUP.md` §1.
+
+### 5.3 Not complete: migration reconciliation on real data (G3) — owner
+
+- Migrations 014–017 have been reconciled on **synthetic data only** (41 checks).
+- The restore of a real production archive into an isolated database, and its reconciliation, has **not been run**. It needs the archive, read-only storage credentials and a trusted machine, none of which may enter an engineering session, GitHub, logs or chat.
+- It must be run at the exact commit to be approved. Command: `V1-OPERATIONS-BACKUP.md` §4.
+- The write-freeze rehearsal does not stand in for it.
+
+### 5.4 Not complete: branding and licensing (G6) — owner
+
+- Passed by engineering: the runtime assets match the register; the gated Freepik map is absent from the build; nothing was generated or redrawn.
+- Open: the owner's sign-off of the Fox 1A logo as it renders in the app.
+- Open: the Freepik map's licence (the map stays out until then; V1 ships without it).
+- For sign-off, new on 22 November: the restyled behaviour icons (twelve of the sixteen are engineering's same-subject mapping) and the piggy bank on Child View. All are Phosphor icons at the pinned commit, MIT.
+- Not needed for V1: a dedicated points star (none is drawn in the app).
+
+### 5.5 Not complete: operational (G5) — owner
+
+- The owner's access to run SQL on the production database through Railway, tried once with the read-only status script. Without it there is no safe rollback once savings are in use.
+- That Railway keeps the old deployment serving when a new one fails its health check (documented behaviour; not tested).
+- Railway's build, start and health-check settings unchanged on the day (read on 22 November).
+- Separate changes, not part of this release and not applied: the backup-job hardening (one blocking finding) and the 35-day expiry rule. Neither is to be enabled before the 10 November archive's status is decided.
+
+### 5.6 Not complete: owner sign-offs
+
+| Gate | What is needed |
+| --- | --- |
+| G2 Visual | The owner's acceptance of the screens as built, including the three changes of 22 November, and a decision on the open wording (W1–W6) and design points (D1–D5) in §3.2 |
+| G7b Legal and privacy for a public launch | **Not reviewed; no engineering check covers it.** The privacy policy, the list of data processors (Railway, Cloudflare R2 and any other), the rights and contact wording, and the procedure for a privacy request while permanent deletion is switched off. The owner decides whether it blocks V1 deployment or only a public launch |
+| G8 Release | The owner's approval of the exact commit, after the gates above |
+
+**Blocks permanent deletion later, not V1:** the backup hardening and the expiry rule.
 
 ## 6. Brand and licensing
 
@@ -299,7 +344,7 @@ No defect in the app code. Four findings, all in the tests, all fixed:
 | Branch | `claude/percy-v1-rc` |
 | Base | `claude/migrate-base64-percy-code-PNAym` (the default and production branch, at `498e798`) |
 | Contents | #57, #58, #59, #60, #61, #62, #63 and #64. The base is an ancestor, so the candidate only adds commits |
-| Exact commit | The head of the release-candidate pull request, read from GitHub. A file cannot name its own commit; the pull request and the hand-back carry it |
+| Exact commit | Code and tests: `96f5462`. The head of the release-candidate pull request is the documents-only commit after it (this file and the checklist); a file cannot name its own commit, so the pull request and the hand-back carry that SHA, read from GitHub, with CI's result at it |
 | Migrations | 014, 015, 016, 017 |
 | Railway files | No `railway.json` or `railway.toml` is tracked |
 | Deployment plan | Release checklist §4 and §5 |
