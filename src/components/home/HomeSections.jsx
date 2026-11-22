@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PercyIcon from '@/components/icons/PercyIcon';
-import CategoryIcon from '@/components/CategoryIcon';
+import BehaviourTileParts, { TILE_GRID_EVEN, TILE_LAYOUT } from '@/components/home/BehaviourTile';
 import RewardIcon from '@/components/rewards/RewardIcon';
 import ChildAvatar from '@/components/child/ChildAvatar';
 import GoalProgress from '@/components/savings/GoalProgress';
@@ -141,21 +141,19 @@ export function QuickPoints({ child, actions, awarding, onAward, onOpenAward, on
             </Link>
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className={TILE_GRID_EVEN} data-tile-grid="even">
             {actions.map((action) => (
-              <button key={action.id} type="button" disabled={awarding}
+              <button key={action.id} type="button" disabled={awarding} data-tile
                 onClick={() => onAward(child, action)}
                 aria-label={`${action.label} +${action.points} for ${child.name}`}
-                className="disabled:opacity-60 flex items-center gap-1.5 min-h-11 rounded-md border border-border bg-warning px-2 py-3 text-left text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                <span className="text-primary"><CategoryIcon iconKey={action.icon_key} className="h-5 w-5" /></span>
-                {/* Wraps only between words; a long single word may shrink the badge gap, never split. */}
-                <span className="flex-1 min-w-0">{action.label}</span>
-                <span className="shrink-0 rounded-md bg-star px-1.5 py-0.5 text-sm font-semibold text-foreground tabular-nums">+{action.points}</span>
+                className={cn(TILE_LAYOUT, 'disabled:opacity-60 border border-border bg-warning hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2')}>
+                <BehaviourTileParts iconKey={action.icon_key} name={action.label} points={action.points} />
               </button>
             ))}
           </div>
         )}
-        <div className="grid grid-cols-2 gap-3">
+        {/* One column below 360px: side by side the label and its icon ran to the button's edges (owner review 2026-11-22). */}
+        <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
           <Button onClick={onOpenAward}>
             <PercyIcon id="phosphor:plus-circle:duotone" className="h-4 w-4" />
             Award points

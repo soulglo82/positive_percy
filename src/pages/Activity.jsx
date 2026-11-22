@@ -4,13 +4,13 @@
 // the completion join). Correct (this week's awards) and the undone marking
 // are kept from A2.
 import { pointsWord } from '@/lib/savings';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Child } from "@/api/entities";
 import { useAuth } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { correctAward, refreshPoints } from "@/lib/points";
+import { correctAward, refreshPoints, undoAction } from "@/lib/points";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
@@ -88,6 +88,7 @@ export function goalTitleOf(event) {
 export default function Activity() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const undoHandlers = useRef(new Map()); // one Undo handler per redemption (see undoSpendFor)
   const [correctionTarget, setCorrectionTarget] = useState(null);
   const [correcting, setCorrecting] = useState(false);
   const [selectedChildId, setSelectedChildId] = useState("all");
@@ -162,6 +163,21 @@ export default function Activity() {
 
   const canCorrect = (event) => event.type === 'earn' && !event.undone &&
     !!summary?.weekStart && new Date(event.created_date) >= new Date(summary.weekStart);
+
+  // A redeemed reward can be undone for 10 minutes (V1-D §10 R3: approving a
+  // request has no Undo in its toast; "each redemption is undone one at a
+  // time in Activity"). The server enforces the window; this only decides
+  // whether to offer it. Final validation 2026-11-22: the control was missing.
+  const canUndoSpend = (event) => event.type === 'spend' && !event.undone &&
+    Date.now() - new Date(event.created_date).getTime() < UNDO_WINDOW_MS;
+  // One handler per redemption for the life of the page (code review, 22 Nov):
+  // made during render it was new on every render, so its one-tap guard and
+  // its request id did not survive a refetch, and a second tap sent a second
+  // undo with a new id ("Undone" then "Already undone").
+  const undoSpendFor = (id) => {
+    if (!undoHandlers.current.has(id)) undoHandlers.current.set(id, undoAction('spend', id, queryClient));
+    return undoHandlers.current.get(id);
+  };
 
   const confirmCorrection = async () => {
     if (!correctionTarget || correcting) return;
@@ -247,7 +263,8 @@ export default function Activity() {
                     <div>
                       {group.events.map((event) => (
                         <NarrativeItem key={`${event.type}-${event.id}`} event={event} timeZone={timeZone}
-                          canCorrect={canCorrect(event)} onCorrect={() => setCorrectionTarget(event)} />
+                          canCorrect={canCorrect(event)} onCorrect={() => setCorrectionTarget(event)}
+                          onUndoSpend={canUndoSpend(event) ? undoSpendFor(event.id) : null} />
                       ))}
                     </div>
                   </section>
@@ -277,7 +294,7 @@ export default function Activity() {
           <AlertDialogHeader>
             <AlertDialogTitle>Correct mistaken award?</AlertDialogTitle>
             <AlertDialogDescription>
-              Remove {correctionTarget?.points} mistakenly awarded points from {correctionTarget?.child_name}?
+              Remove {correctionTarget?.points} mistakenly awarded {pointsWord(correctionTarget?.points)} from {correctionTarget?.child_name}?
               This corrects only the selected award, keeps an Activity record, and cannot be done if those points have been spent or reserved.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -290,6 +307,9 @@ export default function Activity() {
     </div>
   );
 }
+
+// Matches the server's undo window (routes.js UNDO_WINDOW).
+const UNDO_WINDOW_MS = 10 * 60 * 1000;
 
 // The approved row icons: a tick for a goal, a heart for an award, a gift for
 // a spend (approved icon set). Other kinds: Undo's arrow, or the info mark.
@@ -351,7 +371,7 @@ export function rowText(event, timeZone = undefined) {
   return { lead, what: event.label, sub: time };
 }
 
-function NarrativeItem({ event, timeZone, canCorrect, onCorrect }) {
+function NarrativeItem({ event, timeZone, canCorrect, onCorrect, onUndoSpend = null }) {
   const isEarn = event.type === 'earn';
   const isSpend = event.type === 'spend';
   // Earned in green; spends in muted ink; deductions, undo and corrections in
@@ -385,8 +405,13 @@ function NarrativeItem({ event, timeZone, canCorrect, onCorrect }) {
         </span>
         )}
         {canCorrect && (
-          <button type="button" onClick={onCorrect} className="min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Correct ${event.child_name} award of ${event.points} points`}>
+          <button type="button" onClick={onCorrect} className="min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Correct ${event.child_name} award of ${event.points} ${pointsWord(event.points)}`}>
             Correct
+          </button>
+        )}
+        {onUndoSpend && (
+          <button type="button" onClick={onUndoSpend} className="min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Undo ${event.child_name} redeemed ${event.label}`}>
+            Undo
           </button>
         )}
       </div>

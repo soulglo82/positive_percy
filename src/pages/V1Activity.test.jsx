@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 vi.mock('@/api/entities', () => ({ Child: { list: vi.fn(async () => kids) } }));
 vi.mock('@/lib/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u' } }), getToken: () => 't' }));
@@ -157,7 +158,46 @@ describe('Correct (A2 history)', () => {
     mount();
     await screen.findByText('Movie night');
     const names = screen.getAllByRole('button', { name: /^Correct / }).map((b) => b.getAttribute('aria-label'));
-    expect(names).toEqual(['Correct Lara award of 1 points', 'Correct Omar award of 1 points']);
+    expect(names).toEqual(['Correct Lara award of 1 point', 'Correct Omar award of 1 point']);
+    // The dialog says "1 point" too (final validation: it said "1 points").
+    fireEvent.click(screen.getByRole('button', { name: 'Correct Lara award of 1 point' }));
+    expect(await screen.findByText(/Remove 1 mistakenly awarded point from Lara\?/)).toBeTruthy();
+  });
+});
+
+describe('Undo a redeemed reward (V1-D §10 R3; final validation 2026-11-22)', () => {
+  const recent = (minsAgo, extra = {}) => ({ id: 'red-' + minsAgo, child_id: 'c1', child_name: 'Lara', points: -25, label: 'Movie night', note: null, type: 'spend',
+    created_date: new Date(Date.now() - minsAgo * 60000).toISOString(), undone: false, goal_completion_id: null, ...extra });
+
+  it('offered on a redemption from the last 10 minutes only; not once undone; it calls the redemption undo once', async () => {
+    const said = vi.spyOn(toast, 'success').mockImplementation(() => {});
+    const calls = [];
+    global.fetch = vi.fn(async (url, opts = {}) => {
+      if (url.startsWith('/api/summary')) return { ok: true, json: async () => ({ childStats: [], goalsCompleted: 0 }) };
+      if (url.startsWith('/api/redemptions/')) { calls.push([url, JSON.parse(opts.body)]); return { ok: true, status: 200, json: async () => ({ child: { name: 'Lara', total_points: 1 }, redemption: {} }) }; }
+      // A fresh award too: only its type keeps Undo off it (review: the old row was hours old, so the window hid it anyway).
+      return { ok: true, json: async () => [recent(9), recent(11), recent(3, { id: 'red-undone', undone: true }), { ...ROWS[1], created_date: recent(1).created_date }] };
+    });
+    mount();
+    const undo = await screen.findAllByRole('button', { name: 'Undo Lara redeemed Movie night' });
+    expect(undo).toHaveLength(1); // 9 minutes old: offered; 11 minutes old and the undone one: not
+    expect(undo[0].closest('[data-row-key]').getAttribute('data-row-key')).toBe('spend-red-9');
+    expect(screen.queryByRole('button', { name: /^Undo Omar/ })).toBeNull(); // never on an award
+    fireEvent.click(undo[0]);
+    fireEvent.click(undo[0]); // a double tap is one undo
+    await waitFor(() => expect(calls).toHaveLength(1));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0]).toBe('/api/redemptions/red-9/undo');
+    expect(calls[0][1].request_id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(said).toHaveBeenCalledWith('Undone. Lara has 1 point.'); // singular
+    // A later tap, after the list has refreshed, replays the same undo: the
+    // same request id, so the server answers it as a duplicate (code review).
+    await waitFor(() => expect(global.fetch.mock.calls.filter(([u]) => u.startsWith('/api/activity-feed')).length).toBeGreaterThan(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Undo Lara redeemed Movie night' }));
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1][1].request_id).toBe(calls[0][1].request_id);
+    said.mockRestore();
   });
 });
 

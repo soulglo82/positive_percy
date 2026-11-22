@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 import NumberInput from '@/components/ui/NumberInput';
 import RewardIcon from '@/components/rewards/RewardIcon';
 import { cn } from '@/lib/utils';
-import { refreshPoints, undoAction, UNDO_TOAST_MS, newRequestId } from '@/lib/points';
+import { refreshPoints, undoAction, UNDO_TOAST_MS, newRequestId, MAX_AWARD } from '@/lib/points';
 import { saveTowards, moveBack, undoSavings, redeemGoal, pointsWord, leadingGoal } from '@/lib/savings';
 
 const STALE = "That didn't work: the figures changed. Check them and try again.";
@@ -94,9 +94,11 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
   const saved = goal?.saved ?? 0;
   const whole = Number.isInteger(amount) && amount >= 1;
   // The server refuses more than available or more than the goal still needs.
-  const maxSave = goal ? Math.max(0, Math.min(available, goal.toGo)) : 0;
+  // One move is at most MAX_AWARD points (the server's limit per request).
+  const maxSave = goal ? Math.max(0, Math.min(available, goal.toGo, MAX_AWARD)) : 0;
+  const maxBack = Math.min(saved, MAX_AWARD);
   const canSave = !!goal && whole && amount <= maxSave && !busy;
-  const canMoveBack = !!goal && whole && amount <= saved && !busy;
+  const canMoveBack = !!goal && whole && amount <= maxBack && !busy;
   const canRedeem = !!goal && saved + available >= goal.cost && !busy;
   const fromSaved = goal ? Math.min(saved, goal.cost) : 0;
 
@@ -207,10 +209,10 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="savings-amount">Points</Label>
-                  <NumberInput id="savings-amount" value={amount} onChange={setAmount} min="1" max={Math.max(maxSave, saved, 1)}
+                  <NumberInput id="savings-amount" value={amount} onChange={setAmount} min="1" max={Math.max(maxSave, maxBack, 1)}
                     inputMode="numeric" aria-describedby="savings-amount-help" />
                   <p id="savings-amount-help" className="text-xs text-muted-foreground">
-                    Save up to {maxSave} · Move back up to {saved}
+                    Save up to {maxSave} · Move back up to {maxBack}
                   </p>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">

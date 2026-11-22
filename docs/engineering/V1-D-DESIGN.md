@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.6 |
+| Version | 1.7 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-d-rewards`, stacked on V1-F `claude/percy-v1-f-forms`) |
 | Status | Reviewed (fresh-context peer review adopted, v1.1; §10 supersedes earlier sections where they conflict) |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.7 | 2026-11-22 | §15: final validation: the Activity Undo that §10 R3 relies on did not exist; built |
 | 1.6 | 2026-11-20 | Owner decision (§14): the 12 approved reward artworks (11 Streamline Plump Duo and Phosphor book-bookmark) become selectable reward art, with the 71 Phosphor icons kept |
 | 1.5 | 2026-11-20 | Owner decision O-I1 (§13): a requested reward is not directly spendable, on screen and on the server |
 | 1.4 | 2026-11-20 | Owner approved the success and removal messages; applied (§12) |
@@ -347,4 +348,16 @@ Keep the 71 Phosphor picker icons. Never replace the art of rewards families hav
 | N5 | An uploaded image is hidden while an artwork is chosen | As with Phosphor icons: precedence is unchanged, and clearing the artwork shows the image again (A2) |
 | N6 | Earlier sections conflict | Superseded (above) |
 | N7 | Other outdated records | `03_REWARDS.md` and `05_PARENT_PICKER.md` gain a dated note recording the owner's decision; the register's top note already records it |
+
+## 15. Final validation: Undo for a redemption in Activity (v1.7, 2026-11-22)
+
+**Finding (integrated review, Major).** §10 R3 removed Undo from the toast after a parent approves requests, on the ground that "each redemption is undone one at a time in Activity (the existing per-redemption undo)". Activity had no such control: it offered only Correct, on awards. So a reward approved by mistake could not be reversed anywhere in the app. The server's undo (`POST /api/redemptions/:id/undo`, 10 minutes, once) was already there and tested.
+
+**Fix.** An Undo button on a redemption row in Activity, offered while the row is under 10 minutes old and not already undone. It uses the existing `undoAction('spend', …)`: one request id per button, a retry offered if the connection fails, and the toast "Undone. {Child} has {n} points.". The server still decides. A row that has just passed 10 minutes gets the server's "This can no longer be undone.".
+
+**Tests.**
+- `src/pages/V1Activity.test.jsx` "Undo a redeemed reward": offered on a 2-minute-old redemption only (not at 11 minutes, not once undone, never on an award), and one click sends one undo.
+- `e2e/v1-journeys.spec.js`: after the parent approves the child's request, Undo in Activity returns the points, and the button goes.
+
+**One class not covered:** the device clock. A device running more than 10 minutes fast hides the button early; one running slow shows it late, and the server then refuses.
 

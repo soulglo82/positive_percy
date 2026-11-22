@@ -118,6 +118,39 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
 });
 
 // V1-B: the Children page (nav "Children") and the request-only Child View.
+// Owner review 2026-11-22 ("standardised alignment"): behaviour tiles keep one
+// layout when a name wraps or a badge is wide. The fixture's names all fit on
+// one line, so this swaps a long behaviour into Quick Points for the check
+// (one worker, so no other test sees it) and puts everything back.
+test('behaviour tiles stay aligned with a long name and a wide badge', async ({ page }, testInfo) => {
+  const headers = { Authorization: `Bearer ${family.token}` };
+  const call = async (method, path, data) => {
+    const r = await page.request.fetch(path, { method, headers, data });
+    expect(r.ok(), `${method} ${path}: ${await r.text()}`).toBe(true);
+    return r.status() === 204 ? null : r.json();
+  };
+  const caring = (await call('GET', '/api/behavior-categories')).find((c) => c.name === 'Caring');
+  let long;
+  try {
+    await call('PUT', `/api/behavior-categories/${caring.id}`, { is_quick_action: false });
+    long = await call('POST', '/api/behavior-categories', { name: 'Tidying up without being asked Supercalifragilisticexpialidocious', icon: '🧹', points: 1000, is_quick_action: true });
+    await go(page, '/');
+    const tiles = page.locator('[data-tile-grid] [data-tile]');
+    await expect(tiles).toHaveCount(4);
+    await expect(tiles.filter({ hasText: 'Tidying up without being asked' })).toContainText('+1000');
+    await tiles.first().scrollIntoViewIfNeeded();
+    await checkScreen(page, 'home long tile', testInfo);
+    await page.getByRole('button', { name: /^Award points/ }).first().click();
+    await expect(page.getByRole('dialog').getByRole('heading', { name: 'Give Percy Points' })).toBeVisible();
+    await page.getByRole('dialog').locator('[data-tile]').filter({ hasText: 'Tidying up' }).scrollIntoViewIfNeeded();
+    await checkScreen(page, 'add points long tile', testInfo);
+    await closeDialog(page);
+  } finally {
+    if (long) await page.request.fetch(`/api/behavior-categories/${long.id}`, { method: 'DELETE', headers });
+    await page.request.fetch(`/api/behavior-categories/${caring.id}`, { method: 'PUT', headers, data: { is_quick_action: true } });
+  }
+});
+
 test('children page', async ({ page }, testInfo) => {
   await go(page, '/');
   await page.getByRole('link', { name: 'Children' }).first().click();
@@ -249,13 +282,31 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   // nested dialog is open the row's dialog underneath is hidden from the
   // accessibility tree, so the check is: the nested one is gone and the row's
   // dialog, with its heading, is back.
+  // An Escape that arrives in the instant a dialog's node is added, before
+  // the dialog has attached its key handler, is ignored (measured 2026-11-22:
+  // 0 of 10 closed when dispatched in the same task as the mount, 10 of 10
+  // from the next task on). A person cannot press a key that fast, but a test
+  // can: CI lost one Escape here at 2074d55, on the one step with no pause
+  // between opening and closing. Focus moving into the dialog happens in the
+  // same step as the handler being attached, so wait for that first.
+  // Bounded: after a nested dialog closes, focus can rest outside the row's
+  // dialog, which has long been ready.
+  const dialogReady = () => page.waitForFunction(() => !!document.activeElement?.closest('[role="dialog"], [role="alertdialog"]'), null, { timeout: 1000 }).catch(() => {});
   const closeRow = async () => {
     await expect(page.getByRole('dialog')).toHaveCount(1);
+    await dialogReady();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
   };
   const closeNested = async (rowTitle, nested) => {
     await expect(nested).toBeVisible();
+    // Focus inside the nested dialog itself: focus is already inside the
+    // row's dialog, so the row check would pass at once (code review).
+    await nested.evaluate((el) => new Promise((done) => {
+      const until = Date.now() + 1000;
+      const tick = () => (el.contains(document.activeElement) || Date.now() > until ? done() : setTimeout(tick, 20));
+      tick();
+    }));
     await page.keyboard.press('Escape');
     await expect(nested).toHaveCount(0);
     await expect(page.getByRole('dialog')).toHaveCount(1);

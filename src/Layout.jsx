@@ -59,8 +59,11 @@ export default function Layout({ children, currentPageName }) {
               >
                 <Logo size={40} wordmark decorative />
               </Link>
+              {/* From lg up only: between 640 and 1023 px there is no room beside
+                  the five tabs and it wrapped onto two lines (final visual
+                  review, 22 Nov). The active tab already names the page. */}
               {pageTitle && (
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className="hidden lg:inline whitespace-nowrap text-sm font-medium text-muted-foreground">
                   / {pageTitle}
                 </span>
               )}

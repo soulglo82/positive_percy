@@ -20,7 +20,7 @@ export async function checkScreen(page, label, testInfo) {
   expect(touch, `${label}: touch emulation`).toBe(testInfo.project.name.includes('touch'));
 
   const report = await page.evaluate((touch) => {
-    const out = { scroll: [], small: [], tiny: [], unnamed: [] };
+    const out = { scroll: [], small: [], tiny: [], unnamed: [], clipped: [], wrapped: [], uneven: [] };
     if (document.documentElement.scrollWidth > window.innerWidth + 1) {
       out.scroll.push(`page ${document.documentElement.scrollWidth} > ${window.innerWidth}`);
     }
@@ -55,6 +55,79 @@ export async function checkScreen(page, label, testInfo) {
       const size = parseFloat(getComputedStyle(el).fontSize);
       if (size < 12) out.tiny.push(`${size}px <${el.tagName.toLowerCase()}>`);
     }
+    // Text wider than its own box runs under whatever sits beside it (final
+    // validation 2026-11-22: at 320px the "+1" badge covered the end of
+    // "Kindness" in Quick Points). Any element holding text directly whose
+    // content is wider than the element is reported. Form fields scroll their
+    // own text and are left out; so are visually hidden labels.
+    const tw = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+    const seen = new Set();
+    for (let n = tw.nextNode(); n; n = tw.nextNode()) {
+      const el = n.parentElement;
+      if (!n.textContent.trim() || !el || seen.has(el) || !visible(el) || el.closest('.sr-only, input, textarea, select, [role="listbox"]')) continue;
+      seen.add(el);
+      if (el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1) {
+        out.clipped.push(`"${n.textContent.trim().slice(0, 30)}" ${el.scrollWidth} > ${el.clientWidth}`);
+      }
+    }
+    // The main navigation is one line: a label that wraps is squeezed (final
+    // validation 2026-11-22: at 834px "/ Family" beside the tabs broke onto
+    // two lines). Each element holding text there must sit on a single line. Checked on
+    // the page only; behind an open dialog the bar is the same.
+    if (scope === document.body) {
+      for (const nav of document.querySelectorAll('nav[aria-label="Main"]')) {
+        const nw = document.createTreeWalker(nav, NodeFilter.SHOW_TEXT);
+        const held = new Set();
+        for (let n = nw.nextNode(); n; n = nw.nextNode()) {
+          const el = n.parentElement;
+          if (!n.textContent.trim() || !el || held.has(el) || !visible(el) || el.closest('.sr-only')) continue;
+          held.add(el);
+          // The whole element, not the text node: "/ " and the page name are
+          // two nodes, and the break fell between them.
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const lines = new Set([...range.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top)));
+          if (lines.size > 1) out.wrapped.push(`"${el.textContent.trim().slice(0, 30)}" on ${lines.size} lines`);
+        }
+      }
+    }
+    // Tiles in one grid look the same whatever their names (owner review
+    // 2026-11-22: in Quick Points at 320px each tile wrapped its own way).
+    // In every [data-tile-grid], each [data-tile] has its icon, name and
+    // badge at the same place inside the tile; the name and the badge never
+    // overlap; tiles in one row are one height, and in a grid marked "even"
+    // all tiles are. Measured from inside the border (the selected tile's is
+    // thicker), to half a pixel.
+    for (const grid of scope.querySelectorAll('[data-tile-grid]')) {
+      const tiles = [...grid.querySelectorAll('[data-tile]')].filter(visible);
+      const at = tiles.map((t) => {
+        const outer = t.getBoundingClientRect();
+        const box = { left: outer.left + t.clientLeft, top: outer.top + t.clientTop, right: outer.left + t.clientLeft + t.clientWidth };
+        const part = (name) => t.querySelector(`[data-tile-part="${name}"]`)?.getBoundingClientRect();
+        const [icon, name, badge] = ['icon', 'name', 'badge'].map(part);
+        if (!icon || !name || !badge) return null;
+        const overlap = name.left < badge.right - 0.5 && badge.left < name.right - 0.5 && name.top < badge.bottom - 0.5 && badge.top < name.bottom - 0.5;
+        // Two rows (narrow): parts hang from the top of the tile. One row
+        // (wide): parts are centred on the tile's middle line.
+        const centred = getComputedStyle(t).alignContent === 'center';
+        const middle = outer.top + t.clientTop + t.clientHeight / 2;
+        const y = (r) => (centred ? (r.top + r.bottom) / 2 - middle : r.top - box.top);
+        return { rowTop: Math.round(outer.top), height: outer.height, overlap, label: t.textContent.trim().slice(0, 20),
+          same: { iconLeft: icon.left - box.left, iconY: y(icon), nameLeft: name.left - box.left,
+            nameY: y(name), badgeRight: box.right - badge.right, badgeY: y(badge) } };
+      });
+      if (at.some((x) => !x)) { out.uneven.push('a tile has no icon, name or badge part'); continue; }
+      const spread = (values) => Math.max(...values) - Math.min(...values);
+      for (const key of Object.keys(at[0]?.same || {})) {
+        const values = at.map((x) => x.same[key]);
+        if (spread(values) > 0.5) out.uneven.push(`${key}: ${values.map((v) => Math.round(v * 10) / 10).join(', ')}`);
+      }
+      for (const x of at) if (x.overlap) out.uneven.push(`name under badge: "${x.label}"`);
+      const rows = grid.getAttribute('data-tile-grid') === 'even' ? [at] : Object.values(Object.groupBy(at, (x) => x.rowTop));
+      for (const row of rows) {
+        if (spread(row.map((x) => x.height)) > 0.5) out.uneven.push(`height: ${row.map((x) => Math.round(x.height)).join(', ')}`);
+      }
+    }
     const textOf = (id) => { const t = id && document.getElementById(id); return t ? t.textContent.trim() : ''; };
     const controls = scope.querySelectorAll('button, a[href], input:not([type="hidden"]), select, textarea, [role="button"], [role="link"], [role="tab"], [role="checkbox"], [role="switch"], [role="combobox"], [role="option"], [tabindex]:not([tabindex="-1"])');
     for (const el of controls) {
@@ -79,6 +152,9 @@ export async function checkScreen(page, label, testInfo) {
 
   expect(report.scroll, `${label}: sideways scroll`).toEqual([]);
   expect(report.tiny, `${label}: text under 12px`).toEqual([]);
+  expect(report.clipped, `${label}: text wider than its box`).toEqual([]);
+  expect(report.wrapped, `${label}: navigation text on more than one line`).toEqual([]);
+  expect(report.uneven, `${label}: tiles in one grid differ`).toEqual([]);
   expect(report.unnamed, `${label}: controls with no name`).toEqual([]);
   expect(report.small, `${label}: touch targets under 44px`).toEqual([]);
   // Kept as a file, so the CI artifact holds the screenshots.

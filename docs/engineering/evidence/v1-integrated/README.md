@@ -2,20 +2,46 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 2.3 |
+| Version | 3.0 |
 | Issued | 2026-11-20 |
 | Owner | Percy V1 engineering |
-| Status | For the owner's full V1 visual and functional review (not a release candidate) |
+| Status | For the owner's final visual and functional sign-off of the release candidate. Not an approval |
 
 ## Change log
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 3.0 | 2026-11-22 | Final validation. The whole V1 including savings, on the release-candidate branch; four widths (320 added); whole-page captures; the capture scripts are now in `tools/`; Fox 1A comparison in `brand/`. Sections below v3.0 are kept as history |
 | 2.3 | 2026-11-20 | Full checks rerun on the combined heads (910 unit/server, 42 browser, 14 skipped by design); rebuilt on the latest heads with the approved reward artwork (owner decision 2026-11-20); every screen retaken; the artwork row is closed |
 | 2.2 | 2026-11-20 | Correction: the Streamline licence row was written before searching; the repository does record Streamline assets and their licence (see the corrected row) |
 | 2.1 | 2026-11-20 | Owner visual review answered (§Owner review): supporting screens added; Home retaken with behaviours that carry their approved icons |
 | 2.0 | 2026-11-20 | Rebuilt on the latest green heads, with O-I1 and the visual-review fixes; three widths; side-by-side comparisons |
 | 1.0 | 2026-11-19 | First pack (earlier heads of #60 and #63; superseded) |
+
+## v3.0: the release candidate (2026-11-22)
+
+**What it shows.** The release-candidate branch: everything in #57–#64, including savings. Results, findings and gates are in `docs/engineering/V1-RELEASE-ASSESSMENT.md`.
+
+**Files.**
+
+| Folder | Contents |
+| --- | --- |
+| `built/` | 14 screens at 320, 390, 834 and 1280 px (56 images): Home, the Home Rewards dialog, Children, Child View, Activity, Rewards, Settings, Award Points, Manage Goals, the goal form, the reward form, the savings dialog, Onboarding and Welcome. Main screens are whole pages |
+| `compare/` | The approved design (left) and the built screen (right) for the 12 screens the approved design has, at the four widths (48 images). The approved file draws every width as a phone frame; the built app uses its responsive layouts at 834 and 1280 |
+| `brand/fox-1a-fidelity.png` | The approved Fox 1A source crop beside the runtime logo files |
+| `tools/` | `run.sh` rebuilds the pack: `capture.cjs` seeds a synthetic family and photographs the app, `reference.cjs` photographs the approved design (git blob `9de1df2`), `compose.py` sets them side by side. `rollback-rehearsal.cjs` is the app rollback rehearsal (release checklist §5) |
+| `../v1-savings/` | The savings dialogs and confirmations at the four sizes (40 images) |
+
+**The fixture** matches the approved design's figures: Lara has 18 of 25 this week, 90 ready to use and 120 of 300 saved towards New bike, with Movie night asked for.
+
+**Differences from the approved design that are intended** (owner decisions or recorded items; unchanged from v2.3 except savings, which is now built):
+- No reward subtitles ("Weekly treat", "Family reward"): there is no stored field for them (plan §8.4).
+- The Welcome screen has no map: the Freepik map stays behind its licence gate.
+- Savings wording follows the owner's final wording (D1 design §21.8), where it differs from the approved file's sample text.
+
+## History: v2.3 and earlier (2026-11-20)
+
+The sections below describe the v2.3 pack. They are kept as written.
 
 ## What was combined
 

@@ -245,7 +245,7 @@ export default function ParentProfile() {
                 <div key={child.id} className="flex items-center justify-between gap-2 pl-3 pr-1 py-1 rounded-md bg-muted border border-border">
                   <div className="flex items-center gap-3 min-w-0">
                     <ChildAvatar name={child.name} url={child.avatar_url} size="sm" colour={childColour(child, ordered)} />
-                    <span className="font-medium text-foreground truncate">{child.name}</span>
+                    <span className="font-medium text-foreground min-w-0 break-words">{child.name}</span>
                     <Points value={child.total_points} className="text-sm text-muted-foreground font-semibold" />
                   </div>
                   <Button variant="ghost" size="icon" aria-label={`Edit ${child.name}`} onClick={() => setSelectedChild(child)}>

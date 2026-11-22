@@ -97,6 +97,21 @@ describe('Children: Saving for something bigger', () => {
     expect(within(d).getByText('Save up to 80 · Move back up to 0')).toBeTruthy();
   });
 
+  it('Edit: one move is at most 1,000 points, as the server allows', async () => {
+    state.children = [{ ...lara, available_points: 2006, saved_total: 1500, goals: [goal('g1', 'Bike', 5000, 1500)] }];
+    state.rewards = [R('g1', 'Bike', 5000, { is_bigger_goal: true })];
+    mount(<Children />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    const d = await screen.findByRole('dialog');
+    expect(within(d).getByText('Save up to 1000 · Move back up to 1000')).toBeTruthy();
+    expect(within(d).getByLabelText('Points', { exact: true }).getAttribute('max')).toBe('1000'); // the field agrees with the help text
+    fireEvent.change(within(d).getByLabelText('Points', { exact: true }), { target: { value: '1001' } });
+    expect(within(d).getByRole('button', { name: 'Save points' }).disabled).toBe(true);
+    expect(within(d).getByRole('button', { name: 'Move points back' }).disabled).toBe(true);
+    fireEvent.change(within(d).getByLabelText('Points', { exact: true }), { target: { value: '1000' } });
+    expect(within(d).getByRole('button', { name: 'Save points' }).disabled).toBe(false);
+  });
+
   it('Edit: a save sends one request with the amount and offers Undo', async () => {
     saveTowards.mockResolvedValue({ event: { id: 'e1' }, child: lara });
     mount(<Children />);

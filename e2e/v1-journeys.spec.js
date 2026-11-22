@@ -7,6 +7,7 @@
 // in Activity as "Reward redeemed"; completes a goal and finds it under Goals;
 // renames the family in Settings and finds the new name after a reload.
 import { test, expect } from '@playwright/test';
+import { checkScreen } from './checks.js';
 
 const family = JSON.parse(process.env.PERCY_E2E_FAMILY || '{}');
 const headers = { Authorization: `Bearer ${family.token}` };
@@ -67,7 +68,7 @@ test('child asks, parent approves, history and settings follow', async ({ page }
 
     // Parent, Home: complete today's goal.
     await page.getByRole('button', { name: `Complete ${name} tidies up` }).click();
-    await expect(page.getByText(/^Well done! \+\d+ points? for /)).toBeVisible();
+    await expect(page.getByText(`Well done! +1 point for ${name}.`)).toBeVisible();
 
     // Parent, Activity: the redemption and the goal, each under its filter.
     await page.goto('/activity');
@@ -78,6 +79,17 @@ test('child asks, parent approves, history and settings follow', async ({ page }
     await expect(page.getByText(`“${name} tidies up”`).first()).toBeVisible();
     await log.getByRole('button', { name: 'Earned' }).click();
     await expect(page.getByText(`“${name} tidies up”`)).toHaveCount(0); // Earned and Goals are distinct
+
+    // Parent, Activity: an approval made by mistake is undone here (V1-D §10
+    // R3: the approval toast has no Undo; each redemption is undone in Activity).
+    await log.getByRole('button', { name: 'Spent' }).click();
+    const before = (await api('GET', '/api/children')).find((c) => c.id === kid.id).total_points;
+    await expect(page.getByRole('button', { name: `Undo ${name} redeemed ${reward.title}` })).toBeVisible();
+    await checkScreen(page, 'activity with undo', testInfo); // the new control: axe, name, 44px
+    await page.getByRole('button', { name: `Undo ${name} redeemed ${reward.title}` }).click();
+    await expect(page.getByText(`Undone. ${name} has ${before + 10} points.`)).toBeVisible();
+    await expect(page.getByRole('button', { name: `Undo ${name} redeemed ${reward.title}` })).toHaveCount(0);
+    expect((await api('GET', '/api/children')).find((c) => c.id === kid.id).total_points).toBe(before + 10);
 
     // Parent, Children: the child's page and goals.
     await page.goto(`/children?child=${kid.id}`);

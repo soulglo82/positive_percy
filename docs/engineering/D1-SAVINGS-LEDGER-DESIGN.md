@@ -2,16 +2,17 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.24 |
+| Version | 1.25 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
-| Status | **Approved in principle by the owner (2026-11-19, issue #56)**, subject to the data-preservation proof in §11. Step 1 is built: migration 016, its rollback, and the reconciliation proof. The savings endpoints and screens are not built yet |
+| Status | **Built; not released.** Approved in principle by the owner (2026-11-19, issue #56), subject to the data-preservation proof in §11. Built on PR #64: migrations 016 and 017 with their rollbacks, the reconciliation tooling (§11–§18), the savings endpoints and screens (§19), the ended-savings record (§20), the snapshot-bound confirmation (§21) and the owner's final wording (§21.8). **Still open:** the restored-backup run on real data (§13.5, §18), which only the owner can run. Sections are kept as written at the time; later sections supersede earlier ones where they say so |
 | Binding inputs | Approved HTML blob `9de1df2`: Home "Saving for something bigger / 120 of 300 points saved / 180 to go"; Children "Saving for something bigger" with Edit, "Saved: 120", "300 points · Bigger achievement"; Child View "90 Ready to use / 120 Saved towards New bike / My next big adventure / 180 points to go"; its own note that the "savings/weekly-pool transfer … is a visual concept until its authorised ledger contract is implemented". Owner direction (2026-11-19): include the real ledger in V1; **D7: bigger goals by explicit designation, never by price**. Plan v1.1 §8.3 (do not reuse `family_goals` or `/contribute`) |
 
 ## Change log
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.25 | 2026-11-22 | Header status corrected: it still said the endpoints and screens were not built (final validation). §22: final-validation changes |
 | 1.24 | 2026-11-21 | §21.8: the owner's final savings wording (handover 21 Nov) |
 | 1.23 | 2026-11-21 | §21.7: post-build code review of the snapshot confirmation |
 | 1.22 | 2026-11-21 | §21.6: owner wording: success and cancellation kept distinct |
@@ -1111,4 +1112,15 @@ The owner's handover sets the final strings. They supersede §21.6 where they di
 - Tests: no cancellation line says earned, redeemed or a goal reached. "Ready to choose your reward!" appears only when there is a choosable reward.
 
 **Evidence.** `e2e/v1-savings.spec.js` adds two screenshots at all four sizes, `delete-goal-with-savings` and `activity-with-savings-rows`, and refreshes the rest.
+
+## 22. Final validation, 22 November (v1.25)
+
+The integrated review of the whole V1 (see `docs/engineering/V1-RELEASE-ASSESSMENT.md`) changed two things in savings:
+
+| # | Finding | Fix | Test |
+| --- | --- | --- | --- |
+| 1 | The dialog offered "Save up to 2006" although the server takes at most 1,000 points per move (§19.1); 1,500 was sent and refused with "Invalid request" | The dialog's limits are capped at 1,000 per move, for saving and for moving back; the Points field's own upper limit follows the same caps (code review) | "Edit: one move is at most 1,000 points" |
+| 2 | A goal redemption could not be undone from Activity (see V1-D §10 R3: the same gap as for approved requests) | Activity offers Undo on a redemption for 10 minutes; undoing a goal redemption returns its savings as §19.1 describes | `V1Activity.test.jsx` "Undo a redeemed reward"; the journey in `e2e/v1-journeys.spec.js` |
+
+Not changed, recorded: a direct spend refused because points are saved still says "…already set aside for stacked rewards". It is reachable only from a stale screen, and the wording is the shipped message.
 

@@ -53,7 +53,8 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
     try {
       const result = await completeTodayGoal(goal.id);
       if (!result.duplicate) {
-        toast.success('Well done! +' + result.event.points + ' points for ' + child.name + '.', {
+        // "+1 point", "+2 points" (final validation: 1 is the default for every behaviour).
+        toast.success('Well done! ' + pointsText(result.event.points) + ' for ' + child.name + '.', {
           duration: UNDO_TOAST_MS,
           action: { label: 'Undo', onClick: undoAction('award', result.event.id, queryClient) },
         });

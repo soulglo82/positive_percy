@@ -159,7 +159,8 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
                   >
                     <RewardIcon reward={reward} size="sm" className={canAfford ? "" : "bg-card"} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground text-sm truncate">{reward.title}</p>
+                      {/* Wraps, never cut to "Scr…": on a narrow phone the name is how a parent tells rewards apart (final validation 2026-11-22). */}
+                      <p className="font-medium text-foreground text-sm break-words">{reward.title}</p>
                       <Points value={reward.cost_points} className="text-sm text-muted-foreground mt-0.5" />
                     </div>
                     <Button
