@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.3 |
+| Version | 1.4 |
 | Issued | 2026-11-22 |
 | Owner | Percy V1 engineering |
 | Status | For the owner's release decision. Nothing has been merged or deployed |
@@ -11,6 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.4 | 2026-11-22 | The intermittent Settings failure returned on CI at `a9bc57b` (one of two runs of the same commit). Its cause is reproduced and the first fix shown to be wrong; the test now waits for the right signal (§4.1, §4.9). No app code changed |
 | 1.3 | 2026-11-22 | Achievements card on Children redesigned at the owner's instruction (two plain rows, a weekly progress bar); the owner-approved repetition trims on Children, Home, Child View and Activity (§4.7) and their focused review (§4.8); results restated at the final commit (§2, §7) |
 | 1.2 | 2026-11-22 | Owner's final release handover: the real-backup restore is waived as a mandatory gate (owner-accepted residual risk); the November change is explained (approved maintenance); four targeted items handled (§3.4); the points figure applied consistently to Home and Children at the owner's instruction; operational and privacy findings (§5) |
 | 1.1 | 2026-11-22 | Owner's visual decisions built (icons, default Quick Points, Child View points box); the design critique of every page (§3.2); the owner's review of #65 (rollback write freeze, the cause of the archive change not called deliberate, legal and privacy split from technical security); the points-star statement corrected |
@@ -222,11 +223,29 @@ The test can fail: narrowing the form dialog on the smallest phones made it red 
 
 ## 4. Test reliability
 
-### 4.1 The intermittent Settings failure (CI, commit `2074d55`)
+### 4.1 The intermittent Settings failure (CI, commits `2074d55` and `a9bc57b`)
 
-**Cause: a race in the test, not a defect in the app.** The step opens "Manage goals" and presses Escape at once. Measured in the page: an Escape sent in the same task in which the dialog mounts is ignored (0 of 10 closed); from the next task on it always works (10 of 10). It was the only step in the file with no pause before Escape. It could not be reproduced with the processor slowed, which fits a one-task window. A person cannot press a key in that window.
+**What happened.** The Settings browser test opens "Manage goals" and presses Escape straight away. On CI the dialog sometimes stays open and the test fails. It failed once at `2074d55`. At `a9bc57b` CI ran the same commit twice (once for each pull request): the `ui` job passed in one run and failed in the other, in three of the four screen sizes, at this one step.
 
-**Fix:** the test waits (at most one second) until focus is inside the dialog before pressing Escape. No app code changed.
+**Cause: a race in the test, not a defect in the app. Reproduced.** The dialog library ignores an Escape that arrives before the dialog has registered itself as the top layer. Focus enters the dialog a few milliseconds before that registration, and the test's wait (added after `2074d55`) was "focus is inside the dialog", so it let the key go at the one moment it cannot work. Two measurements, both kept in `evidence/v1-integrated/tools/`:
+
+| Measurement | Old wait (focus inside the dialog) | New wait (the library's mark on the dialog) |
+| --- | --- | --- |
+| Real key presses on a stand-alone page with the same library and browser, four runs of 100 (`escape-real-key/run.cjs`) | Lost 19, 20, 17 and 11 of 100. Every lost key arrived before the mark | Lost 0 of 100 in every run |
+| The independent reviewer's own runs of that experiment | Lost between 0 and 52 of 150 from batch to batch | Lost 0 of 480 |
+| An Escape sent from inside the app's page at a chosen moment, 20 trials each (`escape-timing-probe.playwright.js`) | 0 of 20 dialogs closed | 20 of 20 closed |
+
+The swing from batch to batch fits what CI showed: three failures in one run and none in the other, on the same commit.
+
+**The first fix was wrong.** It narrowed the window without closing it, and I recorded the cause then as a one-task window that the wait covered. The table shows it did not.
+
+**Fix (test only; no app code changed).** The test waits for the mark (the dialog carries the library's inline `pointer-events: auto`), then two frames, before it presses Escape; the same for a nested dialog. The step still closes "Manage goals" straight after opening it, so every CI run exercises the wait, and then opens it again for the shared screen checks. If a library update drops the mark, the wait fails with its own message instead of racing. If an Escape is ever lost again, the test prints what the page saw: each Escape as it arrived, whether a handler took it, and every dialog's state at the time of the failure.
+
+**Why only this step.** Every other Escape in the browser tests is pressed after the dialog has been open for the length of a screen check (about a second). This was the only one pressed at once.
+
+**Limits of the evidence.** The real-key loss was reproduced on a stand-alone page, not inside the app: 176 attempts at this step in the app, and 24 runs of the whole test, lost none locally. Why the browser lets a key overtake the library's queued work is not established. The reviewer traced the library's source and found no remaining window after the mark in this version; that rests on how the library attaches a ref, not on a documented guarantee, which is why the test also allows two frames. A person cannot press a key inside a window of a few milliseconds, so users are not affected.
+
+**Checks on the fix.** With Escape replaced by another key, the test fails and prints the diagnostics. With the mark's pattern changed to one that never matches, the wait fails with its own message. The independent review found nothing blocking; its findings are in §4.9.
 
 ### 4.2 Skipped tests
 
@@ -334,6 +353,19 @@ Confirmed: every other string, the condition for the goal line and the data sour
 | 4 | Note | The Children header's test was one missing substring | Fixed: the header's whole text is asserted |
 | 5 | Note | The browser journey's check would also pass with the old text | Fixed: it asserts the old phrase is gone |
 | 6 | Note | The Activity design table still showed the old second lines | Fixed (V1-C design v1.5) |
+
+### 4.9 Independent review of the Settings test fix
+
+**No blocking finding.** The reviewer traced the library's source from mount to a live Escape handler, confirmed the mark is a sound signal for the row's dialog, for a nested dialog and after a nested dialog closes, and reproduced the loss with real key presses (§4.1).
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Should fix | The Home change was being made in the same working copy during the review | The test fix is committed on its own |
+| 2 | Should fix | The screen check I had added before the Escape would itself hide the race, so a green CI run would say nothing about the new wait | Fixed: the step closes the dialog straight after opening it, as before, and only then reopens it for the screen check |
+| 3 | Should fix | The failure message recorded the dialogs only as each key arrived | Fixed: it also prints every dialog's state and the focused element at the time of the failure, with a two-second limit on reading them |
+| 4 | Note | My probe never showed a real key press being lost | Fixed: `escape-real-key/run.cjs` does, and is kept with the evidence |
+| 5 | Note | That the handler is live as soon as the mark appears rests on an incidental detail of this library version | Recorded in the test; two frames are allowed after the mark |
+| 6 | Note | An unused variable in the probe; mismatched figures between two comments; the evidence README did not list the probe; the recorder ignored confirmation dialogs; the nested close had no failure message | All fixed |
 
 ## 5. Gates: what is complete and what is not
 

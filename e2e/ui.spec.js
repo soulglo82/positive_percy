@@ -293,6 +293,19 @@ test('rewards and its dialogs', async ({ page }, testInfo) => {
 });
 
 test('settings, its selects and dialogs', async ({ page }, testInfo) => {
+  // Records each Escape the page receives (when, whether a handler took it,
+  // each dialog's state) for the message closeRow prints if one is lost.
+  await page.addInitScript(() => {
+    const log = window.__escapes = [];
+    const note = (phase) => (event) => {
+      if (event.key !== 'Escape') return;
+      log.push({ phase, at: Math.round(performance.now()), taken: event.defaultPrevented,
+        dialogs: [...document.querySelectorAll('[role="dialog"], [role="alertdialog"]')].map((d) => `${d.getAttribute('data-state')}|${d.style.pointerEvents || 'unset'}`),
+        focus: (document.activeElement?.tagName || '') + (document.activeElement?.closest('[role="dialog"], [role="alertdialog"]') ? ' in dialog' : ' outside') });
+    };
+    window.addEventListener('keydown', note('before'), true);
+    window.addEventListener('keydown', note('after'));
+  });
   await go(page, '/parentprofile');
   await expect(page.getByRole('heading', { name: 'Family settings' })).toBeVisible();
   await checkScreen(page, 'settings', testInfo);
@@ -303,33 +316,61 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   // nested dialog is open the row's dialog underneath is hidden from the
   // accessibility tree, so the check is: the nested one is gone and the row's
   // dialog, with its heading, is back.
-  // An Escape that arrives in the instant a dialog's node is added, before
-  // the dialog has attached its key handler, is ignored (measured 2026-11-22:
-  // 0 of 10 closed when dispatched in the same task as the mount, 10 of 10
-  // from the next task on). A person cannot press a key that fast, but a test
-  // can: CI lost one Escape here at 2074d55, on the one step with no pause
-  // between opening and closing. Focus moving into the dialog happens in the
-  // same step as the handler being attached, so wait for that first.
-  // Bounded: after a nested dialog closes, focus can rest outside the row's
-  // dialog, which has long been ready.
-  const dialogReady = () => page.waitForFunction(() => !!document.activeElement?.closest('[role="dialog"], [role="alertdialog"]'), null, { timeout: 1000 }).catch(() => {});
+  // An Escape that arrives before a dialog has registered itself as the top
+  // layer is ignored by the dialog library. A person cannot press a key that
+  // fast, but a test can: CI lost the Escape of the step that closes "Manage
+  // goals" straight after opening it, at 2074d55 and again at a9bc57b. The
+  // first fix waited for focus to enter the dialog. That is too early: focus
+  // arrives a few milliseconds before the registration, and with that wait
+  // real key presses were lost 67 times in 400 on a stand-alone page with the
+  // same library and browser. The library marks the registered top dialog
+  // with an inline `pointer-events: auto`; waiting for that mark lost 0 in
+  // 400. It also holds after a nested dialog closes, when the row's dialog is
+  // the top layer again. That the handler is live in the very task that
+  // writes the mark follows from how this version of the library attaches
+  // its ref, not from a promise it makes, so two frames are allowed after
+  // the mark. If a library update drops the mark, this fails with its own
+  // message rather than racing.
+  // Evidence: docs/engineering/evidence/v1-integrated/tools/escape-real-key/
+  // and escape-timing-probe.playwright.js beside it.
+  const topLayerReady = async (dialog, what) => {
+    await expect(dialog, `${what} has registered as the top layer (inline pointer-events: auto)`).toHaveAttribute('style', /pointer-events:\s*auto/);
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+  };
+  // What the page saw, so a lost Escape can be explained from the CI log:
+  // each Escape as it arrived, and every dialog as it stands now.
+  const reportLostEscape = async (what) => {
+    const read = page.evaluate(() => ({
+      escapes: (window.__escapes || []).slice(-4),
+      now: [...document.querySelectorAll('[role="dialog"], [role="alertdialog"]')].map((d) => `${d.getAttribute('data-state')}|${d.style.pointerEvents || 'unset'}`),
+      focus: (document.activeElement?.outerHTML || '').slice(0, 80),
+    })).catch(() => 'the page did not answer');
+    const seen = await Promise.race([read, new Promise((done) => setTimeout(() => done('the page did not answer in 2 s'), 2000))]);
+    console.log(`Escape did not close ${what} [${testInfo.project.name}]: ${JSON.stringify(seen)}`);
+  };
   const closeRow = async () => {
     await expect(page.getByRole('dialog')).toHaveCount(1);
-    await dialogReady();
+    await topLayerReady(page.getByRole('dialog'), 'the dialog');
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    try {
+      await expect(page.getByRole('dialog')).toHaveCount(0);
+    } catch (error) {
+      await reportLostEscape('the dialog');
+      throw error;
+    }
   };
   const closeNested = async (rowTitle, nested) => {
     await expect(nested).toBeVisible();
-    // Focus inside the nested dialog itself: focus is already inside the
-    // row's dialog, so the row check would pass at once (code review).
-    await nested.evaluate((el) => new Promise((done) => {
-      const until = Date.now() + 1000;
-      const tick = () => (el.contains(document.activeElement) || Date.now() > until ? done() : setTimeout(tick, 20));
-      tick();
-    }));
+    // The same mark, on the nested dialog itself: while it is the top layer
+    // the row's dialog underneath carries `pointer-events: none`.
+    await topLayerReady(nested, 'the nested dialog');
     await page.keyboard.press('Escape');
-    await expect(nested).toHaveCount(0);
+    try {
+      await expect(nested).toHaveCount(0);
+    } catch (error) {
+      await reportLostEscape('the nested dialog');
+      throw error;
+    }
     await expect(page.getByRole('dialog')).toHaveCount(1);
     await expect(page.getByRole('dialog').getByRole('heading', { name: rowTitle, exact: true })).toBeVisible();
   };
@@ -392,7 +433,14 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await closeRow();
 
   await page.getByRole('button', { name: 'Edit Today’s Goals' }).click();
+  // Closed straight after opening: the case that raced on CI, kept so that
+  // every run exercises the wait in closeRow. Then opened again for the
+  // screen checks.
   await expect(page.getByRole('dialog').getByRole('heading', { name: /^Manage .+'s goals$/ })).toBeVisible();
+  await closeRow();
+  await page.getByRole('button', { name: 'Edit Today’s Goals' }).click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: /^Manage .+'s goals$/ })).toBeVisible();
+  await checkScreen(page, 'manage goals from settings', testInfo);
   await closeRow();
 
   await page.getByRole('button', { name: /parenting tips/i }).click();

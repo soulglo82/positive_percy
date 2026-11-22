@@ -29,7 +29,7 @@
 | `built/` | 14 screens at 320, 390, 834 and 1280 px (56 images): Home, the Home Rewards dialog, Children, Child View, Activity, Rewards, Settings, Award Points, Manage Goals, the goal form, the reward form, the savings dialog, Onboarding and Welcome. Main screens are whole pages |
 | `compare/` | The approved design (left) and the built screen (right) for the 12 screens the approved design has, at the four widths (48 images). The approved file draws every width as a phone frame; the built app uses its responsive layouts at 834 and 1280 |
 | `brand/fox-1a-fidelity.png` | The approved Fox 1A source crop beside the runtime logo files |
-| `tools/` | `run.sh` rebuilds the pack: `capture.cjs` seeds a synthetic family and photographs the app, `reference.cjs` photographs the approved design (git blob `9de1df2`), `compose.py` sets them side by side. `rollback-rehearsal.cjs` is the app rollback rehearsal (release checklist §5) |
+| `tools/` | `run.sh` rebuilds the pack: `capture.cjs` seeds a synthetic family and photographs the app, `reference.cjs` photographs the approved design (git blob `9de1df2`), `compose.py` sets them side by side. `rollback-rehearsal.cjs` is the app rollback rehearsal (release checklist §5). `escape-timing-probe.playwright.js` and `escape-real-key/` are the two measurements behind the Settings test's wait before Escape (release assessment §4.1) |
 | `../v1-savings/` | The savings dialogs and confirmations at the four sizes (40 images) |
 
 **Retaken on 22 November** after the owner's visual decisions (behaviour icons, default Quick Points, the Child View points card) and the design critique (release assessment §3.1 and §3.2). The capture scripts also include the write-freeze rehearsal, `tools/rollback-freeze-rehearsal.cjs`.
