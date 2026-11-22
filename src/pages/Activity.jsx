@@ -72,7 +72,8 @@ export function dayLabel(dateStr, now = new Date(), timeZone = undefined) {
 }
 
 export function timeIn(dateStr, timeZone = undefined) {
-  return new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(dateStr));
+  // No break inside a time: "4:34" on one line and "AM" on the next read badly on a phone (design critique).
+  return new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(dateStr)).replace(/\s/g, '\u00a0');
 }
 
 // The goal's name when it was completed: the completion writes it into the
@@ -205,6 +206,7 @@ export default function Activity() {
         <Card>
           <CardContent className="p-4 sm:p-5 space-y-3">
             <h2 className="font-display font-bold text-lg text-primary">This week</h2>
+            {/* Number and label centred in each box: the owner's direction (V1-C design v1.2). A design critique on 22 Nov suggested left-aligned, full-width tiles; that is the owner's to decide, so it is unchanged. */}
             <div className="grid grid-cols-2 gap-3 max-w-md" data-week-boxes>
               <div className="rounded-md border border-border p-3 text-center">
                 <p className="font-display font-extrabold text-title text-foreground tabular-nums">{pointsEarned}</p>
@@ -225,7 +227,7 @@ export default function Activity() {
               <div className="flex flex-wrap gap-2" role="group" aria-label="Show activity">
                 {FILTERS.map(({ key, label }) => (
                   <button key={key} type="button" aria-pressed={activeFilter === key} onClick={() => setActiveFilter(key)}
-                    className={cn('min-h-11 rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                    className={cn('min-h-10 touch:min-h-11 rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                       activeFilter === key ? 'border-2 border-selected-border bg-selected text-primary' : 'border border-border bg-card text-foreground hover:bg-accent')}>
                     {label}
                   </button>
@@ -368,6 +370,8 @@ export function rowText(event, timeZone = undefined) {
   }
   const lead = event.type === 'undo' ? 'undo:' : event.type === 'starting' ? 'started with'
     : event.type === 'correction' ? 'had a one-off' : event.points < 0 ? 'had an earlier adjustment for' : 'adjusted';
+  // "Joud started with 8 points", not "started with Starting points" (design critique: the label is the row's kind, not what was given).
+  if (event.type === 'starting') return { lead, what: `${event.points} ${pointsWord(event.points)}`, sub: time };
   return { lead, what: event.label, sub: time };
 }
 
@@ -405,12 +409,12 @@ function NarrativeItem({ event, timeZone, canCorrect, onCorrect, onUndoSpend = n
         </span>
         )}
         {canCorrect && (
-          <button type="button" onClick={onCorrect} className="min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Correct ${event.child_name} award of ${event.points} ${pointsWord(event.points)}`}>
+          <button type="button" onClick={onCorrect} className="-mr-2 min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Correct ${event.child_name} award of ${event.points} ${pointsWord(event.points)}`}>
             Correct
           </button>
         )}
         {onUndoSpend && (
-          <button type="button" onClick={onUndoSpend} className="min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Undo ${event.child_name} redeemed ${event.label}`}>
+          <button type="button" onClick={onUndoSpend} className="-mr-2 min-h-11 px-2 text-xs font-semibold text-foreground underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Undo ${event.child_name} redeemed ${event.label}`}>
             Undo
           </button>
         )}

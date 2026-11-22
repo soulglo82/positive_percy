@@ -487,13 +487,16 @@ router.post('/api/family/create', async (req, res) => {
       );
 
       // IMPL-5.5: Seed default behavior categories atomically
+      // Default Quick Points: Kindness, Helpfulness, Bravery, Resilience. Caring is
+      // a behaviour but not a default Quick Point: the owner found it too close to
+      // Kindness (22 Nov 2026, E03 design §11). Families already created keep theirs.
       await pool.query(
         `INSERT INTO behavior_categories (family_code, name, icon, icon_key, sort_order, is_default, points, is_quick_action) VALUES
           ($1, 'Kindness', '💛', 'heart', 0, true, 1, true),
           ($1, 'Helpfulness', '🤝', 'handshake', 1, true, 1, true),
           ($1, 'Bravery', '🦁', 'shield', 2, true, 1, true),
-          ($1, 'Resilience', '💪', 'mountain', 3, true, 1, false),
-          ($1, 'Caring', '🫶', 'hand-heart', 4, true, 1, true),
+          ($1, 'Resilience', '💪', 'mountain', 3, true, 1, true),
+          ($1, 'Caring', '🫶', 'hand-heart', 4, true, 1, false),
           ($1, 'Chores', '🧹', 'brush', 5, true, 1, false),
           ($1, 'Homework', '📖', 'book-open', 6, true, 1, false),
           ($1, 'Adventurous', '🌟', 'sparkles', 7, true, 1, false)

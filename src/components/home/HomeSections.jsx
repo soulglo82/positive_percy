@@ -45,7 +45,8 @@ function ProgressBar({ value, max }) {
 // approved orange border is below 3:1 (intended deviation, recorded).
 export function FamilyStrip({ children, selectedId, onSelect }) {
   return (
-    <div className="grid grid-cols-2 xs:grid-cols-3 lg:grid-cols-4 gap-3" role="group" aria-label="Choose a child">
+    <div className="grid grid-cols-3 gap-2 xs:gap-3" role="group" aria-label="Choose a child">
+      {/* Three across at every width. Below 360px it used to be two, which left the third child alone on a second row (design critique). On a desktop it was already three: the old `lg:grid-cols-4` never applied, because the custom `xs` rule is emitted after `lg` (code review). */}
       {children.map((child) => {
         const selected = child.id === selectedId;
         const week = child.week_points ?? 0;
@@ -153,7 +154,7 @@ export function QuickPoints({ child, actions, awarding, onAward, onOpenAward, on
           </div>
         )}
         {/* One column below 360px: side by side the label and its icon ran to the button's edges (owner review 2026-11-22). */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
           <Button onClick={onOpenAward}>
             <PercyIcon id="phosphor:plus-circle:duotone" className="h-4 w-4" />
             Award points

@@ -1,17 +1,13 @@
 // Batch D PR2: behaviour icons. The server stores a key (behavior_categories.icon_key);
-// the app draws the matching line icon. Keep ICON_KEYS in step with server/iconKeys.js
+// the app draws the matching icon. Keep ICON_KEYS in step with server/iconKeys.js
 // (checked by src/lib/categoryIcons.test.js).
-import {
-  Star, Heart, Handshake, Shield, Mountain, HandHeart, Brush, BookOpen, Palette,
-  Footprints, Music, Brain, Bed, Check, Sparkles, Circle, Flag, Scale,
-} from 'lucide-react';
+import { Flag, Scale } from 'lucide-react';
 import { approvedIcon } from '@/components/icons/PercyIcon';
 import { APPROVED_CONTEXTS } from '@/components/icons/approvedIcons';
 
 // E03: the 11 owner-approved behaviour icons, keyed by a stable slug of the
 // register context. Appended after the Batch D keys (the server list matches,
-// in the same order). Legacy keys keep drawing exactly what they drew before:
-// mapping them to approved art is an owner decision (E03 design, decision 1).
+// in the same order).
 const APPROVED_BEHAVIOURS = {
   kindness: 'Kindness', learning: 'Learning', helping: 'Helping', chores: 'Chores',
   movement: 'Movement', reading: 'Reading', routines: 'Routines', 'self-care': 'Self-care',
@@ -20,11 +16,19 @@ const APPROVED_BEHAVIOURS = {
 const approvedBehaviour = Object.fromEntries(Object.entries(APPROVED_BEHAVIOURS)
   .map(([key, ctx]) => [key, approvedIcon(APPROVED_CONTEXTS.behaviors[ctx])]));
 
+// The 16 Batch D ("legacy") keys. Owner decision 22 Nov 2026 (E03 design §11):
+// every behaviour icon is in the one icon family, so each legacy key draws the
+// Phosphor Duotone glyph of the same subject (register decisions.behaviors_legacy;
+// Kindness's heart and Bravery's shield-star are the owner's own choices).
+// Only the drawing changed: no stored key is rewritten, and the order below is
+// the server's (server/iconKeys.js).
+const LEGACY_KEYS = ['star', 'heart', 'handshake', 'shield', 'mountain', 'hand-heart', 'brush', 'book-open',
+  'palette', 'footprints', 'music', 'brain', 'bed', 'check', 'sparkles', 'circle'];
+const legacyBehaviour = Object.fromEntries(LEGACY_KEYS.map((key) => [key, approvedIcon(APPROVED_CONTEXTS.legacy[key])]));
+const UnknownIcon = legacyBehaviour.circle;
+
 export const ICONS = {
-  star: Star, heart: Heart, handshake: Handshake, shield: Shield, mountain: Mountain,
-  'hand-heart': HandHeart, brush: Brush, 'book-open': BookOpen, palette: Palette,
-  footprints: Footprints, music: Music, brain: Brain, bed: Bed, check: Check,
-  sparkles: Sparkles, circle: Circle,
+  ...legacyBehaviour,
   ...approvedBehaviour,
 };
 
@@ -32,10 +36,10 @@ export const ICON_KEYS = Object.keys(ICONS);
 
 // Plain names for screen readers in the picker.
 export const ICON_LABELS = {
-  star: 'Star', heart: 'Heart', handshake: 'Handshake', shield: 'Shield', mountain: 'Mountain',
-  'hand-heart': 'Caring hands', brush: 'Brush', 'book-open': 'Book', palette: 'Paint palette',
+  star: 'Star', heart: 'Heart', handshake: 'Handshake', shield: 'Shield with star', mountain: 'Mountains',
+  'hand-heart': 'Caring hands', brush: 'Broom', 'book-open': 'Book', palette: 'Paint palette',
   footprints: 'Footprints', music: 'Music', brain: 'Brain', bed: 'Bed', check: 'Tick',
-  sparkles: 'Sparkles', circle: 'Circle',
+  sparkles: 'Sparkle', circle: 'Circle',
   ...APPROVED_BEHAVIOURS,
 };
 
@@ -47,8 +51,15 @@ export const PICKER_KEYS = Object.keys(APPROVED_BEHAVIOURS);
 // opened (or the create form's default). If it is not approved (legacy or
 // unknown) it is offered first and stays in the cycle, so opening and saving
 // never changes it silently and the parent can always tap back to it.
+// A stored legacy key can draw the same glyph as an approved key (hand-heart
+// and kindness, handshake and helping, brain and learning, bed and sleep,
+// brush and chores). That twin is left out of its cycle, or a tap on "Change
+// icon" would appear to do nothing (E03 design §11, design review B3).
+const drawing = (key) => ICONS[key]?.displayName;
 export function pickerChoices(stored) {
-  return stored && !PICKER_KEYS.includes(stored) ? [stored, ...PICKER_KEYS] : PICKER_KEYS;
+  if (!stored || PICKER_KEYS.includes(stored)) return PICKER_KEYS;
+  const same = drawing(stored);
+  return [stored, ...PICKER_KEYS.filter((key) => !same || drawing(key) !== same)];
 }
 
 export function nextPickerKey(current, stored) {
@@ -61,7 +72,7 @@ export function nextPickerKey(current, stored) {
 const RESERVED = { 'starting points': Flag, 'balance correction': Scale, undo: approvedIcon(APPROVED_CONTEXTS.controls.Undo) };
 
 export function iconFor(key) {
-  return Object.hasOwn(ICONS, key ?? '') ? ICONS[key] : Circle;
+  return Object.hasOwn(ICONS, key ?? '') ? ICONS[key] : UnknownIcon;
 }
 
 // For history rows, which only carry the category name.

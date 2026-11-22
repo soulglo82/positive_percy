@@ -27,6 +27,10 @@ describe.skipIf(!runDb)('Batch C PR1: one-point defaults', () => {
     const quick = list.filter(c => c.is_quick_action);
     expect(quick).toHaveLength(4);
     expect(quick.every(c => c.points === 1)).toBe(true);
+    // Owner decision 22 Nov (E03 design §11): Caring is too close to Kindness
+    // to be a default Quick Point; Resilience takes its place. Caring stays a behaviour.
+    expect(quick.map(c => c.name)).toEqual(['Kindness', 'Helpfulness', 'Bravery', 'Resilience']);
+    expect(list.find(c => c.name === 'Caring').is_quick_action).toBe(false);
   });
 
   it('new custom behaviours default to one and can be customized independently', async () => {

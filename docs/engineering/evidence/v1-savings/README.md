@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.2 |
 | Issued | 2026-11-21 |
 | Owner | Percy V1 engineering |
 | Status | Evidence for review. Not merged, not deployed |
@@ -11,6 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.2 | 2026-11-22 | Retaken after the owner's visual decisions and the design critique (Child View points card, savings dialog tiles, dialogs on phones) |
 | 1.1 | 2026-11-22 | The list of screens corrected: it named five, and the folder holds ten at four sizes (40 images). Retaken at the release-candidate head |
 | 1.0 | 2026-11-21 | First set: five screens |
 
@@ -23,7 +24,7 @@ Files are named `{size}--{screen}.png`. The sizes are `phone-320`, `phone-390-to
 | `children-with-savings` | The "Saving for something bigger" card, scrolled into view |
 | `savings-dialog` | Save points, Move points back, Redeem |
 | `redeem-goal-confirm` | The confirmation before a goal is redeemed |
-| `child-view-with-savings` | "Saved towards" and "My next big adventure" |
+| `child-view-with-savings` | The points card and "My next big adventure" |
 | `child-view-fully-saved` | A funded goal: "{Child} has saved enough for {Goal}!" |
 | `rewards-with-bigger-rewards` | The "Bigger rewards" section |
 | `unmark-warning` | The per-child warning when a goal is turned off |

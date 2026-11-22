@@ -20,7 +20,7 @@ export default function RewardTile({ reward, onEdit }) {
         visible ? 'border-border bg-muted text-primary' : 'border-border bg-card text-muted-foreground')}>
         {visible ? 'Visible to children' : 'Hidden from children'}
       </span>
-      <Button variant="outline" className="mt-auto w-full text-primary" aria-label={`Edit ${reward.title}`} onClick={() => onEdit(reward)}>
+      <Button variant="outline" className="mt-auto w-full" aria-label={`Edit ${reward.title}`} onClick={() => onEdit(reward)}>
         Edit
       </Button>
     </div>

@@ -32,6 +32,8 @@
 | `tools/` | `run.sh` rebuilds the pack: `capture.cjs` seeds a synthetic family and photographs the app, `reference.cjs` photographs the approved design (git blob `9de1df2`), `compose.py` sets them side by side. `rollback-rehearsal.cjs` is the app rollback rehearsal (release checklist §5) |
 | `../v1-savings/` | The savings dialogs and confirmations at the four sizes (40 images) |
 
+**Retaken on 22 November** after the owner's visual decisions (behaviour icons, default Quick Points, the Child View points card) and the design critique (release assessment §3.1 and §3.2). The capture scripts also include the write-freeze rehearsal, `tools/rollback-freeze-rehearsal.cjs`.
+
 **The fixture** matches the approved design's figures: Lara has 18 of 25 this week, 90 ready to use and 120 of 300 saved towards New bike, with Movie night asked for.
 
 **Differences from the approved design that are intended** (owner decisions or recorded items; unchanged from v2.3 except savings, which is now built):

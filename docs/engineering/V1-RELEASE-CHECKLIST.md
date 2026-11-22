@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.2 |
+| Version | 1.3 |
 | Issued | 2026-11-20 |
 | Owner | Percy V1 engineering |
 | Status | Release candidate prepared. No merge or deployment is authorised by this document |
@@ -11,6 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.3 | 2026-11-22 | Owner's review of #65: rollback now requires a write freeze (§5, rehearsed); G7 split into technical security and legal/privacy; the savings check joins the post-deploy steps |
 | 1.2 | 2026-11-22 | Final validation. Savings is built (#64), so the release adds migrations 014–017. Gates restated as G1–G8 with owner and state. The release order is now one release-candidate pull request. Rollback rehearsed and its limits recorded (§5). Backup and retention items point to `V1-OPERATIONS-BACKUP.md` |
 | 1.1 | 2026-11-21 | Owner decision: V1 launches with all three core features, savings included; the reduced first release is removed. Restored-backup run now one command (#60, D1 §18) |
 | 1.0 | 2026-11-20 | First checklist: Railway correction done, migration path established, gates listed |
@@ -49,9 +50,10 @@
 | **G2 Visual** | The owner accepts the integrated pack at the four sizes | Owner | Engineering review done and defects fixed. Owner asked for two changes on 22 November (assessment §3.1); **open** |
 | **G3 Data preservation** | The drill on a real production archive exits 0 with every step unchanged, at the release-candidate commit | Owner runs it (`V1-OPERATIONS-BACKUP.md` §4); engineering reads the counts | **Open.** Synthetic proof only |
 | **G4 Backup safety** | A fresh backup exists, is whole, and the 10–11 November change (#44) is explained | Owner | **Open.** Cause inferred, not confirmed (`V1-OPERATIONS-BACKUP.md` §1) |
-| **G5 Operational** | Railway settings unchanged; `railway.json` absent; health check and rollback path known; rollback rehearsed | Engineering, owner confirms the Railway settings on the day | Rehearsed on synthetic data (§5); settings check is a deploy-day step |
+| **G5 Operational** | Railway settings unchanged; `railway.json` absent; health check known; rollback with a write freeze rehearsed; the owner can run SQL on the production database | Engineering; owner for the database access and the Railway settings | Freeze rehearsed on synthetic data (§5). **Open:** the owner's database access, tried once read-only |
 | **G6 Assets** | Runtime assets match the register; gated artwork stays out; no AI-generated replacement | Engineering; owner for the open artwork items | Register and gate **passed**. Fox 1A live fidelity sign-off and the final points-star are **open with the owner** and do not change code |
-| **G7 Security and privacy** | Family isolation holds; no secrets or family data in the repository, logs or evidence; permanent deletion stays off | Engineering | **Passed** (assessment §3 and §6). Privacy wording and shared carers stay "Review" and "Planned" |
+| **G7a Security (technical)** | Family isolation holds; no secrets or family data in the repository, logs or evidence; permanent deletion stays off | Engineering | **Passed** (assessment §3 and §6). Privacy wording and shared carers stay "Review" and "Planned" |
+| **G7b Legal and privacy for a public launch** | Privacy policy, data-processor list, rights and contact wording, and the privacy-request procedure while permanent deletion is off | Owner, with legal advice | **Not reviewed.** Separate from G7a; no engineering check covers it (assessment §5) |
 | **G8 Release** | The owner approves the exact tested release-candidate commit | Owner | **Open** |
 
 **Not gates for V1.** Backup hardening (soulglo82/postgres-s3-backups PR #1) and the R2 expiry rule are separate changes (`V1-OPERATIONS-BACKUP.md` §2–§3). They must be done before permanent family deletion is ever enabled; V1 needs only one fresh, whole backup taken before the deploy. The Freepik map needs its licence before it is shown; V1 ships without it.
@@ -73,6 +75,7 @@
    - `GET /api/health` returns 200;
    - the deploy log shows migrations 014, 015, 016 and 017 applied, with no error;
    - the counts of families, children and users are unchanged (`V1-OPERATIONS-BACKUP.md` §5), and each child's points are the same as before the deploy;
+   - `scripts/ops/savings-check.sql` (read-only): conditions 1 to 4 are zero; a count under condition 5 is a difference already in a family's history, to be looked at with the real-backup reconciliation. `write-freeze-status.sql` says `NOT FROZEN`;
    - a parent journey on production: sign in, award a point, undo it, open Rewards, open Activity, open Child View;
    - the design-selector service is unaffected;
    - the next 19:02 UTC backup runs and its size is in line.
@@ -80,17 +83,29 @@
 
 ## 5. Rollback and recovery
 
-**Rehearsed** on 22 November with synthetic data (`evidence/v1-integrated/tools/rollback-rehearsal.cjs`): a database at 017 with savings in it, then the production commit `498e798` started against it. The old app started, and award, reward create and edit, redeem, Activity, export, deleting a reward that had savings, and deleting a child all worked. V1 then started again on the same database.
+**This section does not replace gate G3.** The write-freeze rehearsal ran on synthetic data and covers one risk, an app rollback after V1 has been used. The restore of a real production backup and its reconciliation are separate, are the owner's to run, and have not been run.
+
+**An app rollback is safe only with writes frozen** (owner's review of #65). Once V1 has been used to save points, the production app at `498e798` treats saved points as spendable, deletes or reassigns a bigger goal with no "savings ended" record, and undoes a goal redemption without returning its savings. The rehearsal showed each of these on a database with writes on. "Keep a rollback short" is not a control and is withdrawn.
+
+**The control is a write freeze in the database**, turned on before the old app serves and off only after the fixed V1 is serving and the savings check passes. Design, review and rehearsal: `V1-ROLLBACK-FREEZE-DESIGN.md`. Scripts: `scripts/ops/`.
 
 | Situation | Action |
 | --- | --- |
-| A migration fails at start | The new deployment never becomes healthy. Each migration runs in one transaction, so the failed one leaves nothing behind; any that ran before it stay, and `498e798` works with them (rehearsed at 017). If Railway is not still serving `498e798`, redeploy it. Then fix forward |
-| The app is up but wrong | Railway: redeploy the previous deployment (`498e798`). **Do not roll the database back.** The old app ignores the new tables and columns |
+| A migration fails at start | The new deployment never becomes healthy and V1 has not served, so no savings exist and no freeze is needed. Each migration runs in one transaction, so the failed one leaves nothing behind; any that ran before it stay, and `498e798` works with them. If Railway is not still serving `498e798`, redeploy it. Then fix forward |
+| The app is up but wrong | 1. Owner runs `write-freeze-on.sql`; the status script must say `FROZEN`; owner runs `savings-check.sql` and keeps its output (the baseline). 2. Railway: redeploy `498e798`; it serves reads only. 3. Engineering fixes forward. 4. Owner deploys the fixed V1 with the freeze still on (the fix must not carry a migration that changes rows). 5. Owner runs `savings-check.sql`: its output must be identical to the baseline. 6. Owner runs `write-freeze-off.sql`, then one award and its undo. **The freeze is never lifted while `498e798` is serving. The database is never rolled back** |
+| A rollback happened with writes on | Freeze at once, then continue from step 3. `savings-check.sql` shows what the old app did, child by child, for a correction agreed with the owner |
 | Data is damaged | Restore the pre-deploy backup into a new database and compare before switching. This loses everything written since that backup, so it is the last resort and the owner's decision |
 
-**Limits of an app rollback** (from the rehearsal):
-- While the old app runs, it does not know about savings. Saved points look spendable, and a bigger goal deleted there leaves no "savings ended" record. Keep a rollback short, and before going forward again compare each child's saved figures.
-- Rewards that carry a V1 icon show the old app's default artwork; nothing is lost.
+**During the freeze** parents can read everything; any change fails with the app's ordinary "couldn't save" message. A family with no user row would be signed out (the freeze script counts them first).
+
+**Rehearsed on 22 November** (disposable databases, synthetic data): 166 checks, none failed; four controls proved the hazard and that the check catches it (`V1-ROLLBACK-FREEZE-DESIGN.md` §10). An earlier rehearsal without the freeze showed only that the old app runs on the V1 database.
+
+**To confirm before release (owner):**
+- access to run SQL on the production database through Railway, tried once with the read-only status script (it should say `NOT FROZEN`);
+- that Railway keeps the old deployment serving when a new one fails its health check (documented behaviour; not tested here).
+
+**Other limits.**
+- Rewards that carry a V1 icon show the old app's default artwork during a rollback; nothing is lost.
 - `server/rollbacks/016_…` and `017_…` are for scratch databases before launch only. After launch the savings ledger is never rolled back (owner, D1 §13).
 
 ## 6. Backups and retention

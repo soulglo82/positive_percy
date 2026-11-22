@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.25 |
+| Version | 1.26 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering. **Approval of the database change: the owner** (D1 needs approval before any migration) |
 | Status | **Built; not released.** Approved in principle by the owner (2026-11-19, issue #56), subject to the data-preservation proof in §11. Built on PR #64: migrations 016 and 017 with their rollbacks, the reconciliation tooling (§11–§18), the savings endpoints and screens (§19), the ended-savings record (§20), the snapshot-bound confirmation (§21) and the owner's final wording (§21.8). **Still open:** the restored-backup run on real data (§13.5, §18), which only the owner can run. Sections are kept as written at the time; later sections supersede earlier ones where they say so |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.26 | 2026-11-22 | §22: note that Child View's "Saved towards" tile and the dialog's "Saved: {n}" wording are superseded (V1-B design §10; design critique) |
 | 1.25 | 2026-11-22 | Header status corrected: it still said the endpoints and screens were not built (final validation). §22: final-validation changes |
 | 1.24 | 2026-11-21 | §21.8: the owner's final savings wording (handover 21 Nov) |
 | 1.23 | 2026-11-21 | §21.7: post-build code review of the snapshot confirmation |
@@ -1121,6 +1122,8 @@ The integrated review of the whole V1 (see `docs/engineering/V1-RELEASE-ASSESSME
 | --- | --- | --- | --- |
 | 1 | The dialog offered "Save up to 2006" although the server takes at most 1,000 points per move (§19.1); 1,500 was sent and refused with "Invalid request" | The dialog's limits are capped at 1,000 per move, for saving and for moving back; the Points field's own upper limit follows the same caps (code review) | "Edit: one move is at most 1,000 points" |
 | 2 | A goal redemption could not be undone from Activity (see V1-D §10 R3: the same gap as for approved requests) | Activity offers Undo on a redemption for 10 minutes; undoing a goal redemption returns its savings as §19.1 describes | `V1Activity.test.jsx` "Undo a redeemed reward"; the journey in `e2e/v1-journeys.spec.js` |
+
+**Owner's visual review and the design critique, 22 November.** Two statements earlier in this document no longer describe the screens: Child View has no "Saved towards {goal}" tile (§19.3, S5), because its points card now shows one figure and the saved amount appears once, in "My next big adventure" (V1-B design §10); and the savings dialog shows the saved amount as a figure with the caption "Saved", matching "Available now" beside it, not as "Saved: {n}" (design critique, release assessment §3.2). The S5 visibility rule is unchanged.
 
 Not changed, recorded: a direct spend refused because points are saved still says "…already set aside for stacked rewards". It is reachable only from a stale screen, and the wording is the shipped message.
 

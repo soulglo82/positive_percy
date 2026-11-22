@@ -3,7 +3,7 @@
   "stage": 1,
   "scope": "explicit_owner_choices_only",
   "recorded_date": "2026-11-13",
-  "version": "1.10",
+  "version": "1.11",
   "approval_level": "approved_icon_mappings_for_specific_review_contexts_only",
   "note": "This is design approval of exact source asset assignments, NOT approval to merge/deploy, license redistribution in a user picker, change navigation structure, or select a global style rule. Picker category membership is explicitly owner-selected as recorded; other picker behavior/design details remain unselected. Goals empty state now has a specific external Freepik artwork selected by owner, subject to licensing verification and obtaining the exact asset; no production usage authorised yet. UPDATE 2026-11-20: Owner decision 2026-11-20 (PR #59, chat): Streamline licensing is settled; the approved reward artwork is used in Positive Percy (Rewards catalogue, Child View, reward selection), alongside the 71 Phosphor picker icons. Existing saved rewards are never re-arted automatically. This question is closed.",
   "meaning_of_NONE": "Explicitly rejected presented candidates; further icon options required. NOT a deliberate choice of no icon.",
@@ -198,6 +198,152 @@
         "asset_id": "phosphor:bed:duotone",
         "source_file": "design/assets/phosphor/duotone/bed.svg",
         "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bed-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      }
+    },
+    "behaviors_legacy": {
+      "star": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping to the glyph of the same subject, under the owner's direction of 22 November 2026 that behaviour icons share one style. Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:star:duotone",
+        "source_file": "design/assets/phosphor/duotone/star.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/star-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "heart": {
+        "status": "selected",
+        "basis": "owner_choice_2026-11-22",
+        "basis_note": "Owner chose K1 (heart) for Kindness from the options sheet, 22 November 2026",
+        "asset_id": "phosphor:heart:duotone",
+        "source_file": "design/assets/phosphor/duotone/heart.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/heart-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "handshake": {
+        "status": "selected",
+        "basis": "owner_choice_2026-11-22",
+        "basis_note": "Owner approved the recommended set (the four starting behaviours restyled), 22 November 2026",
+        "asset_id": "phosphor:handshake:duotone",
+        "source_file": "design/assets/phosphor/duotone/handshake.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/handshake-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "shield": {
+        "status": "selected",
+        "basis": "owner_choice_2026-11-22",
+        "basis_note": "Owner chose B1 (shield with star) for Bravery from the options sheet, 22 November 2026",
+        "asset_id": "phosphor:shield-star:duotone",
+        "source_file": "design/assets/phosphor/duotone/shield-star.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/shield-star-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "mountain": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping to the glyph of the same subject, under the owner's direction of 22 November 2026 that behaviour icons share one style. Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:mountains:duotone",
+        "source_file": "design/assets/phosphor/duotone/mountains.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/mountains-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "hand-heart": {
+        "status": "selected",
+        "basis": "owner_choice_2026-11-22",
+        "basis_note": "Owner approved the recommended set (the four starting behaviours restyled), 22 November 2026",
+        "asset_id": "phosphor:hand-heart:duotone",
+        "source_file": "design/assets/phosphor/duotone/hand-heart.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/hand-heart-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "brush": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping, same subject. The broom: the key was seeded with the broom emoji for the default behaviour Chores, and broom is the art already approved for Chores; the paint brush is the approved Creativity art (design review, 22 November 2026). Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:broom:duotone",
+        "source_file": "design/assets/phosphor/duotone/broom.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/broom-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "book-open": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping to the glyph of the same subject, under the owner's direction of 22 November 2026 that behaviour icons share one style. Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:book-open:duotone",
+        "source_file": "design/assets/phosphor/duotone/book-open.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/book-open-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "palette": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping to the glyph of the same subject, under the owner's direction of 22 November 2026 that behaviour icons share one style. Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:palette:duotone",
+        "source_file": "design/assets/phosphor/duotone/palette.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/palette-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "footprints": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping to the glyph of the same subject, under the owner's direction of 22 November 2026 that behaviour icons share one style. Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:footprints:duotone",
+        "source_file": "design/assets/phosphor/duotone/footprints.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/footprints-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "music": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping to the glyph of the same subject, under the owner's direction of 22 November 2026 that behaviour icons share one style. Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:music-notes:duotone",
+        "source_file": "design/assets/phosphor/duotone/music-notes.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/music-notes-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "brain": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping to the glyph of the same subject, under the owner's direction of 22 November 2026 that behaviour icons share one style. Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:brain:duotone",
+        "source_file": "design/assets/phosphor/duotone/brain.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/brain-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "bed": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping to the glyph of the same subject, under the owner's direction of 22 November 2026 that behaviour icons share one style. Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:bed:duotone",
+        "source_file": "design/assets/phosphor/duotone/bed.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/bed-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "check": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping, same subject. The plain tick, not check-circle: check-circle is the approved 'Done' mark for a completed goal and must keep that one meaning (design review, 22 November 2026). Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:check:duotone",
+        "source_file": "design/assets/phosphor/duotone/check.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/check-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "sparkles": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping, same subject. The four-point star, not 'sparkle': 'sparkle' is the approved Today's Goals header accent and must not also be a behaviour (design review, 22 November 2026). Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:star-four:duotone",
+        "source_file": "design/assets/phosphor/duotone/star-four.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/star-four-duotone.svg",
+        "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
+      },
+      "circle": {
+        "status": "selected",
+        "basis": "same_subject_restyle_2026-11-22",
+        "basis_note": "Engineering mapping to the glyph of the same subject, under the owner's direction of 22 November 2026 that behaviour icons share one style. Shown to the owner on the real screens for sign-off; not an individual owner pick.",
+        "asset_id": "phosphor:circle:duotone",
+        "source_file": "design/assets/phosphor/duotone/circle.svg",
+        "source_url": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/circle-duotone.svg",
         "license": "https://github.com/phosphor-icons/core/blob/2b75f3ad12b420c9504ef05df8d2564a28f8500e/LICENSE"
       }
     },
@@ -855,93 +1001,101 @@
     "ux_choices_status": "ten_owner_approved_picker_ux_choices"
   },
   "last_update": {
-    "date": "2026-11-20",
-    "action": "owner_approved_streamline_reward_artwork_in_app_licensing_closed",
+    "date": "2026-11-22",
+    "action": "owner_decided_legacy_behaviour_icons_and_default_quick_points",
     "contexts": [
-      "decisions:rewards",
-      "proposed_engineering_constraints:parent_picker_launch_source_policy"
+      "decisions:behaviors_legacy"
     ],
+    "note": "Owner visual review of the V1 release candidate: Kindness K1 (heart) and Bravery B1 (shield-star) chosen; the four starting behaviours restyled; the other legacy keys mapped like for like by engineering (basis recorded per entry). No stored key is rewritten. Default Quick Points for new families: Kindness, Helpfulness, Bravery, Resilience (Caring is no longer a default Quick Point). docs/engineering/E03-DESIGN.md section 11.",
     "previous": {
-      "date": "2026-11-15",
-      "action": "engineering_brand_pack_checked_into_github_and_freepik_png_source_confirmed_without_license_clearance",
+      "date": "2026-11-20",
+      "action": "owner_approved_streamline_reward_artwork_in_app_licensing_closed",
       "contexts": [
-        "brand_assets:fox_1a",
-        "visuals:moments:Goals empty state:source availability"
+        "decisions:rewards",
+        "proposed_engineering_constraints:parent_picker_launch_source_policy"
       ],
       "previous": {
-        "date": "2026-11-14",
-        "action": "verified_owner_project_treasure_map_png_source_availability",
+        "date": "2026-11-15",
+        "action": "engineering_brand_pack_checked_into_github_and_freepik_png_source_confirmed_without_license_clearance",
         "contexts": [
-          "moments:Goals empty state"
+          "brand_assets:fox_1a",
+          "visuals:moments:Goals empty state:source availability"
         ],
         "previous": {
           "date": "2026-11-14",
-          "action": "owner_approved_picker_category_colours_and_container_breakpoints",
+          "action": "verified_owner_project_treasure_map_png_source_availability",
           "contexts": [
-            "picker_ux:category_colour_mapping",
-            "picker_ux:responsive_breakpoints"
+            "moments:Goals empty state"
           ],
           "previous": {
             "date": "2026-11-14",
-            "action": "owner_approved_picker_uploads_legacy_rewards_and_three_goals_svgs",
+            "action": "owner_approved_picker_category_colours_and_container_breakpoints",
             "contexts": [
-              "picker_ux:image_uploads",
-              "picker_ux:existing_saved_rewards",
-              "goals_interactions:recurring_indicator:svg",
-              "goals_interactions:header_accent:svg",
-              "goals_interactions:completed_goal:svg"
+              "picker_ux:category_colour_mapping",
+              "picker_ux:responsive_breakpoints"
             ],
             "previous": {
               "date": "2026-11-14",
-              "action": "owner_approved_picker_launch_library_dedup_search_synonyms",
+              "action": "owner_approved_picker_uploads_legacy_rewards_and_three_goals_svgs",
               "contexts": [
-                "picker_ux:launch_library",
-                "picker_ux:cross_category_duplicates",
-                "picker_ux:search_matching"
+                "picker_ux:image_uploads",
+                "picker_ux:existing_saved_rewards",
+                "goals_interactions:recurring_indicator:svg",
+                "goals_interactions:header_accent:svg",
+                "goals_interactions:completed_goal:svg"
               ],
               "previous": {
                 "date": "2026-11-14",
-                "action": "owner_approved_picker_discovery_grid_and_colour",
+                "action": "owner_approved_picker_launch_library_dedup_search_synonyms",
                 "contexts": [
-                  "picker_ux:discovery",
-                  "picker_ux:responsive_grid",
-                  "picker_ux:icon_color"
+                  "picker_ux:launch_library",
+                  "picker_ux:cross_category_duplicates",
+                  "picker_ux:search_matching"
                 ],
                 "previous": {
                   "date": "2026-11-14",
-                  "action": "owner_approved_remaining_three_goals_design_choices",
+                  "action": "owner_approved_picker_discovery_grid_and_colour",
                   "contexts": [
-                    "goals_interactions:recurring_indicator",
-                    "goals_interactions:header_accent",
-                    "goals_interactions:control_size_weight"
+                    "picker_ux:discovery",
+                    "picker_ux:responsive_grid",
+                    "picker_ux:icon_color"
                   ],
                   "previous": {
                     "date": "2026-11-14",
-                    "action": "owner_approved_completed_goal_option_A",
+                    "action": "owner_approved_remaining_three_goals_design_choices",
                     "contexts": [
-                      "goals_interactions:completed_goal"
+                      "goals_interactions:recurring_indicator",
+                      "goals_interactions:header_accent",
+                      "goals_interactions:control_size_weight"
                     ],
                     "previous": {
                       "date": "2026-11-14",
-                      "action": "owner_selected_goals_empty_state_freepik_pending_license",
+                      "action": "owner_approved_completed_goal_option_A",
                       "contexts": [
-                        "moments:Goals empty state"
+                        "goals_interactions:completed_goal"
                       ],
                       "previous": {
-                        "date": "2026-11-13",
-                        "action": "record_9_visuals_goals_empty_needs_alternatives",
+                        "date": "2026-11-14",
+                        "action": "owner_selected_goals_empty_state_freepik_pending_license",
                         "contexts": [
-                          "moments:Home welcome",
-                          "moments:Progress milestone",
-                          "moments:Reward redeemed",
-                          "moments:First-run onboarding",
-                          "moments:Reward creation form",
-                          "elements:small decorative sticker",
-                          "elements:celebration burst",
-                          "elements:positive progress badge",
-                          "elements:learning spot art",
                           "moments:Goals empty state"
-                        ]
+                        ],
+                        "previous": {
+                          "date": "2026-11-13",
+                          "action": "record_9_visuals_goals_empty_needs_alternatives",
+                          "contexts": [
+                            "moments:Home welcome",
+                            "moments:Progress milestone",
+                            "moments:Reward redeemed",
+                            "moments:First-run onboarding",
+                            "moments:Reward creation form",
+                            "elements:small decorative sticker",
+                            "elements:celebration burst",
+                            "elements:positive progress badge",
+                            "elements:learning spot art",
+                            "moments:Goals empty state"
+                          ]
+                        }
                       }
                     }
                   }

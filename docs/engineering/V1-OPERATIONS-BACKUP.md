@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.0 |
+| Version | 1.1 |
 | Issued | 2026-11-22 |
 | Owner | Percy V1 engineering. Every change to the live bucket or the backup service is the owner's decision |
 | Status | Findings and proposals. Nothing here has been changed in production |
@@ -11,6 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.1 | 2026-11-22 | Owner's review of #65: the cause of the 10–11 November change is not called deliberate or confirmed; the 10 November archive is held under restricted storage until its status is decided; no expiry before that decision and the backup-job hardening; no indefinite unreviewed retention afterwards |
 | 1.0 | 2026-11-22 | First issue: the 10–11 November archive-size change, the retention proposal, the review of the backup hardening PR and its deployment plan |
 
 ## 1. The archive-size change of 10–11 November (issue #44)
@@ -38,12 +39,13 @@
 | On 11 November (15:50 UTC) PR #39 added a guard that rejects sessions "for removed families … preventing old tokens from writing orphan rows" | `docs/BATCH_C_PR1_IMPLEMENTATION.md` on the default branch | Families had been removed outside the app by then, and it was known at the time |
 | Railway keeps no deploy or request logs for 10–11 November | Railway log queries, 21 and 22 November | Nothing more can be read from the platform |
 
-**Conclusion.** The most likely cause is a deliberate removal of seven families (with their children, users and photos) made directly in the database on 11 November. This is an inference: nothing engineering can read proves who did it or why.
+**Conclusion.** The evidence is consistent with the records of seven families (with their children, users and photos) having been removed directly in the database on 11 November. **Who removed them, and why, is unproven.** Whether those families were real or test data is not known. Nothing engineering can read settles either point, so this item is not closed.
 
 **What closes the item** (owner):
-1. Confirm, or rule out, that the seven families were removed on purpose on 11 November (for example, test families).
+1. Establish who removed the seven families on 11 November and why, and whether they were real families or test data.
 2. Give the live counts of families, children and users (a counts-only query, §5), to compare with the restored copy's counts from the drill.
-3. Decide what happens to the 10 November archive. It is the only copy of the removed families' data. If the removal was a clean-up of test data, the archive can expire. If any of it was a real family's data removed at their request, it should not be kept; if removed by mistake, it is the only way back. **A retention rule (§2) would delete it 35 days after 10 November.**
+3. Decide what happens to the 10 November archive. **Until then, keep it under restricted storage** (access limited to the owner; not copied to GitHub, CI, logs or chat). It is the only copy of the removed families' data. If the removal was a clean-up of test data, the archive can expire. If any of it was a real family's data removed at their request, it should not be kept; if removed by mistake, it is the only way back. **A retention rule (§2) would delete it 35 days after 10 November.**
+4. Once its status is decided, do not leave the archive, or the bucket, on indefinite unreviewed retention: apply the expiry rule (§2) or delete the archive deliberately.
 
 ## 2. R2 retention
 

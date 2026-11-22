@@ -20,7 +20,7 @@ export async function checkScreen(page, label, testInfo) {
   expect(touch, `${label}: touch emulation`).toBe(testInfo.project.name.includes('touch'));
 
   const report = await page.evaluate((touch) => {
-    const out = { scroll: [], small: [], tiny: [], unnamed: [], clipped: [], wrapped: [], uneven: [] };
+    const out = { scroll: [], small: [], tiny: [], unnamed: [], clipped: [], wrapped: [], uneven: [], figure: [] };
     if (document.documentElement.scrollWidth > window.innerWidth + 1) {
       out.scroll.push(`page ${document.documentElement.scrollWidth} > ${window.innerWidth}`);
     }
@@ -147,6 +147,36 @@ export async function checkScreen(page, label, testInfo) {
         if (spread(row.map((x) => x.height)) > 0.5) out.uneven.push(`height: ${row.map((x) => Math.round(x.height)).join(', ')}`);
       }
     }
+    // A figure with its unit and label (owner review 2026-11-22: "alignment
+    // is off with the wording and numbers"). In every [data-figure]: the
+    // figure and its unit sit on one baseline (when on one line), the label
+    // starts at the figure's left edge, and the text is centred on the icon.
+    for (const fig of scope.querySelectorAll('[data-figure]')) {
+      if (!visible(fig)) continue;
+      const part = (name) => fig.querySelector(`[data-figure-part="${name}"]`);
+      const [icon, value, unit, label] = ['icon', 'value', 'unit', 'label'].map(part);
+      if (!value || !unit || !label) { out.figure.push('a figure has no value, unit or label'); continue; }
+      // Where the text baseline is: an empty inline box sits on it.
+      const baseline = (el) => {
+        const probe = document.createElement('span');
+        probe.style.cssText = 'display:inline-block;width:0;height:0';
+        el.appendChild(probe);
+        const y = probe.getBoundingClientRect().bottom;
+        probe.remove();
+        return y;
+      };
+      const v = value.getBoundingClientRect(); const u = unit.getBoundingClientRect(); const l = label.getBoundingClientRect();
+      const oneLine = u.top < v.bottom && v.top < u.bottom;
+      if (oneLine && Math.abs(baseline(value) - baseline(unit)) > 1) out.figure.push(`unit off the figure's baseline by ${Math.round(Math.abs(baseline(value) - baseline(unit)))}px`);
+      if (Math.abs(l.left - v.left) > 1) out.figure.push(`label starts ${Math.round(l.left - v.left)}px from the figure's left edge`);
+      if (l.top < v.bottom - 12) out.figure.push('label runs into the figure');
+      if (icon) {
+        const i = icon.getBoundingClientRect();
+        const text = value.closest('p')?.getBoundingClientRect() || v;
+        if (Math.abs((i.top + i.bottom) / 2 - (text.top + text.bottom) / 2) > 2) out.figure.push(`text is ${Math.round((text.top + text.bottom) / 2 - (i.top + i.bottom) / 2)}px off the icon's centre`);
+        if (i.right > v.left + 0.5) out.figure.push('icon overlaps the figure');
+      }
+    }
     const textOf = (id) => { const t = id && document.getElementById(id); return t ? t.textContent.trim() : ''; };
     const controls = scope.querySelectorAll('button, a[href], input:not([type="hidden"]), select, textarea, [role="button"], [role="link"], [role="tab"], [role="checkbox"], [role="switch"], [role="combobox"], [role="option"], [tabindex]:not([tabindex="-1"])');
     for (const el of controls) {
@@ -174,6 +204,7 @@ export async function checkScreen(page, label, testInfo) {
   expect(report.clipped, `${label}: text wider than its box`).toEqual([]);
   expect(report.wrapped, `${label}: navigation text on more than one line`).toEqual([]);
   expect(report.uneven, `${label}: tiles in one grid differ`).toEqual([]);
+  expect(report.figure, `${label}: figure, unit and label out of line`).toEqual([]);
   expect(report.unnamed, `${label}: controls with no name`).toEqual([]);
   expect(report.small, `${label}: touch targets under 44px`).toEqual([]);
   // Kept as a file, so the CI artifact holds the screenshots.

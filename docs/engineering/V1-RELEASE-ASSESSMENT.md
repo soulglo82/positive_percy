@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.0 |
+| Version | 1.1 |
 | Issued | 2026-11-22 |
 | Owner | Percy V1 engineering |
 | Status | For the owner's release decision. Nothing has been merged or deployed |
@@ -11,6 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.1 | 2026-11-22 | Owner's visual decisions built (icons, default Quick Points, Child View points box); the design critique of every page (§3.2); the owner's review of #65 (rollback write freeze, the cause of the archive change not called deliberate, legal and privacy split from technical security); the points-star statement corrected |
 | 1.0 | 2026-11-22 | First issue: the final integrated validation of V1 (#57–#64), its findings, the open gates and the release candidate |
 
 ## 1. Recommendation
@@ -31,7 +32,7 @@ Everything below was run on commit `0d8a662`, the app code of the release candid
 | Integrated functional review against issue #56, by behaviour | No critical finding; one major and three minor, all fixed (§3) | Independent reviewer, fresh context |
 | Integrated visual review at the four sizes | Layout defects fixed (§3); no open defect | Independent reviewer over `evidence/v1-integrated/` and `evidence/v1-savings/` |
 | Post-build code review of this round's changes | Two reviews, nothing blocking in either. Every should-fix and note fixed except two recorded (§4.3, §4.4) | Independent reviewers, fresh context |
-| App rollback rehearsal | The production commit runs on a database at 017; V1 starts again after | Release checklist §5 |
+| App rollback rehearsal | With a write freeze: 166 checks, none failed. The old app serves reads and every change is refused; four controls show what it does to savings with writes on, and that the savings check catches each | `V1-ROLLBACK-FREEZE-DESIGN.md` §10 |
 | Migration order | 014, 015, 016, 017 apply in name order on a database at 012, each once, each in its own transaction | `server/migrate.js`; the restore tool's tests |
 
 **Evidence.** `docs/engineering/evidence/v1-integrated/` (14 screens × 4 sizes, 48 side-by-side comparisons with the approved design, the Fox 1A comparison, the capture scripts) and `docs/engineering/evidence/v1-savings/` (10 savings screens × 4 sizes). All data in them is synthetic.
@@ -74,12 +75,15 @@ None.
 
 | # | Owner's finding | State |
 | --- | --- | --- |
-| O1 | The Kindness and Bravery icons in Quick Points are not in the style of the others | Cause: the four starting behaviours still draw the older single-line icons (E03 design, contract 2: no stored icon was re-pointed without an owner decision). Options issued to the owner from the app's own icon family (Phosphor Duotone). **Waiting for the owner's choice** |
-| O2 | The Child View box with the points to spend and the points saved looks too full, has no picture, and its wording is poor | Three layouts issued with the points star and the goal's picture. Wording is the owner's to approve. **Waiting for the owner's choice** |
+| O1 | The Kindness and Bravery icons in Quick Points are not in the style of the others | **Built.** Owner chose K1 (heart) and B1 (shield with star) and approved the restyle. Every behaviour icon is now in the one icon family; no stored value changes. E03 design §11. For sign-off: twelve of the sixteen glyphs are engineering's same-subject mapping, not individual owner picks |
+| O2 | The Child View box with the points to spend and the points saved looks too full, has no picture, and its wording is poor | **Built.** Owner chose layout C with a piggy bank and asked for the number and wording to be aligned. One figure, "{n} points" over "Ready to use". V1-B design §10. A shared check now measures the baseline and left edge of every such figure |
 
 | O3 | Quick Points at 320 px "looks bad. It needs to be standardised alignment. Reduce text size accordingly" | **Fixed** (below) |
 
-O1 and O2 will be built on the release candidate through the usual steps (design note, review, tests), so the release-candidate commit will change before G8.
+| O4 | "Kindness and caring are almost the same thing, choose another option as the default quick points" | **Built.** New families' Quick Points are Kindness, Helpfulness, Bravery and Resilience. **Existing families, including the owner's, keep theirs** until changed in Settings › Quick Points |
+| O5 | "Use the design skills to check ALL the pages … to make sure they are not AI slop or poorly put together" | See §3.2 |
+
+The option sheets the owner chose from, and the decisions, are in `evidence/v1-owner-review/`.
 
 **O3: the standard behaviour tile.**
 
@@ -95,6 +99,88 @@ O1 and O2 will be built on the release candidate through the usual steps (design
 - **Design review** (independent, before the build). It confirmed the two-row tile over a one-column list (about 150 px tall against 200 px for four tiles, and it keeps the approved 2 × 2 look). Three blocking points, all in the build: rows pinned to the top so a wrapped name does not shift its neighbours' icons; long words must break in both forms; the name must not span the badge's column in the one-line form. Also adopted: the dialog matches heights by row only, so one long name does not stretch five rows.
 - **Guard.** `e2e/checks.js` measures every tile grid on every screen it checks: the icon, name and badge sit at the same place in each tile; the name and badge never overlap; heights match. A new browser test puts a long name with a 30-letter word and a "+1000" badge into Quick Points and the dialog at the four sizes. Shown red on the old layout at 320 and 390 px, and red for each of five deliberate breaks of the new one.
 - **Not covered.** No test runs at 360 px, where the two buttons sit side by side with 11 px of side padding (16 px from about 380 px). Safari was not tested; the layout uses standard grid placement.
+
+### 3.2 Design critique of every page (owner's request, 22 November)
+
+**Method.** Three independent reviewers applied the design-critique framework (first impression, usability, visual hierarchy, consistency, accessibility) to every page and dialog at 320, 390, 834 and 1280 px, with a specific brief to look for generic or carelessly assembled work. Each finding was checked against the code before it was acted on.
+
+**Verdict.** One disciplined system (spacing, control sizes, one icon family, strong contrast) and no gross "generic" look, but with real polish defects, mostly at 320 px, in the phone dialogs and in small alignment slips. No page was free of findings.
+
+**Fixed in this round (16).**
+
+| Area | What was wrong | Now |
+| --- | --- | --- |
+| Savings dialog | "Saved: 120" was a figure with no caption beside "90 / Available now" | Two tiles of one form: figure, caption |
+| Activity | Undo and Correct sat 8 px in from the figure above them | One right edge |
+| Activity | "4:34" and "AM" could split across lines | A time never breaks |
+| Activity | Filter chips 44 px beside a 40 px select | Same height |
+| Activity | "Joud started with Starting points" | "Joud started with 8 points" |
+| All dialogs on a phone | A square band edge to edge | A card with a margin and the same corners as on a desktop |
+| Child tiles | Two columns at 320 px left the third child alone | Three across from 320 px, as approved |
+| Child tiles | The coloured ring hung 4 px left of the name | Flush with the text |
+| Home, Children | "Manage goals" ended 12 px short of the card edge; other links were flush | Flush |
+| Home | 8 px between tiles, 12 px between the buttons under them | One gap |
+| Children | A card's button dropped under its heading on phones, in some cards and not others | The button stays right; the heading wraps |
+| Rewards | "Your reward catalogue" broke into three one-word lines at 320 px | Heading above the button below 360 px |
+| Child View, Settings | Narrower page than the other tabs, so the title jumped between tabs | One page width |
+| Rewards | The tile's Edit was purple; every other outline button is ink | One colour |
+| Reward delete | Its confirm button was the primary purple; the other deletes are red | Red, like the others |
+| Reward form | Showed a gift emoji for a reward whose tile shows the gift icon | The same picture as the tile |
+
+Also: the Settings "View parenting tips" line is underlined as the link it is.
+
+**Open: wording (the owner's to approve; nothing changed).**
+
+| # | Where | Now | Recommendation |
+| --- | --- | --- | --- |
+| W1 | Settings | "Permission-enforced access is still a launch gate", "Release only after legal and restore gates", "Available with existing family invitation flow" | Approved-design strings, but they read as developer notes. "Coming soon" for the two that are not features; "Invite another parent or carer" for the third |
+| W2 | Child View | "A child-friendly view of goals, points and rewards. No independent child account." and "Only a parent-authorised confirmation can spend points." | "Children can't sign in." / "A parent confirms before points are spent." |
+| W3 | Ending savings confirmation | Buttons "Save reward" and "Keep saving": two "save" labels with opposite results | "End savings" and "Keep saving" |
+| W4 | Several | Mixed capitals: "Assign to Children", "Delete Reward", "All Children", "Corrections and Undo", "Today's Goals", "Quick Points" beside sentence case elsewhere | Sentence case throughout, keeping product names ("Today's Goals", "Quick Points") |
+| W5 | Several | One idea has seven names: bigger goal, bigger reward, bigger achievement, something bigger, big adventure, bigger adventures, milestone | "Bigger goal" for the thing, "Saving for something bigger" for the section |
+| W6 | Children, Rewards | The same rewards are "Weekly treats" on one page and "Other rewards" on the other; the page label for Child View says "My Rewards" | One name each |
+
+**Open: opinions on the approved design (the built screen matches it; the owner decides).**
+
+| # | Where | Point |
+| --- | --- | --- |
+| D1 | Home "Little wins, big adventures!", Children "Earned this week / Available now" and "Achievements", Activity "This week" | The same boxes-inside-a-box figure tiles the owner rejected on Child View. Recommendation: the same treatment (one figure with its picture, or plain rows). Not changed without the owner's word, because these are approved screens |
+| D1a | Activity "This week" | The critique would left-align these figures and let the pair fill the card. **Not changed:** the centred figures are the owner's earlier direction (V1-C design v1.2). I changed them on the critique's word and the code review caught the conflict; it is restored, and the browser test now measures the text itself |
+| D2 | Home's Rewards dialog ("Lara asked for") | Four nested boxes, a smaller title than the other dialogs, and 36 px buttons where the others are 44 px. Recommendation: rebuild it on the shared dialog header with flat rows |
+| D3 | Settings "Point defaults" | No control, by the owner's decision D6; it reads as a setting that cannot be changed. Recommendation: fold it into the Quick Points row's description |
+| D4 | Savings dialog | Four buttons, two of them filled. Recommendation: one primary action |
+| D5 | Home, Children | Three motivational lines and several sub-titles that say little |
+
+**Open: smaller build defects not fixed in this round (engineering).**
+
+| # | Where | Defect |
+| --- | --- | --- |
+| E1 | Home at 320 px | A goal's details run to five lines beside its button; "90 points" and "Available now" both wrap |
+| E2 | Home, Manage goals | The first or last goal row is 12 px taller than the others |
+| E3 | Give Percy Points, goal form | The selected tile's border is 1 px thicker, shifting its content by 1 px; day chips grow 2 px when selected |
+| E4 | Goal form, reward form | Select text is inset 4 px more than input text; checkboxes sit 4 px right of the fields |
+| E5 | Dialogs | No line under a sticky dialog header, so content is cut mid-letter while scrolling |
+| E6 | Onboarding | White cards on a white dialog; the approved design has them on cream |
+| E7 | Children, Rewards | Three rewards in a two- or four-column grid leave one alone or a slot empty |
+| E8 | Manage goals | The only dialog with no footer action |
+
+These are polish, not function. They are listed so that nothing is called finished that is not.
+
+### 3.3 Reward forms and confirmation dialogs at six widths (owner's request, 22 November)
+
+`e2e/responsive-dialogs.spec.js` opens, at **320, 359, 360, 390, 834 and 1280 px**: the new-reward form; the edit form with its "savings will end" warning; the three confirmations (end savings, delete a goal with savings, redeem a goal); and the savings dialog. 359 and 360 px sit either side of the point where a dialog changes from full width to a card with a margin, which the four standard sizes do not land on.
+
+| Checked on every dialog at every width | Result |
+| --- | --- |
+| No text wider than its box; no sideways scroll; no text under 12 px | Passed |
+| Accessibility scan (axe: nothing serious or critical); every control has a name | Passed |
+| Touch targets at least 44 px (the five widths up to 834 run with touch on) | Passed |
+| The dialog lies inside the window; every button can be brought fully into view and nothing lies over it | Passed |
+| Nothing was saved, ended or deleted by the test (every dialog is cancelled; the child's figures are compared afterwards) | Passed |
+
+The test can fail: narrowing the form dialog on the smallest phones made it red at 320 px (clipped text), and making a confirmation wider than the window made it red (dialog outside the window).
+
+**The 320 px dialog decision.** The design critique found dialogs on a phone drawn as a square band from edge to edge. The fix is a card with a margin and rounded corners. At 320 px that margin took a few pixels the reward form's icon row needs (the clipped-text check caught it), so below 360 px form dialogs stay full width; from 360 px up they are the card. Confirmations are the card at every width. This is a targeted fix, not a redesign.
 
 ### Accepted deferrals (not in V1)
 
@@ -151,6 +237,34 @@ No defect in the app code. Four findings, all in the tests, all fixed:
 | 3 | The guard used whole-pixel widths, which could read aligned tiles as one pixel apart at widths not tested today (375 px) | Fixed: fractional figures |
 | 4 | Only one redemption in the Undo unit test could be undone, so a handler tied to the wrong row would pass | Fixed: a second one, with its own address and id. The deliberate break is red |
 
+### 4.5 Independent reviews of the second round (owner's decisions, the critique fixes, the write freeze)
+
+**Before each build (design reviews).**
+
+| Design | Blocking findings | Resolution |
+| --- | --- | --- |
+| Standard behaviour tile (§3.1 O3) | Three: a wrapped name shifted its neighbours' icons; long words did not break in the one-line form; the name spanned the badge's column | All in the build; guarded |
+| Child View points card (V1-B §10) | One: no space between the figure and its unit ("90points") | Fixed; the unit test asserts the exact text |
+| Behaviour icons and default Quick Points (E03 §11) | Three: the test fixture would create a fifth Quick Point; the legacy tick drew the "Done" mark; the picker offered a stored icon's look-alike, so a tap seemed to do nothing | Fixture swaps Resilience; the plain tick; the look-alike is left out of the cycle. Also adopted: the broom for Chores, the four-point star for Adventurous, a guard that one drawing has one meaning |
+| Rollback write freeze | Two: the freeze could be lifted before the fixed version was live; the savings check missed reassignment, undo and deletion by the old app | The freeze is never lifted while the old app serves; conditions rewritten against the raw ledger; each is a control in the rehearsal |
+
+**After the build (code review of the whole round).** No blocking defect.
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Should fix | The child strip became four columns on a desktop, leaving an empty slot beside three children. It had been three: the old four-column rule never applied | Three at every width |
+| 2 | Should fix | The savings check could fail on correct data and so keep writes off | Compared with a baseline taken when the freeze goes on (design §11) |
+| 3 | Should fix | The Activity "This week" figures were left-aligned against the owner's recorded direction; the existing test could not tell | Restored to centred; the test measures the text itself |
+| 4 | Note | The freeze status accepted a replica-only trigger | Only a trigger that fires for the app and calls the freeze function counts; rehearsed |
+| 5 | Note | One rehearsal check could not fail; the controls did not assert "only this condition" | Removed; tightened |
+| 6 | Note | The icon generator built with a legacy key missing; the app would then fail at start | The generator requires all sixteen; counter-examples in the test |
+| 7 | Note | Tests that could not fail: the "status" rule of the new register group; an `aria-hidden` assertion that matched the icon itself | Both now have a failing case |
+| 8 | Note | Tests with no assertion: screen-reader labels of the restyled icons; the reward form's preview for a reward with no emoji and its red delete button; the Children card header | **Recorded, not fixed.** Each is visible on the screenshots; none has a unit test |
+
+**Not independently reviewed:** `e2e/responsive-dialogs.spec.js` (written after the review started). It is a test only, and two deliberate breaks made it fail (§3.3).
+
+**Deliberate breaks shown red in this round:** five for the tile layout, two for the tile guard's additions, seven for the first review's fixes, one for the Undo handler, three for the points figure, two for the six-width dialog test.
+
 ## 5. Gates and what is still open
 
 | Gate | State | Who | Blocks |
@@ -158,10 +272,11 @@ No defect in the app code. Four findings, all in the tests, all fixed:
 | G1 Functional | Passed | Engineering | – |
 | G2 Visual | Engineering review done. **Owner review, 22 November: two changes asked for** (§3.1); sign-off open | Owner picks from the options; engineering builds | V1 deployment |
 | G3 Data preservation | **Open.** The drill has run on synthetic data only | Owner runs it at the release-candidate commit (`V1-OPERATIONS-BACKUP.md` §4) | V1 deployment |
-| G4 Backup safety | **Open.** The 10–11 November change is explained by inference, not confirmed; a fresh backup is needed on the day | Owner (`V1-OPERATIONS-BACKUP.md` §1) | V1 deployment |
-| G5 Operational | Rollback rehearsed; Railway settings read on 22 November | Engineering; owner on the day | – |
+| G4 Backup safety | **Open.** The 10–11 November change is consistent with records removed directly in the database; who and why is unproven. The live counts have not been compared with a restored copy. A fresh, complete backup is needed on the day | Owner (`V1-OPERATIONS-BACKUP.md` §1) | V1 deployment |
+| G5 Operational | Rollback with a write freeze rehearsed; Railway settings read on 22 November. **Open:** the owner's access to run SQL on the production database, tried once read-only | Engineering; owner for the access | V1 deployment (without it there is no safe rollback once savings are in use) |
 | G6 Assets | 49 runtime assets match the register; gated map absent; no AI-generated artwork. Fox 1A live fidelity and the final points-star are **open with the owner** | Owner | Not V1 deployment unless the owner rejects the current fox or star; neither needs code |
-| G7 Security and privacy | Passed: every route checked is scoped to the signed-in family; no secrets or family data in the repository or evidence | Engineering | – |
+| G7a Security (technical) | Passed: every route checked is scoped to the signed-in family; no secrets or family data in the repository or evidence | Engineering | – |
+| G7b Legal and privacy for a public launch | **Not reviewed. This is separate from G7a and is not covered by any engineering check.** Open with the owner: the privacy policy, the list of data processors (Railway, Cloudflare R2 and any other), the rights and contact wording, and the working procedure for a privacy request while permanent deletion is deliberately switched off | Owner, with legal advice | The owner decides whether it blocks V1 deployment or only a public launch |
 | G8 Release | **Open** | Owner approves the exact commit | V1 deployment |
 
 **Blocks permanent deletion later, not V1:** the backup hardening PR (one blocking finding, `V1-OPERATIONS-BACKUP.md` §3) and the R2 expiry rule (§2 there). **Enhancements:** r1, and stronger backup validation.
@@ -171,7 +286,7 @@ No defect in the app code. Four findings, all in the tests, all fixed:
 | Item | Finding |
 | --- | --- |
 | Fox 1A | The runtime logo matches the approved source in shape, face, tail direction, star and markings. It is drawn flat with traced edges where the approved board has a soft gradient. Comparison: `evidence/v1-integrated/brand/fox-1a-fidelity.png`. The register still records "live-app fidelity sign-off pending" |
-| Points star | `public/illustrations/stickies-star.svg`, the registered placeholder. The final master is outstanding |
+| Points star | **Correction (v1.1):** no points star is drawn anywhere in the app. `public/illustrations/stickies-star.svg` is the approved decorative star sticker, shipped and credited but unused since V1-F. A dedicated points star is "not yet approved" in the register and nothing in V1 needs one: the Child View figure uses the piggy bank the owner chose |
 | Runtime assets | All 49 files match the hashes in `RUNTIME_ASSETS.json` |
 | Phosphor, Streamline | Recorded in the register with their licences; unchanged in this round |
 | Freepik map | Gate open, clearance empty, file absent from `dist/` and `public/` (`check:release-gates`) |
@@ -195,6 +310,6 @@ No defect in the app code. Four findings, all in the tests, all fixed:
 | --- | --- | --- |
 | A migration behaves differently on real data than on synthetic | Low | G3 is exactly this test; a failed migration leaves nothing behind |
 | The backup taken before the deploy is not whole | Low | Check its size on the day and keep a downloaded copy; the hardened job is not yet deployed |
-| An app rollback while families use savings | Low | The old app works but does not know savings (checklist §5); keep a rollback short |
+| An app rollback while families use savings | Low, but serious | A write freeze in the database for the whole rollback window, and a savings check before writes resume (`V1-ROLLBACK-FREEZE-DESIGN.md`; rehearsed, 166 checks). **This does not replace the restore and reconciliation of a real backup (G3)**. Depends on the owner being able to run SQL on the production database, which is still to be tried |
 | The seven families removed on 11 November were not test data | Unknown | Owner's answer (G4). The 10 November archive is the only copy |
 | A workflow with write permission (`percy-materialize-brand.yml`) arrives on the default branch with this release | Low | It runs only by hand or on a push to the brand hand-over branch, and its job is limited to that branch. It does nothing on the default branch |

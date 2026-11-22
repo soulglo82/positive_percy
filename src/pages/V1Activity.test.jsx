@@ -68,11 +68,11 @@ describe('Activity screen', () => {
     expect(await screen.findByText('“Finish homework”')).toBeTruthy();
     const text = document.body.textContent;
     expect(text).toContain('Lara completed “Finish homework”');
-    expect(text).toMatch(/Today’s Goal · Learning · 12:15 AM/);
+    expect(text).toMatch(/Today’s Goal · Learning · 12:15\u00a0AM/);
     expect(text).toContain('Omar earned Kindness');
-    expect(text).toMatch(/Helped a friend · 12:10 AM/);
+    expect(text).toMatch(/Helped a friend · 12:10\u00a0AM/);
     expect(text).toContain('Lara redeemed Movie night');
-    expect(text).toMatch(/Reward redeemed · 7:10 PM/);
+    expect(text).toMatch(/Reward redeemed · 7:10\u00a0PM/);
     expect(text).not.toContain('Parent-confirmed');
     expect(screen.getByRole('heading', { name: /^Today · / })).toBeTruthy();
     expect(screen.getByRole('heading', { name: /^Yesterday · / })).toBeTruthy();
@@ -228,7 +228,7 @@ describe('row text and day labels', () => {
     const now = new Date('2026-11-19T02:00:00Z');
     expect(dayLabel(ev, now, 'Asia/Singapore')).toBe('Today · Thursday 19 November');
     expect(dayLabel(ev, now, 'Europe/London')).toBe('Yesterday · Wednesday 18 November');
-    expect(rowText({ type: 'spend', label: 'Movie night', created_date: ev }, 'Asia/Singapore').sub).toBe('Reward redeemed · 12:30 AM');
+    expect(rowText({ type: 'spend', label: 'Movie night', created_date: ev }, 'Asia/Singapore').sub).toBe('Reward redeemed · 12:30\u00a0AM'); // the time never breaks across lines
   });
   it('a goal row names the goal as it was when completed; never invented (A4)', () => {
     const base = { type: 'earn', label: 'Learning', created_date: '2026-11-18T09:00:00Z', goal_completion_id: 'x' };
@@ -241,9 +241,11 @@ describe('row text and day labels', () => {
   });
   it('an award with no note shows only the time; "Other" shows its note', () => {
     const base = { type: 'earn', created_date: new Date(2026, 10, 18, 16, 15).toISOString(), goal_completion_id: null };
-    expect(rowText({ ...base, label: 'Kindness', note: null })).toEqual({ lead: 'earned', what: 'Kindness', sub: '4:15 PM' });
-    expect(rowText({ ...base, label: 'Other', note: 'Fed the cat' })).toEqual({ lead: 'earned', what: 'Fed the cat', sub: '4:15 PM' });
+    expect(rowText({ ...base, label: 'Kindness', note: null })).toEqual({ lead: 'earned', what: 'Kindness', sub: '4:15\u00a0PM' });
+    expect(rowText({ ...base, label: 'Other', note: 'Fed the cat' })).toEqual({ lead: 'earned', what: 'Fed the cat', sub: '4:15\u00a0PM' });
     expect(rowText({ ...base, type: 'starting', label: 'Starting points', points: 10 }).lead).toBe('started with');
+    expect(rowText({ ...base, type: 'starting', label: 'Starting points', points: 10 }).what).toBe('10 points'); // not "started with Starting points"
+    expect(rowText({ ...base, type: 'starting', label: 'Starting points', points: 1 }).what).toBe('1 point');
   });
   it('row icons follow the approved kinds: goal tick, award heart, spend gift', () => {
     expect(rowIconKind({ type: 'earn', goal_completion_id: 'x' })).toBe('goal');

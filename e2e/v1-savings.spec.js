@@ -45,7 +45,7 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     await checkScreen(page, 'children with savings', testInfo);
     await page.getByRole('button', { name: `Edit saving for something bigger for ${name}` }).click();
     const dialog = page.getByRole('dialog');
-    await expect(dialog.getByText('Saved: 120')).toBeVisible();
+    await expect(dialog.locator('[data-saved]')).toHaveText('120');
     await expect(dialog.getByText('Save up to 180 · Move back up to 120')).toBeVisible();
     await checkScreen(page, 'savings dialog', testInfo);
 
@@ -63,17 +63,21 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
 
     // Move 20 back.
     await page.getByRole('button', { name: `Edit saving for something bigger for ${name}` }).click();
-    await expect(dialog.getByText('Saved: 120')).toBeVisible();
+    await expect(dialog.locator('[data-saved]')).toHaveText('120');
     await dialog.getByLabel('Points', { exact: true }).fill('20');
     await dialog.getByRole('button', { name: 'Move points back' }).click();
     await expect(page.getByText(`Moved 20 points back from ${bike.title}`)).toBeVisible();
     await expect.poll(async () => (await me())).toMatchObject({ saved_total: 100, available_points: 220, total_points: 320 });
 
-    // Child View: the approved tiles; nothing moves points.
+    // Child View: the points card and the goal; nothing moves points.
     await page.goto(`/childview?child=${kid.id}`);
     await page.waitForLoadState('networkidle');
-    await expect(page.getByText(`Saved towards ${bike.title}`)).toBeVisible();
+    // Owner review 22 Nov (V1-B design §10): one figure with the star; savings once, in the card below.
+    await expect(page.locator('[data-available]')).toHaveText('220');
+    await expect(page.locator('p').filter({ has: page.locator('[data-available]') })).toHaveText(/^220\s+points\s+Ready to use$/);
+    await expect(page.getByText(/Saved towards/)).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'My next big adventure' })).toBeVisible();
+    await expect(page.getByText('100 of 300 points saved')).toBeVisible();
     await expect(page.getByText('200 points to go')).toBeVisible();
     await expect(page.getByRole('button', { name: /Save points|Move points back|Redeem/ })).toHaveCount(0);
     await checkScreen(page, 'child view with savings', testInfo);

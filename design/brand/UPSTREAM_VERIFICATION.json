@@ -1,5 +1,5 @@
 {
-  "version": "1.1",
+  "version": "1.2",
   "issued": "2026-11-17",
   "owner": "Percy v2 engineering",
   "status": "Record of a one-time upstream fetch; CI cannot reach the network, so tests anchor to this record",
@@ -88,6 +88,12 @@
       "sha256": "523066f01683f1879bbc20219bfcfb1cb4452fb26c0e074a3f8da4e06a75b60a"
     },
     {
+      "asset_id": "phosphor:book-open:duotone",
+      "source": "design/assets/phosphor/duotone/book-open.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/book-open-duotone.svg",
+      "sha256": "114456d637f78d1a748ef70768d3635c8f927fdfeed095a4ca9ded6f975ab8f5"
+    },
+    {
       "asset_id": "phosphor:books:duotone",
       "source": "design/assets/phosphor/duotone/books.svg",
       "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/books-duotone.svg",
@@ -166,6 +172,18 @@
       "sha256": "d9c7016e83a81c8ef1a250a307acc6d29d5c492fc46066ab5e5e7446a65b48f6"
     },
     {
+      "asset_id": "phosphor:check:duotone",
+      "source": "design/assets/phosphor/duotone/check.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/check-duotone.svg",
+      "sha256": "581385c1c40e6e618fe35f6ce2c39e81e0aab36a807ec64437424a5f56c8f240"
+    },
+    {
+      "asset_id": "phosphor:circle:duotone",
+      "source": "design/assets/phosphor/duotone/circle.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/circle-duotone.svg",
+      "sha256": "c78bff5d21eaa8b6979e7d9b5449a30bed5a1fa31daa1087c354b4c0e8b2f335"
+    },
+    {
       "asset_id": "phosphor:confetti:duotone",
       "source": "design/assets/phosphor/duotone/confetti.svg",
       "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/confetti-duotone.svg",
@@ -232,6 +250,12 @@
       "sha256": "4682cdf378723b4fe6f8967d72ac76d2739fa1f69bcfbbb635f2765106974b77"
     },
     {
+      "asset_id": "phosphor:footprints:duotone",
+      "source": "design/assets/phosphor/duotone/footprints.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/footprints-duotone.svg",
+      "sha256": "9f08d97c10be4e87800a2fcea6e6891428af83cd2c35f24149291c7e5bc56711"
+    },
+    {
       "asset_id": "phosphor:game-controller:duotone",
       "source": "design/assets/phosphor/duotone/game-controller.svg",
       "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/game-controller-duotone.svg",
@@ -284,6 +308,12 @@
       "source": "design/assets/phosphor/duotone/handshake.svg",
       "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/handshake-duotone.svg",
       "sha256": "4f8827d067f5b777902e4e6e0f1e6ccc6b60c5d34605d65ecb8020137072ebb9"
+    },
+    {
+      "asset_id": "phosphor:heart:duotone",
+      "source": "design/assets/phosphor/duotone/heart.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/heart-duotone.svg",
+      "sha256": "b1bc538e4f7626a2af3b3ac3dca543d8f8e628e9b45991fc7acb63ccaf2c289e"
     },
     {
       "asset_id": "phosphor:house-line:duotone",
@@ -466,6 +496,12 @@
       "sha256": "a1d6e1a9d9e9513d1791e83d09fe460fb48736d5f30aa5190fb26d6439114d77"
     },
     {
+      "asset_id": "phosphor:shield-star:duotone",
+      "source": "design/assets/phosphor/duotone/shield-star.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/shield-star-duotone.svg",
+      "sha256": "a91ab9a92e57c230a991b4687a607f04fb44327f8541cd8e2e32706ed7ce393e"
+    },
+    {
       "asset_id": "phosphor:smiley-wink:duotone",
       "source": "design/assets/phosphor/duotone/smiley-wink.svg",
       "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/smiley-wink-duotone.svg",
@@ -488,6 +524,18 @@
       "source": "design/assets/phosphor/duotone/sparkle.svg",
       "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/sparkle-duotone.svg",
       "sha256": "c4740b4365131487e4b49b54fc554a6cbdde28aaad74c5a8a8be2195b5fb4c19"
+    },
+    {
+      "asset_id": "phosphor:star-four:duotone",
+      "source": "design/assets/phosphor/duotone/star-four.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/star-four-duotone.svg",
+      "sha256": "c33fee19f4329e9d125cc056bf08081de4b727835b10e3d45a1b891de705556e"
+    },
+    {
+      "asset_id": "phosphor:star:duotone",
+      "source": "design/assets/phosphor/duotone/star.svg",
+      "upstream": "https://raw.githubusercontent.com/phosphor-icons/core/2b75f3ad12b420c9504ef05df8d2564a28f8500e/assets/duotone/star-duotone.svg",
+      "sha256": "d99a65040b32b5da2b50077a15d8b8b5ae90307c1a5bd34771c3f7b21e055835"
     },
     {
       "asset_id": "phosphor:sun:duotone",
@@ -692,6 +740,11 @@
       "version": "1.1",
       "date": "2026-11-19",
       "change": "V1-D: 63 reward-picker icons added; all 71 picker icons now verified"
+    },
+    {
+      "version": "1.2",
+      "date": "2026-11-22",
+      "change": "E03 section 11: eight behaviour glyphs fetched from the pinned commit on 2026-11-22 and compared by SHA-256 (star, shield-star, footprints, circle, check and star-four added to design/assets; heart and book-open were already checked in and equal the fetch)"
     }
   ]
 }

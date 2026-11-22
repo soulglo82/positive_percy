@@ -43,9 +43,10 @@ export const rewardsForChild = (rewards, childId) => rewards.filter((r) => isAss
 
 function SectionHead({ title, children }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 className="font-display font-bold text-lg text-primary break-words">{title}</h2>
-      {children}
+    <div className="flex items-center justify-between gap-2">
+      {/* The heading wraps; its button stays on the right (design critique: the button dropped under the heading on phones, in some cards and not others). */}
+      <h2 className="min-w-0 font-display font-bold text-lg text-primary break-words">{title}</h2>
+      {children && <div className="shrink-0">{children}</div>}
     </div>
   );
 }
@@ -240,7 +241,7 @@ export default function Children() {
             </ul>
           )}
           <div className="flex justify-end">
-            <Button variant="link" size="goal" onClick={() => setGoalsStart({ view: 'list' })} aria-label={'Manage all goals for ' + child.name}>
+            <Button variant="link" size="goal" className="-mr-3" onClick={() => setGoalsStart({ view: 'list' })} aria-label={'Manage all goals for ' + child.name}>
               Manage all goals
             </Button>
           </div>

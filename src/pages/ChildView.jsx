@@ -1,8 +1,9 @@
 // V1-B Child View (approved design 9de1df2, screen "childview";
 // docs/engineering/V1-B-DESIGN.md §3). Choosing a reward is a request (owner
 // decision D5): this page never spends points, and it has no parent Edit or
-// visibility controls (D8). A parent agrees from Home. "Saved towards" and
-// "My next big adventure" show the child's bigger goal with the most saved,
+// visibility controls (D8). A parent agrees from Home. The first card shows
+// one figure, the points ready to use (design §10, owner review 22 Nov).
+// "My next big adventure" shows the child's bigger goal with the most saved,
 // only if that goal is visible to children (D1, savings design §19.3, S5).
 // Nothing here moves points.
 import { useEffect, useRef, useState } from 'react';
@@ -18,6 +19,7 @@ import { childOrder } from '@/lib/childColour';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/brand/Logo';
+import PercyIcon from '@/components/icons/PercyIcon';
 import RewardIcon from '../components/rewards/RewardIcon';
 import { FamilyStrip } from '../components/home/HomeSections';
 import GoalProgress from '../components/savings/GoalProgress';
@@ -37,8 +39,7 @@ export function rewardState(reward, child) {
   return { kind: 'need', more: reward.cost_points - available };
 }
 
-// The child's goals they may see (S5): the same visibility rule for the
-// "Saved towards" tile and "My next big adventure".
+// The child's goals they may see (S5), for "My next big adventure".
 export function visibleGoals(rewards, child) {
   const visible = new Set(rewards.filter((r) => r.visible_to_child !== false).map((r) => r.id));
   return (child.goals || []).filter((g) => visible.has(g.rewardId));
@@ -149,7 +150,7 @@ export default function ChildView() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-5">
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
         <Link to={createPageUrl('ParentDashboard')} className="inline-flex items-center min-h-11 text-sm font-semibold text-primary underline-offset-4 hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
           ← Back to Home
         </Link>
@@ -162,17 +163,24 @@ export default function ChildView() {
         <Card>
           <CardContent className="p-4 sm:p-5 space-y-3">
             <h2 className="font-display font-bold text-lg text-primary break-words">You're doing great, {child.name}!</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-md border border-border p-3">
-                <p className="font-display font-extrabold text-title text-foreground tabular-nums">{available}</p>
-                <p className="text-sm font-medium text-muted-foreground">Ready to use</p>
-              </div>
-              {goal && (
-                <div className="rounded-md border border-border p-3">
-                  <p className="font-display font-extrabold text-title text-foreground tabular-nums">{goal.saved}</p>
-                  <p className="text-sm font-medium text-muted-foreground break-words">Saved towards {goal.name}</p>
-                </div>
-              )}
+            {/* One figure, with its picture (design §10). The saved figure is
+                in "My next big adventure" below, once. The figure and its unit
+                share a baseline; the label starts at the figure's left edge
+                (e2e/checks.js measures every [data-figure]). */}
+            <div className="flex items-center gap-3" data-figure>
+              <span aria-hidden="true" data-figure-part="icon" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-warning text-primary">
+                {/* The same tile as the goal's picture below (RewardIcon md), so the two cards line up. */}
+                <PercyIcon id="phosphor:piggy-bank:duotone" className="h-7 w-7" />
+              </span>
+              <p className="min-w-0">
+                <span className="flex flex-wrap items-baseline gap-x-1.5">
+                  <span data-available data-figure-part="value" className="font-display font-extrabold text-total text-foreground">{available}</span>
+                  {' '}
+                  <span data-figure-part="unit" className="font-semibold text-foreground">{pointsWord(available)}</span>
+                </span>
+                {' '}
+                <span data-figure-part="label" className="block text-sm font-medium text-muted-foreground">Ready to use</span>
+              </p>
             </div>
           </CardContent>
         </Card>

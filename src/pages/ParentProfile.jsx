@@ -172,7 +172,7 @@ export default function ParentProfile() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
         <div>
           <h1 className="font-display font-extrabold text-title text-primary">Family settings</h1>
           <p className="text-muted-foreground">Make Percy work for your family.</p>
@@ -207,7 +207,7 @@ export default function ParentProfile() {
         {/* Parenting Tips - bottom link */}
         <button
           onClick={() => setShowTips(true)}
-          className="w-full flex items-center justify-center gap-1 text-center text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="w-full flex items-center justify-center gap-1 text-center text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <PercyIcon id="phosphor:info:duotone" className="w-4 h-4" />
           Need help rewarding behaviour? View parenting tips

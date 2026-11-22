@@ -96,7 +96,7 @@ export default function Rewards() {
           <Card>
             <CardContent className="p-4 sm:p-5 space-y-4">
               {/* Heading and button side by side, as approved; the heading wraps (visual review). */}
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col items-start gap-3 xs:flex-row xs:items-center xs:justify-between">
                 <h2 className="min-w-0 break-words font-display font-bold text-lg text-primary">Your reward catalogue</h2>
                 <Button className="shrink-0" onClick={() => openNew()}>
                   <PercyIcon id="phosphor:plus-circle:duotone" className="h-5 w-5" />

@@ -157,7 +157,7 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
             </ul>
           )}
           <div className="flex justify-end">
-            <Button variant="link" size="goal" onClick={() => setManageOpen(true)} aria-label={'Manage goals for ' + child.name}>
+            <Button variant="link" size="goal" className="-mr-3" onClick={() => setManageOpen(true)} aria-label={'Manage goals for ' + child.name}>
               <PercyIcon id="phosphor:target:duotone" className="h-4 w-4" /> Manage goals
             </Button>
           </div>

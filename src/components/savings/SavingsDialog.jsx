@@ -200,7 +200,8 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-md border border-border p-3">
-                    <p className="font-display font-extrabold text-title text-foreground tabular-nums" data-saved>Saved: {saved}</p>
+                    <p className="font-display font-extrabold text-title text-foreground tabular-nums" data-saved>{saved}</p>
+                    <p className="text-sm font-medium text-muted-foreground">Saved</p>
                   </div>
                   <div className="rounded-md border border-border p-3">
                     <p className="font-display font-extrabold text-title text-foreground tabular-nums" data-available>{available}</p>

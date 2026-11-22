@@ -133,17 +133,18 @@ test('behaviour tiles stay aligned with a long name and a wide badge', async ({ 
   };
   const LONG = 'Tidying up without being asked Supercalifragilisticexpialidocious';
   // Put the family back as the fixture made it, whatever an earlier run left:
-  // the long behaviour gone, then Caring quick again (in that order: four is the cap).
+  // the long behaviour gone, then Resilience quick again (in that order: four is the cap).
+  // Resilience is the fourth default Quick Point (E03 design §11).
   const restore = async () => {
     const all = await call('GET', '/api/behavior-categories');
     for (const c of all.filter((x) => x.name === LONG)) await call('DELETE', `/api/behavior-categories/${c.id}`);
-    const caring = all.find((c) => c.name === 'Caring');
-    if (!caring.is_quick_action) await call('PUT', `/api/behavior-categories/${caring.id}`, { is_quick_action: true });
-    return caring;
+    const fourth = all.find((c) => c.name === 'Resilience');
+    if (!fourth.is_quick_action) await call('PUT', `/api/behavior-categories/${fourth.id}`, { is_quick_action: true });
+    return fourth;
   };
-  const caring = await restore();
+  const fourth = await restore();
   try {
-    await call('PUT', `/api/behavior-categories/${caring.id}`, { is_quick_action: false });
+    await call('PUT', `/api/behavior-categories/${fourth.id}`, { is_quick_action: false });
     await call('POST', '/api/behavior-categories', { name: LONG, icon: '🧹', points: 1000, is_quick_action: true });
     await go(page, '/');
     const tiles = page.locator('[data-tile-grid] [data-tile]');
@@ -209,8 +210,14 @@ test('activity, with the log open and the child filter open', async ({ page }, t
   await go(page, '/activity');
   await checkScreen(page, 'activity', testInfo);
   // The two "This week" boxes: number and label centred in each (Nael, 16:04).
+  // Measured on the text itself, not its paragraph: a paragraph is as wide as
+  // its box whatever the alignment, so its centre proved nothing (code review).
   const offsets = await page.evaluate(() => [...document.querySelectorAll('[data-week-boxes] > div > p')]
-    .map((d) => { const r = d.getBoundingClientRect(), p = d.parentElement.getBoundingClientRect(); return Math.abs((r.left + r.width / 2) - (p.left + p.width / 2)); }));
+    .map((d) => {
+      const range = document.createRange(); range.selectNodeContents(d);
+      const r = range.getBoundingClientRect(), p = d.parentElement.getBoundingClientRect();
+      return Math.abs((r.left + r.width / 2) - (p.left + p.width / 2));
+    }));
   expect(offsets.length).toBe(4);
   for (const o of offsets) expect(o).toBeLessThan(1.5);
   // V1-C: the log is open; the four approved filters ask the server.

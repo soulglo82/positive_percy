@@ -170,12 +170,37 @@ describe('Child View page (§3)', () => {
     expect(screen.getByRole('link', { name: '← Back to Home' })).toBeTruthy();
     expect(screen.getByText('A child-friendly view of goals, points and rewards. No independent child account.')).toBeTruthy();
     expect(screen.getByRole('heading', { name: "You're doing great, Lara!" })).toBeTruthy();
-    expect(screen.getByText('Ready to use')).toBeTruthy();
+    // Owner review 22 Nov (design §10): one figure with a piggy bank, its unit beside it and the label beneath.
+    const figure = document.querySelector('[data-available]');
+    expect(figure.textContent).toBe('90');
+    expect(figure.closest('p').textContent).toBe('90 points Ready to use'); // real spaces, not "90points"
+    const picture = figure.closest('[data-figure]').querySelector('[data-icon]');
+    expect(picture.getAttribute('data-icon')).toBe('phosphor:piggy-bank:duotone');
+    expect(picture.parentElement.closest('[aria-hidden="true"]')).toBeTruthy(); // the tile around it, not the svg's own attribute
+    expect(document.querySelector('img[src*="stickies-star"]')).toBeNull();
     expect(screen.getByText('25 points · Ready when a parent agrees')).toBeTruthy();
     expect(screen.getByText('20 points · Ask a parent')).toBeTruthy();
     expect(screen.getByText('Choosing a reward is a request. Only a parent-authorised confirmation can spend points.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Spend|Edit/ })).toBeNull();
     expect(document.body.textContent).not.toMatch(/Visible to children|Hidden from children|Saved towards|My next big adventure/);
+  });
+
+  it('the points figure is singular for 1, plain for 0, and falls back when the server sends none (design §10.4)', async () => {
+    const sentence = () => document.querySelector('[data-available]').closest('p').textContent;
+    state.children = [{ ...lara, available_points: 1 }];
+    mount(ChildView);
+    await screen.findByRole('heading', { name: "You're doing great, Lara!" });
+    expect(sentence()).toBe('1 point Ready to use');
+    cleanup();
+    state.children = [{ ...lara, available_points: 0 }];
+    mount(ChildView);
+    await screen.findByRole('heading', { name: "You're doing great, Lara!" });
+    expect(sentence()).toBe('0 points Ready to use');
+    cleanup();
+    state.children = [{ ...lara, available_points: undefined, total_points: undefined }];
+    mount(ChildView);
+    await screen.findByRole('heading', { name: "You're doing great, Lara!" });
+    expect(sentence()).toBe('0 points Ready to use');
   });
 
   it('E4: one request per reward, through the POST and the refetch after it', async () => {

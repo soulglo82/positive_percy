@@ -36,7 +36,7 @@ describe('generated approved-icon module', () => {
 
   it('holds exactly the register nav, controls, behaviours, goals and reward-picker sources, all Phosphor', async () => {
     const { APPROVED_ICONS, APPROVED_CONTEXTS } = await import('../components/icons/approvedIcons.js');
-    expect(Object.keys(APPROVED_CONTEXTS).sort()).toEqual(['behaviors', 'controls', 'goals', 'nav', 'picker', 'rewards']);
+    expect(Object.keys(APPROVED_CONTEXTS).sort()).toEqual(['behaviors', 'controls', 'goals', 'legacy', 'nav', 'picker', 'rewards']);
     // V1-D §14: the Phosphor reward artwork (book-bookmark for New book); the Streamline artwork ships as files.
     expect(APPROVED_CONTEXTS.rewards).toEqual({ 'New book': 'phosphor:book-bookmark:duotone' });
     // V1-D: the owner's launch library is 12 categories, 84 placements, 71
@@ -130,7 +130,8 @@ const BANS = {
   'src/pages/ParentProfile.jsx': ['Lightbulb', 'Info'],
   // E05 removed the exemption: the completed-goal tile keeps its category icon.
   'src/components/dashboard/TodaysGoalsPanel.jsx': ['Settings2', 'Target', 'Check', 'Sparkles', 'Sparkle', 'CheckCircle2', 'CircleCheck', 'ClipboardCheck'],
-  'src/lib/categoryIcons.js': ['RotateCcw', 'Undo', 'Undo2'],
+  // E03 §11: behaviour icons are Phosphor; the Lucide behaviour glyphs must not come back.
+  'src/lib/categoryIcons.js': ['RotateCcw', 'Undo', 'Undo2', 'Star', 'Heart', 'Handshake', 'Shield', 'Mountain', 'HandHeart', 'Brush', 'BookOpen', 'Palette', 'Footprints', 'Music', 'Brain', 'Bed', 'Check', 'Sparkles', 'Circle'],
   // V1-D: the reward form replaced AddRewardModal; its gift stays Phosphor.
   'src/components/rewards/RewardForm.jsx': ['Gift'],
 };
@@ -155,17 +156,75 @@ describe('retired Lucide glyphs stay retired', () => {
 });
 
 describe('behaviour keys', () => {
-  it('legacy keys draw exactly what they drew before; approved keys draw approved art', async () => {
-    const lucide = await import('lucide-react');
+  // Owner decision 22 Nov (E03 design §11): every behaviour icon is in the one
+  // icon family. Each legacy key draws the Phosphor Duotone glyph of the same
+  // subject; the key itself is never rewritten. The table is fixed here, so a
+  // swap back to Lucide, or to another glyph, fails.
+  const LEGACY = { star: 'star', heart: 'heart', handshake: 'handshake', shield: 'shield-star', mountain: 'mountains',
+    'hand-heart': 'hand-heart', brush: 'broom', 'book-open': 'book-open', palette: 'palette', footprints: 'footprints',
+    music: 'music-notes', brain: 'brain', bed: 'bed', check: 'check', sparkles: 'star-four', circle: 'circle' };
+
+  it('legacy keys draw their approved glyph; approved keys draw approved art; nothing draws Lucide', async () => {
     const { iconFor, ICON_KEYS, PICKER_KEYS } = await import('../lib/categoryIcons.js');
-    const LEGACY = { star: 'Star', heart: 'Heart', handshake: 'Handshake', shield: 'Shield', mountain: 'Mountain',
-      'hand-heart': 'HandHeart', brush: 'Brush', 'book-open': 'BookOpen', palette: 'Palette', footprints: 'Footprints',
-      music: 'Music', brain: 'Brain', bed: 'Bed', check: 'Check', sparkles: 'Sparkles', circle: 'Circle' };
-    for (const [k, name] of Object.entries(LEGACY)) expect(iconFor(k), k).toBe(lucide[name]);
+    const { APPROVED_CONTEXTS } = await import('../components/icons/approvedIcons.js');
+    for (const [k, slug] of Object.entries(LEGACY)) expect(iconFor(k).displayName, k).toBe(`ApprovedIcon(phosphor:${slug}:duotone)`);
+    expect(APPROVED_CONTEXTS.legacy).toEqual(Object.fromEntries(Object.entries(LEGACY).map(([k, slug]) => [k, `phosphor:${slug}:duotone`])));
     expect(ICON_KEYS.slice(0, 16)).toEqual(Object.keys(LEGACY));
     expect(ICON_KEYS.slice(16)).toEqual(PICKER_KEYS);
     for (const k of PICKER_KEYS) expect(iconFor(k).displayName, k).toMatch(/^ApprovedIcon\(phosphor:/);
-    expect(iconFor('zzz')).toBe(lucide.Circle);
+    for (const k of ['zzz', undefined, null, '', '⭐', 'constructor']) expect(iconFor(k).displayName, String(k)).toBe('ApprovedIcon(phosphor:circle:duotone)');
+  });
+
+  it('the register records why each legacy glyph was chosen; the generator refuses an entry without a known basis', async () => {
+    const { collect } = await import('../../scripts/brand/build-approved-icons.mjs');
+    const group = REGISTER.decisions.behaviors_legacy;
+    expect(Object.keys(group)).toEqual(Object.keys(LEGACY));
+    for (const k of ['heart', 'shield', 'handshake', 'hand-heart']) expect(group[k].basis, k).toBe('owner_choice_2026-11-22');
+    for (const k of Object.keys(LEGACY).filter((x) => !['heart', 'shield', 'handshake', 'hand-heart'].includes(x))) expect(group[k].basis, k).toBe('same_subject_restyle_2026-11-22');
+    const bad = structuredClone(REGISTER);
+    bad.decisions.behaviors_legacy.heart.basis = 'because';
+    expect(() => collect(bad)).toThrow(/behaviors_legacy\/heart/);
+    const missing = structuredClone(REGISTER);
+    delete missing.decisions.behaviors_legacy.star.basis;
+    expect(() => collect(missing)).toThrow(/behaviors_legacy\/star/);
+    const unselected = structuredClone(REGISTER);
+    unselected.decisions.behaviors_legacy.bed.status = 'proposed';
+    expect(() => collect(unselected)).toThrow(/behaviors_legacy\/bed is not selected/);
+    // Every legacy key must be there: the app draws all sixteen (code review).
+    const gone = structuredClone(REGISTER);
+    delete gone.decisions.behaviors_legacy.circle;
+    expect(() => collect(gone)).toThrow(/behaviors_legacy\/circle is missing/);
+    const noGroup = structuredClone(REGISTER);
+    delete noGroup.decisions.behaviors_legacy;
+    expect(() => collect(noGroup)).toThrow(/behaviors_legacy is missing/);
+  });
+
+  it('one drawing, one meaning: legacy glyphs are distinct, and none is a control, a goal mark or the Done tick', async () => {
+    const { APPROVED_CONTEXTS } = await import('../components/icons/approvedIcons.js');
+    const legacy = Object.values(APPROVED_CONTEXTS.legacy);
+    expect(new Set(legacy).size).toBe(legacy.length);
+    const reserved = new Set([...Object.values(APPROVED_CONTEXTS.controls), ...Object.values(APPROVED_CONTEXTS.goals), ...Object.values(APPROVED_CONTEXTS.nav)]);
+    expect(reserved.has('phosphor:check-circle:duotone')).toBe(true); // control: the Done mark is in the reserved set
+    expect(legacy.filter((id) => reserved.has(id))).toEqual([]);
+  });
+
+  it('picker: a stored legacy key is never offered its look-alike, so each tap on "Change icon" changes the drawing', async () => {
+    const { nextPickerKey, pickerChoices, iconFor, PICKER_KEYS } = await import('../lib/categoryIcons.js');
+    const twins = { 'hand-heart': 'kindness', handshake: 'helping', brain: 'learning', bed: 'sleep', brush: 'chores' };
+    for (const [stored, twin] of Object.entries(twins)) {
+      expect(iconFor(stored).displayName, `${stored} and ${twin} draw the same glyph`).toBe(iconFor(twin).displayName); // control
+      expect(pickerChoices(stored), stored).not.toContain(twin);
+      expect(pickerChoices(stored)).toHaveLength(PICKER_KEYS.length); // the stored key and the other ten
+    }
+    for (const stored of Object.keys(LEGACY)) {
+      let k = stored;
+      for (let i = 0; i < pickerChoices(stored).length; i++) {
+        const next = nextPickerKey(k, stored);
+        expect(iconFor(next).displayName, `${stored}: ${k} -> ${next}`).not.toBe(iconFor(k).displayName);
+        k = next;
+      }
+      expect(k, `${stored} comes back`).toBe(stored);
+    }
   });
 
   it('picker: a legacy key stays reachable; approved keys never cycle into a legacy key', async () => {

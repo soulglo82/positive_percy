@@ -1,6 +1,6 @@
 // D1 savings screens (docs/engineering/D1-SAVINGS-LEDGER-DESIGN.md §19.3):
 // Children "Saving for something bigger" and its Edit dialog, Child View's
-// "Saved towards" and "My next big adventure", Home's goal, the Rewards
+// points card and "My next big adventure", Home's goal, the Rewards
 // "Bigger rewards" section and form switch, Spend leaving goals out, and the
 // Activity rows. Every figure comes from the server (child.goals).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -79,7 +79,8 @@ describe('Children: Saving for something bigger', () => {
     mount(<Children />);
     fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
     const d = await screen.findByRole('dialog');
-    expect(within(d).getByText('Saved: 120')).toBeTruthy();
+    expect(d.querySelector('[data-saved]').textContent).toBe('120'); // figure and caption, like "Available now" beside it
+    expect(d.querySelector('[data-saved]').nextElementSibling.textContent).toBe('Saved');
     expect(within(d).getByText('Save up to 180 · Move back up to 120')).toBeTruthy(); // min(200 available, 180 to go)
     const input = within(d).getByLabelText('Points');
     const saveBtn = within(d).getByRole('button', { name: 'Save points' });
@@ -93,7 +94,7 @@ describe('Children: Saving for something bigger', () => {
     expect(saveBtn.disabled).toBe(true);
     // The other goal: nothing saved, so nothing to move back.
     fireEvent.click(within(d).getByRole('radio', { name: /Tent/ }));
-    expect(within(d).getByText('Saved: 0')).toBeTruthy();
+    expect(d.querySelector('[data-saved]').textContent).toBe('0');
     expect(within(d).getByText('Save up to 80 · Move back up to 0')).toBeTruthy();
   });
 
@@ -177,11 +178,14 @@ describe('Children: Saving for something bigger', () => {
 });
 
 describe('Child View', () => {
-  it('"Saved towards" and "My next big adventure" from the server; no controls; goals are not choosable', async () => {
+  it('savings appear once, in "My next big adventure", from the server; no controls; goals are not choosable', async () => {
     mount(<ChildView />, '/childview?child=c1');
-    expect(await screen.findByText('Saved towards Bike')).toBeTruthy();
-    expect(screen.getByText('120')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'My next big adventure' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'My next big adventure' })).toBeTruthy();
+    // Owner review 22 Nov (V1-B design §10): the points card holds one figure;
+    // the saved figure is in the card below and nowhere else.
+    expect(document.querySelector('[data-available]').closest('p').textContent).toBe('200 points Ready to use');
+    expect(screen.queryByText(/Saved towards/)).toBeNull();
+    expect(screen.getAllByText('120 of 300 points saved')).toHaveLength(1);
     expect(screen.getByText('180 points to go')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Save points|Move points back|Redeem/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Ask a parent for Bike/ })).toBeNull();
@@ -199,12 +203,12 @@ describe('Child View', () => {
     expect(screen.queryByText('Ready to choose your reward!')).toBeNull();
   });
 
-  it('S5: a goal hidden from children shows on neither the tile nor the card', async () => {
+  it('S5: a goal hidden from children is not shown on Child View', async () => {
     state.rewards = [R('g1', 'Bike', 300, { is_bigger_goal: true, visible_to_child: false }), R('r1', 'Movie night', 25)];
     expect(visibleGoals(state.rewards, lara)).toEqual([]);
     mount(<ChildView />, '/childview?child=c1');
     expect(await screen.findByText('Ready to use')).toBeTruthy();
-    expect(screen.queryByText(/Saved towards/)).toBeNull();
+    expect(screen.queryByText(/Saved towards|points saved/)).toBeNull();
     expect(screen.queryByRole('heading', { name: 'My next big adventure' })).toBeNull();
   });
 });

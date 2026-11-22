@@ -74,7 +74,10 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   }, [isOpen, reward, initialTemplate]);
 
   // What the reward looks like now: the chosen icon, else its own image/emoji.
-  const emoji = reward?.emoji || initialTemplate?.emoji || DEFAULT_EMOJI;
+  // An existing reward shows what its tile shows: its own emoji, or the gift
+  // icon when it has none (design critique: the form showed a gift emoji for a
+  // reward whose tile shows the gift icon). A new reward starts with the default.
+  const emoji = reward ? (reward.emoji || null) : (initialTemplate?.emoji || DEFAULT_EMOJI);
   const preview = { icon_key: iconKey, image_url: reward?.image_url || null, emoji };
   const valid = title.trim().length > 0 && Number.isInteger(costPoints) && costPoints >= 1;
 
@@ -256,7 +259,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting} onClick={() => setDeleteEnding(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction disabled={deleting} onClick={async (e) => {
+            <AlertDialogAction variant="destructive" disabled={deleting} onClick={async (e) => {
               e.preventDefault();
               if (deleting) return; // one request at a time (code review of 2074d55)
               setDeleting(true);

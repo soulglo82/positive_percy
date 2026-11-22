@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.3 |
+| Version | 1.4 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-b-children`, stacked on V1-D `claude/percy-v1-d-rewards`) |
 | Status | Reviewed (§8); build may start. Owner items in §7 |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.4 | 2026-11-22 | §10: Child View points card reworked at the owner's request (visual review, 22 November). Design for review before the build |
 | 1.3 | 2026-11-19 | Post-build code review (§9): New goal used the previous child's behaviour (Major, fixed); focus, refresh, loading and lock fixes |
 | 1.2 | 2026-11-19 | Owner decisions: B1 approved for now (full milestone wording restored when D1 lands); B3 approved ("Ask a parent"; after pressing, "Ready when a parent agrees"; nothing charged until a parent confirms) |
 | 1.1 | 2026-11-19 | Fresh-context peer review (§8): 3 blocking and 7 non-blocking findings adopted. The request button label becomes an owner item; the lock is held until fresh data arrives; contract corrected; requested rewards win over affordability; reached state kept as approved ("0 to reach") |
@@ -50,7 +51,7 @@
 ## 3. Child View (approved strings verbatim)
 
 - "← Back to Home", "My Percy adventure", "A child-friendly view of goals, points and rewards. No independent child account.", then the family strip.
-- **"You're doing great, {Name}!"** with "{available}" and "Ready to use".
+- **"You're doing great, {Name}!"** with "{available}" and "Ready to use". **Superseded on 22 November by §10:** one figure with a piggy bank; the second tile below is gone and savings show once, in "My next big adventure".
   - The approved second tile ("{saved} Saved towards {goal}") and the "My next big adventure" card wait for D1.
 - **"Rewards I can choose"**: the rewards visible to the child (`visible_to_child`, assignment), cheapest first, each with its icon, title and a status. **Precedence, first match wins:**
   1. **Requested** (its `rewardId` is in the child's `reward_stack_priced`): "{cost} point(s) · Ready when a parent agrees". A requested reward is shown **even if it was hidden afterwards**, because its cost is still set aside and the child must see why "Ready to use" is lower.
@@ -147,3 +148,64 @@
 | 10 | Test hygiene: an empty assertion, no RTL cleanup, e2e cleanup not in `finally` | Nit | Fixed |
 | 11 | Children imported `RewardTile` from the Rewards page | Nit | Moved to `components/rewards/RewardTile.jsx` (Rewards re-exports it) |
 
+## 10. Child View points card (owner review, 22 November) (v1.4)
+
+**Owner's finding.** "The box which shows the kids current points tally is very full looking … This section needs rework. Wording and the look is poor. No icon or imagery."
+
+**What is there now.** The card "You're doing great, {Name}!" holds two bordered tiles, "{available} / Ready to use" and "{saved} / Saved towards {goal}", with no picture. This is the approved design (blob `9de1df2`) as drawn; the owner is changing an approved screen and its wording.
+
+**Prior decisions found.** §3 (the strings above are approved verbatim); D1 design §19.3 and S5 (the second tile shows only a goal visible to children); V1-F §"Removed" (the star sticker left the app with the old Home hero and stays in `public/`); the approval register (the star is selected for "Home welcome" and "small decorative sticker"; a dedicated points star is **not yet approved**).
+
+### 10.1 Contract
+
+The card shows **one** figure, the child's available points (`available_points` from the server), with a piggy-bank icon and the label "Ready to use". A child's savings are shown **once**, in "My next big adventure" directly below, which already carries the goal's picture, "{saved} of {cost} points saved", the bar and the points to go. No figure is computed in the browser.
+
+**Owner's decisions (22 November, after the options sheet).** Layout C ("option c is good"). The star is "not appropriate – use a piggy bank". "Alignment is off with the wording and numbers" on the mock-up: fixed in §10.2.
+
+**Wording.** "{n} points" with "Ready to use" beneath. "Ready to use" is the approved string. The mock-up's "points ready to spend" is dropped: the owner's review of the release candidate noted that "Ready to use" is more precise while requests and savings are held, and that wording must not suggest a child spends without a parent.
+
+### 10.2 Build
+
+`src/pages/ChildView.jsx`, the first card only:
+
+- heading unchanged: "You're doing great, {Name}!";
+- one row, vertically centred: the icon in a tile (the same tile as a reward's picture: 56 px, warm ground), then one paragraph;
+- the paragraph's first line is the figure in the largest text token with "point" or "points" beside it **on the same baseline**; its second line is "Ready to use" in the small muted style. Both lines start at the same left edge;
+- the paragraph's text is "{n} points Ready to use" with real spaces (design review: without one the text ran together as "90points");
+- the "Saved towards {goal}" tile is removed. `visibleGoals` and "My next big adventure" are unchanged.
+
+Not changed: Home's "Little wins, big adventures!" tiles and the Children page's "Earned this week / Available now" tiles (see the design check in the release assessment).
+
+### 10.3 Artwork
+
+The piggy bank is `phosphor:piggy-bank:duotone`, already one of the 71 approved picker icons (the exact pinned upstream file, MIT, in `approvedIcons.js`). Nothing is drawn or generated, and no new asset is added. The star sticker is not used.
+
+### 10.4 Edge cases (input → expected)
+
+| Input | Expected |
+| --- | --- |
+| 0 available | "0 points", "Ready to use" |
+| 1 available | "1 point", "Ready to use" |
+| 12345 available at 320 px | "12345 points" on one line beside the icon; nothing clipped |
+| `available_points` missing | Falls back to `total_points`, then 0 (as now) |
+| A 100-character child name with no spaces | The heading breaks inside the card (as now) |
+| No bigger goal, or a goal hidden from children (S5) | The card alone; nothing about savings on the page (as now) |
+| Savings in two goals | "My next big adventure" shows the leading goal (D1 O5), as now |
+| A fully saved goal | Unchanged: "{Name} has saved enough for {Goal}!" in the card below |
+| Points held for a requested reward | Left out of the figure, as now; the reward row says "Ready when a parent agrees" |
+
+### 10.5 Tests
+
+- Unit (`V1Children.test.jsx`, `V1Savings.test.jsx`): the text for 0, 1 and many points; the piggy-bank icon present and hidden from assistive technology; no "Saved towards" text; the saved figure appears once, in "My next big adventure"; S5 unchanged.
+- Browser (`e2e/v1-savings.spec.js`): the figure and label on Child View. `e2e/ui.spec.js` runs the shared screen checks on Child View at four sizes; its fixture child has a four-digit total.
+- New shared check: in a figure block (`[data-figure]`), the figure and its unit share a baseline, and the label starts at the figure's left edge (to a pixel). This is the alignment the owner found off.
+- Shown red first against the current card.
+- **Not covered by a test:** whether it looks right (the owner's sign-off, G2); what a screen reader says (two lines may be read as two phrases; the text itself is correct).
+
+### 10.6 Design review (independent, before the build)
+
+One blocking finding, adopted: no space between the two parts of the sentence. Also adopted: the stated edge cases (missing values, the 100-character name), an honest list of which tests assert what, and the list of documents and comments that the change makes stale (updated in the same commit). Confirmed: no saved figure visible today disappears from the page, because the removed tile and the card below show the same goal.
+
+### 10.7 Rollout and reversal
+
+One commit on the release-candidate branch. Reverting it restores the approved two-tile card. No data, server or migration change.
