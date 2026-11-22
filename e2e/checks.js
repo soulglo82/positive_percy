@@ -102,17 +102,25 @@ export async function checkScreen(page, label, testInfo) {
       const tiles = [...grid.querySelectorAll('[data-tile]')].filter(visible);
       const at = tiles.map((t) => {
         const outer = t.getBoundingClientRect();
-        const box = { left: outer.left + t.clientLeft, top: outer.top + t.clientTop, right: outer.left + t.clientLeft + t.clientWidth };
+        // Inside the border, from fractional figures (clientWidth is a whole
+        // number, so half-pixel tiles would read a pixel apart).
+        const cs = getComputedStyle(t);
+        const edge = (side) => parseFloat(cs[`border${side}Width`]) || 0;
+        const box = { left: outer.left + edge('Left'), top: outer.top + edge('Top'), right: outer.right - edge('Right'), bottom: outer.bottom - edge('Bottom') };
         const part = (name) => t.querySelector(`[data-tile-part="${name}"]`)?.getBoundingClientRect();
         const [icon, name, badge] = ['icon', 'name', 'badge'].map(part);
         if (!icon || !name || !badge) return null;
-        const overlap = name.left < badge.right - 0.5 && badge.left < name.right - 0.5 && name.top < badge.bottom - 0.5 && badge.top < name.bottom - 0.5;
+        const meet = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+        const overlap = meet(name, badge) || meet(name, icon) || meet(icon, badge);
+        // A name cut off at the bottom (a fixed height or a line clamp).
+        const nameEl = t.querySelector('[data-tile-part="name"]');
+        const cut = nameEl.scrollHeight > nameEl.clientHeight + 1;
         // Two rows (narrow): parts hang from the top of the tile. One row
         // (wide): parts are centred on the tile's middle line.
-        const centred = getComputedStyle(t).alignContent === 'center';
-        const middle = outer.top + t.clientTop + t.clientHeight / 2;
+        const centred = cs.alignContent === 'center';
+        const middle = (box.top + box.bottom) / 2;
         const y = (r) => (centred ? (r.top + r.bottom) / 2 - middle : r.top - box.top);
-        return { rowTop: Math.round(outer.top), height: outer.height, overlap, label: t.textContent.trim().slice(0, 20),
+        return { top: outer.top, bottom: outer.bottom, height: outer.height, overlap, cut, label: t.textContent.trim().slice(0, 20),
           same: { iconLeft: icon.left - box.left, iconY: y(icon), nameLeft: name.left - box.left,
             nameY: y(name), badgeRight: box.right - badge.right, badgeY: y(badge) } };
       });
@@ -122,8 +130,19 @@ export async function checkScreen(page, label, testInfo) {
         const values = at.map((x) => x.same[key]);
         if (spread(values) > 0.5) out.uneven.push(`${key}: ${values.map((v) => Math.round(v * 10) / 10).join(', ')}`);
       }
-      for (const x of at) if (x.overlap) out.uneven.push(`name under badge: "${x.label}"`);
-      const rows = grid.getAttribute('data-tile-grid') === 'even' ? [at] : Object.values(Object.groupBy(at, (x) => x.rowTop));
+      for (const x of at) {
+        if (x.overlap) out.uneven.push(`parts overlap: "${x.label}"`);
+        if (x.cut) out.uneven.push(`name cut off: "${x.label}"`);
+      }
+      // A row is the tiles that share any height on screen, so a short tile
+      // centred beside a tall one is still compared with it.
+      const rows = grid.getAttribute('data-tile-grid') === 'even' ? [at] : [];
+      if (!rows.length) {
+        for (const x of [...at].sort((a, b) => a.top - b.top)) {
+          const row = rows.find((r) => r.some((y) => x.top < y.bottom - 0.5 && y.top < x.bottom - 0.5));
+          if (row) row.push(x); else rows.push([x]);
+        }
+      }
       for (const row of rows) {
         if (spread(row.map((x) => x.height)) > 0.5) out.uneven.push(`height: ${row.map((x) => Math.round(x.height)).join(', ')}`);
       }

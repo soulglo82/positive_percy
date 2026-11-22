@@ -122,18 +122,29 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
 // layout when a name wraps or a badge is wide. The fixture's names all fit on
 // one line, so this swaps a long behaviour into Quick Points for the check
 // (one worker, so no other test sees it) and puts everything back.
-test('behaviour tiles stay aligned with a long name and a wide badge', async ({ page }, testInfo) => {
-  const headers = { Authorization: `Bearer ${family.token}` };
+test('behaviour tiles stay aligned with a long name and a wide badge', async ({ page, playwright }, testInfo) => {
+  // Its own connection, not the page's: after a timeout the page is closed,
+  // and the clean-up must still run (code review). Every reply is checked.
+  const api = await playwright.request.newContext({ baseURL: testInfo.project.use.baseURL, extraHTTPHeaders: { Authorization: `Bearer ${family.token}` } });
   const call = async (method, path, data) => {
-    const r = await page.request.fetch(path, { method, headers, data });
+    const r = await api.fetch(path, { method, data });
     expect(r.ok(), `${method} ${path}: ${await r.text()}`).toBe(true);
     return r.status() === 204 ? null : r.json();
   };
-  const caring = (await call('GET', '/api/behavior-categories')).find((c) => c.name === 'Caring');
-  let long;
+  const LONG = 'Tidying up without being asked Supercalifragilisticexpialidocious';
+  // Put the family back as the fixture made it, whatever an earlier run left:
+  // the long behaviour gone, then Caring quick again (in that order: four is the cap).
+  const restore = async () => {
+    const all = await call('GET', '/api/behavior-categories');
+    for (const c of all.filter((x) => x.name === LONG)) await call('DELETE', `/api/behavior-categories/${c.id}`);
+    const caring = all.find((c) => c.name === 'Caring');
+    if (!caring.is_quick_action) await call('PUT', `/api/behavior-categories/${caring.id}`, { is_quick_action: true });
+    return caring;
+  };
+  const caring = await restore();
   try {
     await call('PUT', `/api/behavior-categories/${caring.id}`, { is_quick_action: false });
-    long = await call('POST', '/api/behavior-categories', { name: 'Tidying up without being asked Supercalifragilisticexpialidocious', icon: '🧹', points: 1000, is_quick_action: true });
+    await call('POST', '/api/behavior-categories', { name: LONG, icon: '🧹', points: 1000, is_quick_action: true });
     await go(page, '/');
     const tiles = page.locator('[data-tile-grid] [data-tile]');
     await expect(tiles).toHaveCount(4);
@@ -146,8 +157,11 @@ test('behaviour tiles stay aligned with a long name and a wide badge', async ({ 
     await checkScreen(page, 'add points long tile', testInfo);
     await closeDialog(page);
   } finally {
-    if (long) await page.request.fetch(`/api/behavior-categories/${long.id}`, { method: 'DELETE', headers });
-    await page.request.fetch(`/api/behavior-categories/${caring.id}`, { method: 'PUT', headers, data: { is_quick_action: true } });
+    await restore();
+    const after = await call('GET', '/api/behavior-categories');
+    expect(after.filter((c) => c.is_quick_action)).toHaveLength(4);
+    expect(after.some((c) => c.name === LONG)).toBe(false);
+    await api.dispose();
   }
 });
 

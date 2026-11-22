@@ -176,7 +176,7 @@ describe('Undo a redeemed reward (V1-D §10 R3; final validation 2026-11-22)', (
       if (url.startsWith('/api/summary')) return { ok: true, json: async () => ({ childStats: [], goalsCompleted: 0 }) };
       if (url.startsWith('/api/redemptions/')) { calls.push([url, JSON.parse(opts.body)]); return { ok: true, status: 200, json: async () => ({ child: { name: 'Lara', total_points: 1 }, redemption: {} }) }; }
       // A fresh award too: only its type keeps Undo off it (review: the old row was hours old, so the window hid it anyway).
-      return { ok: true, json: async () => [recent(9), recent(11), recent(3, { id: 'red-undone', undone: true }), { ...ROWS[1], created_date: recent(1).created_date }] };
+      return { ok: true, json: async () => [recent(9), recent(11), recent(3, { id: 'red-undone', undone: true }), recent(4, { label: 'Ice cream' }), { ...ROWS[1], created_date: recent(1).created_date }] };
     });
     mount();
     const undo = await screen.findAllByRole('button', { name: 'Undo Lara redeemed Movie night' });
@@ -197,6 +197,11 @@ describe('Undo a redeemed reward (V1-D §10 R3; final validation 2026-11-22)', (
     fireEvent.click(screen.getByRole('button', { name: 'Undo Lara redeemed Movie night' }));
     await waitFor(() => expect(calls).toHaveLength(2));
     expect(calls[1][1].request_id).toBe(calls[0][1].request_id);
+    // Another redemption has its own undo: its own address and its own id (code review).
+    fireEvent.click(screen.getByRole('button', { name: 'Undo Lara redeemed Ice cream' }));
+    await waitFor(() => expect(calls).toHaveLength(3));
+    expect(calls[2][0]).toBe('/api/redemptions/red-4/undo');
+    expect(calls[2][1].request_id).not.toBe(calls[0][1].request_id);
     said.mockRestore();
   });
 });
