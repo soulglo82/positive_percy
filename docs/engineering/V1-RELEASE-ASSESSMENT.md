@@ -31,9 +31,9 @@ The merge is the deployment. Nothing is merged without the owner's approval of t
 
 ## 2. What was validated
 
-**Every result below was produced on a clean checkout of commit `3f9747f`**, the release candidate's code. The commit after it adds only these results to this document; CI then ran everything again at that final commit (§7). (The same checks passed at `96f5462` before the final-handover changes, with 1,035 unit and server tests and 52 browser tests, and at `6d0698f` and `9fa450d` before the repetition trims, with 1,039 and 52.)
+**Every result below was produced on a clean checkout of commit `07aa9fc`**, the release candidate's code and tests. (The app's code last changed at `3f9747f`; `07aa9fc` changes one browser test and adds its evidence, §4.1.) The commit after it adds only these results to this document; CI then ran everything again at that final commit (§7). (The same checks passed at `96f5462` before the final-handover changes, with 1,035 unit and server tests and 52 browser tests, at `6d0698f` and `9fa450d` before the repetition trims, with 1,039 and 52, and at `3f9747f` before the Settings test fix, with 1,040 and 52.)
 
-| Check | Result at `3f9747f` | Where |
+| Check | Result at `07aa9fc` | Where |
 | --- | --- | --- |
 | Unit and server tests | 1,040 passed in 53 files; none skipped | `npm test` with a test database |
 | Browser tests at 320, 390, 834 and 1280 px | 52 passed, 16 skipped by design | `npx playwright test`; the skips are explained in §4.2 |
@@ -373,7 +373,7 @@ Confirmed: every other string, the condition for the goal line and the data sour
 
 | Gate | State |
 | --- | --- |
-| G1 Functional | **Passed** at `3f9747f` (§2, §3) |
+| G1 Functional | **Passed** at `07aa9fc` (§2, §3) |
 | G7a Security (technical) | **Passed:** every route checked is scoped to the signed-in family; no secrets or family data in the repository or evidence; permanent deletion stays off |
 | Responsive and accessibility checks | **Passed** at four sizes, and at six for reward forms and confirmations (§3.3) |
 | Rollback procedure | **Designed, reviewed and rehearsed on synthetic data** (write freeze). Its use depends on §5.5 |
@@ -440,7 +440,7 @@ Engineering items still open, none of them functional: the eight smaller build d
 | Branch | `claude/percy-v1-rc` |
 | Base | `claude/migrate-base64-percy-code-PNAym` (the default and production branch, at `498e798`) |
 | Contents | #57, #58, #59, #60, #61, #62, #63 and #64. The base is an ancestor, so the candidate only adds commits |
-| Exact commit | Code and tests: `3f9747f`. The head of the release-candidate pull request is the documents-only commit after it (this file and the checklist); a file cannot name its own commit, so the pull request and the hand-back carry that SHA, read from GitHub, with CI's result at it |
+| Exact commit | Code and tests: `07aa9fc`. The head of the release-candidate pull request is the documents-only commit after it (this file and the checklist); a file cannot name its own commit, so the pull request and the hand-back carry that SHA, read from GitHub, with CI's result at it |
 | Migrations | 014, 015, 016, 017 |
 | Railway files | No `railway.json` or `railway.toml` is tracked |
 | Deployment plan | Release checklist §4 and §5 |
