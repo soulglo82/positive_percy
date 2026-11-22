@@ -238,7 +238,8 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep saving</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setConfirmEnd(false); save(true); }}>Save reward</AlertDialogAction>
+            {/* "End savings", not "Save reward": beside "Keep saving" two "save" labels meant opposite things (owner's handover, 22 Nov, W3). It saves the reward and ends the savings, as before. */}
+            <AlertDialogAction onClick={() => { setConfirmEnd(false); save(true); }}>End savings</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

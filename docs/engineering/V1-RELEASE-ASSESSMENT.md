@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.2 |
 | Issued | 2026-11-22 |
 | Owner | Percy V1 engineering |
 | Status | For the owner's release decision. Nothing has been merged or deployed |
@@ -11,14 +11,21 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.2 | 2026-11-22 | Owner's final release handover: the real-backup restore is waived as a mandatory gate (owner-accepted residual risk); the November change is explained (approved maintenance); four targeted items handled (§3.4); the points figure applied consistently to Home and Children at the owner's instruction; operational and privacy findings (§5) |
 | 1.1 | 2026-11-22 | Owner's visual decisions built (icons, default Quick Points, Child View points box); the design critique of every page (§3.2); the owner's review of #65 (rollback write freeze, the cause of the archive change not called deliberate, legal and privacy split from technical security); the points-star statement corrected |
 | 1.0 | 2026-11-22 | First issue: the final integrated validation of V1 (#57–#64), its findings, the open gates and the release candidate |
 
 ## 1. Recommendation
 
-**Conditional go. Not ready to deploy.** The engineering validation is complete at the commit named in §2. Deployment waits on gates only the owner can pass (§5): the restore and reconciliation of a real production backup, a fresh and complete backup with the 10–11 November change explained, the owner's visual sign-off, access to run the rollback scripts, the legal and privacy review, and approval of the exact commit. The merge is the deployment, so all of them come before it.
+**Go, on the owner's explicit approval of the exact commit, after three checks on the day.** Engineering validation is complete at the commit named in §2, and the owner has decided the two gates that were open on data (§5.2, §5.3). What remains is short and is not development:
 
-A passing write-freeze rehearsal is **not** evidence about real data. It does not replace the restore and reconciliation of a production backup.
+1. a fresh backup, checked by an authorised operator (§5.2);
+2. proof, with a read-only command, that a trusted operator can run SQL on the production database, so the rollback write freeze is usable (§5.5);
+3. the owner's visual acceptance of the screens (§5.6).
+
+Deploying this version to the existing production environment is a separate decision from opening the product to the public. No privacy policy, contact details or list of data processors exists in the app or this repository (§5.6); that does not change with this release, and it is a matter for the owner before any public launch.
+
+The merge is the deployment. Nothing is merged without the owner's approval of the exact commit.
 
 ## 2. What was validated
 
@@ -190,6 +197,20 @@ The test can fail: narrowing the form dialog on the smallest phones made it red 
 
 **The 320 px dialog decision.** The design critique found dialogs on a phone drawn as a square band from edge to edge. The fix is a card with a margin and rounded corners. At 320 px that margin took a few pixels the reward form's icon row needs (the clipped-text check caught it), so below 360 px form dialogs stay full width; from 360 px up they are the card. Confirmations are the card at every width. This is a targeted fix, not a redesign.
 
+### 3.4 The owner's final release handover, 22 November: targeted items
+
+| Item | Finding | Outcome |
+| --- | --- | --- |
+| W3 | The ending-savings confirmation had "Save reward" beside "Keep saving": two "save" labels with opposite results | **Fixed:** "End savings" and "Keep saving". The action is unchanged (it saves the reward and ends the savings); a test asserts the two labels |
+| E1 | At 320 px a goal's details ran to three lines beside its button, and "90 points" wrapped in its tile | **Fixed:** below 360 px the action sits under the text. The figures are now the shared points figure (below), which does not wrap |
+| E5 | Scrolled content in a dialog was cut in mid-air under the header | **Fixed:** a line under the dialog header, as there is above its footer |
+| D2 | Home's Rewards dialog: are "Spend" and "Not this time" at least 44 px? | **Confirmed, no change:** they are 44 px on touch screens (the browser tests measure this dialog on the touch phone and tablet) and 36 px with a mouse, like the app's other compact buttons. The critique measured a mouse capture |
+| Consistency (owner, in the session) | "Why is the home page and child page points / icons different? The changes we just made … need to be consistently applied" | **Fixed:** one shared figure (`src/components/PointsFigure.jsx`) on Child View, Home's "Little wins" and the Children weekly-target card: the icon in a tile, the figure with its unit, the approved label beneath. Labels are unchanged per screen. The boxes-inside-a-box tiles on those two cards are gone with it (critique D1) |
+
+**Not reopened** (handover): Activity "This week" stays centred; Child View says "Ready to use"; Quick Points keep their layout and new-family defaults; existing families keep their Quick Points; no child login, session, app or device mode.
+
+**Deferred to V1.1 (issue #66)** at the owner's direction: the remaining cosmetic items of §3.2 (W1, W2, W4–W6; D2's nested boxes, D3–D5; E2–E4, E6–E8).
+
 ### Accepted deferrals (not in V1)
 
 - Permanent family deletion (Batch C) stays off; there is no code path for it in the release candidate.
@@ -273,6 +294,19 @@ No defect in the app code. Four findings, all in the tests, all fixed:
 
 **Deliberate breaks shown red in this round:** five for the tile layout, two for the tile guard's additions, seven for the first review's fixes, one for the Undo handler, three for the points figure, two for the six-width dialog test.
 
+### 4.6 Focused independent review of the final-handover changes
+
+Scope: the five small changes of §3.4 and nothing else. **No blocking defect.** The review confirmed that `server/`, `server/migrations/` and `scripts/` are untouched, and that the ending-savings action is unchanged.
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Should fix | Home's weekly figure would print "0 / null" for a child with no weekly target stored | Fixed: it shows 0; a test covers it |
+| 2 | Should fix | The new "points" unit on the Children card had no test for the singular | Fixed: "1 point Available now" is asserted |
+| 3 | Note | The 320 px goal-row change (E1) and the dialog header line (E5) have no automated check | **Recorded, not fixed.** Both are visible in the screenshots (`home-320.png`; any dialog). Layout class changes only |
+| 4 | Note | Children now has two elements carrying the "available" marker when the savings dialog is open | Recorded; nothing depends on it. The tests that use the marker are scoped to one screen |
+| 5 | Note | An unused marker on the weekly figure | Removed |
+| 6 | Note, for the owner | Side effects of the shared figure beyond the icons: "18" is large with "/ 25" beside it as the unit; Children's "Available now" now reads "90 points"; the tiles' borders are gone; the two figures sit one under the other below 640 px | For the owner's visual sign-off |
+
 ## 5. Gates: what is complete and what is not
 
 ### 5.1 Complete: engineering validation
@@ -286,20 +320,18 @@ No defect in the app code. Four findings, all in the tests, all fixed:
 
 Engineering items still open, none of them functional: the eight smaller build defects from the design critique (§3.2, E1–E8) and the tests listed as missing in §4.5 (#8).
 
-### 5.2 Not complete: production backup (G4) — owner
+### 5.2 Production backup (G4)
 
-- The 10–11 November change (families 9 → 2, children 12 → 6, users 10 → 2; archive 8.68 MB → 646 kB) is consistent with records removed directly in the database. **Who and why is unproven; whether they were real families is unknown.**
-- The live counts have not been compared with a restored copy.
-- The 10 November archive is to be kept under restricted storage until its status is decided.
-- A fresh, complete backup must be taken and checked before the merge.
-- Detail: `V1-OPERATIONS-BACKUP.md` §1.
+- **The 10–11 November change: explained and closed.** Owner's decision, 22 November: it was approved production maintenance on 11 November (two families kept, seven removed with their orphan records; recorded outcome 2 families, 6 children, 3 photos), per the owner's master backlog v2.4 and the 11 November handover. That record is outside this repository; it is recorded here on the owner's statement and agrees with the archive figures. No further investigation is a condition of release.
+- **The 10 November archive** is handled under the privacy and retention obligations that apply to it, and is never exposed in GitHub or logs.
+- **Still to do on the day:** a fresh backup, checked by an authorised operator (the object exists, a plausible size, `gzip -t` and a tar listing pass, a copy retrieved and kept securely). No full restore is required. Last run read from Railway's log: 21 November, 19:02 UTC, "Backup archive file is valid", 655.45 kB, uploaded.
 
-### 5.3 Not complete: migration reconciliation on real data (G3) — owner
+### 5.3 Migration reconciliation on real data (G3): waived by the owner
 
-- Migrations 014–017 have been reconciled on **synthetic data only** (41 checks).
-- The restore of a real production archive into an isolated database, and its reconciliation, has **not been run**. It needs the archive, read-only storage credentials and a trusted machine, none of which may enter an engineering session, GitHub, logs or chat.
-- It must be run at the exact commit to be approved. Command: `V1-OPERATIONS-BACKUP.md` §4.
-- The write-freeze rehearsal does not stand in for it.
+- **Owner's decision, 22 November: not a mandatory V1 gate.** It has not been run.
+- **Recorded as an owner-accepted residual risk:** migrations 014–017 have been proved on synthetic data only (41 restore-tool checks, migration-order tests, the full suites, CI). They have not been tried on real production data.
+- The drill remains available as an optional extra assurance (`V1-OPERATIONS-BACKUP.md` §4).
+- What limits the risk: each migration runs in one transaction and a failure stops the start, so a migration that cannot apply leaves the old version serving; 014–017 add tables and columns and do not rewrite existing rows; the post-deploy checks compare counts and each child's points.
 
 ### 5.4 Not complete: branding and licensing (G6) — owner
 
@@ -309,22 +341,26 @@ Engineering items still open, none of them functional: the eight smaller build d
 - For sign-off, new on 22 November: the restyled behaviour icons (twelve of the sixteen are engineering's same-subject mapping) and the piggy bank on Child View. All are Phosphor icons at the pinned commit, MIT.
 - Not needed for V1: a dedicated points star (none is drawn in the app).
 
-### 5.5 Not complete: operational (G5) — owner
+### 5.5 Operational readiness (G5)
 
-- The owner's access to run SQL on the production database through Railway, tried once with the read-only status script. Without it there is no safe rollback once savings are in use.
-- That Railway keeps the old deployment serving when a new one fails its health check (documented behaviour; not tested).
-- Railway's build, start and health-check settings unchanged on the day (read on 22 November).
-- Separate changes, not part of this release and not applied: the backup-job hardening (one blocking finding) and the 35-day expiry rule. Neither is to be enabled before the 10 November archive's status is decided.
-
-### 5.6 Not complete: owner sign-offs
-
-| Gate | What is needed |
+| Check | Result |
 | --- | --- |
-| G2 Visual | The owner's acceptance of the screens as built, including the three changes of 22 November, and a decision on the open wording (W1–W6) and design points (D1–D5) in §3.2 |
-| G7b Legal and privacy for a public launch | **Not reviewed; no engineering check covers it.** The privacy policy, the list of data processors (Railway, Cloudflare R2 and any other), the rights and contact wording, and the procedure for a privacy request while permanent deletion is switched off. The owner decides whether it blocks V1 deployment or only a public launch |
-| G8 Release | The owner's approval of the exact commit, after the gates above |
+| Railway app service settings (read 22 November, read-only) | Source branch `claude/migrate-base64-percy-code-PNAym`; build `npm install && npm run build`; start `npm start`; health check `/api/health`, 120 s; one replica; it deploys on push and does not wait for CI. Unchanged since the first read |
+| Live deployment | `498e798`, healthy; Railway reports it can be redeployed and rolled back to |
+| Railway configuration in the code | None: no `railway.json` or `railway.toml` is tracked |
+| Migration order | 014, 015, 016, 017 by name, each once, each in its own transaction. They contain no statement that inserts, updates or deletes rows (searched, with a control on earlier migrations that do) |
+| Rollback and fix-forward procedure | Written and rehearsed on synthetic data: release checklist §5, `V1-ROLLBACK-FREEZE-DESIGN.md`, `scripts/ops/` |
+| **Open: a trusted operator's access to the production database** | To be proved with the read-only `scripts/ops/write-freeze-status.sql` (expected answer `NOT FROZEN`). The freeze itself is not to be turned on for the test. Engineering has no database access and cannot do this |
+| Backup-job hardening; the 35-day expiry rule | Separate operational backlog items, not V1 dependencies (owner). Neither is applied |
 
-**Blocks permanent deletion later, not V1:** the backup hardening and the expiry rule.
+### 5.6 Owner approvals
+
+| Subject | State |
+| --- | --- |
+| Visual acceptance (G2) | **For the owner.** The screens as built are in `evidence/v1-integrated/built/` and `evidence/v1-savings/`: Home, Children, Activity, Rewards, Settings, Today's Goals, savings and redemption, Fox 1A and the icons. The Freepik map is absent |
+| Branding and licensing (G6) | Runtime assets match the register; nothing generated or redrawn; the Freepik map stays out until its licence is cleared. For the owner's sign-off: Fox 1A as rendered; the restyled behaviour icons (twelve of sixteen are engineering's same-subject mapping); the piggy-bank and target icons on the points figures. All are Phosphor icons at the pinned commit, MIT |
+| Privacy and legal (G7b) | **Engineering's finding, not a legal opinion.** (1) No privacy policy, terms, contact details or list of data processors exists in the app or this repository; an earlier note lists "final reviewed policy text … and DPIA before publishing" as outstanding (`docs/BATCH_C_PR1_IMPLEMENTATION.md`). (2) Settings shows "Privacy & account controls" as "Review"; it is a label, not a feature. (3) Permanent family deletion is off; a family can download its data (JSON and a PDF report), and removal is by hand. No written procedure for a privacy request exists in the repository. (4) Data is held by Railway (the app runs in its Singapore region; the database is a Railway service in the same project, whose region was not read) and Cloudflare R2 (backups); a search of the app and server code found no analytics or other third-party service. (5) Anyone who reaches the app can create a family (ten per hour per address); there is no closed registration, so "restricting public acquisition" means not publicising the address. **None of this changes with V1.** Whether it must be settled before this deploy or only before a public launch is the owner's decision |
+| Release (G8) | The owner's approval of the exact commit |
 
 ## 6. Brand and licensing
 

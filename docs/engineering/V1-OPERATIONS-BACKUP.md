@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.2 |
 | Issued | 2026-11-22 |
 | Owner | Percy V1 engineering. Every change to the live bucket or the backup service is the owner's decision |
 | Status | Findings and proposals. Nothing here has been changed in production |
@@ -11,6 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.2 | 2026-11-22 | Owner's final release handover: the 10–11 November change is explained (approved maintenance on 11 November, per the owner's backlog record); the real-backup restore is no longer a mandatory V1 gate; backup hardening and the expiry rule are separate backlog items, not V1 dependencies; a fresh backup is checked before the deploy without a full restore |
 | 1.1 | 2026-11-22 | Owner's review of #65: the cause of the 10–11 November change is not called deliberate or confirmed; the 10 November archive is held under restricted storage until its status is decided; no expiry before that decision and the backup-job hardening; no indefinite unreviewed retention afterwards |
 | 1.0 | 2026-11-22 | First issue: the 10–11 November archive-size change, the retention proposal, the review of the backup hardening PR and its deployment plan |
 
@@ -39,13 +40,11 @@
 | On 11 November (15:50 UTC) PR #39 added a guard that rejects sessions "for removed families … preventing old tokens from writing orphan rows" | `docs/BATCH_C_PR1_IMPLEMENTATION.md` on the default branch | Families had been removed outside the app by then, and it was known at the time |
 | Railway keeps no deploy or request logs for 10–11 November | Railway log queries, 21 and 22 November | Nothing more can be read from the platform |
 
-**Conclusion.** The evidence is consistent with the records of seven families (with their children, users and photos) having been removed directly in the database on 11 November. **Who removed them, and why, is unproven.** Whether those families were real or test data is not known. Nothing engineering can read settles either point, so this item is not closed.
+**Conclusion (owner's decision, 22 November, final release handover).** The change is **explained: approved production maintenance on 11 November 2026**, not an unexplained deletion. The owner's record is the Positive Percy master backlog v2.4 (`claude/backlog-master.md`) and the 11 November handover in the owner's Positive Percy project: two specified families were kept, seven other families and their orphan records were removed, and the recorded outcome was 2 families, 6 children and 3 photos. That agrees with the archive inspection above (families 9 → 2, children 12 → 6, uploads 14 → 3) and with the archive shrinking from 8.68 MB to 646 kB, most of it photographs.
 
-**What closes the item** (owner):
-1. Establish who removed the seven families on 11 November and why, and whether they were real families or test data.
-2. Give the live counts of families, children and users (a counts-only query, §5), to compare with the restored copy's counts from the drill.
-3. Decide what happens to the 10 November archive. **Until then, keep it under restricted storage** (access limited to the owner; not copied to GitHub, CI, logs or chat). It is the only copy of the removed families' data. If the removal was a clean-up of test data, the archive can expire. If any of it was a real family's data removed at their request, it should not be kept; if removed by mistake, it is the only way back. **A retention rule (§2) would delete it 35 days after 10 November.**
-4. Once its status is decided, do not leave the archive, or the bucket, on indefinite unreviewed retention: apply the expiry rule (§2) or delete the archive deliberately.
+That record is not in this repository and was not read by engineering; it is recorded here on the owner's statement. Earlier versions of this document said the cause was unproven. That is withdrawn, and **no further investigation is a condition of release**.
+
+**Still to be handled (owner):** the 10 November archive is the only copy of the removed families' data. It is to be kept or deleted according to the privacy and retention obligations that apply to it, and never copied into GitHub, CI, logs or chat. The expiry rule in §2 would delete it 35 days after 10 November.
 
 ## 2. R2 retention
 
@@ -98,7 +97,7 @@ Reviewed independently on 22 November at branch tip `5c79d6f` (nine commits ahea
 
 ## 4. The restore drill on real data
 
-Not run: it needs the archive, read-only R2 keys and a local Docker daemon on a trusted machine, and none of those may come into an engineering session or GitHub. The synthetic tests (41 checks in CI) prove the tool, not the data.
+**No longer a mandatory V1 gate (owner's decision, 22 November).** It has not been run: it needs the archive, read-only R2 keys and a local Docker daemon on a trusted machine, and none of those may come into an engineering session or GitHub. The synthetic tests (41 checks in CI) prove the tool, not the data. Launching without it is an **owner-accepted residual risk**: the migrations 014–017 have not been tried on real production data. The drill remains available as an optional extra assurance.
 
 **The owner runs** (at the release-candidate commit named in the release assessment):
 

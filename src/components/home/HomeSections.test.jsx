@@ -40,6 +40,15 @@ describe('LittleWins', () => {
     const { container } = wrap(<LittleWins child={lara} />);
     expect(container.textContent).toContain('18 / 25');
     expect(container.textContent).toContain('90 points');
+    // The same figure as Child View and Children (owner, 22 Nov): icon, figure with its unit, approved label.
+    expect([...container.querySelectorAll('[data-figure]')].map((f) => f.querySelector('p').textContent))
+      .toEqual(['18 / 25 This week', '90 points Available now']);
+    expect([...container.querySelectorAll('[data-figure] [data-icon]')].map((i) => i.getAttribute('data-icon')))
+      .toEqual(['phosphor:target:duotone', 'phosphor:piggy-bank:duotone']);
+  });
+  it('a child with no weekly target stored shows 0, never "null" (code review)', () => {
+    const { container } = wrap(<LittleWins child={{ ...lara, weekly_target: null, week_points: 0 }} />);
+    expect(container.querySelector('[data-figure] p').textContent).toBe('0 / 0 This week');
   });
   it('1 available point is singular', () => {
     const { container } = wrap(<LittleWins child={{ ...lara, available_points: 1 }} />);

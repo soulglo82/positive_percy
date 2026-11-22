@@ -34,7 +34,7 @@ const DialogContent = React.forwardRef(({ className, children, ...props }, ref) 
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
 const DialogHeader = ({ className, ...props }) => (
-  <div className={cn("flex shrink-0 flex-col space-y-1.5 px-6 pb-2 pr-14 pt-6 text-left", className)} {...props} />
+  <div className={cn("flex shrink-0 flex-col space-y-1.5 border-b border-border px-6 pb-3 pr-14 pt-6 text-left", className)} {...props} />
 )
 DialogHeader.displayName = "DialogHeader"
 

@@ -297,10 +297,12 @@ describe('code review of the screens', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
     const alert = await screen.findByRole('alertdialog');
     expect(onSubmit).not.toHaveBeenCalled();
+    // One button keeps the savings, the other ends them; neither is a second "save" (owner's handover 22 Nov, W3).
+    expect(within(alert).getAllByRole('button').map((b) => b.textContent)).toEqual(['Keep saving', 'End savings']);
     fireEvent.click(within(alert).getByRole('button', { name: 'Keep saving' }));
     expect(onSubmit).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
-    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Save reward' }));
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'End savings' })); // not "Save reward": beside "Keep saving" that read as two saves (W3)
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     // §21: the confirmation is the snapshot shown, not a boolean.
     expect(onSubmit.mock.calls[0][0]).toMatchObject({ is_bigger_goal: false, confirm_end_savings: {
@@ -449,7 +451,7 @@ describe('§21: the confirmation is bound to what the parent saw', () => {
     const alert = await screen.findByRole('alertdialog');
     expect(alert.textContent).toContain('Lara: 70 saved points will become available again.');
     expect(alert.textContent).toContain('Omar: 5 saved points will become available again.');
-    fireEvent.click(within(alert).getByRole('button', { name: 'Save reward' }));
+    fireEvent.click(within(alert).getByRole('button', { name: 'End savings' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
     expect(onSubmit.mock.calls[1][0].confirm_end_savings).toEqual(serverSaw.snapshot);
   });

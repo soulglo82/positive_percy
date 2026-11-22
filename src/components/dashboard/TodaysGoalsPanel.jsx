@@ -126,7 +126,8 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
                 const pending = pendingIds.includes(goal.id);
                 const points = goal.category_points;
                 return (
-                  <li key={goal.id} className="flex items-center gap-3 py-3">
+                  <li key={goal.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
+                    {/* Below 360px the action goes under the text: beside it, the details ran to three lines ("Learning · / Today · +1 / point") (owner's handover, 22 Nov, E1). */}
                     {/* The category icon stays the same when the goal is done (register completed_goal). */}
                     <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center text-primary">
                       <CategoryIcon iconKey={goal.category_icon_key} className="w-6 h-6" />
@@ -140,11 +141,11 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
                     </div>
                     {completed ? (
                       <span ref={el => { doneRefs.current[goal.id] = el; }} tabIndex={-1}
-                        className="inline-flex shrink-0 items-center gap-1.5 min-h-11 rounded-md border border-earn bg-earn-soft px-4 text-sm font-semibold text-earn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        className="inline-flex w-full xs:w-auto shrink-0 items-center justify-center gap-1.5 min-h-11 rounded-md border border-earn bg-earn-soft px-4 text-sm font-semibold text-earn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                         <PercyIcon id="phosphor:check-circle:duotone" className="w-4 h-4" /> Done
                       </span>
                     ) : (
-                      <Button variant="outline" size="goal" className="shrink-0 px-4 text-primary"
+                      <Button variant="outline" size="goal" className="w-full xs:w-auto shrink-0 px-4 text-primary"
                         disabled={pending || !points}
                         aria-label={'Complete ' + goal.title}
                         onClick={() => complete(goal)}>

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.3 |
+| Version | 1.4 |
 | Issued | 2026-11-20 |
 | Owner | Percy V1 engineering |
 | Status | Release candidate prepared. No merge or deployment is authorised by this document |
@@ -11,6 +11,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.4 | 2026-11-22 | Owner's final release handover: G3 (real-backup restore) is waived as a mandatory gate and recorded as an owner-accepted residual risk; G4's November change is explained (approved maintenance); the pre-deploy backup check is spelled out and needs no full restore; database access is proved with a read-only command; deployment to the existing environment is distinguished from a public launch |
 | 1.3 | 2026-11-22 | Owner's review of #65: rollback now requires a write freeze (§5, rehearsed); G7 split into technical security and legal/privacy; the savings check joins the post-deploy steps |
 | 1.2 | 2026-11-22 | Final validation. Savings is built (#64), so the release adds migrations 014–017. Gates restated as G1–G8 with owner and state. The release order is now one release-candidate pull request. Rollback rehearsed and its limits recorded (§5). Backup and retention items point to `V1-OPERATIONS-BACKUP.md` |
 | 1.1 | 2026-11-21 | Owner decision: V1 launches with all three core features, savings included; the reduced first release is removed. Restored-backup run now one command (#60, D1 §18) |
@@ -48,23 +49,26 @@
 | --- | --- | --- | --- |
 | **G1 Functional** | Every V1 journey works on the combined build; no critical or major defect open | Engineering | **Passed** on the release candidate (assessment §3) |
 | **G2 Visual** | The owner accepts the integrated pack at the four sizes | Owner | Engineering review done and defects fixed. Owner asked for two changes on 22 November (assessment §3.1); **open** |
-| **G3 Data preservation** | The drill on a real production archive exits 0 with every step unchanged, at the release-candidate commit | Owner runs it (`V1-OPERATIONS-BACKUP.md` §4); engineering reads the counts | **Open.** Synthetic proof only |
-| **G4 Backup safety** | A fresh backup exists, is whole, and the 10–11 November change (#44) is explained | Owner | **Open.** Cause inferred, not confirmed (`V1-OPERATIONS-BACKUP.md` §1) |
+| **G3 Data preservation** | The restore of a real production archive and its reconciliation | Owner | **Waived as a mandatory gate (owner, 22 November).** Not run. Owner-accepted residual risk: migrations 014–017 are proved on synthetic data only (41 restore-tool checks, migration-order tests, CI). The drill stays available as an optional extra |
+| **G4 Backup safety** | A fresh, whole backup before the deploy; the 10–11 November change explained | Owner or a trusted operator | **November change: explained** (approved maintenance on 11 November, the owner's backlog record; `V1-OPERATIONS-BACKUP.md` §1). **Fresh backup: a deploy-day step** (§4 step 3) |
 | **G5 Operational** | Railway settings unchanged; `railway.json` absent; health check known; rollback with a write freeze rehearsed; the owner can run SQL on the production database | Engineering; owner for the database access and the Railway settings | Freeze rehearsed on synthetic data (§5). **Open:** the owner's database access, tried once read-only |
 | **G6 Assets** | Runtime assets match the register; gated artwork stays out; no AI-generated replacement | Engineering; owner for the open artwork items | Register and gate **passed**. Fox 1A live fidelity sign-off and the final points-star are **open with the owner** and do not change code |
 | **G7a Security (technical)** | Family isolation holds; no secrets or family data in the repository, logs or evidence; permanent deletion stays off | Engineering | **Passed** (assessment §3 and §6). Privacy wording and shared carers stay "Review" and "Planned" |
 | **G7b Legal and privacy for a public launch** | Privacy policy, data-processor list, rights and contact wording, and the privacy-request procedure while permanent deletion is off | Owner, with legal advice | **Not reviewed.** Separate from G7a; no engineering check covers it (assessment §5) |
 | **G8 Release** | The owner approves the exact tested release-candidate commit | Owner | **Open** |
 
-**Not gates for V1.** Backup hardening (soulglo82/postgres-s3-backups PR #1) and the R2 expiry rule are separate changes (`V1-OPERATIONS-BACKUP.md` §2–§3). They must be done before permanent family deletion is ever enabled; V1 needs only one fresh, whole backup taken before the deploy. The Freepik map needs its licence before it is shown; V1 ships without it.
+**Not gates for V1 (owner, 22 November: separate operational backlog items, not V1 dependencies).** Backup hardening (soulglo82/postgres-s3-backups PR #1) and the R2 expiry rule are separate changes (`V1-OPERATIONS-BACKUP.md` §2–§3). They must be done before permanent family deletion is ever enabled; V1 needs only one fresh, whole backup taken before the deploy. The Freepik map needs its licence before it is shown; V1 ships without it.
 
 ## 4. Release order (when the gates pass)
 
 1. **Scope (owner decision, 2026-11-21):** V1 launches with all three core features, including saving points towards bigger goals.
 2. **One release-candidate pull request** from `claude/percy-v1-rc` into the default branch. It contains #57, #58, #59, #60, #61, #62, #63 and #64. The stacked PRs stay open as the review record and close when the release candidate merges. The exact commit, and CI at that commit, are in the assessment §7.
 3. **Before merging** (the merge deploys):
-   - G3: the drill has passed at this exact commit;
-   - a fresh backup: wait for the 19:02 UTC run or trigger one, then confirm in the R2 dashboard that the new object exists and its size is in line with the last days (about 655 kB on 21 November). Download it and keep it privately until the release has settled;
+   - **a fresh backup, checked by an authorised operator** (no full restore is needed):
+     - wait for the 19:02 UTC run or trigger one, and read its log: it must end "Backup uploaded" and "DB backup complete" (the 21 November run did, at 655.45 kB);
+     - the new object exists in the R2 bucket and its size is plausible (in line with the last days);
+     - the operator downloads it and runs `gzip -t <file>` and `tar -tzf <file> > /dev/null`: both must exit 0;
+     - the downloaded copy is kept securely until the release has settled. It is never put in GitHub, CI, logs or chat;
    - the Railway app service's settings are as in §1 (build `npm install && npm run build`, start `npm start`, health check `/api/health`);
    - no `railway.json` or `railway.toml` at the head. This is checked once for the approved commit (assessment §7); it cannot change without changing the commit;
    - CI (`build-and-test`, `ui`) is green at the head being merged, read from GitHub;
@@ -83,7 +87,7 @@
 
 ## 5. Rollback and recovery
 
-**This section does not replace gate G3.** The write-freeze rehearsal ran on synthetic data and covers one risk, an app rollback after V1 has been used. The restore of a real production backup and its reconciliation are separate, are the owner's to run, and have not been run.
+**What the rehearsal is not.** It ran on synthetic data and covers one risk, an app rollback after V1 has been used. It says nothing about real production data. The restore of a real backup is no longer a mandatory gate (owner, 22 November), and this rehearsal is not a stand-in for it.
 
 **An app rollback is safe only with writes frozen** (owner's review of #65). Once V1 has been used to save points, the production app at `498e798` treats saved points as spendable, deletes or reassigns a bigger goal with no "savings ended" record, and undoes a goal redemption without returning its savings. The rehearsal showed each of these on a database with writes on. "Keep a rollback short" is not a control and is withdrawn.
 

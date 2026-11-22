@@ -58,6 +58,13 @@ beforeEach(() => {
 });
 
 describe('Children page (§2)', () => {
+  it('1 available point is singular on the weekly-target card (code review)', async () => {
+    state.children = [{ ...lara, available_points: 1 }];
+    mount(Children);
+    await screen.findByRole('heading', { name: "Lara's page" });
+    expect([...document.querySelectorAll('[data-figure]')].map((f) => f.querySelector('p').textContent)[1]).toBe('1 point Available now');
+  });
+
   it('approved copy and server figures for the oldest child', async () => {
     mount(Children);
     expect(await screen.findByRole('heading', { name: 'Children' })).toBeTruthy();
@@ -66,9 +73,12 @@ describe('Children page (§2)', () => {
     expect(screen.getByText('18 of 25 weekly points · 90 available')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'View as child' }).getAttribute('href')).toBe('/childview?child=c1');
     expect(screen.getByRole('heading', { name: "Lara's weekly target" })).toBeTruthy();
-    expect(screen.getByText('18 / 25')).toBeTruthy();
-    expect(screen.getByText('Earned this week')).toBeTruthy();
-    expect(screen.getByText('Available now')).toBeTruthy();
+    // The same figure as Child View's points card (owner, 22 Nov): an icon, the
+    // figure with its unit, and the approved label beneath.
+    const figures = [...document.querySelectorAll('[data-figure]')].map((f) => f.querySelector('p').textContent);
+    expect(figures).toEqual(['18 / 25 Earned this week', '90 points Available now']);
+    expect([...document.querySelectorAll('[data-figure] [data-icon]')].map((i) => i.getAttribute('data-icon')))
+      .toEqual(['phosphor:target:duotone', 'phosphor:piggy-bank:duotone']);
     expect(screen.getByText("7 to reach this week's target")).toBeTruthy();
     expect(screen.getByText('7 weekly points to go')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'All rewards' })).toBeTruthy();

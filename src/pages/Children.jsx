@@ -19,6 +19,7 @@ import { useRewardMutations } from '@/hooks/useRewardMutations';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PercyIcon from '@/components/icons/PercyIcon';
+import PointsFigure from '@/components/PointsFigure';
 import { FamilyStrip } from '../components/home/HomeSections';
 import WelcomeCard from '../components/home/WelcomeCard';
 import AddChildModal from '../components/child/AddChildModal';
@@ -161,15 +162,12 @@ export default function Children() {
           <SectionHead title={`${child.name}'s weekly target`}>
             <Button variant="outline" aria-label={`Edit ${child.name}'s weekly target`} onClick={() => setEditingChild(true)}>Edit</Button>
           </SectionHead>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-md border border-border p-3">
-              <p className="font-display font-extrabold text-title text-foreground tabular-nums">{week} / {target}</p>
-              <p className="text-sm font-medium text-muted-foreground">Earned this week</p>
-            </div>
-            <div className="rounded-md border border-border p-3">
-              <p className="font-display font-extrabold text-title text-foreground tabular-nums">{available}</p>
-              <p className="text-sm font-medium text-muted-foreground">Available now</p>
-            </div>
+          {/* The same figure as Child View's points card and Home's (owner, 22 Nov). */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <PointsFigure icon={<PercyIcon id="phosphor:target:duotone" className="h-7 w-7" />}
+              value={week} unit={`/ ${target}`} label="Earned this week" />
+            <PointsFigure icon={<PercyIcon id="phosphor:piggy-bank:duotone" className="h-7 w-7" />}
+              value={available} valueProps={{ 'data-available': true }} unit={available === 1 ? 'point' : 'points'} label="Available now" />
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden" aria-hidden="true">
             <div className="h-full rounded-full bg-sunrise" style={{ width: pct(week, target) + '%' }} />

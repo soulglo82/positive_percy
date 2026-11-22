@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PercyIcon from '@/components/icons/PercyIcon';
+import PointsFigure from '@/components/PointsFigure';
 import BehaviourTileParts, { TILE_GRID_EVEN, TILE_LAYOUT } from '@/components/home/BehaviourTile';
 import RewardIcon from '@/components/rewards/RewardIcon';
 import ChildAvatar from '@/components/child/ChildAvatar';
@@ -77,15 +78,12 @@ export function LittleWins({ child }) {
           <h2 className="font-display font-bold text-lg text-primary">Little wins, big adventures!</h2>
           <p className="text-sm text-muted-foreground">Every positive step counts.</p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-md border border-border p-3">
-            <p className="font-display font-extrabold text-title text-foreground tabular-nums">{week} / {child.weekly_target}</p>
-            <p className="text-sm font-medium text-muted-foreground">This week</p>
-          </div>
-          <div className="rounded-md border border-border p-3">
-            <p className="font-display font-extrabold text-title text-foreground tabular-nums">{available} {available === 1 ? 'point' : 'points'}</p>
-            <p className="text-sm font-medium text-muted-foreground">Available now</p>
-          </div>
+        {/* The same figure as Child View's points card (owner, 22 Nov): one under the other on a phone, side by side from 640px. */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PointsFigure icon={<PercyIcon id="phosphor:target:duotone" className="h-7 w-7" />}
+            value={week} unit={`/ ${child.weekly_target ?? 0}`} label="This week" />
+          <PointsFigure icon={<PercyIcon id="phosphor:piggy-bank:duotone" className="h-7 w-7" />}
+            value={available} valueProps={{ 'data-available': true }} unit={available === 1 ? 'point' : 'points'} label="Available now" />
         </div>
       </CardContent>
     </Card>

@@ -20,6 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/brand/Logo';
 import PercyIcon from '@/components/icons/PercyIcon';
+import PointsFigure from '@/components/PointsFigure';
 import RewardIcon from '../components/rewards/RewardIcon';
 import { FamilyStrip } from '../components/home/HomeSections';
 import GoalProgress from '../components/savings/GoalProgress';
@@ -164,24 +165,9 @@ export default function ChildView() {
           <CardContent className="p-4 sm:p-5 space-y-3">
             <h2 className="font-display font-bold text-lg text-primary break-words">You're doing great, {child.name}!</h2>
             {/* One figure, with its picture (design §10). The saved figure is
-                in "My next big adventure" below, once. The figure and its unit
-                share a baseline; the label starts at the figure's left edge
-                (e2e/checks.js measures every [data-figure]). */}
-            <div className="flex items-center gap-3" data-figure>
-              <span aria-hidden="true" data-figure-part="icon" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-warning text-primary">
-                {/* The same tile as the goal's picture below (RewardIcon md), so the two cards line up. */}
-                <PercyIcon id="phosphor:piggy-bank:duotone" className="h-7 w-7" />
-              </span>
-              <p className="min-w-0">
-                <span className="flex flex-wrap items-baseline gap-x-1.5">
-                  <span data-available data-figure-part="value" className="font-display font-extrabold text-total text-foreground">{available}</span>
-                  {' '}
-                  <span data-figure-part="unit" className="font-semibold text-foreground">{pointsWord(available)}</span>
-                </span>
-                {' '}
-                <span data-figure-part="label" className="block text-sm font-medium text-muted-foreground">Ready to use</span>
-              </p>
-            </div>
+                in "My next big adventure" below, once. */}
+            <PointsFigure icon={<PercyIcon id="phosphor:piggy-bank:duotone" className="h-7 w-7" />}
+              value={available} valueProps={{ 'data-available': true }} unit={pointsWord(available)} label="Ready to use" />
           </CardContent>
         </Card>
 
