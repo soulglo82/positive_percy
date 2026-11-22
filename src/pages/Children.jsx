@@ -249,17 +249,37 @@ export default function Children() {
       <Card>
         <CardContent className="p-4 sm:p-5 space-y-3">
           <SectionHead title="Achievements" />
-          <div className="grid gap-3 xs:grid-cols-2">
-            <div className="rounded-md border border-border p-3">
-              <p className="font-semibold text-foreground">Goals completed</p>
-              <p className="text-sm text-muted-foreground">Recognise effort over time</p>
-              <p className="font-display font-bold text-lg text-foreground tabular-nums">{doneToday} today</p>
+          {/* Two plain rows with a picture each, not two boxes inside the card
+              (owner, 22 Nov: "cramped and looks bad"; V1-B design §11). One
+              under the other on a phone, with a line between; side by side
+              from 640px. The weekly sentence became a bar at the owner's word. */}
+          <div className="grid gap-4 sm:grid-cols-2" data-achievements>
+            <div className="flex min-w-0 items-start gap-3">
+              <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-warning text-primary">
+                <PercyIcon id="phosphor:check-circle:duotone" className="h-7 w-7" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-foreground">Goals completed</p>
+                <p className="text-sm text-muted-foreground">Recognise effort over time</p>
+                <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">{doneToday} today</p>
+              </div>
             </div>
-            <div className="rounded-md border border-border p-3">
-              <p className="font-semibold text-foreground">Next milestone</p>
-              <p className="text-sm text-muted-foreground">Weekly target and bigger goal</p>
-              <p className="font-display font-bold text-lg text-foreground tabular-nums">{toTarget} weekly points to go</p>
-              {topGoal && <p className="text-sm text-muted-foreground tabular-nums">{topGoal.name}: {topGoal.to_go > 0 ? `${topGoal.to_go} to go` : 'Saved!'}</p>}
+            <div className="flex min-w-0 items-start gap-3 border-t border-border pt-4 sm:border-t-0 sm:pt-0">
+              <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-warning text-primary">
+                <PercyIcon id="phosphor:trophy:duotone" className="h-7 w-7" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-foreground">Next milestone</p>
+                <p className="text-sm text-muted-foreground">Weekly target and bigger goal</p>
+                {/* A small bar, not the sentence "{n} weekly points to go" (owner, 22 Nov).
+                    The sentence is still what a screen reader hears. */}
+                <div className="mt-2 h-2 w-full max-w-xs rounded-full bg-muted overflow-hidden" role="progressbar" aria-label="Weekly target"
+                  aria-valuemin={0} aria-valuemax={Math.max(target, 0)} aria-valuenow={Math.max(0, Math.min(week, target))}
+                  aria-valuetext={`${toTarget} weekly points to go`} data-milestone-bar>
+                  <div className="h-full rounded-full bg-sunrise" style={{ width: pct(week, target) + '%' }} />
+                </div>
+                {topGoal && <p className="mt-1.5 text-sm font-semibold text-foreground tabular-nums break-words">{topGoal.name}: {topGoal.to_go > 0 ? `${topGoal.to_go} to go` : 'Saved!'}</p>}
+              </div>
             </div>
           </div>
         </CardContent>

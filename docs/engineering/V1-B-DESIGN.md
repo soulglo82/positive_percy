@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.4 |
+| Version | 1.5 |
 | Issued | 2026-11-19 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-b-children`, stacked on V1-D `claude/percy-v1-d-rewards`) |
 | Status | Reviewed (§8); build may start. Owner items in §7 |
@@ -12,6 +12,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.5 | 2026-11-22 | §10.8: the points figure is one shared component on Child View, Home and Children (owner: apply it consistently). §11: the Achievements card redrawn as two plain rows (owner: "cramped and looks bad") |
 | 1.4 | 2026-11-22 | §10: Child View points card reworked at the owner's request (visual review, 22 November). Design for review before the build |
 | 1.3 | 2026-11-19 | Post-build code review (§9): New goal used the previous child's behaviour (Major, fixed); focus, refresh, loading and lock fixes |
 | 1.2 | 2026-11-19 | Owner decisions: B1 approved for now (full milestone wording restored when D1 lands); B3 approved ("Ask a parent"; after pressing, "Ready when a parent agrees"; nothing charged until a parent confirms) |
@@ -209,3 +210,44 @@ One blocking finding, adopted: no space between the two parts of the sentence. A
 ### 10.7 Rollout and reversal
 
 One commit on the release-candidate branch. Reverting it restores the approved two-tile card. No data, server or migration change.
+
+### 10.8 The same figure on Home and Children (owner, 22 November)
+
+**Owner's finding.** "Why is the home page and child page points / icons different? The changes we just made … need to be consistently applied."
+
+The figure of §10.2 is now one component, `src/components/PointsFigure.jsx`, used by Child View's points card, Home's "Little wins, big adventures!" and the Children weekly-target card. Each shows an icon in a tile, the figure with its unit on one baseline, and the approved label beneath:
+
+| Screen | Figures |
+| --- | --- |
+| Child View | piggy bank: "{n} points", "Ready to use" |
+| Home | target: "{week} / {target}", "This week"; piggy bank: "{n} points", "Available now" |
+| Children | target: "{week} / {target}", "Earned this week"; piggy bank: "{n} points", "Available now" |
+
+Labels are unchanged per screen. Both icons are approved Phosphor icons already in the app (the target is the Goals control's icon; the piggy bank is a picker icon). The bordered tiles inside those two cards are gone. The figures sit one under the other on a phone and side by side from 640 px. The shared screen check measures every figure's baseline, left edge and centring on every screen it opens.
+
+Reviewed after the build (release assessment §4.6): a missing weekly target shows 0, never "null"; the singular is tested on each screen.
+
+## 11. Achievements card on Children (owner, 22 November) (v1.5)
+
+**Owner's finding.** "Achievements boxes in children is cramped and looks bad. Redesign."
+
+**What was there.** Two bordered boxes inside the card, holding sentences rather than figures. On a phone each box was about 150 px wide, so "Goals completed", "7 weekly points to go" and "New bike: 180 to go" each broke over two lines, the last leaving "go" alone.
+
+**Contract.** The same information and the same words, laid out so that nothing breaks awkwardly: two plain rows, each with a picture, with no box inside the card.
+
+**Build** (`src/pages/Children.jsx`, the Achievements card only):
+
+- row 1, a circled tick: "Goals completed", "Recognise effort over time", "{n} today";
+- row 2, a trophy: "Next milestone", "Weekly target and bigger goal", **a small progress bar for the weekly target** (the owner, on seeing the first version: "instead of 25 weekly points to go put a small progress bar"), and "{goal}: {n} to go" (or "Saved!") when the child has a bigger goal. The bar is the same bar as on the weekly-target card; a screen reader hears "Weekly target: {n} weekly points to go";
+- one under the other with a line between on a phone; side by side from 640 px, with no line;
+- the icon tile is the one used for a reward's picture and for the points figures, so the page's pictures share one size and one left edge;
+- both icons are approved Phosphor icons already in the app, hidden from assistive technology.
+
+**Unchanged:** every other string, every figure's source, and when the goal line appears. The sentence "{n} weekly points to go" is no longer shown; it is the bar's spoken value.
+
+**Edge cases.** A 100-character goal name with no spaces breaks inside the row. No bigger goal: the row has three lines. Target reached or passed: the bar is full, never beyond its end. A target of 0: the bar is empty.
+
+**Tests.** The two rows' titles and icons, and that neither row is a bordered box; the bar's name, spoken value, figures and width at 18 of 25 and at 30 of 25; the sentence is no longer on the page. The shared screen checks (clipped text, sideways scroll, text size, accessibility) run on the Children page at four sizes. **Not covered by a test:** how it looks; the before-and-after picture went to the owner.
+
+**Rollout and reversal.** One commit; reverting it restores the two boxes. No data, server or migration change.
+

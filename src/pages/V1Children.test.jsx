@@ -80,7 +80,18 @@ describe('Children page (§2)', () => {
     expect([...document.querySelectorAll('[data-figure] [data-icon]')].map((i) => i.getAttribute('data-icon')))
       .toEqual(['phosphor:target:duotone', 'phosphor:piggy-bank:duotone']);
     expect(screen.getByText("7 to reach this week's target")).toBeTruthy();
-    expect(screen.getByText('7 weekly points to go')).toBeTruthy();
+    // Next milestone: a small bar for the weekly target, not a sentence (owner, 22 Nov).
+    // A screen reader still hears "7 weekly points to go".
+    const bar = screen.getByRole('progressbar', { name: 'Weekly target' });
+    expect(bar.getAttribute('aria-valuetext')).toBe('7 weekly points to go');
+    expect([bar.getAttribute('aria-valuenow'), bar.getAttribute('aria-valuemax')]).toEqual(['18', '25']);
+    expect(bar.firstElementChild.style.width).toBe('72%');
+    expect(screen.queryByText('7 weekly points to go')).toBeNull();
+    // Achievements: two plain rows with a picture each, no boxes inside the card (owner, 22 Nov; design §11).
+    const rows = [...document.querySelectorAll('[data-achievements] > div')];
+    expect(rows.map((r) => r.querySelector('[data-icon]').getAttribute('data-icon'))).toEqual(['phosphor:check-circle:duotone', 'phosphor:trophy:duotone']);
+    expect(rows.map((r) => r.querySelector('p').textContent)).toEqual(['Goals completed', 'Next milestone']);
+    expect(rows.some((r) => /(^|\s)border(\s|$)/.test(r.className) || /rounded-md/.test(r.className))).toBe(false); // neither a border nor a box, in any class order
     expect(screen.getByRole('link', { name: 'All rewards' })).toBeTruthy();
     // D1 (savings §19.3): the savings section and the approved milestone
     // subtitle; with no bigger goals there is nothing to Edit. The
@@ -116,7 +127,11 @@ describe('Children page (§2)', () => {
     state.children = [{ ...lara, week_points: 30 }];
     mount(Children);
     expect(await screen.findByText("0 to reach this week's target")).toBeTruthy();
-    expect(screen.getByText('0 weekly points to go')).toBeTruthy();
+    // The milestone bar is full, never past the end (30 of 25).
+    const bar = screen.getByRole('progressbar', { name: 'Weekly target' });
+    expect(bar.getAttribute('aria-valuetext')).toBe('0 weekly points to go');
+    expect([bar.getAttribute('aria-valuenow'), bar.getAttribute('aria-valuemax')]).toEqual(['25', '25']);
+    expect(bar.firstElementChild.style.width).toBe('100%');
   });
 
   it('?child= picks the child; an unknown id falls back to the oldest (E2)', async () => {

@@ -206,6 +206,7 @@ The test can fail: narrowing the form dialog on the smallest phones made it red 
 | E5 | Scrolled content in a dialog was cut in mid-air under the header | **Fixed:** a line under the dialog header, as there is above its footer |
 | D2 | Home's Rewards dialog: are "Spend" and "Not this time" at least 44 px? | **Confirmed, no change:** they are 44 px on touch screens (the browser tests measure this dialog on the touch phone and tablet) and 36 px with a mouse, like the app's other compact buttons. The critique measured a mouse capture |
 | Consistency (owner, in the session) | "Why is the home page and child page points / icons different? The changes we just made … need to be consistently applied" | **Fixed:** one shared figure (`src/components/PointsFigure.jsx`) on Child View, Home's "Little wins" and the Children weekly-target card: the icon in a tile, the figure with its unit, the approved label beneath. Labels are unchanged per screen. The boxes-inside-a-box tiles on those two cards are gone with it (critique D1) |
+| Achievements card on Children (owner, in the session) | "Achievements boxes in children is cramped and looks bad. Redesign" | **Fixed:** two plain rows with a picture each (a circled tick, a trophy), a line between on a phone, side by side from 640 px. On seeing it the owner asked for a small progress bar in place of "{n} weekly points to go": done, with the sentence kept as the bar's spoken value. The other wording is unchanged (V1-B design §11; critique D1) |
 
 **Not reopened** (handover): Activity "This week" stays centred; Child View says "Ready to use"; Quick Points keep their layout and new-family defaults; existing families keep their Quick Points; no child login, session, app or device mode.
 
@@ -306,6 +307,19 @@ Scope: the five small changes of §3.4 and nothing else. **No blocking defect.**
 | 4 | Note | Children now has two elements carrying the "available" marker when the savings dialog is open | Recorded; nothing depends on it. The tests that use the marker are scoped to one screen |
 | 5 | Note | An unused marker on the weekly figure | Removed |
 | 6 | Note, for the owner | Side effects of the shared figure beyond the icons: "18" is large with "/ 25" beside it as the unit; Children's "Available now" now reads "90 points"; the tiles' borders are gone; the two figures sit one under the other below 640 px | For the owner's visual sign-off |
+
+### 4.7 Focused independent review of the Achievements card
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Raised as blocking on scope | The sentence "{n} weekly points to go" is no longer shown, while a code comment and the design note still said the wording was unchanged | The owner asked for the bar in its place ("instead of 25 weekly points to go put a small progress bar"). The comment and the design note are corrected; the sentence is the bar's spoken value |
+| 2 | Should fix | On a phone the two rows could not shrink, so a 100-character goal name with no spaces would push the page sideways | Fixed: the rows can shrink and the name breaks |
+| 3 | Note | The bar's width followed the longest line of text, so it differed between children | Fixed: the text column takes the row's width |
+| 4 | Note | The test's "not a box" check depended on the order of two class names | Fixed: it checks each on its own |
+
+Confirmed: every other string, the condition for the goal line and the data sources are unchanged; both icons are approved and hidden from assistive technology; `server/`, `scripts/` and `e2e/` are untouched.
+
+**Open with the owner (not built):** the repetition across the screens. Mock-ups with it removed were sent on 22 November (Children, Home, Child View, Activity; option A trims, option B merges). Engineering's recommendation is option A for V1 and option B for V1.1. Nothing is changed until the owner chooses.
 
 ## 5. Gates: what is complete and what is not
 
