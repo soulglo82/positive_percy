@@ -4,7 +4,7 @@
   "owner": "Percy v2 engineering",
   "status": "E01 provenance for runtime brand files. v1.4 (2026-11-23): the home-screen icon is the kit's iPhone icon, iOS/apple-touch-icon-180.png, in place of PWA/apple-touch-icon.png, whose see-through corners an iPhone paints black",
   "chain": "Logo/icon sources are members of the pinned archive design/brand/archives (sha256 e7e93dde728048cb03ba78a1f761cc221af184bfda3bdd4234f7fd3df61f3638), checked in src/test/brandAssets.test.js. Font sources are vendored from the npm tarballs whose sha512 integrity is recorded per entry; the tarball check was done at import (2026-11-15) and is not re-run in CI.",
-  "excluded_from_runtime": "Everything else in the 150-file pack stays design source only. Not used in this web app: iOS AppIcon-1024, PWA/apple-touch-icon.png (see-through corners; replaced by iOS/apple-touch-icon-180.png) and Android adaptive layers (no native app; the PWA maskable icon covers Android launchers), print/PDF/letterhead files (E12), social covers (website, E12). The Freepik treasure map is not in public/ and not in a normal build; the build adds it only once release gate freepik-treasure-map-3570506 is cleared (design/brand/RELEASE_GATES.json; V1-F).",
+  "excluded_from_runtime": "Everything else in the 150-file pack stays design source only. Not used in this web app: PWA/apple-touch-icon.png (its see-through corners are painted black by an iPhone; iOS/apple-touch-icon-180.png is used instead, E01-E02 design section 5a); iOS AppIcon-1024 and Android adaptive layers (no native app; the PWA maskable icon covers Android launchers), print/PDF/letterhead files (E12), social covers (website, E12). The Freepik treasure map is not in public/ and not in a normal build; the build adds it only once release gate freepik-treasure-map-3570506 is cleared (design/brand/RELEASE_GATES.json; V1-F).",
   "entries": [
     {
       "runtime": "public/brand/fox-1a-symbol-black.svg",
@@ -99,7 +99,7 @@
     {
       "runtime": "public/apple-touch-icon.png",
       "source": "design/brand/library/Positive_Percy_Stage1_Brand_System/05_Logos/Fox_1A_Complete_Logo_Kit/04_App_Icons/iOS/apple-touch-icon-180.png",
-      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending. Chosen by the owner on 2026-11-23 as the home-screen icon (the kit's iPhone icon, no transparency)",
+      "licence": "Owner-approved Fox 1A (APPROVAL_REGISTER brand_asset_delivery); traced from approved board, not illustrator master; live-app fidelity sign-off pending. Chosen by the owner in the engineering session of 2026-11-23 as the home-screen icon (the kit's iPhone icon, no transparency); recorded in docs/engineering/E01-E02-DESIGN.md section 5a",
       "sha256": "130c91ec84c839dc9f4ef2ead816ae51e432bb6c76553d92965f9dde52a97932"
     },
     {

@@ -206,16 +206,16 @@ describe('Logo and page references', () => {
     expect(manifest.icons.some((i) => i.purpose === 'maskable')).toBe(true);
   });
 
-  // An iPhone has no transparency on the home screen: see-through pixels are
-  // painted black, and the phone cuts its own rounded corners. So the icon
-  // saved from Safari must be a square with no alpha at all (owner, 23
-  // November 2026: the first V1 icon had see-through corners and showed dark
-  // slivers). Android masks the "maskable" icon the same way.
-  const pngFacts = (file) => {
-    const buf = fs.readFileSync(rel('public', file));
-    expect(buf.subarray(1, 4).toString('latin1'), `${file} is a PNG`).toBe('PNG');
+  // For a shortcut saved from Safari, an iPhone fills see-through pixels with
+  // black and cuts its own rounded corners. So the home-screen icon must be a
+  // square with no alpha at all (owner, 23 November 2026: the first V1 icon
+  // had see-through corners and showed dark slivers). Android also cuts its
+  // own shape out of a "maskable" icon, which is meant to be full-bleed.
+  const pngFacts = (buf) => {
+    expect(buf.subarray(1, 4).toString('latin1'), 'a PNG file').toBe('PNG');
+    expect(buf.subarray(12, 16).toString('latin1'), 'the first chunk is IHDR').toBe('IHDR');
     let transparencyChunk = false;
-    for (let at = 8; at < buf.length;) {
+    for (let at = 8; at + 8 <= buf.length;) {
       const length = buf.readUInt32BE(at);
       if (buf.subarray(at + 4, at + 8).toString('latin1') === 'tRNS') transparencyChunk = true;
       at += 12 + length;
@@ -223,22 +223,57 @@ describe('Logo and page references', () => {
     const colourType = buf[25]; // 4 and 6 carry an alpha channel
     return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20), canBeTransparent: colourType === 4 || colourType === 6 || transparencyChunk };
   };
+  // Every <link> of the page whose rel names an apple-touch icon (in any
+  // attribute order), and every manifest icon whose purpose includes maskable.
+  const pageLinks = () => [...fs.readFileSync(rel('index.html'), 'utf8').matchAll(/<link\b[^>]*>/g)].map((m) => ({
+    rel: (m[0].match(/\brel=["']([^"']*)["']/) || [])[1] || '',
+    href: (m[0].match(/\bhref=["']([^"']*)["']/) || [])[1] || '',
+  }));
+  const appleTouchLinks = () => pageLinks().filter((l) => /apple-touch-icon/.test(l.rel));
+  const maskedIcons = () => {
+    const manifest = JSON.parse(fs.readFileSync(rel('manifest.base.json'), 'utf8'));
+    return [
+      ...appleTouchLinks().map((l) => ({ file: l.href.split('?')[0], size: 180 })),
+      ...manifest.icons.filter((i) => /\bmaskable\b/.test(i.purpose || '')).map((i) => ({ file: i.src.split('?')[0], size: Number(i.sizes.split('x')[0]) })),
+    ];
+  };
 
-  it.each([['apple-touch-icon.png', 180], ['maskable-512.png', 512]])('%s is a square with no transparency (a phone masks it)', (file, size) => {
-    expect(pngFacts(file)).toEqual({ width: size, height: size, canBeTransparent: false });
+  it('every icon a phone masks is a square with no transparency', () => {
+    const icons = maskedIcons();
+    // One home-screen icon and one maskable icon today; the rule covers any that are added.
+    expect(icons.map((i) => i.file)).toEqual(['/apple-touch-icon.png', '/maskable-512.png']);
+    for (const { file, size } of icons) {
+      expect(pngFacts(fs.readFileSync(rel('public', file))), file).toEqual({ width: size, height: size, canBeTransparent: false });
+    }
   });
 
-  it('the check above can tell a see-through PNG from a solid one', () => {
-    // icon-192.png keeps its see-through corners on purpose (browsers show it as it is).
-    expect(pngFacts('icon-192.png').canBeTransparent).toBe(true);
+  it('the transparency check tells see-through PNGs from solid ones', () => {
+    // Smallest files the reader accepts: signature, IHDR, optional tRNS, IEND.
+    const chunk = (type, data) => Buffer.concat([Buffer.from([0, 0, 0, data.length]), Buffer.from(type, 'latin1'), data, Buffer.alloc(4)]);
+    const png = (colourType, withTransparencyChunk) => Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      chunk('IHDR', Buffer.from([0, 0, 0, 180, 0, 0, 0, 180, 8, colourType, 0, 0, 0])),
+      ...(withTransparencyChunk ? [chunk('tRNS', Buffer.from([0]))] : []),
+      chunk('IEND', Buffer.alloc(0)),
+    ]);
+    expect(pngFacts(png(2, false))).toEqual({ width: 180, height: 180, canBeTransparent: false }); // RGB
+    expect(pngFacts(png(0, false)).canBeTransparent).toBe(false); // grey
+    expect(pngFacts(png(3, false)).canBeTransparent).toBe(false); // palette
+    expect(pngFacts(png(6, false)).canBeTransparent).toBe(true);  // RGBA
+    expect(pngFacts(png(4, false)).canBeTransparent).toBe(true);  // grey with alpha
+    expect(pngFacts(png(3, true)).canBeTransparent).toBe(true);   // palette with transparency
+    expect(pngFacts(png(2, true)).canBeTransparent).toBe(true);   // RGB with a see-through colour
+    // And a real file: icon-192.png keeps its see-through corners on purpose (browsers show it as it is).
+    expect(pngFacts(fs.readFileSync(rel('public/icon-192.png'))).canBeTransparent).toBe(true);
   });
 
-  it("the home-screen icon's address changes whenever its file changes", () => {
-    // iPhones cache the icon by address, so the address carries the start of
-    // the file's own hash: a new file cannot ship under the old address.
-    const html = fs.readFileSync(rel('index.html'), 'utf8');
-    const href = html.match(/<link rel="apple-touch-icon" href="([^"]+)"/)[1];
-    expect(href).toBe(`/apple-touch-icon.png?v=${sha(fs.readFileSync(rel('public/apple-touch-icon.png'))).slice(0, 8)}`);
+  it("the page has one home-screen icon, and its address changes whenever its file changes", () => {
+    // iPhones are widely reported to keep a home-screen icon by its address,
+    // so the address carries the start of the file's own hash: a new file
+    // cannot ship under the old address.
+    const links = appleTouchLinks();
+    expect(links.map((l) => l.rel)).toEqual(['apple-touch-icon']);
+    expect(links[0].href).toBe(`/apple-touch-icon.png?v=${sha(fs.readFileSync(rel('public/apple-touch-icon.png'))).slice(0, 8)}`);
   });
 
   it('every @font-face file in index.css ships, and nothing else is in public/fonts', () => {
