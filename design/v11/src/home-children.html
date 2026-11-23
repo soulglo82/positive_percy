@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Positive Percy V1.1 · Home and Children design prototype</title>
+<!-- Version 0.1.0 · Issued 2026-11-23 · Status: DESIGN PROTOTYPE for owner approval (stop gate P2).
+     Synthetic client-side data only. No API calls. Not production code.
+     Built by design/v11/build.mjs from design/v11/src/home-children.html. -->
+<style>
+{{fonts}}
+{{css:design/v11/tokens/percy-v11-tokens.css}}
+{{css:design/v11/components/percy-v11-components.css}}
+.pv-profile { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pv-space-4); padding: var(--pv-space-2) var(--pv-space-4) var(--pv-space-5); }
+.pv-profile > div { flex: 1 1 9rem; min-width: 0; }
+.pv-profile > .pv-profile__actions { flex-basis: 100%; }
+.pv-profile__actions { display: flex; flex-wrap: wrap; gap: var(--pv-space-2); }
+.pv-journey-head > div { flex: 1 1 9rem; min-width: 0; }
+.pv-journey-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--pv-space-3); }
+.pv-balance { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--pv-space-2); }
+.pv-notice { display: grid; gap: var(--pv-space-3); justify-items: start; padding: var(--pv-space-6) 0; }
+@media (min-width: 834px) { .pv-profile { padding: var(--pv-space-2) var(--pv-space-6) var(--pv-space-6); } }
+</style>
+</head>
+<body>
+<div class="pv-app">
+  <header class="pv-topbar">
+    <img class="pv-topbar__logo" src="{{img:public/brand/positive-percy-horizontal-full.svg}}" alt="Positive Percy" width="156" height="44">
+  </header>
+  <main class="pv-main" id="view" tabindex="-1"></main>
+</div>
+<div id="nav"></div>
+<div class="pv-toast" id="toast" role="status" hidden><span id="toast-text"></span><button type="button" class="pv-btn pv-btn--quiet" id="toast-undo">Undo</button></div>
+<dialog class="pv-dialog" id="target-dialog" aria-labelledby="target-title">
+  <form method="dialog">
+    <h2 class="pv-t-section" id="target-title">Weekly target</h2>
+    <div class="pv-field"><label for="target-input">Points to aim for each week</label><input class="pv-input" id="target-input" type="number" inputmode="numeric" min="0" max="999" required></div>
+    <div class="pv-dialog__actions"><button class="pv-btn pv-btn--secondary" value="cancel" formnovalidate>Cancel</button><button class="pv-btn pv-btn--primary" value="save">Save target</button></div>
+  </form>
+</dialog>
+<dialog class="pv-dialog" id="info-dialog" aria-labelledby="info-title">
+  <form method="dialog"><h2 class="pv-t-section" id="info-title"></h2><p class="pv-t-body" id="info-text"></p><div class="pv-dialog__actions"><button class="pv-btn pv-btn--primary">Close</button></div></form>
+</dialog>
+<input type="file" id="photo-input" accept="image/*" hidden>
+
+<script>
+{{js:design/v11/components/percy-v11-components.js}}
+</script>
+<script>
+// ---- Synthetic review data. Fictional children. No photos are shipped: a photo
+// appears only when the reviewer picks one from their own device (it stays in this tab).
+const params = new URLSearchParams(location.search);
+const BEHAVIOURS = [
+  { name: 'Kindness', icon: 'heart', points: 1, tint: 'sun' },
+  { name: 'Helpfulness', icon: 'handshake', points: 1, tint: 'green' },
+  { name: 'Bravery', icon: 'shield-star', points: 1, tint: 'lilac' },
+  { name: 'Resilience', icon: 'mountains', points: 1, tint: 'peach' },
+];
+let CHILDREN = [
+  { id: 'c1', name: 'Lara', age: 9, kid: 1, photo: null, available: 112, weekEarned: 34, weeklyTarget: 30,
+    goals: [{ id: 'g1', title: 'Finish homework', points: 1, done: true }, { id: 'g2', title: 'Help set the table', points: 1, done: true }, { id: 'g3', title: 'Read for 15 minutes', points: 1, done: false }],
+    bigger: { name: 'New bike', saved: 120, cost: 400, icon: 'bicycle' } },
+  { id: 'c2', name: 'Omar', age: 6, kid: 2, photo: null, available: 40, weekEarned: 5, weeklyTarget: 20,
+    goals: [{ id: 'g4', title: 'Brush teeth, morning and night', points: 1, done: false }, { id: 'g5', title: 'Tidy toys away', points: 2, done: false }],
+    bigger: { name: 'Trip to the aquarium', saved: 30, cost: 150, icon: 'fish' } },
+  { id: 'c3', name: 'Joud', age: 4, kid: 3, photo: null, available: 12, weekEarned: 0, weeklyTarget: 0, goals: [], bigger: null },
+  { id: 'c4', name: 'Alexandra-Josephine Montgomery-Wellington', age: 11, kid: 4, photo: null, available: 1000, weekEarned: 30, weeklyTarget: 20,
+    goals: [{ id: 'g6', title: 'Practise the piano for twenty minutes before dinner without being reminded', points: 3, done: false }], bigger: { name: 'A very long reward title that has to wrap on a small phone screen', saved: 5000, cost: 5000, icon: 'trophy' } },
+  { id: 'c5', name: 'Sam', age: 7, kid: 5, photo: 'broken://no-such-photo', available: 0, weekEarned: 0, weeklyTarget: 10, goals: [], bigger: null },
+  { id: 'c6', name: 'Noor', age: 2, kid: 6, photo: null, available: 3, weekEarned: 3, weeklyTarget: 5, goals: [], bigger: null },
+];
+CHILDREN = CHILDREN.slice(0, Math.min(6, Math.max(1, Number(params.get('children')) || 3)));
+if (params.get('long')) { CHILDREN[0] = { ...CHILDREN[0], name: 'Alexandra-Josephine Montgomery-Wellington' }; }
+const state = { view: 'home', childId: (params.get('child') && CHILDREN.find((c) => c.id === params.get('child')) ? params.get('child') : CHILDREN[0].id) };
+const child = () => CHILDREN.find((c) => c.id === state.childId);
+const pts = (n) => `${n} point${n === 1 ? '' : 's'}`;
+const LOGO = document.querySelector('.pv-topbar__logo').src;
+const TODAY = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(2026, 10, 23));
+
+const SUN_SCENE = `<svg class="pv-scene__art" viewBox="0 0 400 300" preserveAspectRatio="xMinYMax slice" aria-hidden="true"><circle cx="60" cy="262" r="150" fill="#fff" opacity=".35"/><circle cx="60" cy="262" r="104" fill="var(--pv-sunshine)"/><g fill="#fff" opacity=".9"><rect x="250" y="40" width="96" height="26" rx="13"/><rect x="278" y="24" width="52" height="30" rx="15"/></g></svg>`;
+const SKY_SCENE = `<svg class="pv-scene__art" viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><g fill="#fff" opacity=".75"><rect x="262" y="34" width="104" height="26" rx="13"/><rect x="290" y="18" width="54" height="30" rx="15"/></g><path d="M0 300V236C70 196 150 206 220 232s130 22 180-12v80z" fill="#fff" opacity=".55"/></svg>`;
+
+function home() {
+  const c = child();
+  const done = c.goals.filter((g) => g.done).length;
+  return `
+  <div class="pv-columns">
+    <div>
+      <section class="pv-scene pv-scene--morning" aria-labelledby="home-title">
+        ${SUN_SCENE}
+        <div class="pv-scene__sky">
+          ${PV.selector(CHILDREN, c.id)}
+          <div class="pv-scene__text">
+            <div class="pv-scene__meta"><p class="pv-t-meta">${TODAY}</p><span class="pv-chip">${PV.icon('sparkle')}3-day family streak</span></div>
+            <h1 class="pv-t-hero pv-wrap" id="home-title">What went well for ${PV.esc(c.name)} today?</h1>
+          </div>
+            <div class="pv-scene__fox" id="home-fox">${PV.fox({ pose: 'seated', size: 'hero' })}</div>
+        </div>
+        <div class="pv-scene__ground pv-on-dark">
+          <div><p class="pv-t-support">Ready to use</p><p class="pv-balance"><span class="pv-t-number" id="balance">${c.available}</span><span class="pv-t-action">Percy Points</span></p></div>
+          <a class="pv-btn pv-btn--sun" href="#rewards">${PV.icon('gift')}Rewards</a>
+        </div>
+      </section>
+      <section class="pv-section" aria-labelledby="quick-title">
+        <div><h2 class="pv-t-section" id="quick-title">Quick Points</h2><p class="pv-t-support">Tap when ${PV.esc(c.name)} does something great.</p></div>
+        <div class="pv-quick">${BEHAVIOURS.map((b) => PV.quickTile(b, c.name)).join('')}</div>
+        <button type="button" class="pv-btn pv-btn--secondary pv-btn--block" data-info="Award points|Opens the V1 Award points dialog (any behaviour, any amount, optional note). Unchanged from V1; not rebuilt in this design prototype.">${PV.icon('plus-circle')}Award other points</button>
+      </section>
+    </div>
+    <div>
+      <section class="pv-section" aria-labelledby="goals-title">
+        <div class="pv-section__head">
+          <div><h2 class="pv-t-section" id="goals-title">Today's Goals</h2><p class="pv-t-support">${c.goals.length ? `${done} of ${c.goals.length} done` : 'Nothing scheduled today'}</p></div>
+          ${c.goals.length ? `<span class="pv-progress-dots" aria-hidden="true">${c.goals.map((g) => `<i${g.done ? ' data-on' : ''}></i>`).join('')}</span>` : ''}
+        </div>
+        ${c.goals.length ? `<ul class="pv-goals">${c.goals.map(PV.goalRow).join('')}</ul>`
+          : `<div class="pv-empty"><p class="pv-t-card">No goals for ${PV.esc(c.name)} today</p><p class="pv-t-support">Add a weekly routine or a one-off task to give them something to work towards.</p><a class="pv-btn pv-btn--primary" href="#children">Set up goals</a></div>`}
+      </section>
+    </div>
+  </div>`;
+}
+
+function children() {
+  const c = child();
+  const done = c.goals.filter((g) => g.done).length;
+  const over = c.weekEarned - c.weeklyTarget;
+  const weekNote = !(c.weeklyTarget > 0) ? 'No weekly target set yet' : over >= 0 ? (over ? `Target reached, ${over} extra` : 'Target reached') : `${-over} to reach this week's target`;
+  const b = c.bigger;
+  return `
+  <section class="pv-scene pv-scene--journey" aria-labelledby="child-title">
+    ${SKY_SCENE}
+    <div class="pv-scene__sky">${PV.selector(CHILDREN, c.id, { emphasise: false })}</div>
+    <div class="pv-profile">
+      ${PV.avatar(c, 'profile', { ring: true })}
+      <div><h1 class="pv-t-page pv-wrap" id="child-title">${PV.esc(c.name)}</h1><p class="pv-t-body">Age ${c.age} · ${pts(c.available)} ready to use</p></div>
+      <div class="pv-profile__actions">
+        <button type="button" class="pv-btn pv-btn--primary" data-photo>${PV.icon('camera')}${c.photo ? 'Change photo' : 'Add photo'}</button>
+        <button type="button" class="pv-btn pv-btn--secondary" data-info="Edit profile|Opens the V1 Edit child dialog (name, age, photo). Unchanged from V1.">${PV.icon('pencil')}Edit profile</button>
+        <button type="button" class="pv-btn pv-btn--secondary" data-info="View as child|Opens the V1 child view inside the parent app. No child login or separate device.">View as child</button>
+      </div>
+    </div>
+  </section>
+  <div class="pv-columns">
+    <div>
+      <section class="pv-meadow" aria-labelledby="journey-title">
+        <div class="pv-journey-head"><div><h2 class="pv-t-section pv-wrap" id="journey-title">${PV.esc(c.name)}'s journey</h2><p class="pv-t-support" style="color:var(--pv-ink)">Today, this week, and the bigger goal.</p></div>${PV.fox({ pose: 'walking', size: 'mid' })}</div>
+        <ol class="pv-journey">
+          ${PV.stop({ metric: 'today', value: done, max: c.goals.length, iconName: 'list-checks', label: "Today's goals", unit: 'done', note: c.goals.length ? (done === c.goals.length ? 'All done today' : `${c.goals.length - done} to go`) : 'No goals scheduled today', tone: c.goals.length && done === c.goals.length ? 'earn' : '' })}
+          ${PV.stop({ metric: 'week', value: c.weekEarned, max: c.weeklyTarget, iconName: 'target', label: 'This week', unit: 'points', note: weekNote, tone: c.weeklyTarget > 0 && over >= 0 ? 'earn' : '', action: `<button type="button" class="pv-goal__undo" data-edit-target>Edit target</button>` })}
+        </ol>
+        ${PV.destination(b)}
+      </section>
+    </div>
+    <div>
+      <section class="pv-section" aria-labelledby="ach-title">
+        <h2 class="pv-t-section" id="ach-title">Achievements</h2>
+        <ul style="display:grid;gap:var(--pv-space-2)">
+          ${PV.achievement({ state: done ? 'earned' : 'next', iconName: 'medal', title: 'Goals completed', text: `${done} today` })}
+          ${PV.achievement({ state: c.weeklyTarget > 0 && over >= 0 ? 'earned' : 'next', iconName: 'trophy', title: c.weeklyTarget > 0 && over >= 0 ? 'Weekly target reached' : 'Next milestone', text: c.weeklyTarget > 0 ? (over >= 0 ? `${c.weekEarned} points this week` : `Weekly target: ${-over} points to go`) : 'Set a weekly target to begin' })}
+        </ul>
+      </section>
+      <section class="pv-section" aria-labelledby="manage-title">
+        <h2 class="pv-t-section" id="manage-title">Manage</h2>
+        <ul class="pv-manage">
+          ${PV.manageAction({ id: 'target', iconName: 'target', label: 'Weekly target', text: c.weeklyTarget > 0 ? `${c.weeklyTarget} points a week` : 'Not set' })}
+          ${PV.manageAction({ id: 'goals', iconName: 'calendar-dots', label: 'Goals and schedule', text: `${c.goals.length} scheduled today` })}
+          ${PV.manageAction({ id: 'rewards', iconName: 'gift', label: 'Rewards', text: 'Weekly treats and bigger goals' })}
+          ${PV.manageAction({ id: 'savings', iconName: 'piggy-bank', label: 'Savings', text: b ? `${b.saved} points saved` : 'Nothing saved yet' })}
+        </ul>
+      </section>
+    </div>
+  </div>`;
+}
+
+function other(name) {
+  return `<section class="pv-notice"><h1 class="pv-t-page">${name}</h1><p class="pv-t-body">Not part of this review. ${name} keeps its V1 design until Home and Children are approved.</p><a class="pv-btn pv-btn--primary" href="#home">Back to Home</a></section>`;
+}
+
+function render({ focus = false } = {}) {
+  const v = state.view;
+  document.getElementById('view').innerHTML = v === 'home' ? home() : v === 'children' ? children() : other(v[0].toUpperCase() + v.slice(1));
+  document.getElementById('nav').innerHTML = PV.nav(v, LOGO);
+  PV.revealSelected();
+  document.title = `${v === 'home' ? 'Home' : v === 'children' ? 'Children' : v} · Positive Percy V1.1 design prototype`;
+  if (focus) { document.getElementById('view').focus({ preventScroll: true }); window.scrollTo(0, 0); }
+}
+function route() { const h = location.hash.slice(1); state.view = ['home', 'children', 'activity', 'rewards', 'settings'].includes(h) ? h : 'home'; render({ focus: true }); }
+addEventListener('hashchange', route);
+
+let undo = null, toastTimer = 0;
+function toast(text, onUndo) {
+  undo = onUndo; clearTimeout(toastTimer);
+  document.getElementById('toast-text').textContent = text;
+  document.getElementById('toast').hidden = false;
+  toastTimer = setTimeout(() => { document.getElementById('toast').hidden = true; undo = null; }, 6000);
+}
+document.getElementById('toast-undo').addEventListener('click', () => { if (undo) undo(); undo = null; document.getElementById('toast').hidden = true; render(); });
+
+function celebrate() { // one-shot Percy response; removed again so it can replay
+  const f = document.querySelector('#home-fox .pv-fox'); if (!f) return;
+  f.querySelector('img').style.animation = 'pv-fox-hop var(--pv-dur-celebrate) var(--pv-ease-out)';
+}
+function refocus(sel) { const el = document.querySelector(sel); if (el) el.focus({ preventScroll: true }); }
+
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-select-child],[data-quick],[data-goal-toggle],[data-edit-target],[data-manage],[data-info],[data-photo]');
+  if (!t) return;
+  const c = child();
+  if (t.dataset.selectChild) { state.childId = t.dataset.selectChild; render(); refocus(`[data-select-child="${state.childId}"]`); return; }
+  if (t.dataset.quick) {
+    const b = BEHAVIOURS.find((x) => x.name === t.dataset.quick);
+    c.available += b.points; c.weekEarned += b.points;
+    render(); const tile = document.querySelector(`[data-quick="${b.name}"]`); tile.setAttribute('data-given', ''); tile.focus({ preventScroll: true }); celebrate();
+    toast(`+${b.points} for ${b.name}. ${c.name} has ${c.available}.`, () => { c.available -= b.points; c.weekEarned -= b.points; });
+    return;
+  }
+  if (t.dataset.goalToggle) {
+    const g = c.goals.find((x) => x.id === t.dataset.goalToggle); const d = g.done ? -g.points : g.points;
+    g.done = !g.done; c.available += d; c.weekEarned += d;
+    render(); refocus(`.pv-goal__check[data-goal-toggle="${g.id}"]`); if (g.done) celebrate();
+    return;
+  }
+  if (t.hasAttribute('data-edit-target') || t.dataset.manage === 'target') {
+    const d = document.getElementById('target-dialog'); document.getElementById('target-input').value = c.weeklyTarget; d.returnValue = ''; d.showModal(); return;
+  }
+  if (t.dataset.manage) {
+    const m = { goals: ['Goals and schedule', 'Opens the V1 Manage goals dialog (add, edit, schedule, pause, archive). Unchanged from V1.'], rewards: ['Rewards', 'Goes to the V1 Rewards tab. Not part of this review.'], savings: ['Savings', 'Opens the V1 Savings dialog (save, release, reassign, redeem, each with its confirmation). Unchanged from V1.'] }[t.dataset.manage];
+    info(m[0], m[1]); return;
+  }
+  if (t.dataset.info) { const [a, b] = t.dataset.info.split('|'); info(a, b); return; }
+  if (t.hasAttribute('data-photo')) document.getElementById('photo-input').click();
+});
+function info(title, text) { document.getElementById('info-title').textContent = title; document.getElementById('info-text').textContent = text; document.getElementById('info-dialog').showModal(); }
+document.getElementById('target-dialog').addEventListener('close', (e) => {
+  if (e.target.returnValue !== 'save') return;
+  const n = Math.round(Number(document.getElementById('target-input').value));
+  if (Number.isFinite(n) && n >= 0) { child().weeklyTarget = n; render(); }
+});
+document.getElementById('photo-input').addEventListener('change', (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  child().photo = URL.createObjectURL(f); e.target.value = ''; render();
+});
+route();
+</script>
+</body>
+</html>

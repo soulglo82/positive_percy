@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positive Percy V1.1 · Design system and component showcase</title>
+<!-- Version 0.1.0 · Issued 2026-11-23 · Owner: Percy V1.1 design engineering
+     Status: PROPOSAL for owner approval (stop gate P2). Not production code.
+     Built by design/v11/build.mjs from design/v11/src/component-showcase.html. -->
+<style>
+{{fonts}}
+{{css:design/v11/tokens/percy-v11-tokens.css}}
+{{css:design/v11/components/percy-v11-components.css}}
+{{css:design/v11/src/review-page.css}}
+</style>
+</head>
+<body class="sg">
+<header class="sg-head">
+  <img src="{{img:public/brand/positive-percy-horizontal-full.svg}}" alt="Positive Percy" height="48">
+  <p class="pv-t-meta">V1.1 design foundation · stop gate P2</p>
+  <h1 class="pv-t-hero">Design system and component showcase</h1>
+  <p class="pv-t-body sg-lede">One token source, ten components, every state. Everything on this page is rendered live from <code>design/v11/tokens/percy-v11-tokens.css</code> and <code>design/v11/components/</code>; the Home and Children prototype uses the same files. Figures printed beside each specimen are measured from the page as you view it, not typed in.</p>
+  <p><span class="pv-flag">Version 0.1.0 · 23 Nov 2026</span> <span class="pv-flag" data-tone="warn">Proposal · awaiting owner approval</span> <span class="pv-flag">Not in production</span></p>
+  <nav class="sg-toc" aria-label="Sections"><a href="#type">Type</a><a href="#colour">Colour</a><a href="#space">Spacing</a><a href="#photo">Photos</a><a href="#components">Components</a><a href="#motion">Motion</a><a href="#open">Open decisions</a></nav>
+</header>
+<main class="sg-main">
+
+<section id="type" class="sg-section">
+  <h2 class="pv-t-page">Typography</h2>
+  <p class="pv-t-body sg-lede">Nunito 700/800 for headings and numbers, Poppins 400/500/600 for everything else (both locked). Nine roles replace the one-off sizes. Sizes are in rem, so a larger browser text setting scales every role together. The smallest text a parent has to read to act is 14px; 12px is used only for tab labels and overlines.</p>
+  <div class="sg-table" id="type-table"></div>
+  <p class="pv-t-support">Rule: a label never shrinks to fit. When four tiles do not fit, the grid drops to two columns; when a name is long, it wraps.</p>
+</section>
+
+<section id="colour" class="sg-section">
+  <h2 class="pv-t-page">Colour</h2>
+  <p class="pv-t-body sg-lede">The brand palette and V1 semantic colours are unchanged. Five soft tints are new and are used only for scene backgrounds and tile fills, never for text. Orange fails contrast as text on white (2.87:1), so it stays a graphic colour; <code>--pv-orange-text</code> is the text-safe orange.</p>
+  <div class="sg-swatches" id="swatches"></div>
+  <h3 class="pv-t-section">Text pairs in use</h3>
+  <div class="sg-table" id="contrast-table"></div>
+</section>
+
+<section id="space" class="sg-section">
+  <h2 class="pv-t-page">Spacing, radius, elevation</h2>
+  <p class="pv-t-body sg-lede">An 8px cadence with 4px substeps. One content edge per screen: 16px on phones, 32px from 834px. Three radii, three shadows.</p>
+  <div class="sg-grid-3">
+    <div><h3 class="pv-t-card">Spacing</h3><div id="space-list" class="sg-stack"></div></div>
+    <div><h3 class="pv-t-card">Radius</h3><div id="radius-list" class="sg-stack"></div></div>
+    <div><h3 class="pv-t-card">Elevation</h3><div id="shadow-list" class="sg-stack"></div></div>
+  </div>
+  <h3 class="pv-t-section">Fixed sizes</h3>
+  <div class="sg-table" id="size-table"></div>
+</section>
+
+<section id="photo" class="sg-section">
+  <h2 class="pv-t-page">Child photos</h2>
+  <p class="pv-t-body sg-lede">The photo is the child's identity on screen, so it is large: 72px for the selected child on Home (was 32 to 48px in V1), 52px for the others, 104px on the Children profile, and larger again from 834px. A missing or failed photo shows the initial at exactly the same size.</p>
+  <div class="sg-note"><p class="pv-t-body"><strong>No photographs ship in this review.</strong> The repository holds no child photos, and none were invented or downloaded. The "photo" specimens below are labelled crop test cards that prove the cropping rule. To see real photos in the components, choose images from your own device: they stay in this browser tab and are not uploaded.</p>
+    <p><button type="button" class="pv-btn pv-btn--primary" id="pick-photos">{{icon:camera}}Preview with my photos</button> <input type="file" id="photo-files" accept="image/*" multiple hidden> <span class="pv-t-support" id="photo-status" role="status"></span></p></div>
+  <div id="avatar-specimens" class="sg-specimens"></div>
+</section>
+
+<section id="components" class="sg-section">
+  <h2 class="pv-t-page">Components</h2>
+
+  <article class="sg-comp"><h3 class="pv-t-section">ChildSelector</h3>
+    <p class="pv-t-support">Horizontal and scrollable, so six children never shrink to fit. The selected child is larger, ringed in their own colour and underlined. Names are always shown; a long name wraps to two lines here and is shown in full in the page heading. With one child the selector is not rendered.</p>
+    <div id="selector-specimens" class="sg-specimens"></div></article>
+
+  <article class="sg-comp"><h3 class="pv-t-section">QuickPointTile</h3>
+    <p class="pv-t-support">Two columns on phones, four from 834px. Label 15px, never smaller. The whole tile is the button (at least 110px tall).</p>
+    <div id="quick-specimens" class="sg-specimens"></div></article>
+
+  <article class="sg-comp"><h3 class="pv-t-section">TodayGoalRow</h3>
+    <p class="pv-t-support">A 44px check target, a 16px title that wraps, and Undo once done. The empty state says what to do next.</p>
+    <div id="goal-specimens" class="sg-specimens"></div></article>
+
+  <article class="sg-comp"><h3 class="pv-t-section">PercyProgressRings</h3>
+    <p class="pv-t-support">Three metrics only: today's goals done / scheduled, points earned / weekly target, and one named goal saved / cost. The arc stops at full; the number beside it is never clamped. A zero denominator draws a neutral dashed ring with no percentage. Available points is a balance and has no ring.</p>
+    <div id="ring-specimens" class="sg-specimens"></div></article>
+
+  <article class="sg-comp"><h3 class="pv-t-section">BiggerGoalDestination</h3>
+    <p class="pv-t-support">Where the Children journey ends: the named goal, what is saved, what is left, and the way into Savings.</p>
+    <div id="dest-specimens" class="sg-specimens"></div></article>
+
+  <article class="sg-comp"><h3 class="pv-t-section">AchievementBanner and ManageAction</h3>
+    <div id="misc-specimens" class="sg-specimens"></div></article>
+
+  <article class="sg-comp"><h3 class="pv-t-section">Buttons, chip, input, focus</h3>
+    <div class="sg-specimens"><div class="sg-specimen"><div class="sg-row">
+      <button class="pv-btn pv-btn--primary">Primary</button><button class="pv-btn pv-btn--secondary">Secondary</button><button class="pv-btn pv-btn--sun">On purple</button><button class="pv-btn pv-btn--quiet">Quiet</button>
+      <span class="pv-chip">{{icon:sparkle}}3-day family streak</span></div>
+      <div class="pv-field" style="max-width:20rem"><label for="sg-in">Points to aim for each week</label><input class="pv-input" id="sg-in" type="number" value="30"></div>
+      <p class="pv-t-support">Every control is at least 44px tall. Focus is a 3px purple outline with a 2px gap (sunshine on purple). Tab through this page to see it.</p></div></div></article>
+
+  <article class="sg-comp"><h3 class="pv-t-section">AppNavigation</h3>
+    <p class="pv-t-support">The approved five tabs, unchanged. A bottom bar up to 1099px; a side rail with 15px labels from 1100px. Tab labels are the one interactive use of 12px text.</p>
+    <div class="sg-specimens"><div class="sg-specimen"><div class="sg-frame" style="max-width:390px" id="nav-specimen"></div></div></div></article>
+
+  <article class="sg-comp"><h3 class="pv-t-section">PercyHeroSlot</h3>
+    <p class="pv-t-support">Screens ask for a stable key (<code>fox1a.seated</code>, <code>fox1a.walking</code> and so on). Until source-faithful pose artwork exists, every key resolves to the seated Fox 1A master, unaltered. Three sizes: 48, 96 and hero (144px on phones, 208px from 834px).</p>
+    <div class="sg-specimens"><div class="sg-specimen"><div class="sg-row" style="align-items:flex-end" id="fox-specimen"></div></div></div></article>
+</section>
+
+<section id="motion" class="sg-section">
+  <h2 class="pv-t-page">Motion</h2>
+  <p class="pv-t-body sg-lede">Four durations and two easings. Percy responds once to an action and then stops; only the idle star twinkle loops. With "reduce motion" on, nothing animates and every state is still shown.</p>
+  <div class="sg-table" id="motion-table"></div>
+  <div class="sg-specimens"><div class="sg-specimen"><div class="sg-row" style="align-items:flex-end">
+    <span class="pv-fox" data-size="mid" data-motion="idle" id="motion-fox">{{foxinline:showcase}}</span>
+    <button type="button" class="pv-btn pv-btn--primary" id="motion-play">Play award response</button></div>
+    <p class="pv-t-support">Built from the unaltered master: the whole figure moves and the star (already a separate shape) pulses. Anything that needs a limb to move needs new artwork; see the Fox 1A production board.</p></div></div>
+</section>
+
+<section id="open" class="sg-section">
+  <h2 class="pv-t-page">Decisions for the owner</h2>
+  <ol class="sg-decisions pv-t-body">
+    <li><strong>Type scale.</strong> Approve the nine roles as shown, or name the role to change.</li>
+    <li><strong>Tab labels at 12px.</strong> Five tabs at 320px leave 64px each. 12px is the only size where "Children" and "Settings" fit without clipping. Approve, or switch to icon-only tabs under 360px.</li>
+    <li><strong>Photo sizes.</strong> 72 / 52 / 104px on phones; 88 / 64 / 136px from 834px.</li>
+    <li><strong>Scene colours.</strong> Five new soft tints (warm sky, peach, lilac mist, two meadow greens) used only as backgrounds.</li>
+    <li><strong>Scene drawings.</strong> The sun, hill, clouds and flag are simple shapes drawn in code as placeholders for the look. They are not illustrator artwork.</li>
+  </ol>
+</section>
+</main>
+
+<script>
+{{js:design/v11/components/percy-v11-components.js}}
+</script>
+<script>
+const $ = (id) => document.getElementById(id);
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const px = (v) => `${Math.round(parseFloat(v) * 100) / 100}px`;
+const row = (cells, head) => `<div class="sg-tr${head ? ' sg-th' : ''}">${cells.map((c) => `<div>${c}</div>`).join('')}</div>`;
+
+// ---- Type: measured from the rendered specimen ----
+const ROLES = [
+  ['pv-t-hero', 'Editorial hero', 'What went well today?', 'Home and Children feature headline'],
+  ['pv-t-page', 'Page title', 'Lara', 'First-level screen heading'],
+  ['pv-t-section', 'Section title', "Today's Goals", 'Goals, points, achievements'],
+  ['pv-t-card', 'Card title', 'New bike', 'Named rewards, child summary'],
+  ['pv-t-body', 'Main body', 'Read for 15 minutes', 'Goal names, descriptions'],
+  ['pv-t-support', 'Supporting', '+1 point when done', 'Evidence labels, supporting detail'],
+  ['pv-t-action', 'Action label', 'Award other points', 'Buttons, Quick Points, Manage'],
+  ['pv-t-meta', 'Overline / metadata', 'Monday 23 November', 'Tab labels and non-essential labels only'],
+  ['pv-t-number', 'Important number', '112', 'Points balance'],
+  ['pv-t-number-sm', 'Number, compact', '34', 'Figures beside rings'],
+];
+$('type-table').innerHTML = row(['Role', 'Specimen', 'Measured now', 'Used for'], true) + ROLES.map(([cls, name, sample, use]) => row([`<strong>${name}</strong><br><code>.${cls}</code>`, `<span class="${cls}" data-type-specimen>${sample}</span>`, '<span data-type-measure></span>', use])).join('');
+function measureType() {
+  document.querySelectorAll('[data-type-specimen]').forEach((el) => {
+    const s = getComputedStyle(el);
+    el.closest('.sg-tr').querySelector('[data-type-measure]').textContent = `${px(s.fontSize)} / ${px(s.lineHeight)} · ${s.fontFamily.split(',')[0].replace(/["']/g, '')} ${s.fontWeight}`;
+  });
+}
+measureType(); addEventListener('resize', measureType); document.fonts && document.fonts.ready.then(measureType);
+
+// ---- Colour ----
+const COLOURS = [
+  ['--pv-purple', 'Percy purple', 'Locked'], ['--pv-purple-deep', 'Purple, pressed', 'Locked'], ['--pv-orange', 'Percy orange', 'Locked'], ['--pv-sunshine', 'Sunshine', 'Locked'],
+  ['--pv-cream', 'Warm cream', 'Locked'], ['--pv-ink', 'Ink', 'Locked'], ['--pv-ink-soft', 'Ink, soft', 'Locked'], ['--pv-lilac', 'Fine lilac', 'Locked'],
+  ['--pv-earn', 'Earned green', 'Locked'], ['--pv-earn-soft', 'Earned, soft', 'Locked'], ['--pv-star-soft', 'Sunshine, soft', 'Locked'], ['--pv-danger', 'Danger', 'Locked'],
+  ['--pv-lilac-mist', 'Lilac mist', 'New'], ['--pv-sky-warm', 'Warm sky', 'New'], ['--pv-peach-soft', 'Peach', 'New'], ['--pv-meadow', 'Meadow', 'New'], ['--pv-meadow-deep', 'Meadow, deep', 'New'], ['--pv-orange-text', 'Orange for text', 'New'],
+  ...[1, 2, 3, 4, 5, 6].map((n) => [`--pv-kid-${n}`, `Child colour ${n}`, 'Locked']),
+];
+const lum = (hex) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+$('swatches').innerHTML = COLOURS.map(([v, name, status]) => { const hex = css(v).toUpperCase(); const dark = ratio(hex, '#FFFFFF') > ratio(hex, '#271737'); return `<div class="sg-swatch" style="background:${hex};color:${dark ? '#fff' : 'var(--pv-ink)'}"><strong>${name}</strong><span>${hex}</span><code>${v}</code><span class="pv-flag"${status === 'New' ? ' data-tone="warn"' : ''}>${status}</span></div>`; }).join('');
+const PAIRS = [['--pv-ink', '--pv-cream', 'Body text on page'], ['--pv-purple', '--pv-cream', 'Headings on page'], ['--pv-ink-soft', '--pv-cream', 'Supporting text on page'], ['--pv-ink-soft', '--pv-white', 'Supporting text on cards'],
+  ['--pv-white', '--pv-purple', 'Primary button, balance band'], ['--pv-lilac', '--pv-purple', 'Supporting text on purple'], ['--pv-ink', '--pv-sunshine', 'Points pill, sunshine button'], ['--pv-purple', '--pv-sunshine', 'Headline over the sun'],
+  ['--pv-earn', '--pv-earn-soft', 'Done state'], ['--pv-ink', '--pv-meadow-deep', 'Text on meadow'], ['--pv-purple', '--pv-meadow-deep', 'Headings on meadow'], ['--pv-ink-soft', '--pv-lilac', 'Unselected tab on lilac'],
+  ['--pv-purple', '--pv-lilac', 'Selected tab'], ['--pv-orange-text', '--pv-cream', 'Orange as text'], ['--pv-orange', '--pv-white', 'Orange as text: not allowed']];
+$('contrast-table').innerHTML = row(['Use', 'Specimen', 'Contrast', 'WCAG AA (4.5:1)'], true) + PAIRS.map(([f, b, use]) => { const r = ratio(css(f), css(b)); return row([use, `<span class="sg-pair"${r < 4.5 ? ' data-contrast-demo' : ''} style="color:var(${f});background:var(${b})">Percy Points 112</span>`, `${r.toFixed(2)}:1`, r >= 4.5 ? '<span class="pv-flag" data-tone="ok">Pass</span>' : '<span class="pv-flag" data-tone="warn">Fail: graphic use only</span>']); }).join('');
+
+// ---- Spacing, radius, elevation, sizes ----
+$('space-list').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `<div class="sg-row"><i class="sg-bar" style="width:var(--pv-space-${n})"></i><code>--pv-space-${n}</code><span class="pv-t-support">${px(parseFloat(css(`--pv-space-${n}`)) * 16)}</span></div>`).join('');
+$('radius-list').innerHTML = ['control', 'card', 'scene'].map((n) => `<div class="sg-row"><i class="sg-radius" style="border-radius:var(--pv-radius-${n})"></i><code>--pv-radius-${n}</code><span class="pv-t-support">${px(parseFloat(css(`--pv-radius-${n}`)) * 16)}</span></div>`).join('');
+$('shadow-list').innerHTML = [['1', 'Tiles, chips'], ['2', 'Raised cards, dialogs'], ['photo', 'Child photos']].map(([n, use]) => `<div class="sg-row"><i class="sg-shadow" style="box-shadow:var(--pv-shadow-${n})"></i><code>--pv-shadow-${n}</code><span class="pv-t-support">${use}</span></div>`).join('');
+const SIZES = [['--pv-tap', 'Minimum touch target'], ['--pv-icon', 'Inline icon'], ['--pv-icon-medallion', 'Icon medallion'], ['--pv-avatar-selected', 'Selected child photo, Home'], ['--pv-avatar-other', 'Other children'], ['--pv-avatar-profile', 'Children profile photo'], ['--pv-ring', 'Progress ring'], ['--pv-fox-hero', 'Percy, hero slot'], ['--pv-nav-height', 'Tab bar']];
+function sizes() { $('size-table').innerHTML = row(['Token', 'Use', 'At this width'], true) + SIZES.map(([v, use]) => row([`<code>${v}</code>`, use, px(parseFloat(css(v)) * 16)])).join(''); }
+sizes(); addEventListener('resize', sizes);
+
+// ---- Crop test cards (labelled, not photographs) ----
+const card = (w, h, label) => `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="${w}" height="${h}" fill="#E5DCEA"/><path d="M0 0L${w} ${h}M${w} 0L0 ${h}" stroke="#857A96" stroke-width="2"/><circle cx="${w / 2}" cy="${h * 0.3}" r="${Math.min(w, h) * 0.22}" fill="#FFC938" stroke="#4B1D8C" stroke-width="4"/><text x="${w / 2}" y="${h * 0.3 + 6}" font-family="sans-serif" font-size="${Math.min(w, h) * 0.07}" font-weight="700" text-anchor="middle" fill="#271737">FACE ZONE</text><text x="${w / 2}" y="${h - 16}" font-family="sans-serif" font-size="${Math.min(w, h) * 0.06}" text-anchor="middle" fill="#271737">${label}</text></svg>`)}`;
+const kid = (o) => ({ id: 'x', kid: 1, name: 'Lara', photo: null, ...o });
+let own = [];
+const photoFor = (i, fallback) => own.length ? own[i % own.length] : fallback;
+const spec = (label, html, note = '') => `<figure class="sg-specimen"><div class="sg-row" style="align-items:flex-end">${html}</div><figcaption class="pv-t-support"><strong>${label}</strong>${note ? ` · ${note}` : ''}</figcaption></figure>`;
+
+function avatars() {
+  const sizes3 = (c) => ['selected', 'other', 'profile'].map((s) => PV.avatar(c, s, { ring: s !== 'other' })).join('');
+  $('avatar-specimens').innerHTML =
+    spec(own.length ? 'Your photo' : 'Portrait crop test card', sizes3(kid({ photo: photoFor(0, card(300, 450, 'portrait 2:3')) })), 'selected · other · profile. Cropped to a circle, anchored 30% from the top so faces stay in frame.') +
+    spec(own.length ? 'Your photo' : 'Landscape crop test card', sizes3(kid({ kid: 2, name: 'Omar', photo: photoFor(1, card(600, 300, 'landscape 2:1')) }))) +
+    spec('No photo', sizes3(kid({ kid: 3, name: 'Joud' })), 'Initial at the same size, on the child\'s own colour.') +
+    spec('Photo failed to load', sizes3(kid({ kid: 5, name: 'Sam', photo: 'broken://missing' })), 'Swaps to the initial; the layout does not move.');
+}
+const FAMILY = [['Lara', 1], ['Omar', 2], ['Joud', 3], ['Alexandra-Josephine Montgomery-Wellington', 4], ['Sam', 5], ['Noor', 6]].map(([name, k], i) => ({ id: `c${i}`, name, kid: k, photo: null }));
+function selectors() {
+  const fam = (n) => FAMILY.slice(0, n).map((c, i) => ({ ...c, photo: photoFor(i, null) }));
+  const frame = (w, inner) => `<div class="sg-frame" style="max-width:${w}px"><div style="padding:0 var(--pv-gutter)">${inner}</div></div>`;
+  $('selector-specimens').innerHTML =
+    spec('Two children, 390px', frame(390, PV.selector(fam(2), 'c0'))) + spec('Three children, 390px', frame(390, PV.selector(fam(3), 'c1'))) +
+    spec('Six children with a long name, 320px', frame(320, PV.selector(fam(6), 'c3')), 'Scrolls sideways; nothing shrinks.') +
+    spec('Children page variant', frame(390, PV.selector(fam(3), 'c0', { emphasise: false })), 'All 52px: the profile photo below it carries the emphasis.');
+}
+avatars(); selectors(); PV.revealSelected();
+$('pick-photos').addEventListener('click', () => $('photo-files').click());
+$('photo-files').addEventListener('change', (e) => { own = [...e.target.files].map((f) => URL.createObjectURL(f)); $('photo-status').textContent = own.length ? `${own.length} photo${own.length === 1 ? '' : 's'} shown from this device only.` : ''; avatars(); selectors(); PV.revealSelected(); });
+
+// ---- Components ----
+const B = [{ name: 'Kindness', icon: 'heart', points: 1, tint: 'sun' }, { name: 'Helpfulness', icon: 'handshake', points: 1, tint: 'green' }, { name: 'Bravery', icon: 'shield-star', points: 1, tint: 'lilac' }, { name: 'Resilience', icon: 'mountains', points: 1, tint: 'peach' }];
+$('quick-specimens').innerHTML =
+  spec('Default grid, 390px', `<div class="sg-frame sg-pad" style="max-width:390px"><div class="pv-quick">${B.map((b) => PV.quickTile(b, 'Lara')).join('')}</div></div>`) +
+  spec('Just given, and a long label, 320px', `<div class="sg-frame sg-pad" style="max-width:320px"><div class="pv-quick">${PV.quickTile(B[0], 'Lara').replace('data-quick=', 'data-given data-quick=')}${PV.quickTile({ name: 'Getting ready for school without reminders', icon: 'list-checks', points: 5, tint: 'green' }, 'Lara')}</div></div>`);
+$('goal-specimens').innerHTML =
+  spec('To do, done, and a long title, 320px', `<div class="sg-frame sg-pad" style="max-width:320px"><ul class="pv-goals">${PV.goalRow({ id: 'a', title: 'Read for 15 minutes', points: 1, done: false })}${PV.goalRow({ id: 'b', title: 'Finish homework', points: 1, done: true })}${PV.goalRow({ id: 'c', title: 'Practise the piano for twenty minutes before dinner without being reminded', points: 3, done: true })}</ul></div>`) +
+  spec('Nothing scheduled', `<div class="sg-frame sg-pad" style="max-width:390px"><div class="pv-empty"><p class="pv-t-card">No goals for Joud today</p><p class="pv-t-support">Add a weekly routine or a one-off task to give them something to work towards.</p><button class="pv-btn pv-btn--primary">Set up goals</button></div></div>`);
+const S = (o) => `<ol class="pv-journey" style="min-width:16rem">${PV.stop(o)}</ol>`;
+$('ring-specimens').innerHTML =
+  spec('Today: none done', S({ metric: 'today', value: 0, max: 3, iconName: 'list-checks', label: "Today's goals", unit: 'done', note: '3 to go' })) +
+  spec('Today: part done', S({ metric: 'today', value: 2, max: 3, iconName: 'list-checks', label: "Today's goals", unit: 'done', note: '1 to go' })) +
+  spec('Today: all done', S({ metric: 'today', value: 3, max: 3, iconName: 'list-checks', label: "Today's goals", unit: 'done', note: 'All done today', tone: 'earn' })) +
+  spec('Week: over target', S({ metric: 'week', value: 34, max: 30, iconName: 'target', label: 'This week', unit: 'points', note: 'Target reached, 4 extra', tone: 'earn' }), 'Arc is full; the number still reads 34.') +
+  spec('Week: no target (zero denominator)', S({ metric: 'week', value: 12, max: 0, iconName: 'target', label: 'This week', unit: 'points', note: 'No weekly target set yet' }), 'Neutral dashed ring, no percentage.') +
+  spec('Named goal', S({ metric: 'goal', value: 120, max: 400, iconName: 'bicycle', label: 'New bike', unit: 'points saved', note: '280 to go' }));
+$('dest-specimens').innerHTML =
+  spec('Saving', `<div class="sg-frame sg-pad" style="max-width:358px">${PV.destination({ name: 'New bike', saved: 120, cost: 400, icon: 'bicycle' }, { headingId: 'd1' })}</div>`) +
+  spec('Fully saved, long name, 4-digit figures', `<div class="sg-frame sg-pad" style="max-width:320px">${PV.destination({ name: 'A very long reward title that has to wrap on a small phone screen', saved: 5000, cost: 5000, icon: 'trophy' }, { headingId: 'd2' })}</div>`) +
+  spec('No bigger goal', `<div class="sg-frame sg-pad" style="max-width:358px">${PV.destination(null)}</div>`);
+$('misc-specimens').innerHTML =
+  spec('AchievementBanner: earned and next', `<ul class="sg-frame sg-pad" style="max-width:390px;display:grid;gap:var(--pv-space-2)">${PV.achievement({ state: 'earned', iconName: 'trophy', title: 'Weekly target reached', text: '34 points this week' })}${PV.achievement({ state: 'next', iconName: 'medal', title: 'Next milestone', text: 'Weekly target: 8 points to go' })}</ul>`) +
+  spec('ManageAction', `<ul class="pv-manage sg-frame sg-pad" style="max-width:390px">${PV.manageAction({ id: 't', iconName: 'target', label: 'Weekly target', text: '30 points a week' })}${PV.manageAction({ id: 'g', iconName: 'calendar-dots', label: 'Goals and schedule', text: '3 scheduled today' })}</ul>`);
+$('nav-specimen').innerHTML = PV.nav('home').replace('class="pv-nav"', 'class="pv-nav sg-nav-static"');
+$('fox-specimen').innerHTML = ['small', 'mid', 'hero'].map((s) => `<figure>${PV.fox({ pose: 'walking', size: s })}<figcaption class="pv-t-support">${s}</figcaption></figure>`).join('') + `<p class="pv-t-support" style="max-width:18rem">Asked for <code>fox1a.walking</code>; resolved to <code>fox1a.seated</code> because no approved walking artwork exists.</p>`;
+
+// ---- Motion ----
+$('motion-table').innerHTML = row(['Token', 'Value', 'Use'], true) + [['--pv-dur-quick', 'Press, toggle'], ['--pv-dur-base', 'Enter, colour change'], ['--pv-dur-celebrate', 'One-shot Percy response, ring fill'], ['--pv-dur-loop', 'Idle star twinkle (only loop)'], ['--pv-ease-out', 'Default easing'], ['--pv-ease-bounce', 'Pop on completion']].map(([v, use]) => row([`<code>${v}</code>`, css(v), use])).join('');
+$('motion-play').addEventListener('click', () => { const f = $('motion-fox'); f.dataset.motion = ''; void f.offsetWidth; f.dataset.motion = 'award'; setTimeout(() => { f.dataset.motion = 'idle'; }, 800); });
+</script>
+</body>
+</html>

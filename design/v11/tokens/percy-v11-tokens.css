@@ -1,0 +1,135 @@
+/* Positive Percy V1.1 design tokens
+ * Version 0.1.0 · Issued 2026-11-23 · Owner: Percy V1.1 design engineering
+ * Status: PROPOSAL for owner approval (stop gate P2). Not wired into src/.
+ *
+ * Locked values (unchanged from V1 / Stage 1 brand system) are marked LOCKED.
+ * Everything else is a V1.1 proposal and is marked NEW.
+ * Sizes are in rem so browser text-size settings scale them; 1rem = 16px.
+ */
+:root {
+  /* ---- Colour: brand, LOCKED ---- */
+  --pv-purple: #4B1D8C;
+  --pv-purple-deep: #35136A;      /* V1 --primary-hover */
+  --pv-orange: #FF6A00;           /* decoration and large graphics only: 2.87:1 on white */
+  --pv-sunshine: #FFC938;
+  --pv-cream: #FFF6E8;
+  --pv-ink: #271737;
+  --pv-lilac: #E5DCEA;
+  --pv-white: #FFFFFF;
+  /* ---- Colour: V1 semantic, LOCKED ---- */
+  --pv-ink-soft: #594E69;         /* supporting text: 7.2:1 on cream */
+  --pv-earn: #2A6E33;             /* earned / completed: 6.2:1 on white */
+  --pv-earn-soft: #E3F2E5;
+  --pv-star-soft: #FFF1D1;
+  --pv-danger: #B42318;
+  --pv-input-border: #857A96;
+  --pv-kid-1: #1F6FB2; --pv-kid-1-soft: #DCEBF8;
+  --pv-kid-2: #C0265E; --pv-kid-2-soft: #FBE1EA;
+  --pv-kid-3: #0E7A7E; --pv-kid-3-soft: #D3EFEF;
+  --pv-kid-4: #8A6B0F; --pv-kid-4-soft: #EEEBD5;
+  --pv-kid-5: #7A4B2A; --pv-kid-5-soft: #F1E4D8;
+  --pv-kid-6: #4A5A6A; --pv-kid-6-soft: #E2E7EC;
+  /* ---- Colour: scene tints, NEW (decoration only, never text) ---- */
+  --pv-lilac-mist: #F3ECFA;
+  --pv-sky-warm: #FFE9B5;
+  --pv-peach-soft: #FFE3CC;
+  --pv-meadow: #CFEBC9;
+  --pv-meadow-deep: #A9D9A5;
+  --pv-orange-text: #B34700;      /* orange that passes as text: 5.1:1 on cream */
+
+  /* ---- Semantic colour roles ---- */
+  --pv-bg: var(--pv-cream);
+  --pv-surface: var(--pv-white);
+  --pv-text: var(--pv-ink);
+  --pv-text-soft: var(--pv-ink-soft);
+  --pv-heading: var(--pv-purple);
+  --pv-action: var(--pv-purple);
+  --pv-action-hover: var(--pv-purple-deep);
+  --pv-on-action: var(--pv-white);
+  --pv-border: var(--pv-lilac);
+  --pv-focus: var(--pv-purple);
+  --pv-focus-on-dark: var(--pv-sunshine);
+
+  /* ---- Type families and weights, LOCKED ---- */
+  --pv-font-display: 'Nunito', 'Poppins', ui-sans-serif, system-ui, sans-serif;  /* 700, 800 only */
+  --pv-font-body: 'Poppins', ui-sans-serif, system-ui, sans-serif;                /* 400, 500, 600 only */
+
+  /* ---- Type roles: size / line-height (phone). NEW ---- */
+  --pv-hero-size: 2rem;        --pv-hero-line: 2.375rem;    /* 32/38 Nunito 800 */
+  --pv-page-size: 1.75rem;     --pv-page-line: 2.125rem;    /* 28/34 Nunito 800 */
+  --pv-section-size: 1.375rem; --pv-section-line: 1.75rem;  /* 22/28 Nunito 800 */
+  --pv-card-size: 1.125rem;    --pv-card-line: 1.5rem;      /* 18/24 Nunito 700 */
+  --pv-body-size: 1rem;        --pv-body-line: 1.5rem;      /* 16/24 Poppins 400 */
+  --pv-support-size: 0.875rem; --pv-support-line: 1.25rem;  /* 14/20 Poppins 400 */
+  --pv-action-size: 0.9375rem; --pv-action-line: 1.25rem;   /* 15/20 Poppins 600 */
+  --pv-meta-size: 0.75rem;     --pv-meta-line: 1rem;        /* 12/16 Poppins 600: tab labels and non-essential metadata only */
+  --pv-number-size: 2.25rem;   --pv-number-line: 2.5rem;    /* 36/40 Nunito 800 tabular */
+  --pv-number-sm-size: 1.5rem; --pv-number-sm-line: 1.75rem;/* 24/28 Nunito 800 tabular: inside rings */
+
+  /* ---- Spacing: 8px cadence with 4px substeps. NEW ---- */
+  --pv-space-1: 0.25rem;  /* 4 */
+  --pv-space-2: 0.5rem;   /* 8 */
+  --pv-space-3: 0.75rem;  /* 12 */
+  --pv-space-4: 1rem;     /* 16 */
+  --pv-space-5: 1.5rem;   /* 24 */
+  --pv-space-6: 2rem;     /* 32 */
+  --pv-space-7: 2.5rem;   /* 40 */
+  --pv-space-8: 3rem;     /* 48 */
+  --pv-gutter: 1rem;      /* page content edge: 16 on phones */
+  --pv-content-max: 70rem;/* 1120 */
+
+  /* ---- Radius. NEW ---- */
+  --pv-radius-control: 0.875rem; /* 14: buttons, inputs, rows */
+  --pv-radius-card: 1.25rem;     /* 20: cards and tiles */
+  --pv-radius-scene: 1.75rem;    /* 28: illustrated scenes */
+  --pv-radius-full: 999px;
+
+  /* ---- Elevation. NEW ---- */
+  --pv-shadow-1: 0 1px 2px rgb(39 23 55 / 0.06), 0 2px 6px rgb(39 23 55 / 0.06);
+  --pv-shadow-2: 0 2px 4px rgb(39 23 55 / 0.06), 0 10px 24px rgb(75 29 140 / 0.12);
+  --pv-shadow-photo: 0 2px 4px rgb(39 23 55 / 0.10), 0 8px 18px rgb(39 23 55 / 0.16);
+
+  /* ---- Sizes ---- */
+  --pv-tap: 2.75rem;                 /* 44 minimum touch target, LOCKED */
+  --pv-icon: 1.5rem;                 /* 24 inline icon */
+  --pv-icon-medallion: 3rem;         /* 48 icon medallion */
+  --pv-avatar-selected: 4.5rem;      /* 72 selected child, Home */
+  --pv-avatar-other: 3.25rem;        /* 52 other children */
+  --pv-avatar-profile: 6.5rem;       /* 104 Children profile hero */
+  --pv-ring: 6rem;                   /* 96 progress ring */
+  --pv-ring-stroke: 0.625rem;        /* 10 */
+  --pv-focus-width: 3px;
+  --pv-focus-offset: 2px;
+  --pv-nav-height: 4.25rem;          /* 68 bottom tab bar */
+  --pv-rail-width: 15rem;            /* 240 desktop side rail */
+
+  /* ---- Fox illustration slots (rendered height; width follows the 365:459 master) ---- */
+  --pv-fox-small: 3rem;   /* 48 */
+  --pv-fox-mid: 6rem;     /* 96 */
+  --pv-fox-hero: 9rem;    /* 144 phone hero */
+
+  /* ---- Motion. NEW ---- */
+  --pv-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --pv-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --pv-dur-quick: 150ms;      /* press, toggle */
+  --pv-dur-base: 240ms;       /* enter, ring fill start */
+  --pv-dur-celebrate: 700ms;  /* one-shot Percy response */
+  --pv-dur-loop: 2400ms;      /* gentle idle loop */
+}
+
+/* Tablet and desktop type steps */
+@media (min-width: 834px) {
+  :root {
+    --pv-hero-size: 2.75rem;     --pv-hero-line: 3.25rem;   /* 44/52 */
+    --pv-page-size: 2.125rem;    --pv-page-line: 2.625rem;  /* 34/42 */
+    --pv-section-size: 1.625rem; --pv-section-line: 2rem;   /* 26/32 */
+    --pv-card-size: 1.25rem;     --pv-card-line: 1.625rem;  /* 20/26 */
+    --pv-number-size: 2.75rem;   --pv-number-line: 3rem;    /* 44/48 */
+    --pv-gutter: 2rem;
+    --pv-avatar-selected: 5.5rem;   /* 88 */
+    --pv-avatar-other: 4rem;        /* 64 */
+    --pv-avatar-profile: 8.5rem;    /* 136 */
+    --pv-ring: 7rem;                /* 112 */
+    --pv-fox-hero: 13rem;           /* 208 */
+  }
+}
