@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.2 |
+| Version | 1.3 |
 | Issued | 2026-11-18 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-f-forms`, stacked on V1-A `claude/percy-v1-a-home`) |
 | Status | Reviewed (design peer review v1.1; code review of PR #58 fixed, v1.2) |
@@ -15,6 +15,7 @@
 | 1.0 | 2026-11-18 | First draft |
 | 1.1 | 2026-11-18 | Peer review: 2 blocking and 4 of 5 non-blocking findings adopted, 1 answered (§7). §3 is replaced by a build-time gate. G4 and E14–E16 are added. The Settings tips are kept |
 | 1.2 | 2026-11-18 | Code review of PR #58 (CodeRabbit-style): all 3 actionable and 5 nitpick findings fixed (§8). O corrected: Settings opens the parenting tips, not onboarding |
+| 1.3 | 2026-11-23 | The owner asked for custom points back in Give Percy Points: a parent can change the amount (§9). This reverses the v1.0 removal of the free amount recorded in §2 |
 
 ## 1. Scope
 
@@ -40,6 +41,7 @@ The design's "Back" maps to the dialog's Close and Cancel. This is recorded as a
 **Award (A).** `onSubmit(child, {points, category, note})` uses the child chosen **in the dialog**, not the page's selection. The amount awarded is the selected behaviour's `points`. The request is unchanged: `POST /api/children/:id/award {points, category, note, request_id}` through `applyAward`. That keeps the per-child in-flight lock, the Undo toast, streak, confetti and `check-badges`.
 - The free amount (+1…+10 and the number input) and the "Other" chip are removed, because the approved form has neither. This is a capability change taken from the locked design, recorded in the PR.
 - A family that wants a different amount sets the behaviour's points in Settings, as today.
+- **Superseded for the amount on 23 November 2026 (§9):** the owner asked for custom amounts back. "Other" stays removed.
 
 **A1.** The behaviours offered are those with no `assigned_children`, or those assigned to the selected child. This is the same filter as Quick Points and the old modal.
 **A2.** When the selected child changes, the selected behaviour is kept if the new child can use it. Otherwise it moves to that child's first behaviour, or to none.
@@ -173,3 +175,89 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 | N3 | The scroll region repeated the dialog's name | Its label is the approved subtitle | Playwright axe |
 | N4 | `goalScheduleSummary` was unused | Removed with its test | (none) |
 | N5 | Trailing blank line in `ci.yml` | Removed | (none) |
+
+## 9. Custom amount in Give Percy Points (owner, 23 November 2026) (v1.3)
+
+**Owner's report, after V1 went live.** "There is no quick way to give custom points to a child as there was on the old layout."
+
+**What was lost.** The old "Award Percy Points" dialog let a parent choose any amount: six quick amounts (+1, +2, +3, +4, +5, +10) and a number field up to 1,000, placed at the top of the dialog. V1 removed both because the approved form had neither (§2, "The free amount ... removed"), so the amount became the behaviour's own points. A parent who wants to give 5 for something worth 1 has to edit the behaviour in Settings first. That is the regression. No other place in V1 gives a custom award.
+
+**This is not an exact restoration.** In the old dialog the amount was independent of the category and started at 1. Here it starts as the chosen behaviour's points, which is what V1 does today and what the tiles' "+N" badges promise. Two other things the old dialog had are not restored: the "Other" category, and with it the ability to award when a family has no behaviours.
+
+**Contract (replaces the second sentence of §2 A and rule A3's "N is the selected behaviour's points").**
+- The amount awarded is a whole number from 1 to 1,000.
+- Until the parent chooses an amount, it is the selected behaviour's points (1 if the behaviour has none stored), and it follows the selection when the behaviour or the child changes (A2).
+- When the parent chooses an amount, with a quick amount or by typing, that amount stays until the dialog closes, whatever behaviour or child is picked afterwards. To go back to a behaviour's points the parent chooses that amount.
+- The summary and the button show the amount. An amount that cannot be awarded (empty, zero, negative, not whole, over 1,000) shows no summary, disables the button and makes it read "Award points".
+- The award is recorded under the selected behaviour's name. The server is unchanged: `POST /api/children/:id/award` already accepts any whole number from 1 to 1,000 for any category, with no cap, and stays idempotent through `request_id` (a retry with the same amount replays; a different amount under the same id is refused).
+
+**How it is held.** One piece of state, the parent's own amount: not chosen, emptied, or a number. The amount shown is that number, or the behaviour's points while it is not chosen. Nothing copies the behaviour's points into state, so a reload of the behaviours cannot wipe a chosen amount and behaviours that arrive late are picked up without a special case.
+
+**Every path that decides an amount credited to a child.**
+
+| Path | Amount | Changed here |
+| --- | --- | --- |
+| Give Percy Points dialog (`AwardPointsDialog.jsx`), opened from Home's "Award points" | The amount above | Yes |
+| Home Quick Points tiles (`handleQuickAction`) | The behaviour's points, one tap | No |
+| Today's Goals "Complete" | The goal's behaviour's points, decided by the server | No |
+| Activity "Correct" and Undo | Reverse an existing amount | No |
+| "Starting points" when a child is added | 0 to 1,000, typed by the parent; not an award | No |
+| Server `POST /api/children/:id/award` | Validates 1 to 1,000, whole number | No |
+
+**Layout.** The amount is the second step, directly under the child picker and above the behaviours, as the old dialog had it. At 390 px and wider the quick amounts are on the first view of the dialog; at 320 × 568 the step's heading is and the buttons need a short scroll.
+
+- Step 2 heading: "How many points?"
+- Hint: "Use the behaviour's points, or choose another amount."
+- Six buttons: +1, +2, +3, +4, +5, +10, in three columns below 640 px and six from 640 px. The one equal to the amount is pressed. The group is named by the heading.
+- A number field named "Percy Points" (the app's existing term), with the number keypad on phones.
+- One message for an amount that cannot be awarded, other than an empty field: "Points must be a whole number from 1 to 1000." It is the server's existing message for the same rule; it is announced, and the field is marked invalid and described by it.
+- The behaviours become step 3.
+
+**New wording for the owner to approve:** the heading "How many points?" and the hint. The message, the field's name and the button labels already exist in the product.
+
+**Edge cases (input → expected).**
+
+| Input | Expected |
+| --- | --- |
+| Dialog opens, first behaviour is worth 1 | Amount 1; "+1" pressed; "Award 1 point" |
+| Choose a behaviour worth 3, amount not chosen | Amount 3; "+3" pressed |
+| Tap "+5" | Amount 5; "earns 5 Percy Points"; "Award 5 points"; the request carries `points: 5` and the behaviour's name |
+| Type 25 | Amount 25; no quick amount pressed; "Award 25 points" |
+| Type 25, then press "+4" while the field still has focus | The field shows 4 |
+| Tap "+10", then choose another behaviour, then another child | Amount stays 10 throughout, including when the behaviour moves (A2) |
+| Clear the field | No amount, no message; Award disabled, reads "Award points"; choosing a behaviour does not refill it |
+| Type 0, -3, 1001 or 2.5 | The message; the field marked invalid; Award disabled |
+| Type 1000, "1e3" or "007" | 1000, 1000 and 7 are awarded |
+| Type "1e400" | Not awarded (the browser gives either nothing or infinity) |
+| No behaviour available for the child | No amount step; Award disabled, as before |
+| Behaviours arrive after the dialog opened | The amount step appears with the first behaviour's points |
+| The same behaviours are reloaded | A chosen amount is kept |
+| A behaviour with no stored points | Counts as 1 |
+| Close and reopen | Fresh form: first behaviour, its points, no chosen amount |
+| Double tap on Award; the server refuses | Unchanged: one request; the form stays open (A5) |
+
+**Abuse.** The amount is typed by a signed-in parent and validated again by the server. Nothing new reaches the server: the old dialog sent the same field.
+
+**Outcome records.** Unchanged: one `point_events` row with the amount, the behaviour's name and the note; the Undo toast; Activity shows the amount.
+
+**Tests, written before the build.**
+- Unit (`V1Forms.test.jsx`, "Award Points: the amount"): every row above. The fourteen tests written against the first draft failed on the old dialog; they were then brought into line with this reviewed design.
+- Browser (`e2e/ui.spec.js`, Home journey, four sizes): zero shows the message and the screen passes the shared checks in that state; 25 shows on the button; "+4" tapped afterwards shows in the field; choosing a behaviour keeps it; the request carries `points: 4` and the child's total rises by 4. Four is an amount no seeded behaviour has.
+- **Not covered:** a real phone's number keypad; a screen reader pressing a quick amount with focus left in the field, in a real browser (the unit test covers the logic); touch widths between 320 and 390 px (the quick amounts are three to a row there, about 85 px each at 320 px).
+
+**Rollout and reversal.** One pull request, CI, the owner's approval of the exact commit and of the new wording, then the merge (which deploys), with the read-only before and after counts. No migration. Reversal: revert the commit.
+
+**Design review (fresh context, before the build).** No blocking finding. Adopted:
+
+| # | Finding | Resolution |
+| --- | --- | --- |
+| 1 | The first draft put the amount below the behaviours, so on a phone it needed a scroll; the old dialog had it at the top | The amount is step 2, above the behaviours |
+| 2 | The first draft reset the amount whenever a behaviour was chosen, which only worked with the amount below the behaviours | Replaced by the rule above: a chosen amount stays |
+| 3 | Where the amount is set mattered: keyed on the child or on the behaviour objects it would break | Nothing is copied into state; the amount is read from the behaviour while not chosen |
+| 4 | The number field keeps its own text while focused, so a quick amount pressed without moving focus would not show | The field is redrawn when a quick amount is chosen; unit test |
+| 5 | An amount that cannot be awarded could still appear in the summary and on the button | Hidden for every such amount |
+| 6 | Six buttons in a row are under 44 px wide on phones between 320 and 385 px | Three to a row below 640 px |
+| 7 | No name for the group of quick amounts; the summary's live region came and went; the messages were not tied to the field; nothing said why zero was refused | Group named by the heading; the live region stays; one announced message tied to the field |
+| 8 | "Points" would have been a third new string | The field is named with the existing "Percy Points" |
+| 9 | Test gaps: late behaviours, reloaded behaviours, odd number forms, a reopen test that could not fail, a browser amount a seeded behaviour could produce | All added or corrected |
+| 10 | The path table missed "Starting points"; the section did not say this is not an exact restoration, or what else the old dialog had | Added |

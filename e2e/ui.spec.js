@@ -138,16 +138,34 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await closeDialog(page);
   await page.request.delete(`/api/rewards/${cheap.id}`, { headers });
 
-  // V1-F: "Give Percy Points" - child, behaviour (its own points), note.
+  // V1-F: "Give Percy Points" - child, amount, behaviour, note.
   await page.getByRole('button', { name: /^Award points/ }).first().click();
   const award = page.getByRole('dialog');
   await expect(award.getByRole('heading', { name: 'Give Percy Points' })).toBeVisible();
   await expect(award.getByText('What did Sam do?')).toBeVisible();
   await checkScreen(page, 'add points', testInfo);
+  // Section 9 (owner, 23 November): a custom amount. An amount that cannot be
+  // awarded shows the rule; a typed amount shows on the button; a quick amount
+  // tapped afterwards shows in the field; choosing a behaviour keeps it. 4 is
+  // an amount no seeded behaviour has, so it can only come from the choice.
+  const amountField = award.getByRole('spinbutton', { name: 'Percy Points' });
+  await amountField.fill('0');
+  await expect(award.getByRole('alert')).toHaveText('Points must be a whole number from 1 to 1000.');
+  await expect(award.getByRole('button', { name: 'Award points', exact: true })).toBeDisabled();
+  await checkScreen(page, 'add points, amount refused', testInfo);
+  await amountField.fill('25');
+  await expect(award.getByRole('button', { name: 'Award 25 points' })).toBeEnabled();
+  await award.getByRole('group', { name: 'How many points?' }).getByRole('button', { name: '+4' }).click();
+  await expect(amountField).toHaveValue('4');
   await award.getByRole('group', { name: /What did Sam do/ }).getByRole('button').first().click();
+  await expect(amountField).toHaveValue('4');
   await award.getByLabel('Add a note (optional)').fill('Shared the crayons');
-  await award.getByRole('button', { name: /^Award \d+ points?$/ }).click();
+  const samBefore = (await (await page.request.get('/api/children', { headers })).json()).find((k) => k.id === samId).total_points;
+  const sent = page.waitForRequest((r) => r.method() === 'POST' && /\/api\/children\/[^/]+\/award$/.test(new URL(r.url()).pathname));
+  await award.getByRole('button', { name: 'Award 4 points' }).click();
+  expect((await sent).postDataJSON().points).toBe(4);
   await expect(award).toHaveCount(0);
+  await expect.poll(async () => (await (await page.request.get('/api/children', { headers })).json()).find((k) => k.id === samId).total_points).toBe(samBefore + 4);
   await page.getByRole('button', { name: 'Undo' }).first().click();
   // Toasts pause while the pointer rests on them (Sonner); a real parent moves
   // on, so the pointer leaves the toasts before waiting for them to clear.
