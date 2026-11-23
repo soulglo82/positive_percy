@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.1 |
+| Version | 1.2 |
 | Issued | 2026-11-15 |
 | Owner | Percy v2 engineering (integration branch `claude/percy-v2-engineering-handover-f5ya53`) |
 | Status | Built on the integration branch; not merged, not deployed |
@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | 1.0 | 2026-11-15 | First design, written for peer review before the build |
 | 1.1 | 2026-11-15 | Adopts the peer-review findings (see "Peer review record"); records the build and the verification evidence |
+| 1.2 | 2026-11-23 | The home-screen icon is the kit's iPhone icon (owner's choice); its address carries the file's hash; tests forbid transparency in icons a phone masks (§5a) |
 
 ## 1. Contract being repaired
 
@@ -115,6 +116,7 @@ No new hue families are introduced.
   * from `PWA/`: `public/icon-192.png`, `public/icon-512.png`, `public/maskable-512.png` (with `purpose: maskable`) and `public/apple-touch-icon.png`;
   * from `Web/`: `public/favicon.ico`, `public/favicon.svg` and `public/favicon-32.png`;
   * `public/og-image.png`, from `05_Website_And_Social/open-graph-1200x630.png`, with `og:*` meta tags.
+
 * **Not applicable to this web app.** These are recorded in `RUNTIME_ASSETS.json` under `excluded_from_runtime`:
   * The iOS `AppIcon-1024` and the Android adaptive foreground and background layers are for native app builds. There is no native app, and Android launchers use the PWA maskable icon.
   * Print, PDF, letterhead and social cover files belong to E12 (report and website).
@@ -132,6 +134,22 @@ No new hue families are introduced.
 * **Cache-busting.** Icon and manifest links use `?v=3`, because installed PWAs cache icons aggressively.
 * **Legacy logo files removed.** `logo-mark.png`, `logo.png` and `logo_old.png` are deleted from `public/`. The only reference was `Logo.jsx`; nothing in `server/`, `e2e/` or `index.html` used them. Git history preserves the files. The Batch D icons are overwritten in place.
 * **`.gitattributes`.** SVGs are `-text`, binaries are `binary`, and archive parts are `-text`, so line-ending conversion can never change hashed bytes.
+
+### 5a. The home-screen icon (owner, 23 November 2026)
+
+**What was wrong.** The first V1 home-screen icon was the kit's `PWA/apple-touch-icon.png`: a cream tile with an orange border, rounded, with see-through corners. An iPhone has no transparency on the home screen. It paints see-through pixels black and cuts its own rounded corners, so the icon showed dark slivers at its corners and a border that did not follow the phone's own corner. Picture: `docs/engineering/evidence/v1-home-screen-icon/options-as-an-iphone-draws-them.png` (a simulation: black behind the image and a rounded mask at the iPhone's corner ratio, not a photograph of a phone).
+
+**Decision.** The owner chose option A in that picture: the kit's own iPhone icon, `iOS/apple-touch-icon-180.png` (orange, white fox, square, no alpha), in place of the `PWA/` file. It is a member of the pinned archive, so no new artwork enters the app. Options B (the kit's maskable icon: fox too small on a home screen) and C (the approved fox rearranged on cream: a new asset) were not chosen.
+
+**Contract.** The image a phone masks is a square with no alpha channel: the home-screen icon (180 px) and the Android maskable icon (512 px). The other icons (`icon-192`, `icon-512`, favicons) are shown as they are and may keep see-through corners.
+
+**Cache.** iPhones cache the icon by its address. The address in `index.html` now ends with the first eight characters of the file's own SHA-256, so a changed file cannot ship under an old address. The other icons keep `?v=3`; they did not change.
+
+**What it does not do.** A shortcut already on a home screen keeps the picture it was saved with. It has to be removed and added again from Safari. Nothing in the app can change that.
+
+**Tests** (`src/test/brandAssets.test.js`, written first): the two masked icons are the stated size and cannot hold transparency (PNG colour type without alpha and no transparency chunk); a control shows the same check sees `icon-192.png` as see-through; the home-screen icon's address matches its file's hash. The first and the last failed on the old file. Not covered: what a real iPhone draws (no device in the test bench), and icons of other sizes that a future platform might mask.
+
+**Reversal.** Restore the three lines (file, manifest entry, address).
 
 ## 6. E01 provenance manifest
 
