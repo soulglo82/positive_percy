@@ -150,6 +150,67 @@
     --chart-2: 264.9 65.7% 33.1%; /* #4b1d8c */
     --chart-4: 264.4 14.8% 35.9%; /* #594e69 */
     --radius: 0.75rem;
+    /* V1.1 (design/v11, owner direction 23 Nov 2026): six scene tints, used
+       as backgrounds only (text-safe orange excepted); tokens.js has the hex. */
+    --pv-lilac-mist: 270 58.3% 95.3%; /* #f3ecfa */
+    --pv-sky-warm: 42.2 100% 85.5%; /* #ffe9b5 */
+    --pv-peach-soft: 27.1 100% 90%; /* #ffe3cc */
+    --pv-meadow: 109.4 45.9% 85.5%; /* #cfebc9 */
+    --pv-meadow-deep: 115.4 40.6% 74.9%; /* #a9d9a5 */
+    --pv-orange-text: 23.8 100% 35.1%; /* #b34700 */
+    /* V1.1 roles. Colours are the tokens above, never new values. */
+    --pv-purple: hsl(var(--primary));
+    --pv-purple-deep: hsl(var(--primary-hover));
+    --pv-orange: hsl(var(--sunrise));
+    --pv-sunshine: hsl(var(--star));
+    --pv-cream: hsl(var(--background));
+    --pv-ink: hsl(var(--foreground));
+    --pv-ink-soft: hsl(var(--muted-foreground));
+    --pv-lilac: hsl(var(--selected));
+    --pv-white: hsl(var(--card));
+    --pv-earn: hsl(var(--earn));
+    --pv-earn-soft: hsl(var(--earn-soft));
+    --pv-star-soft: hsl(var(--star-soft));
+    --pv-danger: hsl(var(--destructive));
+    --pv-input-border: hsl(var(--input));
+    --pv-mist: hsl(var(--pv-lilac-mist));
+    --pv-sky: hsl(var(--pv-sky-warm));
+    --pv-peach: hsl(var(--pv-peach-soft));
+    --pv-grass: hsl(var(--pv-meadow));
+    --pv-grass-deep: hsl(var(--pv-meadow-deep));
+    --pv-orange-ink: hsl(var(--pv-orange-text));
+    --pv-overlay-band: hsl(var(--foreground) / 0.08);
+    --pv-grad-morning: linear-gradient(hsl(var(--background)) 0%, hsl(var(--pv-sky-warm)) 75%, hsl(var(--star)) 100%);
+    --pv-grad-journey: linear-gradient(hsl(var(--pv-lilac-mist)), hsl(var(--selected)));
+    --pv-grad-meadow: linear-gradient(hsl(var(--pv-meadow)), hsl(var(--pv-meadow-deep)));
+    --pv-grad-destination: linear-gradient(hsl(var(--pv-sky-warm)), hsl(var(--star-soft)));
+    --pv-shadow-1: 0 1px 2px hsl(var(--foreground) / 0.06), 0 2px 6px hsl(var(--foreground) / 0.06);
+    --pv-shadow-2: 0 2px 4px hsl(var(--foreground) / 0.06), 0 10px 24px hsl(var(--primary) / 0.12);
+    --pv-shadow-photo: 0 2px 4px hsl(var(--foreground) / 0.1), 0 8px 18px hsl(var(--foreground) / 0.16);
+    /* Type: Nunito 700/800 for display, Poppins 400/500/600 for body (E02). */
+    --pv-font-display: 'Nunito', 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    --pv-font-body: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    --pv-w-400: 400; --pv-w-500: 500; --pv-w-600: 600; --pv-w-700: 700; --pv-w-800: 800;
+    --pv-hero-size: 2rem; --pv-hero-line: 2.375rem;
+    --pv-page-size: 1.75rem; --pv-page-line: 2.125rem;
+    --pv-section-size: 1.375rem; --pv-section-line: 1.75rem;
+    --pv-card-size: 1.125rem; --pv-card-line: 1.5rem;
+    --pv-body-size: 1rem; --pv-body-line: 1.5rem;
+    --pv-support-size: 0.875rem; --pv-support-line: 1.25rem;
+    --pv-action-size: 0.9375rem; --pv-action-line: 1.25rem;
+    --pv-meta-size: 0.75rem; --pv-meta-line: 1rem;
+    --pv-number-size: 2.25rem; --pv-number-line: 2.5rem;
+    --pv-number-sm-size: 1.5rem; --pv-number-sm-line: 1.75rem;
+    --pv-space-1: 0.25rem; --pv-space-2: 0.5rem; --pv-space-3: 0.75rem; --pv-space-4: 1rem;
+    --pv-space-5: 1.5rem; --pv-space-6: 2rem; --pv-space-7: 2.5rem; --pv-space-8: 3rem;
+    --pv-gutter: 1rem;
+    --pv-radius-control: 0.875rem; --pv-radius-card: 1.25rem; --pv-radius-scene: 1.75rem; --pv-radius-full: 999px;
+    --pv-tap: 2.75rem; --pv-icon: 1.5rem; --pv-icon-medallion: 3rem;
+    --pv-avatar-selected: 4.5rem; --pv-avatar-other: 3.25rem; --pv-avatar-profile: 6.5rem;
+    --pv-ring: 6rem;
+    --pv-fox-small: 3rem; --pv-fox-mid: 6rem; --pv-fox-hero: 7.5rem;
+    --pv-ease-out: cubic-bezier(0.22, 1, 0.36, 1); --pv-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --pv-dur-quick: 150ms; --pv-dur-base: 240ms; --pv-dur-celebrate: 700ms; --pv-dur-loop: 2400ms;
   }
 }
 

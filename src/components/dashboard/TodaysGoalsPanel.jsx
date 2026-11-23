@@ -4,8 +4,6 @@ import PercyIcon from "@/components/icons/PercyIcon";
 import CategoryIcon from '@/components/CategoryIcon';
 import { toast } from 'sonner';
 import { getToken } from '@/lib/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { completeTodayGoal, loadTodaysGoals, goalDateShortLine, goalRecurrenceV1, pointsText } from '@/lib/todaysGoals';
 import { refreshPoints, undoAction, UNDO_TOAST_MS } from '@/lib/points';
 import ManageGoalsDialog from './ManageGoalsDialog';
@@ -80,90 +78,81 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
     }
   };
 
+  // V1.1 (design/v11): one section, rows on white that turn green when done.
+  // Wording, focus and every action are V1's (E05).
   return (
-    <section aria-labelledby="todays-goals-title">
-      <Card>
-        <CardContent className="p-4 sm:p-5 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="todays-goals-title" className="flex items-center gap-2 font-display font-bold text-lg text-primary">
-              {/* E03: approved header accent (goals_interactions.header_accent); decorative, no motion. */}
-              <PercyIcon id="phosphor:sparkle:duotone" className="h-5 w-5" />
-              Today's Goals
-            </h2>
-            {data && goals.length > 0 && (
-              <span className="rounded-full bg-warning px-3 py-1 text-sm font-semibold text-foreground tabular-nums">
-                {done} of {goals.length} done
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border pb-3 text-sm text-muted-foreground">
+    <section aria-labelledby="todays-goals-title" className="pv-section">
+      <div className="pv-section__head">
+        <div>
+          <h2 id="todays-goals-title" className="pv-t-section">Today's Goals</h2>
+          <p className="pv-t-support">
             <span className="break-words">{child.name}'s checklist</span>
-            {data?.date && <span>{goalDateShortLine(data.date)}</span>}
-          </div>
+            {data?.date && <> · <span>{goalDateShortLine(data.date)}</span></>}
+          </p>
+        </div>
+        {data && goals.length > 0 && (
+          <p className="pv-t-meta">
+            <span className="pv-dots" aria-hidden="true">{goals.map((g) => <i key={g.id} data-on={g.completion_id ? '' : undefined} />)}</span>{' '}
+            {done} of {goals.length} done
+          </p>
+        )}
+      </div>
 
-
-          {isError ? (
-            <div className="space-y-2">
-              <p className="text-sm text-destructive">Could not load today's goals.</p>
-              <Button variant="outline" onClick={() => refetch()}>Try again</Button>
-            </div>
-          ) : isLoading ? (
-            <p className="text-sm text-muted-foreground" role="status">Loading goals…</p>
-          ) : goals.length === 0 ? (
-            <div className="rounded-md border border-dashed border-border bg-muted px-4 py-5">
-              <p className="font-medium text-foreground">No goals scheduled for {child.name} today.</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Add a weekly routine or a one-off task to give them something to work towards.
-              </p>
-              <Button className="mt-3" size="sm" onClick={() => setManageOpen(true)}>
-                Set up goals
-              </Button>
-            </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {goals.map(goal => {
-                const completed = !!goal.completion_id;
-                const pending = pendingIds.includes(goal.id);
-                const points = goal.category_points;
-                return (
-                  <li key={goal.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
-                    {/* Below 360px the action goes under the text: beside it, the details ran to three lines ("Learning · / Today · +1 / point") (owner's handover, 22 Nov, E1). */}
-                    {/* The category icon stays the same when the goal is done (register completed_goal). */}
-                    <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center text-primary">
-                      <CategoryIcon iconKey={goal.category_icon_key} className="w-6 h-6" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-foreground break-words">{goal.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {[goal.category_name || 'Behaviour unavailable', goalRecurrenceV1(goal, data?.date),
-                          points ? pointsText(points) : null].filter(Boolean).join(' · ')}
-                      </p>
-                    </div>
-                    {completed ? (
-                      <span ref={el => { doneRefs.current[goal.id] = el; }} tabIndex={-1}
-                        className="inline-flex w-full xs:w-auto shrink-0 items-center justify-center gap-1.5 min-h-11 rounded-md border border-earn bg-earn-soft px-4 text-sm font-semibold text-earn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                        <PercyIcon id="phosphor:check-circle:duotone" className="w-4 h-4" /> Done
-                      </span>
-                    ) : (
-                      <Button variant="outline" size="goal" className="w-full xs:w-auto shrink-0 px-4 text-primary"
-                        disabled={pending || !points}
-                        aria-label={'Complete ' + goal.title}
-                        onClick={() => complete(goal)}>
-                        {pending ? 'Saving…' : 'Complete'}
-                      </Button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <div className="flex justify-end">
-            <Button variant="link" size="goal" className="-mr-3" onClick={() => setManageOpen(true)} aria-label={'Manage goals for ' + child.name}>
-              <PercyIcon id="phosphor:target:duotone" className="h-4 w-4" /> Manage goals
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {isError ? (
+        <div className="pv-empty">
+          <p className="pv-t-body">Could not load today's goals.</p>
+          <button type="button" className="pv-btn pv-btn--secondary" onClick={() => refetch()}>Try again</button>
+        </div>
+      ) : isLoading ? (
+        <p className="pv-t-support" role="status">Loading goals…</p>
+      ) : goals.length === 0 ? (
+        <div className="pv-empty">
+          <p className="pv-t-card">No goals scheduled for {child.name} today.</p>
+          <p className="pv-t-support">Add a weekly routine or a one-off task to give them something to work towards.</p>
+          <button type="button" className="pv-btn pv-btn--primary" onClick={() => setManageOpen(true)}>Set up goals</button>
+        </div>
+      ) : (
+        <ul className="pv-goals">
+          {goals.map(goal => {
+            const completed = !!goal.completion_id;
+            const pending = pendingIds.includes(goal.id);
+            const points = goal.category_points;
+            return (
+              <li key={goal.id} className="pv-goal" data-done={completed ? '' : undefined}>
+                {/* The category icon stays the same when the goal is done (register completed_goal). */}
+                <span aria-hidden="true" className="pv-medallion">
+                  <CategoryIcon iconKey={goal.category_icon_key} className="w-6 h-6" />
+                </span>
+                <div className="pv-goal__text">
+                  <p className="pv-goal__title">{goal.title}</p>
+                  <p className="pv-goal__meta">
+                    {[goal.category_name || 'Behaviour unavailable', goalRecurrenceV1(goal, data?.date),
+                      points ? pointsText(points) : null].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                {completed ? (
+                  <span ref={el => { doneRefs.current[goal.id] = el; }} tabIndex={-1} className="pv-btn pv-goal__donechip">
+                    <PercyIcon id="phosphor:check-circle:duotone" className="w-5 h-5" /> Done
+                  </span>
+                ) : (
+                  <button type="button" className="pv-btn pv-btn--secondary"
+                    disabled={pending || !points}
+                    aria-label={'Complete ' + goal.title}
+                    onClick={() => complete(goal)}>
+                    <PercyIcon id="phosphor:check-circle:duotone" className="w-5 h-5" />
+                    {pending ? 'Saving…' : 'Complete'}
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div>
+        <button type="button" className="pv-link" onClick={() => setManageOpen(true)} aria-label={'Manage goals for ' + child.name}>
+          <PercyIcon id="phosphor:target:duotone" className="h-5 w-5" /> Manage goals
+        </button>
+      </div>
       <ManageGoalsDialog open={manageOpen} onClose={() => setManageOpen(false)}
         child={child} children={children} categories={categories} today={data?.date || ''} />
     </section>

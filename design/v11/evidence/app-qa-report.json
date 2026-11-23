@@ -1,0 +1,1218 @@
+{
+  "version": "0.1.0",
+  "issued": "2026-11-23",
+  "owner": "Percy V1.1 design engineering",
+  "status": "PASSING",
+  "base": "local server, fictional seeded families",
+  "total": 241,
+  "passed": 241,
+  "failed": 0,
+  "known_v1_component_text_under_14px": [],
+  "results": [
+    {
+      "name": "home 320: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 359: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 359: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 360: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 360: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 834: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 834: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 1280: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 1280: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name selected): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 (six children, long name selected): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name selected): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name selected): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name selected): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name selected): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name selected): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name selected): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 (six children, long name selected): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name selected): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name selected): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name selected): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name selected): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name selected): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name selected): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 (six children, long name selected): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name selected): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name selected): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name selected): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name selected): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name selected): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name selected): axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name selected): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 (six children, long name selected): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name selected): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name selected): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name selected): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name selected): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name selected): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name selected): axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name selected): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 1280 (six children, long name selected): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name selected): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name selected): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name selected): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name selected): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name selected): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name selected): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 1280 (six children, long name selected): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name selected): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name selected): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name selected): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name selected): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name selected): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child, nothing set up): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 (one child, nothing set up): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child, nothing set up): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child, nothing set up): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child, nothing set up): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child, nothing set up): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child, nothing set up): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child, nothing set up): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 (one child, nothing set up): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child, nothing set up): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child, nothing set up): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child, nothing set up): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child, nothing set up): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child, nothing set up): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child, nothing set up): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 (one child, nothing set up): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child, nothing set up): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child, nothing set up): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child, nothing set up): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child, nothing set up): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child, nothing set up): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child, nothing set up): axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child, nothing set up): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 (one child, nothing set up): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child, nothing set up): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child, nothing set up): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child, nothing set up): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child, nothing set up): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child, nothing set up): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child, nothing set up): axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child, nothing set up): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 1280 (one child, nothing set up): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child, nothing set up): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child, nothing set up): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child, nothing set up): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child, nothing set up): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child, nothing set up): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child, nothing set up): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 1280 (one child, nothing set up): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child, nothing set up): no V1.1 text under 14px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child, nothing set up): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child, nothing set up): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child, nothing set up): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child, nothing set up): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 150% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 at 150% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 150% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 150% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 150% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 at 150% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 150% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 150% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 150% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 at 150% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 150% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 150% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 150% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 at 150% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 150% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 150% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 200% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 at 200% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 200% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 200% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 200% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 at 200% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 200% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 200% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 200% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 at 200% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 200% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 200% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 200% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 at 200% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 200% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 200% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "quick point tile is named \"<behaviour> +N for <child>\"",
+      "pass": true,
+      "detail": "Kindness +1 for Lara"
+    },
+    {
+      "name": "quick point raises the balance by the server amount",
+      "pass": true,
+      "detail": "95 -> 96"
+    },
+    {
+      "name": "the award toast offers Undo",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Undo restores the balance on the server",
+      "pass": true,
+      "detail": "95"
+    },
+    {
+      "name": "completing a goal shows Done and moves focus to it",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "completing a goal adds its points",
+      "pass": true,
+      "detail": "96"
+    },
+    {
+      "name": "goal Undo restores the balance",
+      "pass": true,
+      "detail": "95"
+    },
+    {
+      "name": "Home has no progress rings (the balance is a number)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "switching child changes the headline and balance",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Award points opens the V1 dialog",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Rewards opens the V1 rewards dialog for the child",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Children has no Quick Points tiles",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Children has no goal completion controls",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Manage actions come before the journey",
+      "pass": true,
+      "detail": "381 < 725"
+    },
+    {
+      "name": "the week ring is the Weekly target progressbar",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "week ring valuenow never exceeds valuemax",
+      "pass": true,
+      "detail": "30/30"
+    },
+    {
+      "name": "the week figure is shown unclamped from the server (35 of 30 for the sample)",
+      "pass": true,
+      "detail": "35 of 30 points"
+    },
+    {
+      "name": "today's ring counts only goals scheduled today (1 of 3 for the sample)",
+      "pass": true,
+      "detail": "1 of 3 done"
+    },
+    {
+      "name": "savings show the approved wording",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Weekly target opens the V1 edit dialog",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Savings opens the V1 savings dialog",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Goals opens the V1 manage-goals dialog",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "control: without the stretched hit area the Manage labels fail the 44px check",
+      "pass": true,
+      "detail": "3 small"
+    },
+    {
+      "name": "control: 10px Quick Point labels fail the type-size check",
+      "pass": true,
+      "detail": "4 small"
+    },
+    {
+      "name": "no console or page errors",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}
