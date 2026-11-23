@@ -188,6 +188,8 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 - The amount awarded is a whole number from 1 to 1,000.
 - Until the parent chooses an amount, it is the selected behaviour's points (1 if the behaviour has none stored), and it follows the selection when the behaviour or the child changes (A2).
 - When the parent chooses an amount, with a quick amount or by typing, that amount stays until the dialog closes, whatever behaviour or child is picked afterwards. To go back to a behaviour's points the parent chooses that amount.
+- Tapping the quick amount that is already showing, before any amount has been chosen, changes nothing: it does not fix the amount. (Otherwise "+1" tapped on a fresh dialog would silently hold the amount at 1 when a 3-point behaviour is picked next.)
+- The amount controls are disabled while an award is being sent.
 - The summary and the button show the amount. An amount that cannot be awarded (empty, zero, negative, not whole, over 1,000) shows no summary, disables the button and makes it read "Award points".
 - The award is recorded under the selected behaviour's name. The server is unchanged: `POST /api/children/:id/award` already accepts any whole number from 1 to 1,000 for any category, with no cap, and stays idempotent through `request_id` (a retry with the same amount replays; a different amount under the same id is refused).
 
@@ -224,6 +226,9 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 | Tap "+5" | Amount 5; "earns 5 Percy Points"; "Award 5 points"; the request carries `points: 5` and the behaviour's name |
 | Type 25 | Amount 25; no quick amount pressed; "Award 25 points" |
 | Type 25, then press "+4" while the field still has focus | The field shows 4 |
+| Focus the field, then pick a behaviour worth 3, amount not chosen | The field shows 3 |
+| Tap "+1" while it is already pressed and no amount is chosen, then pick a behaviour worth 3 | Amount 3 |
+| Type "05" | Amount 5; "+5" pressed |
 | Tap "+10", then choose another behaviour, then another child | Amount stays 10 throughout, including when the behaviour moves (A2) |
 | Clear the field | No amount, no message; Award disabled, reads "Award points"; choosing a behaviour does not refill it |
 | Type 0, -3, 1001 or 2.5 | The message; the field marked invalid; Award disabled |
@@ -261,3 +266,15 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 | 8 | "Points" would have been a third new string | The field is named with the existing "Percy Points" |
 | 9 | Test gaps: late behaviours, reloaded behaviours, odd number forms, a reopen test that could not fail, a browser amount a seeded behaviour could produce | All added or corrected |
 | 10 | The path table missed "Starting points"; the section did not say this is not an exact restoration, or what else the old dialog had | Added |
+
+**Code review (fresh context, after the build).** No blocking finding. It confirmed that the amount sent is always the one on the button and in the summary, that every row of the table is satisfied, and that nothing else in the app depends on the old rule.
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Should fix | While no amount is chosen, the field could show an old number if a behaviour or child was picked with focus left in the field (the button and summary were right) | Fixed: the field is redrawn when the behaviour's points change underneath it; unit test |
+| 2 | Note | Tapping the already-pressed quick amount fixed the amount with no visible change | Changed: it does nothing until an amount has been chosen; unit test |
+| 3 | Note | The amount could be changed while an award was being sent, so the disabled button could show a newer number than the one sent | Fixed: the amount controls are disabled while sending; unit test |
+| 4 | Note | A change of amount might announce only the changed number | Fixed: the summary is announced whole |
+| 5 | Note | Three rows were covered thinly (the emptied field's value, the reopened dialog's behaviour, a refused award with a custom amount); no test for a typed amount pressing a quick amount | All added |
+| 6 | Note | The evidence screenshots are not taken with a touch pointer, so the 44 px sizes rest on the browser tests in the touch projects | Stated here; those tests pass |
+| 7 | Note | A lone "-" in the field disables Award with no message; scrolling with the pointer over the focused field drops focus | Left as they are |

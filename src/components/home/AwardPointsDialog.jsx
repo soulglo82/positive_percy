@@ -52,8 +52,9 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
   // dialog closes, whatever behaviour or child is picked next.
   const [ownAmount, setOwnAmount] = useState(null);
   // The number field keeps its own text while it has focus. A new key makes
-  // it show an amount that was not typed (a quick amount tapped by a screen
-  // reader or switch, which leaves focus in the field).
+  // it show an amount that was not typed: a quick amount, or the behaviour's
+  // points changing underneath it (a screen reader or switch can press a
+  // button and leave focus in the field).
   const [fieldKey, setFieldKey] = useState(0);
 
   const child = children.find((c) => c.id === childId) || children[0];
@@ -80,7 +81,13 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
   const valid = !!chosen && canAward(points);
   // Nothing is said about an empty field; anything else that cannot be awarded gets the rule.
   const showRule = points !== '' && !canAward(points);
-  const pickAmount = (n) => { setOwnAmount(n); setFieldKey((k) => k + 1); };
+  // Tapping the amount that is already showing changes nothing: it does not
+  // turn the behaviour's points into a chosen amount behind the parent's back.
+  const pickAmount = (n) => {
+    if (ownAmount === null && n === points) return;
+    setOwnAmount(n);
+    setFieldKey((k) => k + 1);
+  };
 
   const submit = async () => {
     if (submitting || !child || !valid) return;
@@ -111,14 +118,14 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
               <StepHeading n={2} id="award-amount" title="How many points?" hint="Use the behaviour's points, or choose another amount." />
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2" role="group" aria-labelledby="award-amount">
                 {QUICK_AMOUNTS.map((n) => (
-                  <Button key={n} type="button" size="sm" variant={points === n ? 'default' : 'outline'}
+                  <Button key={n} type="button" size="sm" variant={points === n ? 'default' : 'outline'} disabled={submitting}
                     aria-pressed={points === n} className="tabular-nums" onClick={() => pickAmount(n)}>
                     +{n}
                   </Button>
                 ))}
               </div>
-              <NumberInput key={fieldKey} id="award-points" aria-label={PERCY.POINTS_COMPACT} inputMode="numeric"
-                value={points} emptyValue="" min={1} max={MAX_AWARD}
+              <NumberInput key={`${fieldKey}:${ownAmount === null ? points : 'own'}`} id="award-points" aria-label={PERCY.POINTS_COMPACT} inputMode="numeric"
+                value={points} emptyValue="" min={1} max={MAX_AWARD} disabled={submitting}
                 aria-invalid={showRule} aria-describedby={showRule ? 'award-points-rule' : undefined}
                 onChange={setOwnAmount} onWheel={(e) => e.currentTarget.blur()}
                 className="text-lg font-semibold tabular-nums" />
@@ -152,7 +159,7 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
               placeholder="What went well?" onChange={(e) => setNote(e.target.value)} />
           </section>
           {/* The live region stays in the page, so a change of amount is announced. */}
-          <div aria-live="polite">
+          <div aria-live="polite" aria-atomic="true">
             {valid && child && (
               <div className="rounded-md bg-warning p-3">
                 <p className="font-semibold text-foreground">{child.name} earns {points} Percy {points === 1 ? 'Point' : 'Points'}</p>

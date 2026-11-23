@@ -239,6 +239,7 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     expect(field(d).getAttribute('aria-invalid')).toBe('false');
     // Another behaviour does not fill it back in: the parent emptied it.
     fireEvent.click(tile(d, 'Chores +3'));
+    expect(field(d).value).toBe('');
     expect(awardButton(d).disabled).toBe(true);
     fireEvent.click(awardButton(d));
     expect(onSubmit).not.toHaveBeenCalled();
@@ -276,6 +277,50 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     expect(onSubmit.mock.calls[0][1].points).toBe(n);
   });
 
+  it('the field follows the behaviour\'s points even while it has focus', () => {
+    // Until an amount is chosen the field shows the behaviour's points; a
+    // screen reader can pick another behaviour and leave focus in the field.
+    const { d } = renderAward();
+    fireEvent.focus(field(d));
+    fireEvent.click(tile(d, 'Chores +3'));
+    expect(field(d).value).toBe('3');
+    expect(awardButton(d).textContent).toBe('Award 3 points');
+  });
+
+  it('tapping the amount already showing does not fix it; tapping it after a change does', () => {
+    const { d } = renderAward();
+    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+1' })); // already pressed: nothing changes
+    fireEvent.click(tile(d, 'Chores +3'));
+    expect(field(d).value).toBe('3'); // still following the behaviour
+    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+1' })); // now a choice
+    fireEvent.click(tile(d, 'Kindness +1'));
+    fireEvent.click(tile(d, 'Chores +3'));
+    expect(field(d).value).toBe('1');
+    expect(awardButton(d).textContent).toBe('Award 1 point');
+  });
+
+  it('a typed amount that equals a quick amount presses it', () => {
+    const { d } = renderAward();
+    type(d, '05');
+    expect(pressed(d)).toEqual(['+5']);
+    expect(awardButton(d).textContent).toBe('Award 5 points');
+  });
+
+  it('a refused award keeps the dialog open with the chosen amount; the amount cannot change while it is being sent', async () => {
+    let release;
+    const onSubmit = vi.fn(() => new Promise((r) => { release = r; }));
+    const { d, onClose } = renderAward({ onSubmit });
+    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+10' }));
+    fireEvent.click(within(d).getByRole('button', { name: 'Award 10 points' }));
+    expect(field(d).disabled).toBe(true);
+    expect(within(amounts(d)).getAllByRole('button').every((b) => b.disabled)).toBe(true);
+    release(false);
+    await waitFor(() => expect(field(d).disabled).toBe(false));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(field(d).value).toBe('10');
+    expect(onSubmit.mock.calls[0][1].points).toBe(10);
+  });
+
   const Dialog = (props) => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return <QueryClientProvider client={client}><AwardPointsDialog onClose={() => {}} children={kids} initialChildId="c1" onSubmit={async () => true} {...props} /></QueryClientProvider>;
@@ -288,6 +333,7 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     view.rerender(<Dialog isOpen categories={cats} />);
     expect(field(screen.getByRole('dialog')).value).toBe('1');
     expect(pressed(screen.getByRole('dialog'))).toEqual(['+1']);
+    expect(tile(screen.getByRole('dialog'), 'Kindness +1').getAttribute('aria-pressed')).toBe('true');
   });
 
   it('behaviours that arrive after the dialog opened set the amount; a reload of the same behaviours keeps a chosen amount', () => {
