@@ -100,9 +100,12 @@ export function JourneyStop({ ring, label, value, max, unit, note, tone, childre
       {ring}
       <div>
         <p className="pv-stop__label">{label}</p>
-        {has && (
+        {/* The figure is always shown, never clamped; "of N" only when there is an N. */}
+        {has ? (
           <p className="pv-stop__figure"><span className="pv-t-number-sm">{value}</span> <small>of {max} {unit}</small></p>
-        )}
+        ) : Number.isFinite(value) && value > 0 ? (
+          <p className="pv-stop__figure"><span className="pv-t-number-sm">{value}</span> <small>{unit}</small></p>
+        ) : null}
         <p className="pv-stop__note" data-tone={tone || undefined}>{note}</p>
         {extra}
       </div>
@@ -117,14 +120,12 @@ export function MorningArt() {
     <svg className="pv-scene__art" viewBox="0 0 400 300" preserveAspectRatio="xMinYMax slice" aria-hidden="true" focusable="false">
       <circle className="pv-art-halo" cx="40" cy="300" r="150" />
       <circle className="pv-art-sun" cx="40" cy="300" r="104" />
-      <g className="pv-art-cloud"><rect x="250" y="40" width="96" height="26" rx="13" /><rect x="278" y="24" width="52" height="30" rx="15" /></g>
     </svg>
   );
 }
 export function SkyArt() {
   return (
     <svg className="pv-scene__art" viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
-      <g className="pv-art-cloud"><rect x="262" y="34" width="104" height="26" rx="13" /><rect x="290" y="18" width="54" height="30" rx="15" /></g>
       <path className="pv-art-hill" d="M0 300V236C70 196 150 206 220 232s130 22 180-12v80z" />
     </svg>
   );

@@ -8,10 +8,9 @@ import { createPageUrl } from '@/utils';
 import PercyIcon from '@/components/icons/PercyIcon';
 import CategoryIcon from '@/components/CategoryIcon';
 import RewardIcon from '@/components/rewards/RewardIcon';
-import { leadingGoal } from '@/lib/savings';
+import { leadingGoal, pointsWord as points } from '@/lib/savings';
 import { ChildSelector, PercyFox, MorningArt } from './parts';
 
-const points = (n) => (n === 1 ? 'point' : 'points');
 
 // The morning scene: child picker, the question, Percy, and the points the
 // child can use now as a plain balance (no ring: it is not progress).
@@ -83,11 +82,11 @@ export function HomeQuickPoints({ child, actions, awarding, onAward, onOpenAward
 
 // What the child is working towards: the bigger goal with the most saved and
 // the rewards already chosen (the stack available_points is worked out from).
-// Saving and editing stay on Children.
+// Saving and editing stay on Children. With nothing chosen, only the link to
+// Child View is shown (as in V1).
 export function HomeWorkingTowards({ child }) {
   const stack = child.reward_stack_priced ?? [];
   const goal = leadingGoal(child.goals);
-  if (!goal && stack.length === 0) return null;
   const pct = goal && goal.cost > 0 ? Math.max(0, Math.min(100, Math.round((goal.saved / goal.cost) * 100))) : 0;
   return (
     <section className="pv-section" aria-labelledby="towards-title">

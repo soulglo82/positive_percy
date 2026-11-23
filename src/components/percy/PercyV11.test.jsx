@@ -3,7 +3,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { ProgressRing, PercyAvatar, ChildSelector, PercyFox } from './parts';
+import { ProgressRing, PercyAvatar, ChildSelector, PercyFox, JourneyStop } from './parts';
 import { HomeHero, HomeQuickPoints, HomeWorkingTowards } from './HomeV11';
 
 const C = 2 * Math.PI * 42;
@@ -114,11 +114,25 @@ describe('Home V1.1', () => {
     render(<MemoryRouter><HomeQuickPoints child={kids[0]} actions={[]} awarding={false} onAward={() => {}} onOpenAward={() => {}} /></MemoryRouter>);
     expect(screen.getByRole('link', { name: 'Choose them in Settings' })).toBeTruthy();
   });
-  it('working towards: nothing chosen and no bigger goal draws nothing; a goal shows the approved figures', () => {
+  it('working towards: nothing chosen keeps only the Child View link (as V1); a goal shows the approved figures', () => {
     const { container } = render(<MemoryRouter><HomeWorkingTowards child={{ ...kids[0], goals: [], reward_stack_priced: [] }} /></MemoryRouter>);
-    expect(container.firstChild).toBeNull();
+    expect(container.querySelector('a').getAttribute('href')).toBe('/childview?child=a');
+    expect(container.querySelector('[data-goal]')).toBeNull();
     render(<MemoryRouter><HomeWorkingTowards child={{ ...kids[0], goals: [{ rewardId: 'r', name: 'Bike', saved: 60, cost: 300, to_go: 240 }], reward_stack_priced: [] }} /></MemoryRouter>);
     expect(screen.getByText('60 of 300 points saved')).toBeTruthy();
     expect(screen.getByText('240 to go')).toBeTruthy();
+  });
+  it('working towards: the funded goal shows the approved celebration and the chosen rewards (V1 WorkingTowards)', () => {
+    render(<MemoryRouter><HomeWorkingTowards child={{ ...kids[0], goals: [{ rewardId: 'r', name: 'Bike', saved: 300, cost: 300, to_go: 0 }],
+      reward_stack_priced: [{ rewardId: 's', name: 'Screen time', cost: 20 }, { rewardId: 'o', name: 'Sticker', cost: 1 }] }} /></MemoryRouter>);
+    expect(screen.getByText('Lara has saved enough for Bike!')).toBeTruthy();
+    expect(screen.getByText('Saved!')).toBeTruthy();
+    expect(screen.getByText('20 points · Ready when a parent agrees')).toBeTruthy();
+    expect(screen.getByText('1 point · Ready when a parent agrees')).toBeTruthy();
+  });
+  it('a stop with no denominator still shows the figure (no fraction, no clamp)', () => {
+    const { container } = render(<ol><JourneyStop label="This week" value={12} max={0} unit="points" note="No weekly target set yet" ring={null} /></ol>);
+    expect(container.querySelector('.pv-stop__figure').textContent).toBe('12 points');
+    expect(container.textContent).not.toContain('of 0');
   });
 });

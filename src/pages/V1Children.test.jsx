@@ -140,6 +140,16 @@ describe('Children page (§2)', () => {
     expect(screen.getByText('This week').closest('li').querySelector('.pv-stop__figure').textContent).toBe('30 of 25 points');
   });
 
+  it('no weekly target: the week figure still shows, the ring is neutral and is not a progressbar (review)', async () => {
+    state.children = [{ ...lara, weekly_target: 0, week_points: 12 }];
+    mount(Children);
+    const week = (await screen.findByText('This week')).closest('li');
+    expect(week.querySelector('.pv-stop__figure').textContent).toBe('12 points');
+    expect(screen.getByText('No weekly target set yet')).toBeTruthy();
+    expect(week.querySelector('.pv-ring').hasAttribute('data-empty')).toBe(true);
+    expect(screen.queryByRole('progressbar', { name: 'Weekly target' })).toBeNull();
+  });
+
   it('?child= picks the child; an unknown id falls back to the oldest (E2)', async () => {
     mount(Children, '/children?child=c2');
     expect(await screen.findByRole('heading', { name: 'Omar', level: 2 })).toBeTruthy();

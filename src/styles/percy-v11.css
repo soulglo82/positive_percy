@@ -44,7 +44,6 @@
 .pv p { margin: 0; }
 
 /* ---- Icon medallion ---- */
-.pv-icon { width: var(--pv-icon); height: var(--pv-icon); flex: none; }
 .pv-medallion {
   width: var(--pv-icon-medallion); height: var(--pv-icon-medallion); flex: none;
   display: grid; place-items: center; border-radius: var(--pv-radius-full);
@@ -210,24 +209,6 @@
 .pv-goal__text { flex: 1 1 9rem; min-width: 0; }
 .pv-goal__title { font-family: var(--pv-font-body); font-weight: var(--pv-w-500); font-size: var(--pv-body-size); line-height: var(--pv-body-line); overflow-wrap: anywhere; }
 .pv-goal__meta { font-family: var(--pv-font-body); font-weight: var(--pv-w-400); font-size: var(--pv-support-size); line-height: var(--pv-support-line); color: var(--pv-ink-soft); }
-.pv-goal__check {
-  width: var(--pv-tap); height: var(--pv-tap); flex: none; display: grid; place-items: center;
-  border-radius: var(--pv-radius-full); background: none; border-width: 0; padding: 0; cursor: pointer; color: var(--pv-purple);
-}
-.pv-goal__check:disabled { cursor: progress; opacity: 0.6; }
-.pv-goal__box {
-  width: var(--pv-space-6); height: var(--pv-space-6); display: grid; place-items: center;
-  border-radius: var(--pv-radius-full); border-width: 2px; border-style: solid; border-color: var(--pv-input-border); background: var(--pv-white);
-}
-.pv-goal__done {
-  width: var(--pv-tap); height: var(--pv-tap); flex: none; display: grid; place-items: center; border-radius: var(--pv-radius-full);
-}
-.pv-goal__done > span {
-  width: var(--pv-space-6); height: var(--pv-space-6); display: grid; place-items: center;
-  border-radius: var(--pv-radius-full); background: var(--pv-earn); color: var(--pv-white);
-  animation: pv-pop var(--pv-dur-celebrate) var(--pv-ease-bounce);
-}
-.pv-goal__done svg { width: var(--pv-space-5); height: var(--pv-space-5); }
 .pv-goal[data-done] .pv-goal__meta { color: var(--pv-earn); font-weight: var(--pv-w-600); }
 .pv-dots { display: inline-flex; gap: var(--pv-space-1); align-items: center; }
 .pv-dots i { width: var(--pv-space-3); height: var(--pv-space-3); border-radius: var(--pv-radius-full); background: var(--pv-lilac); }
@@ -259,6 +240,8 @@
 .pv-stop__figure small { font-family: var(--pv-font-body); font-weight: var(--pv-w-500); font-size: var(--pv-body-size); line-height: var(--pv-body-line); color: var(--pv-ink-soft); }
 .pv-stop__note { font-family: var(--pv-font-body); font-weight: var(--pv-w-400); font-size: var(--pv-support-size); line-height: var(--pv-support-line); color: var(--pv-ink-soft); }
 .pv-stop__note[data-tone="earn"] { color: var(--pv-earn); font-weight: var(--pv-w-600); }
+/* On the meadow green, earned text is ink (green on green is under 4.5:1); the ring carries the green. */
+.pv-meadow .pv-stop__note[data-tone="earn"] { color: var(--pv-ink); }
 
 /* ---- BiggerGoalDestination ---- */
 .pv-destination { border-radius: var(--pv-radius-card); background: var(--pv-white); box-shadow: var(--pv-shadow-2); overflow: hidden; }
@@ -312,13 +295,11 @@
 @media (max-width: 833.98px) { .pv-columns { display: grid; gap: var(--pv-space-6); } }
 
 /* ---- Motion: once, then still; nothing moves with reduced motion (index.css) ---- */
-@keyframes pv-pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
 @keyframes pv-fox-hop { 0%, 100% { transform: translateY(0); } 35% { transform: translateY(calc(var(--pv-space-3) * -1)) rotate(-2deg); } 70% { transform: translateY(0) scaleY(0.97); } }
 
 /* ---- Scene shapes (placeholders for illustrator artwork) ---- */
 .pv-art-halo { fill: var(--pv-white); opacity: 0.35; }
 .pv-art-sun { fill: var(--pv-sunshine); }
-.pv-art-cloud { fill: var(--pv-white); opacity: 0.85; }
 .pv-art-hill { fill: var(--pv-white); opacity: 0.55; }
 .pv-goal__donechip { background: var(--pv-white); color: var(--pv-earn); border-color: var(--pv-earn); cursor: default; }
 .pv-goal .pv-medallion { background: var(--pv-mist); }
@@ -342,8 +323,11 @@
 .pv-manage-action { position: relative; cursor: default; }
 .pv-manage-action__label { background: none; border-width: 0; padding: 0; text-align: left; color: var(--pv-ink); text-decoration: none; cursor: pointer; }
 .pv-stretch::after { content: ""; position: absolute; inset: 0; border-radius: var(--pv-radius-control); }
-.pv .pv-stretch:focus-visible { outline-width: 0; }
-.pv-manage-action:has(.pv-stretch:focus-visible) { outline-width: 3px; outline-style: solid; outline-color: var(--pv-purple); outline-offset: 2px; }
+/* Where :has() works, the ring goes round the whole card; elsewhere the label keeps its own. */
+@supports selector(:has(*)) {
+  .pv .pv-stretch:focus-visible { outline-width: 0; }
+  .pv-manage-action:has(.pv-stretch:focus-visible) { outline-width: 3px; outline-style: solid; outline-color: var(--pv-purple); outline-offset: 2px; }
+}
 .pv-manage-action:has(.pv-stretch:hover) { border-color: var(--pv-purple); background: var(--pv-mist); }
 
 /* Treats on Children */
@@ -354,3 +338,6 @@
 }
 .pv-treat__tag { font-family: var(--pv-font-body); font-weight: var(--pv-w-600); font-size: var(--pv-support-size); line-height: var(--pv-support-line); color: var(--pv-ink-soft); }
 .pv-treat__tag[data-shown] { color: var(--pv-purple); }
+
+.pv-heading-icon { display: flex; align-items: center; gap: var(--pv-space-2); }
+.pv-heading-icon svg { width: var(--pv-space-5); height: var(--pv-space-5); flex: none; }

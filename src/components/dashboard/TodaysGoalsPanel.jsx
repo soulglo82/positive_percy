@@ -8,11 +8,11 @@ import { completeTodayGoal, loadTodaysGoals, goalDateShortLine, goalRecurrenceV1
 import { refreshPoints, undoAction, UNDO_TOAST_MS } from '@/lib/points';
 import ManageGoalsDialog from './ManageGoalsDialog';
 
-// E05 (docs/engineering/E05-DESIGN.md): the selected child is named, coloured
-// and pictured; each goal keeps its category icon when done, with a separate
-// Done mark (register completed_goal); weekly goals show their real days
-// (recurring_indicator); the completion control is the approved check-circle
-// at 24px in a 44px target (control_size_weight). Dates come from the server.
+// E05 (docs/engineering/E05-DESIGN.md): the selected child is named; each goal
+// keeps its category icon when done, with a separate Done mark (register
+// completed_goal); weekly goals show their real days (recurring_indicator);
+// Complete is a 44px button with the approved check-circle. Dates come from
+// the server. V1.1 (design/v11) restyles the markup only.
 // V1: the Home family strip chooses the child (selectedChildId); without one,
 // or for a child no longer in the list, the panel shows the first child.
 export default function TodaysGoalsPanel({ children = [], categories = [], enabled = false, selectedChildId }) {
@@ -84,7 +84,8 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
     <section aria-labelledby="todays-goals-title" className="pv-section">
       <div className="pv-section__head">
         <div>
-          <h2 id="todays-goals-title" className="pv-t-section">Today's Goals</h2>
+          {/* E03: approved header accent (goals_interactions.header_accent); decorative. */}
+          <h2 id="todays-goals-title" className="pv-t-section pv-heading-icon"><PercyIcon id="phosphor:sparkle:duotone" />Today's Goals</h2>
           <p className="pv-t-support">
             <span className="break-words">{child.name}'s checklist</span>
             {data?.date && <> · <span>{goalDateShortLine(data.date)}</span></>}

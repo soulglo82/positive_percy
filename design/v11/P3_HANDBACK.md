@@ -87,7 +87,24 @@ Filled in at commit time.
 
 ## 8. Review findings and outcomes
 
-Filled in at commit time.
+Independent fresh-context review (read-only, given the code and screenshots, not this report). It found the V1 logic intact: award lock and idempotence, confetti, Undo toasts, completion flow and focus, savings dialog focus return, reward editing, Edit child without delete, Manage goals, query keys and realtime refresh, approved icon ids, no tracking or uppercase, 44px targets, reduced motion, label-in-name.
+
+| # | Finding | Outcome |
+|---|---|---|
+| 1 | **Blocking:** with no weekly target, the week figure vanished on Children | **Fixed.** The figure always shows ("12 points"), with no "of 0"; Children test and a component test added (both fail without the fix) |
+| 2 | **Blocking:** savings and a11y tests still exercised the old Home components, which Home no longer renders | **Fixed.** New tests for the funded-goal celebration ("{name} has saved enough for {goal}!"), the chosen-reward lines, the empty state's Child View link, and an axe test of the V1.1 Home sections and parts. The old components stay (V1 `FamilyStrip` is still used by the dialogs) until the Activity, Rewards and Settings rollout retires them |
+| 3 | The new today query had no loading or error state; "No goals yet." was new copy | **Fixed.** The Today stop reads "Loading…" or "Couldn't load today's goals"; the goals list shows loading or error and nothing when empty (as V1); the Manage card says "Loading…" or "Not loaded" until known |
+| 4 | With no target, the week ring announced "0 weekly points to go" | **Fixed.** The ring is a progressbar only when there is a target |
+| 5 | Home dropped some V1 copy, the week figure, the Today's Goals sparkle, and the Child View link for a child with nothing chosen; Award points became secondary | **Partly fixed.** Sparkle restored (E03 accent). The Child View link always shows. The copy and the missing Home week figure are deliberate under the agreed Home/Children split and are listed for approval in section 4. Award points is secondary because the tiles are the main action |
+| 6 | Children dropped V1 copy | Deliberate; listed in section 4 |
+| 7 | Green "earned" text on the meadow is about 4.4:1 | **Fixed.** On the meadow it is ink (the ring stays green) |
+| 8 | The bigger goal was chosen from two sources, so different parts could name different goals | **Fixed.** One source (`goalRows[0]`, the current bigger goals in savings order) for the journey, the Manage card and Achievements. Bar on Home against ring on Children stays: Home has no rings by design |
+| 9 | Several links to Rewards when there are no bigger goals | Kept: each is in a different context (Manage, savings empty state, treats). Recorded for owner review |
+| 10 | Home's dialogs still use the V1 child picker | Deliberate (dialogs are outside this step). Recorded for the rollout |
+| 11 | Treat rows copy `RewardTile`; goal progress drawn three ways; `pointsWord` redefined | `pointsWord` now imported. Treat rows kept separate so the Rewards tab is untouched (its tile has 40px buttons on non-touch screens and a tag that overflows at 200% text); to be merged when Rewards is redesigned |
+| 12 | Unused and override CSS, unused tokens, stale comment | **Fixed.** Unused rules and six unused tokens removed; panel comment corrected. Two override blocks remain at the end of the stylesheet, commented |
+| 13 | Manage card focus depended on `:has()` | **Fixed.** The card ring is used only where `:has()` is supported; elsewhere the label keeps its own focus ring |
+| Nits | Type role use, tile colours by position, desktop empty space under Quick Points, clouds clipped behind the selector, selector inside the profile section, lilac borders, Done chip styled like a button | Clouds removed; journey "Saving for something bigger" heading now uses the stop-label style. The rest are recorded for the next visual pass |
 
 ## 9. Remaining blockers
 

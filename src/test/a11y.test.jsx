@@ -7,6 +7,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { StreakStrip, FamilyStrip, LittleWins, WorkingTowards, QuickPoints } from '../components/home/HomeSections';
 import { RewardTile } from '../pages/Rewards';
 import RewardPicker from '../components/rewards/RewardPicker';
+import { HomeHero, HomeQuickPoints, HomeWorkingTowards } from '../components/percy/HomeV11';
+import { ChildSelector, ProgressRing } from '../components/percy/parts';
 
 // Helper to run axe on a container element
 async function checkA11y(container) {
@@ -78,3 +80,24 @@ describe('Accessibility: V1 reward catalogue tile and icon picker', () => {
   });
 });
 
+
+// V1.1 Home (design/v11): the sections Home renders now.
+describe('V1.1 Home sections', () => {
+  it('hero, Quick Points and working towards have no critical/serious axe violations', async () => {
+    const kids = [mockChild, { ...mockChild, id: '2', name: 'Sam', avatar_url: '/api/uploads/9' }];
+    const child = { ...mockChild, available_points: 1, goals: [{ rewardId: 'r', name: 'Bike', saved: 300, cost: 300, to_go: 0 }],
+      reward_stack_priced: [{ rewardId: 's', name: 'Screen time', cost: 20 }] };
+    const { container } = render(
+      <MemoryRouter>
+        <main>
+          <HomeHero children={kids} child={child} streak={3} foxPlay={0} onSelect={() => {}} onOpenRewards={() => {}} />
+          <HomeQuickPoints child={child} actions={[{ id: 'k', label: 'Kindness', points: 1, icon_key: 'heart' }]} awarding={false} onAward={() => {}} onOpenAward={() => {}} />
+          <HomeWorkingTowards child={child} />
+          <ChildSelector children={kids} selectedId="1" onSelect={() => {}} />
+          <ProgressRing metric="week" value={60} max={50} progress={{ label: 'Weekly target', valueText: '0 weekly points to go' }} />
+        </main>
+      </MemoryRouter>
+    );
+    await checkA11y(container);
+  });
+});

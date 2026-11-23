@@ -163,7 +163,6 @@
     --pv-purple-deep: hsl(var(--primary-hover));
     --pv-orange: hsl(var(--sunrise));
     --pv-sunshine: hsl(var(--star));
-    --pv-cream: hsl(var(--background));
     --pv-ink: hsl(var(--foreground));
     --pv-ink-soft: hsl(var(--muted-foreground));
     --pv-lilac: hsl(var(--selected));
@@ -171,7 +170,6 @@
     --pv-earn: hsl(var(--earn));
     --pv-earn-soft: hsl(var(--earn-soft));
     --pv-star-soft: hsl(var(--star-soft));
-    --pv-danger: hsl(var(--destructive));
     --pv-input-border: hsl(var(--input));
     --pv-mist: hsl(var(--pv-lilac-mist));
     --pv-sky: hsl(var(--pv-sky-warm));
@@ -179,7 +177,6 @@
     --pv-grass: hsl(var(--pv-meadow));
     --pv-grass-deep: hsl(var(--pv-meadow-deep));
     --pv-orange-ink: hsl(var(--pv-orange-text));
-    --pv-overlay-band: hsl(var(--foreground) / 0.08);
     --pv-grad-morning: linear-gradient(hsl(var(--background)) 0%, hsl(var(--pv-sky-warm)) 75%, hsl(var(--star)) 100%);
     --pv-grad-journey: linear-gradient(hsl(var(--pv-lilac-mist)), hsl(var(--selected)));
     --pv-grad-meadow: linear-gradient(hsl(var(--pv-meadow)), hsl(var(--pv-meadow-deep)));
@@ -198,11 +195,10 @@
     --pv-body-size: 1rem; --pv-body-line: 1.5rem;
     --pv-support-size: 0.875rem; --pv-support-line: 1.25rem;
     --pv-action-size: 0.9375rem; --pv-action-line: 1.25rem;
-    --pv-meta-size: 0.75rem; --pv-meta-line: 1rem;
     --pv-number-size: 2.25rem; --pv-number-line: 2.5rem;
     --pv-number-sm-size: 1.5rem; --pv-number-sm-line: 1.75rem;
     --pv-space-1: 0.25rem; --pv-space-2: 0.5rem; --pv-space-3: 0.75rem; --pv-space-4: 1rem;
-    --pv-space-5: 1.5rem; --pv-space-6: 2rem; --pv-space-7: 2.5rem; --pv-space-8: 3rem;
+    --pv-space-5: 1.5rem; --pv-space-6: 2rem; --pv-space-7: 2.5rem;
     --pv-gutter: 1rem;
     --pv-radius-control: 0.875rem; --pv-radius-card: 1.25rem; --pv-radius-scene: 1.75rem; --pv-radius-full: 999px;
     --pv-tap: 2.75rem; --pv-icon: 1.5rem; --pv-icon-medallion: 3rem;
@@ -210,7 +206,7 @@
     --pv-ring: 6rem;
     --pv-fox-small: 3rem; --pv-fox-mid: 6rem; --pv-fox-hero: 7.5rem;
     --pv-ease-out: cubic-bezier(0.22, 1, 0.36, 1); --pv-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --pv-dur-quick: 150ms; --pv-dur-base: 240ms; --pv-dur-celebrate: 700ms; --pv-dur-loop: 2400ms;
+    --pv-dur-quick: 150ms; --pv-dur-base: 240ms; --pv-dur-celebrate: 700ms;
   }
 }
 

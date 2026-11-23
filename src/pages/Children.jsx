@@ -24,13 +24,12 @@ import EditChildModal from '../components/child/EditChildModal';
 import ManageGoalsDialog from '../components/dashboard/ManageGoalsDialog';
 import RewardForm from '../components/rewards/RewardForm';
 import SavingsDialog from '../components/savings/SavingsDialog';
-import { leadingGoal, goalRewardsFor, goalOrder } from '@/lib/savings';
+import { goalRewardsFor, goalOrder, pointsWord } from '@/lib/savings';
 import { buildChildCreatePayload } from '@/lib/childPayload';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorCard from '../components/ErrorCard';
 
 const pct = (n, d) => (d > 0 ? Math.max(0, Math.min(100, Math.round((n / d) * 100))) : 0);
-const pointsWord = (n) => (n === 1 ? 'point' : 'points');
 
 // Rewards this child can see (assignment). Hidden ones are shown, tagged, for
 // the parent; Child View leaves them out. Bigger goals are listed under
@@ -72,13 +71,13 @@ export default function Children() {
   });
   // Today's ring needs what is scheduled today; the manage list holds every
   // goal (server/todaysGoals.js), so it would be the wrong denominator.
-  const { data: todayData } = useQuery({
+  const { data: todayData, isError: todayError } = useQuery({
     queryKey: ['todaysGoals'],
     queryFn: () => loadTodaysGoals(),
     enabled: !!user && children.length > 0,
     refetchOnWindowFocus: true,
   });
-  const { data: goalsData } = useQuery({
+  const { data: goalsData, isLoading: goalsLoading, isError: goalsError } = useQuery({
     queryKey: ['todaysGoals', 'manage'],
     queryFn: () => loadTodaysGoals(true),
     enabled: !!user && children.length > 0,
@@ -121,7 +120,6 @@ export default function Children() {
   const treats = rewardsForChild(rewards, child.id);
   const goalRewards = goalRewardsFor(rewards, child.id, isAssignedTo);
   const savedGoals = child.goals || [];
-  const topGoal = leadingGoal(savedGoals);
   // Every current goal, at the server's figures when it has savings, else 0
   // saved (code review: a goal with nothing saved is still listed).
   const byGoal = new Map(savedGoals.map((g) => [g.rewardId, g]));
@@ -133,7 +131,14 @@ export default function Children() {
   // Approved V1 wording (E3: reaching the target reads 0); no target is the
   // ring's neutral state.
   const weekNote = target > 0 ? `${toTarget} to reach this week's target` : 'No weekly target set yet';
+  // One source for "the bigger goal" everywhere on this page: the current
+  // bigger goals in savings order (review: the manage card, the journey and
+  // Achievements must name the same goal).
   const [lead, ...otherGoals] = goalRows;
+  const topGoal = lead || null;
+  const goalsKnown = !!goalsData;
+  const todayNote = todayError ? "Couldn't load today's goals" : !todayData ? 'Loading…'
+    : scheduledToday.length ? (doneScheduled === scheduledToday.length ? 'All done today' : `${scheduledToday.length - doneScheduled} to go`) : 'No goals scheduled today';
 
   // V1.1 Children (design/v11; owner review 23 Nov): the child, then the ways
   // to manage them, then progress. No Quick Points and no completing goals
@@ -169,7 +174,7 @@ export default function Children() {
               <span className="pv-medallion" aria-hidden="true"><PercyIcon id="phosphor:calendar-dots:duotone" /></span>
               <span className="pv-manage-action__text">
                 <button type="button" className="pv-manage-action__label pv-stretch" aria-label={'Manage all goals for ' + child.name} aria-describedby="manage-goals" onClick={() => setGoalsStart({ view: 'list' })}>All goals</button>
-                <span id="manage-goals" className="pv-t-support">{goals.length} {goals.length === 1 ? 'goal' : 'goals'}</span>
+                <span id="manage-goals" className="pv-t-support">{goalsKnown ? `${goals.length} ${goals.length === 1 ? 'goal' : 'goals'}` : goalsError ? 'Not loaded' : 'Loading…'}</span>
               </span>
             </li>
             <li className="pv-manage-action">
@@ -206,17 +211,17 @@ export default function Children() {
             </div>
             <ol className="pv-journey">
               <JourneyStop label="Today's goals" value={doneScheduled} max={scheduledToday.length} unit="done"
-                note={scheduledToday.length ? (doneScheduled === scheduledToday.length ? 'All done today' : `${scheduledToday.length - doneScheduled} to go`) : 'No goals scheduled today'}
+                note={todayNote}
                 tone={scheduledToday.length > 0 && doneScheduled === scheduledToday.length ? 'earn' : ''}
                 ring={<ProgressRing metric="today" value={doneScheduled} max={scheduledToday.length}
                   icon={<PercyIcon id="phosphor:list-checks:duotone" />} doneIcon={<PercyIcon id="phosphor:check-circle:duotone" />} />} />
               <JourneyStop label="This week" value={week} max={target} unit="points" note={weekNote} tone={reached ? 'earn' : ''}
                 ring={<ProgressRing metric="week" value={week} max={target}
                   icon={<PercyIcon id="phosphor:target:duotone" />} doneIcon={<PercyIcon id="phosphor:check-circle:duotone" />}
-                  progress={{ label: 'Weekly target', valueText: `${toTarget} weekly points to go` }} />} />
+                  progress={target > 0 ? { label: 'Weekly target', valueText: `${toTarget} weekly points to go` } : undefined} />} />
             </ol>
             <section className="pv-section" aria-labelledby="bigger-title">
-              <h3 id="bigger-title" className="pv-t-card">Saving for something bigger</h3>
+              <h3 id="bigger-title" className="pv-stop__label">Saving for something bigger</h3>
               {goalRewards.length === 0 ? (
                 <div className="pv-card">
                   <p className="pv-t-body">No bigger goals yet.</p>
@@ -287,9 +292,11 @@ export default function Children() {
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="pv-t-support">No goals yet.</p>
-            )}
+            ) : goalsLoading ? (
+              <p className="pv-t-support" role="status">Loading goals…</p>
+            ) : goalsError ? (
+              <p className="pv-t-support">Could not load goals.</p>
+            ) : null}
           </section>
 
           <section className="pv-section" aria-labelledby="treats-title">
