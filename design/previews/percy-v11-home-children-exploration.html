@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Positive Percy · V1.1 Home &amp; Children design exploration</title>
+<style>
+@font-face{font-family:Nunito;src:url('../../public/fonts/nunito-latin-800-normal.woff2') format('woff2');font-weight:800;font-display:swap}
+@font-face{font-family:Nunito;src:url('../../public/fonts/nunito-latin-700-normal.woff2') format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:Poppins;src:url('../../public/fonts/poppins-latin-400-normal.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:Poppins;src:url('../../public/fonts/poppins-latin-600-normal.woff2') format('woff2');font-weight:600;font-display:swap}
+:root{--purple:#4B1D8C;--ink:#271737;--orange:#FF6A00;--sun:#FFC938;--cream:#FFF6E8;--lilac:#E5DCEA;--muted:#594E69;--goldwash:#FFF1D1;--green:#2A6E33;--greenwash:#E3F2E5;--white:#fff;--shadow:0 12px 38px rgba(62,27,87,.09),0 2px 6px rgba(62,27,87,.04)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#eee7e8;color:var(--ink);font:400 14px/1.55 Poppins,system-ui,sans-serif}
+h1,h2,h3,p{margin:0}h1,h2,h3{font-family:Nunito,system-ui,sans-serif;line-height:1.15}h1{font-size:clamp(25px,4.5cqw,36px);font-weight:800;color:var(--purple)}h2{font-size:21px;color:var(--purple);font-weight:800}h3{font-size:16px;font-weight:800}button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid var(--purple);outline-offset:3px}button:disabled{cursor:default;opacity:.5}
+.toolbar{position:sticky;top:0;z-index:20;background:#22122d;color:#fff;padding:12px 16px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;box-shadow:0 4px 18px #24153430}
+.toolbar .left{font-weight:600}.toolbar .left small{display:block;font-weight:400;color:#e6cfee}
+.toolgroup{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.toolgroup button{padding:8px 11px;border:1px solid #71568a;border-radius:10px;background:#382247;color:#fff;font-size:12px;min-height:36px}.toolgroup button[aria-pressed="true"]{background:#fff;color:#311446;border-color:#fff;font-weight:600}
+.note{margin:12px auto 0;padding:10px 15px;max-width:1000px;border-radius:12px;background:#fff8e5;border:1px solid #e7d4a3;color:#564325;font-size:12px}
+.stage{display:flex;justify-content:center;padding:18px 12px 45px;overflow-x:auto}
+.device{width:390px;max-width:100%;background:var(--cream);border:1px solid #d5c7d4;border-radius:28px;overflow:hidden;box-shadow:0 24px 65px #32234324;container-type:inline-size;transition:width .15s ease}
+.device-header{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;background:#fff;gap:10px;border-bottom:1px solid var(--lilac)}
+.brand{display:flex;align-items:center;gap:9px;color:var(--purple);font:800 17px/1.1 Nunito,system-ui;letter-spacing:-.02em}.brand img{height:42px;width:38px;object-fit:contain}
+.brand-mark{font-size:11px;font-weight:600;color:var(--muted)}
+.header-actions{display:flex;align-items:center;gap:9px}.round-icon{display:grid;place-items:center;width:40px;height:40px;border:1px solid var(--lilac);border-radius:14px;background:#fbf7ff;color:var(--purple);font-size:18px}
+.content{padding:18px 15px 22px;display:grid;gap:16px}.intro{display:grid;gap:8px}
+.streak{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 13px;border:1px solid #f2db9f;border-radius:15px;background:var(--goldwash);color:var(--purple);font-weight:600;font-size:12px}.streak .text{color:var(--muted);font-weight:400}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}.subtitle{color:var(--muted);font-size:13px;max-width:52ch}
+.picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.person{min-width:0;text-align:left;display:grid;align-content:start;gap:5px;padding:11px 10px 10px;background:#fff;border:1px solid var(--lilac);border-radius:17px;min-height:118px;box-shadow:0 4px 10px #2717370a}
+.person[aria-pressed="true"]{border:2px solid var(--purple);padding:10px 9px 9px;background:#fcf8ff;box-shadow:0 5px 15px #4b1d8c1c}
+.avatar{display:grid;place-items:center;width:31px;height:31px;border-radius:50%;background:#dcebf8;color:#174f83;font-weight:600;font-size:12px;border:2px solid #fff}
+.person:nth-child(2) .avatar{background:#fbe1ea;color:#a21f50}.person:nth-child(3) .avatar{background:#d3efef;color:#0e6268}
+.name{font-weight:600;font-size:12px;overflow-wrap:anywhere}.micro{font-size:10px;color:var(--muted);line-height:1.25}
+.track{height:6px;background:#eee8f5;border-radius:30px;overflow:hidden}.track>span{display:block;height:100%;background:var(--orange);border-radius:30px}
+.card{background:#fff;border:1px solid var(--lilac);border-radius:20px;padding:17px;box-shadow:var(--shadow);min-width:0}
+.cardhead{display:flex;align-items:start;justify-content:space-between;gap:8px;margin-bottom:14px}.small{font-size:12px;color:var(--muted)}.cardhead .small{margin-top:4px}
+.bead{display:inline-flex;align-items:center;justify-content:center;min-width:35px;padding:5px 9px;background:var(--goldwash);border-radius:999px;color:var(--purple);font-size:12px;font-weight:600;white-space:nowrap}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.action{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0;min-height:70px;background:#fff5df;border:1px solid #f1e0bc;border-radius:13px;padding:11px 9px;text-align:left;color:var(--ink)}
+.action:hover{background:#ffedc7}.action .icon{width:24px;height:24px;flex:none}.action .details{display:grid;gap:4px;min-width:0}.action .details strong{font-size:12px;line-height:1.25;overflow-wrap:anywhere}.action .amount{font-weight:600;color:var(--purple);background:var(--sun);border-radius:8px;padding:2px 6px;font-size:11px;white-space:nowrap}
+.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.btn{border-radius:12px;min-height:44px;padding:9px 12px;border:1px solid var(--purple);background:var(--purple);color:#fff;font-weight:600;font-size:12px;text-align:center}.btn.secondary{background:#fff;color:var(--purple)}.btn.tertiary{border:1px solid var(--lilac);background:#fff;color:var(--purple)}.btn:hover{filter:brightness(.96)}
+.goal-list{display:grid;gap:0}.goal{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid #f0ebf4}.goal:first-child{border-top:0}.goaltext{flex:1;min-width:0;line-height:1.3}.goaltext strong{display:block;font-size:12px;overflow-wrap:anywhere}.goaltext span{display:block;font-size:10px;color:var(--muted);margin-top:4px}.goal .btn{min-width:74px;padding:8px 9px}.goal.done .btn{background:var(--greenwash);color:var(--green);border-color:#a8d6b1}
+.ring{width:80px;height:80px;flex:none;display:block;overflow:visible}.ring circle{fill:none;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}.ring .ringtrack{stroke:#f1e9f8}.ring .progress{stroke:var(--purple);transition:stroke-dasharray .3s ease}.ring.green .progress{stroke:var(--green)}.ring.orange .progress{stroke:var(--orange)}.ring.yellow .progress{stroke:#ba840a}
+.ring-num{font:800 15px Nunito,system-ui;fill:var(--purple)}.ring-caption{font:600 8px Poppins,system-ui;fill:var(--muted)}
+.heading-with-ring{display:flex;gap:12px;justify-content:space-between;align-items:center}.heading-with-ring>div:first-child{min-width:0}
+.layoutgrid{display:grid;gap:16px}.column{display:grid;align-content:start;gap:16px;min-width:0}
+.summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{padding:12px;border-radius:15px;background:#f8f2ff;min-width:0}.stat:nth-child(2){background:#edf7ee}.stat label{display:block;color:var(--muted);font-size:11px}.stat strong{display:block;font:800 24px Nunito,system-ui;color:var(--purple);overflow-wrap:anywhere}.stat small{font-size:10px;color:var(--muted)}
+.focus{background:linear-gradient(135deg,#fff 0%,#fff8eb 100%);border-color:#eadcbc}
+.goal-meta{display:flex;justify-content:space-between;gap:10px;align-items:start}.goal-meta strong{overflow-wrap:anywhere}.goal-meta small{color:var(--muted)}
+.green-button{background:var(--green);border-color:var(--green)}
+.bigger-bar{height:10px;background:#eae5f1;border-radius:20px;overflow:hidden;margin:13px 0 9px}.bigger-bar>div{height:100%;background:linear-gradient(90deg,var(--purple),#9560cc);border-radius:inherit}
+.pair{display:flex;gap:10px;align-items:center}.pair>div{min-width:0;flex:1}
+.bigger-details{display:grid;gap:5px}.bigger-details .sub{color:var(--muted);font-size:11px}
+.rewards{display:grid;gap:9px;grid-template-columns:repeat(2,minmax(0,1fr))}.reward{padding:10px;border:1px solid var(--lilac);border-radius:12px;background:#faf7ff;min-height:70px;font-size:12px}.reward strong{display:block}.reward small{color:var(--muted)}
+.children-hero{background:linear-gradient(135deg,#fff 50%,#f7edff);border-color:#dbc5ef}.children-hero .personname{font:800 25px Nunito;color:var(--purple)}
+.profile-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.profile-head .bigavatar{height:52px;width:52px;border-radius:17px;background:#dcebf8;color:#174f83;display:grid;place-items:center;font:800 21px Nunito}
+.progress-stack{display:grid;gap:8px;margin:10px 0 16px}.progress-item{display:flex;gap:9px;align-items:center;justify-content:space-between;padding:10px;border:1px solid #eee7f4;border-radius:14px;background:#fff}
+.progress-item .label{min-width:0;flex:1}.progress-item .label strong{display:block;font-size:12px}.progress-item .label span{font-size:11px;color:var(--muted)}
+.progress-item .ring{width:62px;height:62px}.progress-item .ring-num{font-size:17px}
+.mini-link{color:var(--purple);font-weight:600;font-size:12px;text-decoration:underline;text-underline-offset:3px}
+.footer{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:#fff;border-top:1px solid var(--lilac);padding:7px 7px 10px}
+.navitem{display:grid;place-items:center;gap:3px;padding:8px 2px;border-radius:11px;font-size:10px;color:var(--muted);text-align:center;min-height:47px;border:0;background:transparent;line-height:1.1}
+.navitem[aria-current="page"]{background:#f0e9fa;color:var(--purple);font-weight:600}.navitem .shape{font-size:17px}
+.design-note{padding:12px 14px;border:1px dashed #c7b5d6;border-radius:14px;background:#faf7ff;font-size:11px;color:var(--muted)}
+.section-label{display:flex;gap:6px;align-items:center;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.badge-svg{width:18px;height:18px;object-fit:contain}
+.hidden{display:none!important}.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);max-width:calc(100% - 28px);background:var(--ink);color:#fff;border-radius:12px;padding:11px 16px;z-index:50;font-size:12px;box-shadow:var(--shadow)}
+@container (min-width:760px){.content{padding:27px 30px 32px;gap:20px}.intro{gap:10px}.layoutgrid{grid-template-columns:1.07fr .93fr;gap:20px}.picker{max-width:720px;grid-template-columns:repeat(3,minmax(0,1fr))}.person{min-height:98px;grid-template-columns:38px 1fr;align-items:center;column-gap:8px}.person .avatar{grid-row:span 3}.card{padding:23px}.ring{width:106px;height:106px}.actions{grid-template-columns:repeat(4,minmax(0,1fr))}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.progress-stack{grid-template-columns:repeat(3,minmax(0,1fr))}.progress-item{flex-direction:column;align-items:start}.progress-item .ring{margin:auto}.rewards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:359px){.content{padding:12px;gap:13px}.card{padding:13px}.actions{gap:6px}.action{min-height:75px;padding:8px 7px}.action .icon{width:20px;height:20px}.action .details strong{font-size:11px}.person{padding:8px;min-height:111px}.person[aria-pressed="true"]{padding:7px}.goal{flex-wrap:wrap}.goal .btn{min-height:44px}.ring{width:67px;height:67px}.ring-num{font-size:19px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <div class="left">Positive Percy · V1.1 concept <small>Design exploration only · no live data or API calls</small></div>
+  <div class="toolgroup" role="group" aria-label="Choose screen"><button data-screen="home" aria-pressed="true">Home</button><button data-screen="children" aria-pressed="false">Children</button></div>
+  <div class="toolgroup" role="group" aria-label="Choose preview width"><button data-width="320">320</button><button data-width="390" aria-pressed="true">390</button><button data-width="834">834</button><button data-width="1280">1280</button></div>
+</div>
+<div class="note">Source-led preview: actual approved Fox 1A asset, purple/cream identity, existing Phosphor files and familiar parent workflow. New visual layouts and progress rings are <strong>unapproved proposals</strong>. Demo actions only change synthetic data in this page.</div>
+<div class="stage">
+<div class="device" id="device">
+  <header class="device-header">
+    <div class="brand"><img src="../../public/brand/fox-1a-symbol-full.svg" alt="Approved seated Percy fox"><div>Positive Percy<div class="brand-mark">Small steps. Big adventures.</div></div></div>
+    <div class="header-actions"><span class="round-icon" aria-hidden="true">✦</span></div>
+  </header>
+  <div class="content">
+    <div class="intro" id="home-intro"><div class="streak"><span>✦ &nbsp;1-day family streak</span><span class="text">Keep the good stuff going!</span></div><span class="eyebrow">The family dashboard</span><h1>Welcome back!</h1><p class="subtitle">A little kindness, a helpful hand, a goal completed. It all adds up.</p></div>
+    <div class="intro hidden" id="children-intro"><span class="eyebrow">Progress &amp; setup</span><h1>Children</h1><p class="subtitle">Review achievements, set targets and manage rewards for each child.</p></div>
+    <div class="picker" id="picker" role="group" aria-label="Choose a child"></div>
+    <div id="home-screen" class="layoutgrid">
+      <div class="column">
+        <section class="card" aria-labelledby="quick-title">
+          <div class="cardhead"><div><h2 id="quick-title">Quick Points</h2><p class="small">Recognise positive behaviour, whenever it happens.</p></div><span class="bead">+ Percy Points</span></div>
+          <div class="actions">
+            <button class="action" data-award="Kindness"><span class="details"><img class="icon" alt="" src="../assets/phosphor/duotone/hand-heart.svg"><strong>Kindness</strong></span><span class="amount">+1</span></button>
+            <button class="action" data-award="Helpfulness"><span class="details"><img class="icon" alt="" src="../assets/phosphor/duotone/handshake.svg"><strong>Helpfulness</strong></span><span class="amount">+1</span></button>
+            <button class="action" data-award="Bravery"><span class="details"><img class="icon" alt="" src="../assets/phosphor/duotone/shield-star.svg"><strong>Bravery</strong></span><span class="amount">+1</span></button>
+            <button class="action" data-award="Resilience"><span class="details"><img class="icon" alt="" src="../assets/phosphor/duotone/mountains.svg"><strong>Resilience</strong></span><span class="amount">+1</span></button>
+          </div>
+          <div class="btnrow"><button class="btn" data-demo="Award points">⊕ &nbsp; Award points</button><button class="btn secondary" data-demo="Rewards">Rewards</button></div>
+        </section>
+        <section class="card" aria-labelledby="todays-title">
+          <div class="heading-with-ring">
+            <div><div class="section-label">✦ &nbsp; Daily routine</div><h2 id="todays-title">Today's Goals</h2><p class="small" id="today-caption">Lara's checklist · Today</p></div>
+            <svg class="ring green" viewBox="0 0 100 100" aria-hidden="true"><circle class="ringtrack" cx="50" cy="50" r="37" stroke-width="11"></circle><circle class="progress" data-progress="today" cx="50" cy="50" r="37" stroke-width="11"></circle><text class="ring-num" x="50" y="49" text-anchor="middle" id="today-counter">2/3</text><text class="ring-caption" x="50" y="61" text-anchor="middle">done</text></svg>
+          </div>
+          <div class="goal-list" id="goal-list"></div>
+          <p class="small" style="margin-top:10px">✓ A completed goal stays marked Done, with Undo managed by the existing app.</p>
+        </section>
+      </div>
+      <div class="column">
+        <section class="card" aria-labelledby="weekly-title">
+          <div class="cardhead"><div><h2 id="weekly-title">Your progress</h2><p class="small">The numbers that matter for this child.</p></div></div>
+          <div class="summary-grid"><div class="stat"><label>Earned this week</label><strong id="week-value">18 <small>/ 25</small></strong><small>Weekly target</small></div><div class="stat"><label>Available now</label><strong id="available-value">90</strong><small>Percy Points</small></div></div>
+          <div class="pair" style="margin-top:14px">
+            <svg class="ring orange" viewBox="0 0 100 100" aria-hidden="true"><circle class="ringtrack" cx="50" cy="50" r="37" stroke-width="11"></circle><circle class="progress" data-progress="week" cx="50" cy="50" r="37" stroke-width="11"></circle><text class="ring-num" x="50" y="51" text-anchor="middle" id="week-pct">72%</text></svg>
+            <div><strong>Weekly target</strong><p class="small">This ring tracks points earned this week, not spendable points.</p></div>
+          </div>
+        </section>
+        <section class="card focus" aria-labelledby="big-title">
+          <div class="cardhead"><div><h2 id="big-title">Saving for something bigger</h2><p class="small">Longer-term rewards and achievements.</p></div></div>
+          <div class="pair"><svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="ringtrack" cx="50" cy="50" r="37" stroke-width="11"></circle><circle class="progress" data-progress="saved" cx="50" cy="50" r="37" stroke-width="11"></circle><text class="ring-num" x="50" y="51" text-anchor="middle" id="saved-pct">40%</text></svg><div class="bigger-details"><strong id="big-name">New bike</strong><div class="sub"><span id="saved-value">120</span> of <span id="big-cost">300</span> points saved</div><div class="sub" id="big-to-go">180 to go</div></div></div>
+          <div class="bigger-bar" aria-hidden="true"><div id="big-bar" style="width:40%"></div></div>
+          <p class="small">Saved points stay separate from points available to spend.</p>
+        </section>
+      </div>
+    </div>
+    <div id="children-screen" class="hidden">
+      <section class="card children-hero">
+        <div class="profile-head"><div class="pair"><div class="bigavatar" id="profile-avatar">L</div><div><p class="eyebrow">Child profile</p><div class="personname" id="profile-name">Lara</div></div></div><button class="btn tertiary" data-demo="Edit child">Edit</button></div>
+        <p class="small">The child profile focuses on progress and managing targets, not repeating all of Home's action cards.</p>
+        <div class="progress-stack">
+          <div class="progress-item"><div class="label"><strong>Today's Goals</strong><span id="children-today-text">2 of 3 done</span></div><svg class="ring green" viewBox="0 0 100 100" aria-hidden="true"><circle class="ringtrack" cx="50" cy="50" r="37" stroke-width="11"></circle><circle class="progress" data-progress="today" cx="50" cy="50" r="37" stroke-width="11"></circle><text class="ring-num" x="50" y="55" text-anchor="middle" id="children-today-pct">67%</text></svg></div>
+          <div class="progress-item"><div class="label"><strong>Weekly points target</strong><span id="children-week-text">18 of 25 points</span></div><svg class="ring orange" viewBox="0 0 100 100" aria-hidden="true"><circle class="ringtrack" cx="50" cy="50" r="37" stroke-width="11"></circle><circle class="progress" data-progress="week" cx="50" cy="50" r="37" stroke-width="11"></circle><text class="ring-num" x="50" y="55" text-anchor="middle" id="children-week-pct">72%</text></svg></div>
+          <div class="progress-item"><div class="label"><strong>Bigger goal savings</strong><span id="children-saved-text">120 of 300 points</span></div><svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="ringtrack" cx="50" cy="50" r="37" stroke-width="11"></circle><circle class="progress" data-progress="saved" cx="50" cy="50" r="37" stroke-width="11"></circle><text class="ring-num" x="50" y="55" text-anchor="middle" id="children-saved-pct">40%</text></svg></div>
+        </div>
+        <div class="btnrow"><button class="btn" data-demo="Edit weekly target">Edit weekly target</button><button class="btn secondary" data-demo="Manage goals">Manage goals</button></div>
+      </section>
+      <div class="layoutgrid" style="margin-top:16px">
+        <div class="column"><section class="card"><div class="cardhead"><div><h2>Saving for something bigger</h2><p class="small">Manage this child's saved points and goals.</p></div></div><div class="goal-meta"><div><strong id="children-big-name">New bike</strong><p class="small"><span id="children-big-saved">120</span> saved</p></div><span class="bead" id="children-big-left">180 to go</span></div><div class="bigger-bar" aria-hidden="true"><div id="children-big-bar" style="width:40%"></div></div><button class="btn" style="width:100%" data-demo="Manage savings">Manage savings</button></section></div>
+        <div class="column"><section class="card"><div class="cardhead"><div><h2>Rewards</h2><p class="small">Manage this child's weekly treats.</p></div></div><div class="rewards"><div class="reward"><strong>Movie night</strong><small>150 points</small></div><div class="reward"><strong>Ice cream</strong><small>75 points</small></div></div><button class="btn secondary" style="width:100%;margin-top:12px" data-demo="Edit rewards">Manage rewards</button></section></div>
+      </div>
+    </div>
+    <div class="design-note">DESIGN SPECIMEN — Synthetic data. All live savings, rewards, permission checks, Undo and completions remain the responsibility of the existing V1 server and audited UI. New rings are decorative summaries with adjacent accessible text; 0-target states must not imply a percentage.</div>
+  </div>
+  <nav class="footer" aria-label="App navigation preview">
+    <button class="navitem" data-screen="home" aria-current="page"><span class="shape">⌂</span>Home</button>
+    <button class="navitem" data-screen="children"><span class="shape">◎</span>Children</button>
+    <span class="navitem"><span class="shape">↗</span>Activity</span>
+    <span class="navitem"><span class="shape">♢</span>Rewards</span>
+    <span class="navitem"><span class="shape">⚙</span>Settings</span>
+  </nav>
+</div>
+</div>
+<div class="toast hidden" role="status" id="toast"></div>
+<script>
+'use strict';
+// Demo only. Never connects to a Percy family, API, storage or backend.
+const people=[
+  {id:'lara',name:'Lara',week:18,target:25,available:90,saved:120,cost:300,goal:'New bike',goals:[{name:'Finish homework',done:true},{name:'Help set the table',done:true},{name:'Read for 15 minutes',done:false}]},
+  {id:'omar',name:'Omar',week:1,target:20,available:35,saved:20,cost:150,goal:'Football kit',goals:[{name:'Tidy my room',done:false},{name:'Help someone',done:false},{name:'Read together',done:false}]},
+  {id:'joud',name:'Joud',week:0,target:20,available:240,saved:250,cost:500,goal:'Weekend adventure',goals:[{name:'Finish maths practice',done:false},{name:'Help make lunch',done:false},{name:'Bedtime routine',done:false}]}
+];
+let active='lara',screen='home',toastTimeout=null;
+const $=id=>document.getElementById(id);
+const pct=(n,d)=>d>0?Math.max(0,Math.min(100,Math.round(100*n/d))):null;
+const pretty=p=>p===null?'–':p+'%';
+function flash(t){const e=$('toast');e.textContent=t+' · Prototype only';e.classList.remove('hidden');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>e.classList.add('hidden'),3000)}
+function rings(p){document.querySelectorAll('.progress[data-progress]').forEach(c=>{const key=c.getAttribute('data-progress'),value=key==='today'?p.goals.filter(g=>g.done).length:key==='week'?p.week:p.saved, max=key==='today'?p.goals.length:key==='week'?p.target:p.cost;const percent=pct(value,max);const circumference=2*Math.PI*Number(c.getAttribute('r'));c.style.strokeDasharray=percent===null?'0 '+circumference:(circumference*percent/100)+' '+circumference;c.style.strokeDashoffset='0';});}
+function draw(){
+ const p=people.find(x=>x.id===active),done=p.goals.filter(x=>x.done).length;
+ $('picker').innerHTML=people.map(x=>'<button class="person" data-child="'+x.id+'" aria-pressed="'+String(x.id===active)+'"><span class="avatar">'+x.name[0]+'</span><span class="name">'+x.name+'</span><span class="micro">'+x.week+' / '+x.target+' this week</span><span class="track" aria-hidden="true"><span style="width:'+(pct(x.week,x.target)||0)+'%"></span></span></button>').join('');
+ $('today-caption').textContent=p.name+"'s checklist · Today";$('today-counter').textContent=done+'/'+p.goals.length;
+ $('goal-list').innerHTML=p.goals.map((x,i)=>'<div class="goal '+(x.done?'done':'')+'"><div class="goaltext"><strong>'+x.name+'</strong><span>Today · +1 point</span></div><button class="btn '+(x.done?'green-button':'secondary')+'" data-goal="'+i+'" aria-label="'+(x.done?'Preview completed ':'Preview complete ')+x.name+'">'+(x.done?'✓ Done':'Complete')+'</button></div>').join('');
+ $('week-value').innerHTML=p.week+' <small>/ '+p.target+'</small>';$('available-value').textContent=p.available;
+ $('week-pct').textContent=pretty(pct(p.week,p.target));$('saved-pct').textContent=pretty(pct(p.saved,p.cost));
+ $('big-name').textContent=p.goal;$('big-cost').textContent=p.cost;$('saved-value').textContent=p.saved;$('big-to-go').textContent=Math.max(0,p.cost-p.saved)+' to go';$('big-bar').style.width=(pct(p.saved,p.cost)||0)+'%';
+ $('profile-avatar').textContent=p.name[0];$('profile-name').textContent=p.name;
+ $('children-today-text').textContent=done+' of '+p.goals.length+' done';$('children-week-text').textContent=p.week+' of '+p.target+' points';$('children-saved-text').textContent=p.saved+' of '+p.cost+' points';
+ $('children-today-pct').textContent=pretty(pct(done,p.goals.length));$('children-week-pct').textContent=pretty(pct(p.week,p.target));$('children-saved-pct').textContent=pretty(pct(p.saved,p.cost));
+ $('children-big-name').textContent=p.goal;$('children-big-saved').textContent=p.saved;$('children-big-left').textContent=Math.max(0,p.cost-p.saved)+' to go';$('children-big-bar').style.width=(pct(p.saved,p.cost)||0)+'%';
+ rings(p);
+ document.querySelectorAll('[data-screen]').forEach(b=>{if(b.tagName!=='BUTTON')return;const sel=b.getAttribute('data-screen')===screen;if(b.classList.contains('navitem')){sel?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current')}else b.setAttribute('aria-pressed',String(sel))});
+ $('home-intro').classList.toggle('hidden',screen!=='home');$('children-intro').classList.toggle('hidden',screen!=='children');$('home-screen').classList.toggle('hidden',screen!=='home');$('children-screen').classList.toggle('hidden',screen!=='children');
+}
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.width){const w=+b.dataset.width;$('device').style.width=w+'px';document.querySelectorAll('[data-width]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));return}if(b.dataset.screen){screen=b.dataset.screen;draw();return}if(b.dataset.child){active=b.dataset.child;draw();return}if(b.dataset.award){const p=people.find(x=>x.id===active);p.week++;p.available++;draw();flash('+'+1+' '+b.dataset.award+' for '+p.name);return}if(b.dataset.goal!==undefined){const p=people.find(x=>x.id===active);const goal=p.goals[Number(b.dataset.goal)];goal.done=!goal.done;draw();flash(goal.done?'Goal marked done':'Goal reset');return}if(b.dataset.demo){flash(b.dataset.demo+' would open the existing V1 action');}});
+draw();
+</script>
+</body>
+</html>
