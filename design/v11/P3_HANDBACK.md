@@ -68,6 +68,16 @@ Results with exact counts are in section 7 and the session handback.
 - **App QA on the real React pages** (`design/v11/qa/run-app-qa.mjs`, local server, fictional seeded families): six widths (320, 359, 360, 390, 834, 1280); six children with a long name; one child with nothing set up; 150% and 200% text; axe WCAG 2.1 A and AA inside the page; 44px targets; no text under 14px; nothing clipped or squeezed; real award, Undo, goal completion, focus to Done, child switching, and every dialog opening. Two control checks prove the target and type checks can fail.
 - **Repo suites:** `npm test`, `npm run lint`, `npm run check:tokens`, `npm run check:release-gates`, and the Playwright e2e suite at 320, 390 touch, 834 touch and 1280.
 
+### 5b. Test changes in the e2e suite
+
+| Spec | Change | Why |
+|---|---|---|
+| `e2e/ui.spec.js` "home, its dialogs and the Undo toast" | The V1 Home layout checks ("Welcome back!", the Little wins card, two-card columns from 22 Nov) replaced by the V1.1 contract: picker and balance in the hero, then Quick Points, Today's Goals, Working towards; Quick Points on the first screen; no rings on Home; column placement. Child chosen by name | Your direction of 23 Nov replaces the V1 Home layout. The dialog, request, Award, Undo, Manage goals, sign-out and onboarding checks are unchanged |
+| `e2e/batch-e-goals.spec.js` (2 tests) | Picks Sam by name in the child picker, not by "Sam 0 / 30 this week" | The V1.1 picker names the child only; week figures are on Children |
+| `e2e/v1-journeys.spec.js` | Children heading is the child's name, not "{name}'s page" | Profile heading |
+
+The repo's own layout checks (`e2e/checks.js`: sideways scroll, text under 12px, clipped text, even tiles, 44px targets) are unchanged and pass. Two fixes came from them: the Quick Point tile parts and names now meet the even-tile contract, and the Manage labels are 44px targets in themselves.
+
 ### 5a. Test changes in `src/pages/V1Children.test.jsx`
 
 | Test | Change | Kept |

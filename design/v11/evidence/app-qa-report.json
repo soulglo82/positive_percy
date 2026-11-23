@@ -1157,7 +1157,7 @@
     {
       "name": "Manage actions come before the journey",
       "pass": true,
-      "detail": "381 < 725"
+      "detail": "381 < 753"
     },
     {
       "name": "the week ring is the Weekly target progressbar",
@@ -1200,7 +1200,7 @@
       "detail": ""
     },
     {
-      "name": "control: without the stretched hit area the Manage labels fail the 44px check",
+      "name": "control: without their 44px height and stretched hit area the Manage labels fail the 44px check",
       "pass": true,
       "detail": "3 small"
     },

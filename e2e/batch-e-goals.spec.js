@@ -20,7 +20,8 @@ test('parent can add, complete once, edit and archive a dated goal', async ({ pa
 
   await page.goto('/');
   await expect(page.getByRole('heading', { name: "Today's goals" })).toBeVisible();
-  await page.getByRole('button', { name: /^Sam \d+ \/ \d+ this week$/ }).click();
+  // V1.1 Home: the child picker names the child only (week figures are on Children).
+  await page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: 'Sam', exact: true }).click();
   await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading', { name: "Manage Sam's goals" })).toBeVisible();
@@ -73,8 +74,9 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
   const title = 'Brush teeth ' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 
   await page.goto('/');
-  await page.getByRole('button', { name: /^Sam \d+ \/ \d+ this week$/ }).click();
-  await expect(page.getByRole('button', { name: /^Sam \d+ \/ \d+ this week$/ })).toHaveAttribute('aria-pressed', 'true');
+  const samChip = page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: 'Sam', exact: true });
+  await samChip.click();
+  await expect(samChip).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('button', { name: 'Add goal' }).click();

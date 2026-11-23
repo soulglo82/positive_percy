@@ -41,13 +41,13 @@ function inspect() {
   for (const el of all) {
     const s = getComputedStyle(el); const r = el.getBoundingClientRect();
     const ownText = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
-    if (ownText && !el.closest('svg') && !el.closest('.pv-sr')) {
+    if (ownText && !el.closest('svg') && !el.closest('.sr-only')) {
       const size = parseFloat(s.fontSize);
       if (size < 13.99) (v1Tile(el) ? v1Small : smallText).push(`${label(el)} ${size}px`);
       if (s.display !== 'inline' && el.textContent.trim().length > 3 && el.clientWidth > 0 && el.clientWidth < size * 1.6) stacked.push(`${label(el)} ${el.clientWidth}px wide`);
       if (s.overflow !== 'visible' && el.scrollWidth > el.clientWidth + 1 && !el.classList.contains('pv-selector__name')) clipped.push(label(el));
     }
-    if (!el.closest('.pv-selector') && !el.closest('.pv-scene__art') && !el.closest('.pv-sr') && (r.right > vw + 0.5 || r.left < -0.5)) offscreen.push(`${label(el)} ${Math.round(r.left)}..${Math.round(r.right)} of ${vw}`);
+    if (!el.closest('.pv-selector') && !el.closest('.pv-scene__art') && !el.closest('.sr-only') && (r.right > vw + 0.5 || r.left < -0.5)) offscreen.push(`${label(el)} ${Math.round(r.left)}..${Math.round(r.right)} of ${vw}`);
     if (el.matches('button, a[href], input:not([type=hidden]):not([type=file])')) {
       // A stretched label (.pv-stretch) is hit through its ::after, which must
       // really cover the card; then the card's box is the target.
@@ -214,9 +214,10 @@ for (const pct of [150, 200]) for (const [w, h] of [[320, 568], [390, 844]]) for
 {
   const page = await open(fam, 390, 844);
   await go(page, '/Children');
-  await page.addStyleTag({ content: '.pv-stretch::after{position:static}' });
+  // The labels are 44px themselves and stretched over the card; take both away.
+  await page.addStyleTag({ content: '.pv-stretch::after{position:static} .pv-manage-action__label{min-height:0}' });
   const r = await page.evaluate(inspect);
-  record('control: without the stretched hit area the Manage labels fail the 44px check', r.smallTargets.some((x) => /pv-manage-action__label/.test(x)), `${r.smallTargets.length} small`);
+  record('control: without their 44px height and stretched hit area the Manage labels fail the 44px check', r.smallTargets.some((x) => /pv-manage-action__label/.test(x)), `${r.smallTargets.length} small`);
   await page.addStyleTag({ content: '.pv-quick-tile__label, .pv-goal__title{font-size:10px !important}' });
   await go(page, '/');
   await page.addStyleTag({ content: '.pv-quick-tile__label{font-size:10px !important}' });

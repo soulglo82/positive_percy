@@ -145,7 +145,7 @@ export default function Children() {
   // here: that is Home.
   return page(
     <div className="pv">
-      <h1 className="pv-sr">Children</h1>
+      <h1 className="sr-only">Children</h1>
       <section className="pv-scene pv-scene--journey" aria-labelledby="child-title">
         <SkyArt />
         <div className="pv-scene__sky"><ChildSelector children={ordered} selectedId={child.id} onSelect={setChildId} emphasise={false} /></div>

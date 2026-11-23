@@ -94,7 +94,8 @@ test('child asks, parent approves, history and settings follow', async ({ page }
 
     // Parent, Children: the child's page and goals.
     await page.goto(`/children?child=${kid.id}`);
-    await expect(page.getByRole('heading', { name: `${name}'s page` })).toBeVisible();
+    // V1.1 Children: the child's profile heading is their name.
+    await expect(page.getByRole('heading', { name, exact: true, level: 2 })).toBeVisible();
     await expect(page.getByRole('heading', { name: `${name}'s goals` })).toBeVisible();
 
     // Parent, Settings: rename the family; it survives a reload.

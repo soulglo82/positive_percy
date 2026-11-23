@@ -66,7 +66,7 @@ export function HomeQuickPoints({ child, actions, awarding, onAward, onOpenAward
             // reader hears starts with what is shown ("Kindness +1 for Lara").
             <button key={action.id} type="button" className="pv-quick-tile" disabled={awarding} data-tile
               onClick={() => onAward(child, action)} aria-label={`${action.label} +${action.points} for ${child.name}`}>
-              <span className="pv-medallion" aria-hidden="true"><CategoryIcon iconKey={action.icon_key} className="h-6 w-6" /></span>
+              <span className="pv-medallion" aria-hidden="true" data-tile-part="icon"><CategoryIcon iconKey={action.icon_key} className="h-6 w-6" /></span>
               <span className="pv-quick-tile__label" data-tile-part="name">{action.label}</span>
               <span className="pv-quick-tile__points" data-tile-part="badge">+{action.points}</span>
             </button>
