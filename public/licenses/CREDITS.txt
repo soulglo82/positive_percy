@@ -1,0 +1,13 @@
+Positive Percy - credits and licences
+DRAFT: the exact wording needs owner approval before release (E03 design, owner decision 3).
+
+Icons by Phosphor Icons (https://phosphoricons.com), MIT licence.
+Full text: /licenses/phosphor-MIT.txt
+
+Illustrations by Streamline (https://streamlinehq.com), licensed under
+Creative Commons Attribution 4.0 International (CC BY 4.0), used unchanged.
+Source: https://github.com/webalys-hq/streamline-vectors
+Licence: https://creativecommons.org/licenses/by/4.0/ (full text: /licenses/CC-BY-4.0.txt)
+
+Fonts: Nunito and Poppins, SIL Open Font License 1.1.
+Full texts: /fonts/OFL-nunito.txt and /fonts/OFL-poppins.txt

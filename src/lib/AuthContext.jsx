@@ -115,6 +115,27 @@ export const AuthProvider = ({ children }) => {
     return updated;
   };
 
+  // V1-E: read the user and family again (e.g. after the family is renamed);
+  // updateUser's reply has no `family`, so it cannot be used for that.
+  // It never signs anyone out: on a failure it keeps what is shown and the
+  // stored login (code review of #63; loadUser clears storage on failure).
+  const refreshUser = async () => {
+    if (!familyCode) return false;
+    try {
+      const res = await fetch(`/api/auth/me?family_code=${encodeURIComponent(familyCode)}`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (!res.ok) return false;
+      setUser(await res.json());
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  // Show a new family name at once, from the server's reply to the rename.
+  const setFamilyName = (family_name) =>
+    setUser((u) => (u ? { ...u, family: { ...(u.family || {}), family_name } } : u));
+
   const logout = () => {
     localStorage.removeItem(FAMILY_CODE_KEY);
     localStorage.removeItem(TOKEN_KEY);
@@ -132,6 +153,8 @@ export const AuthProvider = ({ children }) => {
       createFamily,
       joinFamily,
       updateUser,
+      refreshUser,
+      setFamilyName,
       logout,
     }}>
       {children}

@@ -8,6 +8,7 @@ export function keysForEvent(type) {
   if (!type) return [];
   // family_updated: the timezone changed, which moves the week's start.
   if (type === 'points_updated' || type === 'stack_updated' || type === 'family_updated' || type.startsWith('children_')) return POINTS_QUERY_KEYS;
+  if (type === 'todays_goals_updated') return [['todaysGoals']];
   if (type.startsWith('rewards_')) return [['rewards'], ['children']];
   if (type.startsWith('behavior_categories_') || type.startsWith('quick_actions_')) return [['behaviorCategories']];
   return [];

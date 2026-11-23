@@ -1,15 +1,29 @@
 import { Router } from 'express';
 import { isIconKey } from './iconKeys.js';
-const ICON_KEY_MESSAGE = 'Choose one of the icons shown';
+const ICON_KEY_MESSAGE = 'Choose one of the icons shown.'; // owner-approved C4
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import pool from './db.js';
+import { isRewardIconKey } from './rewardIcons.js';
 import { prepareFamilyExport, MAX_EXPORT_BYTES } from './export.js';
 import { pickAllowedColumns, findMissingRequired } from './columns.js';
 import { uploadIdOf, uploadsAreOwned, releaseUpload, UPLOAD_REF_COLUMNS } from './uploads.js';
 import { weekPointsFor, withWeekPoints, weekStartSql, localDays, validTimezone, isGenericZone, recomputeLastActive } from './week.js';
+import { createTodaysGoalsRouter } from './todaysGoals.js';
 
 const router = Router();
+
+// One spelling of every id from here on (O6 review #1). Postgres accepts a
+// UUID in any letter case, but ids are compared as text in JavaScript (the
+// balance rule, generations, assignments), so a capitalised :id would miss
+// the child's own savings and requests. Every :id route on this router sees
+// the lower case (the Today's Goals sub-router has its own); reward ids from
+// a body or query are lower-cased where they are read.
+const lowerId = (v) => (typeof v === 'string' ? v.toLowerCase() : v);
+router.param('id', (req, _res, next, id) => {
+  if (typeof id === 'string') req.params.id = id.toLowerCase();
+  next();
+});
 
 // Every route with an :id expects a UUID. Anything else is not found, so a
 // malformed id never reaches the database.
@@ -105,29 +119,142 @@ function categoryPoints(value, fallback = 1) {
 // family and, if assigned to specific children, include this one. Cost and
 // title always come from here, never from the request.
 async function loadSpendableReward(db, rewardId, childId, familyCode) {
-  if (!isUuid(String(rewardId || ''))) return null;
-  const { rows } = await db.query(
-    'SELECT id, title, cost_points, assigned_child_ids FROM rewards WHERE id = $1 AND family_code = $2',
-    [rewardId, familyCode]
-  );
-  const r = rows[0];
-  if (!r) return null;
-  const assigned = r.assigned_child_ids || [];
-  if (assigned.length > 0 && !assigned.includes(childId)) return null;
-  return { id: r.id, title: r.title, cost: r.cost_points };
+  const byId = await loadRewardsById(db, familyCode, [rewardId]);
+  return spendableFrom(byId, rewardId, childId);
 }
 
+// One query for any number of reward ids (review: no per-item queries).
+async function loadRewardsById(db, familyCode, ids) {
+  const wanted = [...new Set(ids.map((id) => String(id || '')).filter(isUuid))];
+  if (wanted.length === 0) return new Map();
+  const { rows } = await db.query(
+    'SELECT id, title, cost_points, assigned_child_ids, icon_key, emoji, image_url, is_bigger_goal, goal_epoch, goal_child_epochs FROM rewards WHERE id = ANY($1::uuid[]) AND family_code = $2',
+    [wanted, familyCode]
+  );
+  return new Map(rows.map((r) => [r.id, r]));
+}
+
+// The spendability rule, in one place: the reward exists in this family and,
+// if assigned to specific children, includes this one.
+function spendableFrom(byId, rewardId, childId) {
+  const r = byId.get(String(rewardId || ''));
+  if (!r) return null;
+  const assigned = (r.assigned_child_ids || []).map((x) => String(x).toLowerCase());
+  if (assigned.length > 0 && !assigned.includes(String(childId).toLowerCase())) return null;
+  return { id: r.id, title: r.title, cost: r.cost_points, icon_key: r.icon_key ?? null, emoji: r.emoji ?? null, image_url: r.image_url ?? null, is_bigger_goal: !!r.is_bigger_goal };
+}
+
+// The priced stack also carries how to draw each reward (V1-D: icon_key,
+// then image_url, then emoji), so Home shows the reward's own icon.
+// stackIndex is the item's position in the STORED stack (which can hold
+// rewards since deleted), so a remove uses the right position (V1-D).
+function priceStackFrom(byId, stack, childId) {
+  const out = [];
+  // Legacy rows may hold a non-array stack (it was once client-writable).
+  (Array.isArray(stack) ? stack : []).forEach((item, stackIndex) => {
+    const reward = spendableFrom(byId, item.rewardId, childId);
+    if (reward) out.push({ rewardId: reward.id, name: reward.title, cost: reward.cost, icon_key: reward.icon_key, emoji: reward.emoji, image_url: reward.image_url, stackIndex });
+  });
+  return out;
+}
+
+// What is stored in children.reward_stack: the original three fields only.
+const storedStackItem = ({ rewardId, name, cost }) => ({ rewardId, name, cost });
+
 const stackTotalOf = (stack) => (stack || []).reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+
+// V1 (plan v1.1 §8.1): children responses carry week_points,
+// reward_stack_priced (the stack at current names and costs, without rewards
+// that are gone or no longer for this child) and available_points =
+// total_points minus that stack's cost. One rewards query for all children.
+// D1: savings per (child, reward), one query. Only positive sums: a release
+// can never take a goal below zero, and a negative sum (which no endpoint can
+// write) is ignored rather than turned into spendable points.
+async function savingsSums(db, familyCode, childIds) {
+  if (!childIds.length) return [];
+  const { rows } = await db.query(
+    `SELECT child_id, reward_id, generation, SUM(delta)::int AS saved FROM savings_events
+     WHERE family_code = $1 AND child_id = ANY($2::uuid[]) GROUP BY child_id, reward_id, generation HAVING SUM(delta) > 0`,
+    [familyCode, childIds]);
+  return rows;
+}
+
+// A goal's current allocation generation for a child (migration 016's
+// trigger moves it forward on mark/un-mark and when the reward stops being
+// for the child). Savings of any other generation are expired history (O6).
+function goalGeneration(reward, childId) {
+  const epochs = reward?.goal_child_epochs || {};
+  return `${reward?.goal_epoch ?? 0}:${epochs[String(childId).toLowerCase()] ?? 0}`;
+}
+
+// THE balance rule (D1, design §3, §11 and §13), used by every read and write:
+//   committed = points set aside for requests + points saved towards goals,
+//   available = total - committed.
+// Savings count only towards a reward that is still a bigger goal for this
+// child. A goal that is also requested is counted once: its savings add only
+// what exceeds the requested cost (max(stacked, saved), never the sum).
+function balanceOf(byId, sums, child) {
+  const stack = priceStackFrom(byId, child.reward_stack, child.id);
+  const stacked = new Map();
+  for (const item of stack) stacked.set(item.rewardId, (stacked.get(item.rewardId) || 0) + item.cost);
+  const goals = [];
+  let savedCounted = 0;
+  for (const x of sums) {
+    if (String(x.child_id).toLowerCase() !== String(child.id).toLowerCase()) continue;
+    const reward = spendableFrom(byId, x.reward_id, child.id);
+    if (!reward || !reward.is_bigger_goal) continue;
+    // Only the current generation counts: un-marking, re-marking or taking the
+    // goal away from the child expires earlier savings for good.
+    if (x.generation !== goalGeneration(byId.get(String(x.reward_id)), child.id)) continue;
+    goals.push({ rewardId: reward.id, name: reward.title, cost: reward.cost, saved: x.saved, to_go: Math.max(0, reward.cost - x.saved),
+      icon_key: reward.icon_key, emoji: reward.emoji, image_url: reward.image_url });
+    savedCounted += Math.max(0, x.saved - (stacked.get(reward.id) || 0));
+  }
+  const committed = stackTotalOf(stack) + savedCounted;
+  return { stack, goals, saved_total: goals.reduce((n, g) => n + g.saved, 0), committed,
+    available: Math.max(0, (child.total_points ?? 0) - committed) };
+}
+
+// The balance of one child inside a write, under its row lock.
+async function balanceFor(db, familyCode, child) {
+  const sums = await savingsSums(db, familyCode, [child.id]);
+  const byId = await loadRewardsById(db, familyCode, [
+    ...(Array.isArray(child.reward_stack) ? child.reward_stack : []).map((i) => i.rewardId), ...sums.map((x) => x.reward_id)]);
+  return balanceOf(byId, sums, child);
+}
+
+async function withBalances(db, familyCode, rows) {
+  const out = await withWeekPoints(db, familyCode, rows);
+  if (!out) return out;
+  const sums = await savingsSums(db, familyCode, out.map((r) => r.id).filter(Boolean));
+  const byId = await loadRewardsById(db, familyCode, [
+    ...out.flatMap((r) => (Array.isArray(r.reward_stack) ? r.reward_stack : []).map((item) => item.rewardId)),
+    ...sums.map((x) => x.reward_id),
+  ]);
+  for (const r of out) {
+    if (r.total_points == null) continue;
+    const b = balanceOf(byId, sums, r);
+    r.reward_stack_priced = b.stack;
+    r.goals = b.goals;
+    r.saved_total = b.saved_total;
+    // Available now = total - set aside for requests - saved towards goals.
+    // Moving points into a goal lowers this, never total_points.
+    r.available_points = b.available;
+  }
+  return out;
+}
+
+// One child row with its balance (D1 §19.7 S4: every response that returns
+// a child carries available_points, saved_total and goals).
+async function balancedChild(db, familyCode, row) {
+  return row ? (await withBalances(db, familyCode, [row]))[0] : row;
+}
 
 // The stack re-priced from the rewards table, dropping items whose reward is
 // gone or no longer for this child. Saved costs are never trusted.
 async function pricedStack(db, stack, childId, familyCode) {
-  const out = [];
-  for (const item of stack || []) {
-    const reward = await loadSpendableReward(db, item.rewardId, childId, familyCode);
-    if (reward) out.push({ rewardId: reward.id, name: reward.title, cost: reward.cost });
-  }
-  return out;
+  const byId = await loadRewardsById(db, familyCode, (stack || []).map((item) => item.rewardId));
+  return priceStackFrom(byId, stack, childId);
 }
 
 // ─── Input validation helpers ───────────────────────────────────────────────
@@ -178,6 +305,20 @@ function validateCreatePayload(table, data, { isCreate = false } = {}) {
       if (typeof data.cost_points !== 'number' || data.cost_points < 1) {
         throw Object.assign(new Error('Reward cost must be at least 1 point'), { status: 400 });
       }
+    }
+    // V1-D, D2: null clears the icon; otherwise one of the 71 picker icons or the 12 approved reward artworks (§14)
+    // (also a database CHECK, migration 015).
+    if (data.icon_key !== undefined && data.icon_key !== null && !isRewardIconKey(data.icon_key)) {
+      throw Object.assign(new Error(ICON_KEY_MESSAGE), { status: 422 });
+    }
+    // D1 (design §19): a parent marks a reward as a bigger goal (D7).
+    if (data.is_bigger_goal !== undefined && typeof data.is_bigger_goal !== 'boolean') {
+      throw Object.assign(new Error('Invalid request'), { status: 400 });
+    }
+    // Stored in the one spelling the balance rule and migration 016's
+    // trigger compare against (O6 review #6).
+    if (Array.isArray(data.assigned_child_ids)) {
+      data.assigned_child_ids = data.assigned_child_ids.map((x) => (typeof x === 'string' ? x.toLowerCase() : x));
     }
   }
   if (table === 'point_events') {
@@ -314,6 +455,13 @@ router.get('/api/uploads/:id', async (req, res) => {
   }
 });
 
+// Goals remain a separate, family-authenticated API and use the established
+// positive point ledger. Keep this mount before generic /api/:table routes.
+router.use('/api/todays-goals', authMiddleware, createTodaysGoalsRouter({
+  pool, broadcast: (...args) => broadcastFn(...args),
+  recordStreak, weekPointsFor,
+}));
+
 // ─── Family auth routes ─────────────────────────────────────────────────────
 
 // Create a new family
@@ -339,13 +487,16 @@ router.post('/api/family/create', async (req, res) => {
       );
 
       // IMPL-5.5: Seed default behavior categories atomically
+      // Default Quick Points: Kindness, Helpfulness, Bravery, Resilience. Caring is
+      // a behaviour but not a default Quick Point: the owner found it too close to
+      // Kindness (22 Nov 2026, E03 design §11). Families already created keep theirs.
       await pool.query(
         `INSERT INTO behavior_categories (family_code, name, icon, icon_key, sort_order, is_default, points, is_quick_action) VALUES
           ($1, 'Kindness', '💛', 'heart', 0, true, 1, true),
           ($1, 'Helpfulness', '🤝', 'handshake', 1, true, 1, true),
           ($1, 'Bravery', '🦁', 'shield', 2, true, 1, true),
-          ($1, 'Resilience', '💪', 'mountain', 3, true, 1, false),
-          ($1, 'Caring', '🫶', 'hand-heart', 4, true, 1, true),
+          ($1, 'Resilience', '💪', 'mountain', 3, true, 1, true),
+          ($1, 'Caring', '🫶', 'hand-heart', 4, true, 1, false),
           ($1, 'Chores', '🧹', 'brush', 5, true, 1, false),
           ($1, 'Homework', '📖', 'book-open', 6, true, 1, false),
           ($1, 'Adventurous', '🌟', 'sparkles', 7, true, 1, false)
@@ -429,6 +580,26 @@ router.get('/api/family/timezone', authMiddleware, async (req, res) => {
   }
 });
 
+// V1-E (docs/engineering/V1-E-DESIGN.md §3): the family's own name, the one
+// the Family Report and auth/me show. Only the caller's family (from the
+// token). Same rule as creation: trimmed, at most 100 characters, required.
+// Registered before the generic PUT /api/:entity/:id, which would match it.
+router.put('/api/family/name', authMiddleware, async (req, res) => {
+  const raw = req.body?.family_name;
+  // Cut by characters, not UTF-16 units, so an emoji is never split.
+  const family_name = typeof raw === 'string' ? Array.from(raw.trim()).slice(0, 100).join('').trim() : '';
+  if (!family_name) return res.status(400).json({ error: 'Family name is required' });
+  try {
+    const { rows } = await pool.query(
+      'UPDATE families SET family_name = $1 WHERE family_code = $2 RETURNING family_name',
+      [family_name, req.familyCode]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Family not found' });
+    return res.json({ family_name: rows[0].family_name });
+  } catch (err) {
+    return serverError(res, 'Set family name error', err);
+  }
+});
+
 // { timezone, auto }: auto (sent by the app on load) only fills a family
 // that has none and never from a generic zone like UTC; without auto it is
 // the parent choosing in Settings. Any change recomputes the streak date.
@@ -451,7 +622,9 @@ router.put('/api/family/timezone', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { rows } = await client.query('SELECT timezone FROM families WHERE family_code = $1 FOR UPDATE', [req.familyCode]);
+    // NO KEY UPDATE: excludes other family writers but not the foreign-key
+    // KEY SHARE a savings record takes (D1 §20.8 B1: no deadlock with a reward edit).
+    const { rows } = await client.query('SELECT timezone FROM families WHERE family_code = $1 FOR NO KEY UPDATE', [req.familyCode]);
     if (rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Family not found' });
@@ -507,7 +680,8 @@ router.get('/api/family/:code', authMiddleware, async (req, res) => {
 const STREAK_MILESTONES = [7, 14, 30, 60, 100];
 export async function recordStreak(db, familyCode) {
   const { rows } = await db.query(
-    'SELECT current_streak, last_active_date, longest_streak, timezone FROM families WHERE family_code = $1 FOR UPDATE',
+    // NO KEY UPDATE (D1 §20.8 B1): see the timezone write.
+    'SELECT current_streak, last_active_date, longest_streak, timezone FROM families WHERE family_code = $1 FOR NO KEY UPDATE',
     [familyCode]
   );
   if (rows.length === 0) return { streak: 0, milestone: false };
@@ -625,9 +799,16 @@ export const isReservedCategory = (name) => RESERVED_CATEGORY_NAMES.includes(Str
 // Atomic point adjustment (prevents race conditions)
 // A request_id seen before: same award -> return what happened, unchanged.
 // Anything different under the same id -> 409, never a second award.
+// A replayed award answers with the child as it is now, with balances.
+async function currentChild(familyCode, childId) {
+  const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, familyCode]);
+  return rows[0] ? (await withBalances(pool, familyCode, rows))[0] : null;
+}
+
 function replayAward(res, prior, child, points, category) {
   // Only an award replays as an award (an undo row carries a request id too).
   if (prior.kind !== 'award') return res.status(409).json({ error: 'Invalid request' });
+  if (!child) return res.status(404).json({ error: 'Child not found' });
   const sameChild = prior.child_id === child.id;
   const sameCategory = prior.category === String(category).trim();
   const sameDirection = Math.sign(prior.points) === Math.sign(points);
@@ -679,8 +860,14 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
       [req.familyCode, request_id]
     );
     if (prior.length > 0) {
+      // E04 R3: an id another endpoint claimed (e.g. a Today's Goal
+      // completion, whose ledger row is also an award) is never replayed here.
+      const { rows: claim } = await client.query(
+        'SELECT endpoint FROM idempotency_keys WHERE family_code = $1 AND request_id = $2',
+        [req.familyCode, request_id]);
       await client.query('ROLLBACK');
-      return replayAward(res, prior[0], child, points, category);
+      if (claim.length && claim[0].endpoint !== 'award') return res.status(409).json({ error: 'Invalid request' });
+      return replayAward(res, prior[0], await currentChild(req.familyCode, child.id), points, category);
     }
 
     // The same id already used by a spend: never also an award.
@@ -720,7 +907,7 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
         [req.familyCode, request_id]
       );
       if (won.length === 0) return res.status(409).json({ error: 'Invalid request' });
-      return replayAward(res, won[0], child, points, category);
+      return replayAward(res, won[0], await currentChild(req.familyCode, child.id), points, category);
     }
     const { rows: updated } = await client.query(
       `UPDATE children
@@ -732,11 +919,14 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
     const streak = applied > 0 ? await recordStreak(client, req.familyCode) : null;
     // This week, from history (A2 C1). The event just written counts.
     const weekAfter = (await weekPointsFor(client, req.familyCode, [child.id])).get(child.id);
+    // Review (PR #57): the award's child carries available_points too, so Home
+    // does not show a stale "Available now" until the next refetch.
+    const [balanced] = await withBalances(client, req.familyCode, [updated[0]]);
     await client.query('COMMIT');
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
     res.json({
-      event: eventRows[0], child: { ...updated[0], week_points: weekAfter },
+      event: eventRows[0], child: { ...balanced, week_points: weekAfter },
       week_points_before: weekBefore, week_points_after: weekAfter,
       duplicate: false, capped: applied !== points, streak,
     });
@@ -751,7 +941,7 @@ router.post('/api/children/:id/award', authMiddleware, async (req, res) => {
 router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { reward_id } = req.body || {};
+    const reward_id = lowerId(req.body?.reward_id);
     const childId = req.params.id;
     if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
     const rq = spendRequestId(req.body);
@@ -780,7 +970,7 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     if (prior.replay) {
       await client.query('ROLLBACK');
       const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, req.familyCode]);
-      return res.json({ ...prior.replay, child: rows[0], duplicate: true });
+      return res.json({ ...prior.replay, child: await balancedChild(pool, req.familyCode, rows[0]), duplicate: true });
     }
 
     const reward = await loadSpendableReward(client, reward_id, childId, req.familyCode);
@@ -792,8 +982,24 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     const reward_title = reward.title;
     const child_name = childRows[0].name;
 
-    // Points already set aside in the reward stack are not spendable twice.
-    const reserved = stackTotalOf(await pricedStack(client, childRows[0].reward_stack, childId, req.familyCode));
+    // Points set aside for requests or saved towards goals are not spendable
+    // twice (D1: the one balance rule). A reward with savings is redeemed
+    // through its goal, not spent here.
+    const bal = await balanceFor(client, req.familyCode, { id: childId, ...childRows[0] });
+    // O-I1 (owner, 2026-11-20): a reward the child has asked for is approved
+    // or declined, never spent directly (a stale screen gets the approved
+    // stale-view message; nothing is spent or remembered).
+    if (bal.stack.some((item) => item.rewardId === reward.id)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'The requests changed. Check them again.' });
+    }
+    // D1 §19.1: a bigger goal has one redemption path, the goal redeem on
+    // the Children page (B1/O7), with or without savings.
+    if (reward.is_bigger_goal || bal.goals.some((g) => g.rewardId === reward.id)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
+    }
+    const reserved = bal.committed;
     if (childRows[0].total_points - reserved < reward_cost) {
       await client.query('ROLLBACK');
       return res.status(400).json({
@@ -829,7 +1035,7 @@ router.post('/api/children/:id/redeem', authMiddleware, async (req, res) => {
     );
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
-    res.json({ child: updatedChild[0], redemption: redemptionRows[0], duplicate: false });
+    res.json({ child: await balancedChild(pool, req.familyCode, updatedChild[0]), redemption: redemptionRows[0], duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505' && req.spend) {
@@ -853,8 +1059,11 @@ const SPENT_ALREADY = "Those points have already been used, so this can't be und
 async function lockChildOf(client, table, id, familyCode) {
   const { rows } = await client.query(`SELECT child_id FROM ${table} WHERE id = $1 AND family_code = $2`, [id, familyCode]);
   if (rows.length === 0) return null;
+  // NO KEY UPDATE (D1 §20.1): this path can go on to lock a reward, and a
+  // reward edit takes the foreign-key KEY SHARE on children; FOR UPDATE would
+  // make a cycle. Still exclusive against every other child writer.
   const { rows: child } = await client.query(
-    'SELECT * FROM children WHERE id = $1 AND family_code = $2 FOR UPDATE', [rows[0].child_id, familyCode]);
+    'SELECT * FROM children WHERE id = $1 AND family_code = $2 FOR NO KEY UPDATE', [rows[0].child_id, familyCode]);
   return child[0] || null;
 }
 
@@ -865,7 +1074,7 @@ async function undoReplay(res, client, familyCode, requestId, endpoint, args) {
   // Read on this request's own connection: it holds the child lock, and
   // waiting for a second pool connection here could starve the pool.
   const { rows } = await client.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [prior.replay.child_id, familyCode]);
-  const [child] = await withWeekPoints(client, familyCode, rows);
+  const [child] = await withBalances(client, familyCode, rows);
   return res.json({ ...prior.replay, child, duplicate: true });
 }
 
@@ -908,8 +1117,8 @@ async function reverseAward(req, res, sameWeek = false) {
     // Only undoing a positive award lowers the balance, so only then can the
     // points already be used. Undoing a deduction gives points back.
     const after = child.total_points - ev.points;
-    const reserved = ev.points > 0
-      ? stackTotalOf(await pricedStack(client, child.reward_stack, child.id, req.familyCode)) : 0;
+    // D1: requests and savings both hold points the undo would take away.
+    const reserved = ev.points > 0 ? (await balanceFor(client, req.familyCode, child)).committed : 0;
     if (ev.points > 0 && (after < 0 || after < reserved)) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: SPENT_ALREADY });
@@ -918,14 +1127,20 @@ async function reverseAward(req, res, sameWeek = false) {
       `INSERT INTO point_events (child_id, points, category, child_name, family_code, request_id, kind, reverses_id)
        VALUES ($1, $2, $3, $4, $5, $6, 'undo', $7) RETURNING *`,
       [child.id, -ev.points, ev.category, child.name, req.familyCode, requestId, ev.id]);
+    // A corrected Today's Goal should become eligible again on the same day;
+    // the completion remains in the audit history with an undone marker.
+    await client.query(
+      'UPDATE today_goal_completions SET undone_at = NOW() WHERE point_event_id = $1 AND undone_at IS NULL',
+      [ev.id]
+    );
     const { rows: updated } = await client.query(
       'UPDATE children SET total_points = total_points - $1 WHERE id = $2 AND family_code = $3 RETURNING *',
       [ev.points, child.id, req.familyCode]);
-    const week = (await weekPointsFor(client, req.familyCode, [child.id])).get(child.id);
     await rememberRequest(client, req.familyCode, requestId, endpoint, args, { event: undoRows[0], child_id: child.id });
+    const balanced = await balancedChild(client, req.familyCode, updated[0]); // includes week_points
     await client.query('COMMIT');
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
-    res.json({ event: undoRows[0], child: { ...updated[0], week_points: week }, duplicate: false });
+    res.json({ event: undoRows[0], child: balanced, duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') return res.status(409).json({ error: 'Already undone.' });
@@ -971,10 +1186,29 @@ router.post('/api/redemptions/:id/undo', authMiddleware, async (req, res) => {
          points_spent = GREATEST(0, COALESCE(points_spent, 0) - $1)
        WHERE id = $2 AND family_code = $3 RETURNING *`,
       [cost, child.id, req.familyCode]);
-    await rememberRequest(client, req.familyCode, requestId, 'undo_spend', args, { redemption: red[0], child_id: child.id });
+    // D1 §19.1: a goal redemption's savings come back only to the same goal
+    // in the same generation (O6: nothing revives). Otherwise all of it is
+    // available. The 'Completed' guard above and UNIQUE (undoes) make this once.
+    const { rows: [spend] } = await client.query(
+      `SELECT * FROM savings_events s WHERE s.redemption_id = $1 AND s.family_code = $2 AND s.kind = 'spend'
+         AND NOT EXISTS (SELECT 1 FROM savings_events u WHERE u.undoes = s.id)`,
+      [red[0].id, req.familyCode]);
+    let refunded = 0;
+    if (spend) {
+      const goal = await lockGoal(client, req.familyCode, spend.reward_id);
+      if (isCurrentGoal(goal, child.id, spend.generation)) {
+        await client.query(
+          `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, undoes)
+           VALUES ($1, $2, $3, $4, $5, $6, 'undo', $7)`,
+          [req.familyCode, child.id, spend.reward_id, spend.reward_title, spend.generation, -spend.delta, spend.id]);
+        refunded = -spend.delta;
+      }
+    }
+    await rememberRequest(client, req.familyCode, requestId, 'undo_spend', args, { redemption: red[0], child_id: child.id, refunded_to_goal: refunded });
+    const balanced = await balancedChild(client, req.familyCode, updated[0]);
     await client.query('COMMIT');
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: child.id });
-    res.json({ redemption: red[0], child: updated[0], duplicate: false });
+    res.json({ redemption: red[0], child: balanced, refunded_to_goal: refunded, duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') return res.status(409).json({ error: 'Invalid request' });
@@ -1020,8 +1254,231 @@ async function replayAfterRace(res, familyCode, requestId, endpoint, args, child
   const prior = await priorRequest(pool, familyCode, requestId, endpoint, args);
   if (!prior.replay) return res.status(409).json({ error: 'Invalid request' });
   const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, familyCode]);
-  return res.json({ ...prior.replay, child: rows[0], duplicate: true });
+  return res.json({ ...prior.replay, child: await balancedChild(pool, familyCode, rows[0]), duplicate: true });
 }
+
+// ─── D1 savings (docs/engineering/D1-SAVINGS-LEDGER-DESIGN.md §19) ──────────
+// Parent-only, family-scoped and idempotent (request_id claimed in
+// idempotency_keys). Lock order (R3, §19.7 S6): the child FOR UPDATE, then
+// the reward FOR SHARE; the balance, the goal check and the generation are
+// read under both. Checks are unclamped: total - committed >= needed (N1).
+const STALE_REQUESTS = 'The requests changed. Check them again.';
+
+async function lockGoal(db, familyCode, rewardId) {
+  if (!isUuid(String(rewardId || ''))) return null;
+  const { rows } = await db.query(
+    `SELECT id, title, cost_points, assigned_child_ids, icon_key, emoji, image_url, is_bigger_goal, goal_epoch, goal_child_epochs
+     FROM rewards WHERE id = $1 AND family_code = $2 FOR SHARE`, [rewardId, familyCode]);
+  return rows[0] || null;
+}
+
+// A reward is this child's goal in this generation: it exists in the
+// family, is for this child, is a bigger goal, and its generation matches.
+function isCurrentGoal(reward, childId, generation) {
+  if (!reward || !reward.is_bigger_goal) return false;
+  if (!spendableFrom(new Map([[reward.id, reward]]), reward.id, childId)) return false;
+  return generation === undefined || goalGeneration(reward, childId) === generation;
+}
+
+const savingsPoints = (v) => isWholeNumber(v) && v >= 1 && v <= MAX_AWARD;
+
+async function lockedChild(client, childId, familyCode) {
+  // NO KEY UPDATE (D1 §20.1): child then reward, without a cycle with a reward edit.
+  const { rows } = await client.query('SELECT * FROM children WHERE id = $1 AND family_code = $2 FOR NO KEY UPDATE', [childId, familyCode]);
+  return rows[0] || null;
+}
+
+async function freshChild(db, familyCode, childId) {
+  const { rows } = await db.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, familyCode]);
+  return balancedChild(db, familyCode, rows[0]);
+}
+
+async function savingsMove(req, res, kind) {
+  const childId = req.params.id;
+  const rewardId = lowerId(req.body?.reward_id);
+  const { points, request_id: requestId } = req.body || {};
+  if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
+  if (!isUuid(String(requestId || '')) || !savingsPoints(points)) return res.status(400).json({ error: 'Invalid request' });
+  if (!isUuid(String(rewardId || ''))) return res.status(404).json({ error: 'Reward not found' });
+  const endpoint = kind === 'save' ? 'savings_save' : 'savings_release';
+  const args = { child_id: childId, reward_id: rewardId, points };
+  const client = await pool.connect();
+  const fail = async (status, error) => { await client.query('ROLLBACK'); return res.status(status).json({ error }); };
+  try {
+    await client.query('BEGIN');
+    const child = await lockedChild(client, childId, req.familyCode);
+    if (!child) return fail(404, 'Child not found');
+    const prior = await priorRequest(client, req.familyCode, requestId, endpoint, args);
+    if (prior.conflict) return fail(409, 'Invalid request');
+    if (prior.replay) {
+      // On this request's own connection (as undoReplay): waiting for a second
+      // pool connection here could starve the pool (code review of 9e674c9).
+      await client.query('ROLLBACK');
+      return res.json({ ...prior.replay, child: await freshChild(client, req.familyCode, childId), duplicate: true });
+    }
+    const reward = await lockGoal(client, req.familyCode, rewardId);
+    if (!reward || !spendableFrom(new Map([[reward.id, reward]]), reward.id, childId)) return fail(404, 'Reward not found');
+    if (!reward.is_bigger_goal) return fail(409, 'Invalid request'); // I4
+    const bal = await balanceFor(client, req.familyCode, child);
+    if (bal.stack.some((i) => i.rewardId === reward.id)) return fail(409, STALE_REQUESTS); // S1
+    const saved = bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0;
+    if (kind === 'save') {
+      if ((child.total_points ?? 0) - bal.committed < points) return fail(400, 'Not enough points'); // I2/I3
+      // Never more than the goal needs (code review of 9e674c9): an excess can
+      // only come from a cost lowered later (E12).
+      if (saved + points > reward.cost_points) return fail(400, 'More than this goal needs');
+    } else if (points > saved) {
+      return fail(400, 'Not enough points saved'); // I1
+    }
+    const { rows: [event] } = await client.query(
+      `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, request_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [req.familyCode, childId, reward.id, reward.title, goalGeneration(reward, childId), kind === 'save' ? points : -points, kind, requestId]);
+    await rememberRequest(client, req.familyCode, requestId, endpoint, args, { event });
+    const balanced = await balancedChild(client, req.familyCode, child);
+    await client.query('COMMIT');
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
+    res.json({ event, child: balanced, duplicate: false });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23505') return replayAfterRace(res, req.familyCode, requestId, endpoint, args, childId);
+    return serverError(res, `Savings ${kind} error`, err);
+  } finally {
+    client.release();
+  }
+}
+
+router.post('/api/children/:id/savings/save', authMiddleware, (req, res) => savingsMove(req, res, 'save'));
+router.post('/api/children/:id/savings/release', authMiddleware, (req, res) => savingsMove(req, res, 'release'));
+
+// Undo a save or a move back, for 10 minutes, once, and only while the goal
+// is in the same generation (O6) and the result keeps I1 and I2.
+router.post('/api/savings-events/:id/undo', authMiddleware, async (req, res) => {
+  const requestId = req.body?.request_id;
+  if (!isUuid(String(requestId || ''))) return res.status(400).json({ error: 'Invalid request' });
+  if (!isUuid(req.params.id)) return res.status(404).json({ error: 'Not found' });
+  const endpoint = 'savings_undo';
+  const args = { event_id: req.params.id };
+  const client = await pool.connect();
+  let childId = null;
+  const fail = async (status, error) => { await client.query('ROLLBACK'); return res.status(status).json({ error }); };
+  try {
+    await client.query('BEGIN');
+    const { rows: [owner] } = await client.query('SELECT child_id FROM savings_events WHERE id = $1 AND family_code = $2', [req.params.id, req.familyCode]);
+    if (!owner) return fail(404, 'Not found');
+    childId = owner.child_id;
+    const child = await lockedChild(client, childId, req.familyCode);
+    if (!child) return fail(404, 'Not found');
+    const prior = await priorRequest(client, req.familyCode, requestId, endpoint, args);
+    if (prior.conflict) return fail(409, 'Invalid request');
+    if (prior.replay) {
+      // On this request's own connection (as undoReplay): waiting for a second
+      // pool connection here could starve the pool (code review of 9e674c9).
+      await client.query('ROLLBACK');
+      return res.json({ ...prior.replay, child: await freshChild(client, req.familyCode, childId), duplicate: true });
+    }
+    const { rows: [ev] } = await client.query(
+      `SELECT * FROM savings_events WHERE id = $1 AND family_code = $2 AND kind IN ('save', 'release')
+         AND created_at > now() - ${UNDO_WINDOW}`, [req.params.id, req.familyCode]);
+    if (!ev) return fail(404, 'This can no longer be undone.');
+    const { rowCount: done } = await client.query('SELECT 1 FROM savings_events WHERE undoes = $1 AND family_code = $2', [ev.id, req.familyCode]);
+    if (done > 0) return fail(409, 'Already undone.');
+    const reward = await lockGoal(client, req.familyCode, ev.reward_id);
+    if (!isCurrentGoal(reward, childId, ev.generation)) return fail(409, 'This can no longer be undone.'); // O6
+    const bal = await balanceFor(client, req.familyCode, child);
+    if (ev.kind === 'save') {
+      const saved = bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0;
+      if (saved < ev.delta) return fail(409, SPENT_ALREADY); // I1
+    } else {
+      if (bal.stack.some((i) => i.rewardId === reward.id)) return fail(409, STALE_REQUESTS);
+      if ((child.total_points ?? 0) - bal.committed < -ev.delta) return fail(409, SPENT_ALREADY); // I2
+      const saved = bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0;
+      if (saved - ev.delta > reward.cost_points) return fail(409, 'More than this goal needs');
+    }
+    const { rows: [event] } = await client.query(
+      `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, request_id, undoes)
+       VALUES ($1, $2, $3, $4, $5, $6, 'undo', $7, $8) RETURNING *`,
+      [req.familyCode, childId, ev.reward_id, ev.reward_title, ev.generation, -ev.delta, requestId, ev.id]);
+    await rememberRequest(client, req.familyCode, requestId, endpoint, args, { event });
+    const balanced = await balancedChild(client, req.familyCode, child);
+    await client.query('COMMIT');
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
+    res.json({ event, child: balanced, duplicate: false });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    // S7: the undo-once constraint means already undone; any other unique
+    // violation is the same request committed by a concurrent call.
+    if (err.code === '23505' && err.constraint === 'savings_events_undoes_once') return res.status(409).json({ error: 'Already undone.' });
+    if (err.code === '23505' && childId) return replayAfterRace(res, req.familyCode, requestId, endpoint, args, childId);
+    return serverError(res, 'Savings undo error', err);
+  } finally {
+    client.release();
+  }
+});
+
+// Redeem a bigger goal (O7: a parent, from the Children page). Paid from its
+// savings first, the rest from available, in one transaction.
+router.post('/api/children/:id/savings/redeem', authMiddleware, async (req, res) => {
+  const childId = req.params.id;
+  const rewardId = lowerId(req.body?.reward_id);
+  const requestId = req.body?.request_id;
+  if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
+  if (!isUuid(String(requestId || ''))) return res.status(400).json({ error: 'Invalid request' });
+  if (!isUuid(String(rewardId || ''))) return res.status(404).json({ error: 'Reward not found' });
+  const endpoint = 'redeem_goal';
+  const args = { child_id: childId, reward_id: rewardId };
+  const client = await pool.connect();
+  const fail = async (status, error) => { await client.query('ROLLBACK'); return res.status(status).json({ error }); };
+  try {
+    await client.query('BEGIN');
+    const child = await lockedChild(client, childId, req.familyCode);
+    if (!child) return fail(404, 'Child not found');
+    const prior = await priorRequest(client, req.familyCode, requestId, endpoint, args);
+    if (prior.conflict) return fail(409, 'Invalid request');
+    if (prior.replay) {
+      // On this request's own connection (as undoReplay): waiting for a second
+      // pool connection here could starve the pool (code review of 9e674c9).
+      await client.query('ROLLBACK');
+      return res.json({ ...prior.replay, child: await freshChild(client, req.familyCode, childId), duplicate: true });
+    }
+    const reward = await lockGoal(client, req.familyCode, rewardId);
+    if (!reward || !spendableFrom(new Map([[reward.id, reward]]), reward.id, childId)) return fail(404, 'Reward not found');
+    if (!reward.is_bigger_goal) return fail(409, 'Invalid request');
+    const bal = await balanceFor(client, req.familyCode, child);
+    if (bal.stack.some((i) => i.rewardId === reward.id)) return fail(409, STALE_REQUESTS); // S1
+    const cost = reward.cost_points;
+    const total = child.total_points ?? 0;
+    const fromSaved = Math.min(bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0, cost);
+    const fromAvailable = cost - fromSaved;
+    if (total - bal.committed < fromAvailable || total < cost) return fail(400, 'Not enough points');
+    await client.query(
+      'UPDATE children SET total_points = total_points - $1, points_spent = COALESCE(points_spent, 0) + $1 WHERE id = $2 AND family_code = $3',
+      [cost, childId, req.familyCode]);
+    const { rows: [redemption] } = await client.query(
+      `INSERT INTO redemptions (child_id, child_name, reward_id, reward_title, reward_cost, status, family_code)
+       VALUES ($1, $2, $3, $4, $5, 'Completed', $6) RETURNING *`,
+      [childId, child.name || '', reward.id, reward.title, cost, req.familyCode]);
+    if (fromSaved > 0) {
+      // A derived row: no request id (016's shape rule), linked to its redemption.
+      await client.query(
+        `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, redemption_id)
+         VALUES ($1, $2, $3, $4, $5, $6, 'spend', $7)`,
+        [req.familyCode, childId, reward.id, reward.title, goalGeneration(reward, childId), -fromSaved, redemption.id]);
+    }
+    await rememberRequest(client, req.familyCode, requestId, endpoint, args, { redemption, from_saved: fromSaved });
+    const { rows: [after] } = await client.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, req.familyCode]);
+    const balanced = await balancedChild(client, req.familyCode, after);
+    await client.query('COMMIT');
+    broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
+    res.json({ redemption, from_saved: fromSaved, child: balanced, duplicate: false });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23505') return replayAfterRace(res, req.familyCode, requestId, endpoint, args, childId);
+    return serverError(res, 'Goal redeem error', err);
+  } finally {
+    client.release();
+  }
+});
 
 // ─── Reward Stack endpoints ──────────────────────────────────────────────────
 
@@ -1029,7 +1486,7 @@ async function replayAfterRace(res, familyCode, requestId, endpoint, args, child
 router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { reward_id } = req.body || {};
+    const reward_id = lowerId(req.body?.reward_id);
     const childId = req.params.id;
     if (!isUuid(childId)) return res.status(404).json({ error: 'Child not found' });
 
@@ -1053,10 +1510,17 @@ router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Child not found' });
     }
 
-    const stack = await pricedStack(client, childRows[0].reward_stack, childId, req.familyCode);
+    // D1 (design v1.1 B1): a bigger goal is saved for and redeemed by a
+    // parent, never requested through the stack.
+    if (reward.is_bigger_goal) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
+    }
+    const bal = await balanceFor(client, req.familyCode, { id: childId, ...childRows[0] });
+    const stack = bal.stack;
     const stackTotal = stackTotalOf(stack);
 
-    if (stackTotal + reward_cost > childRows[0].total_points) {
+    if (bal.committed + reward_cost > childRows[0].total_points) {
       await client.query('ROLLBACK');
       return res.status(400).json({
         error: 'Not enough points',
@@ -1067,16 +1531,19 @@ router.post('/api/children/:id/stack/add', authMiddleware, async (req, res) => {
     }
 
     stack.push({ rewardId: reward.id, name: reward_title, cost: reward_cost });
+    // Stored as it is now (rewards no longer available were dropped above), so
+    // the positions in this answer are the stored stack indexes.
+    const stored = stack.map(storedStackItem);
 
     await client.query(
       'UPDATE children SET reward_stack = $1 WHERE id = $2 AND family_code = $3',
-      [JSON.stringify(stack), childId, req.familyCode]
+      [JSON.stringify(stored), childId, req.familyCode]
     );
 
     await client.query('COMMIT');
 
     broadcastFn(req.familyCode, { type: 'stack_updated', child_id: childId });
-    res.json({ reward_stack: stack });
+    res.json({ reward_stack: stored });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     return serverError(res, 'Stack add error:', err);
@@ -1103,9 +1570,18 @@ router.delete('/api/children/:id/stack/:index', authMiddleware, async (req, res)
       return res.status(404).json({ error: 'Child not found' });
     }
     const stack = childRows[0].reward_stack || [];
-    if (index >= stack.length) {
+    // V1-D: the caller names the reward it means; if the stack changed since
+    // it looked, nothing is removed (409) rather than the wrong item.
+    const expected = lowerId(req.query.reward_id);
+    if (typeof expected !== 'string' || !isUuid(expected)) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Invalid stack index' });
+      return res.status(400).json({ error: 'Invalid request' });
+    }
+    // Out of range or a different reward there: the stack changed since the
+    // caller looked. Nothing is removed.
+    if (index >= stack.length || stack[index].rewardId !== expected) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
     }
     stack.splice(index, 1);
     await client.query(
@@ -1130,7 +1606,19 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     const childId = req.params.id;
     const rq = spendRequestId(req.body);
     if (rq.error) return res.status(400).json({ error: 'Invalid request' });
-    const args = { child_id: childId };
+    // V1-D: the parent agrees to exactly the requests they saw
+    // ([{reward_id, stack_index}], in stack order). Anything else changed in
+    // between is refused (409), never charged.
+    const expected = Array.isArray(req.body?.expected)
+      ? req.body.expected.map((e) => (e && typeof e === 'object' ? { ...e, reward_id: lowerId(e.reward_id) } : e))
+      : req.body?.expected;
+    const validExpected = Array.isArray(expected) && expected.length >= 1 && expected.length <= 100
+      && expected.every((e) => e && typeof e.reward_id === 'string' && isUuid(e.reward_id)
+        && Number.isInteger(e.stack_index) && e.stack_index >= 0
+        && Number.isInteger(e.cost) && e.cost >= 1);
+    if (!validExpected) return res.status(400).json({ error: 'Invalid request' });
+    // The price the parent saw is part of it: a reward repriced meanwhile is refused, not charged (review of PR #59).
+    const args = { child_id: childId, expected: expected.map((e) => [e.reward_id, e.stack_index, e.cost]) };
     req.spend = { rq, args };
 
     await client.query('BEGIN');
@@ -1154,7 +1642,7 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     if (prior.replay) {
       await client.query('ROLLBACK');
       const { rows } = await pool.query('SELECT * FROM children WHERE id = $1 AND family_code = $2', [childId, req.familyCode]);
-      return res.json({ ...prior.replay, child: rows[0], duplicate: true });
+      return res.json({ ...prior.replay, child: await balancedChild(pool, req.familyCode, rows[0]), duplicate: true });
     }
 
     const child = childRows[0];
@@ -1168,16 +1656,23 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     // Price every item from the rewards table now. Items whose reward is gone
     // or no longer for this child are dropped, never charged.
     const priced = await pricedStack(client, stack, childId, req.familyCode);
-    if (priced.length === 0) {
-      await client.query("UPDATE children SET reward_stack = '[]' WHERE id = $1 AND family_code = $2", [childId, req.familyCode]);
-      await client.query('COMMIT');
-      broadcastFn(req.familyCode, { type: 'stack_updated', child_id: childId });
-      return res.status(400).json({ error: 'Those rewards are no longer available.' });
+    const seen = JSON.stringify(priced.map((p) => [p.rewardId, p.stackIndex, p.cost]));
+    if (seen !== JSON.stringify(args.expected)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
+    }
+    // D1: a requested reward that has savings is redeemed through its goal
+    // (so its savings are spent with it); and requests plus savings must fit
+    // in the balance (the one balance rule).
+    const bal = await balanceFor(client, req.familyCode, { id: childId, ...child });
+    if (priced.some((p) => bal.goals.some((g) => g.rewardId === p.rewardId))) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Invalid request' });
     }
     stack.splice(0, stack.length, ...priced);
     const stackTotal = stackTotalOf(stack);
 
-    if (stackTotal > child.total_points) {
+    if (bal.committed > child.total_points) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Not enough points for stacked rewards' });
     }
@@ -1193,15 +1688,17 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     );
 
     // 2. Log each reward as a redemption
+    const redemptionIds = [];
     for (const item of stack) {
-      await client.query(
+      const { rows: [r] } = await client.query(
         `INSERT INTO redemptions (child_id, child_name, reward_id, reward_title, reward_cost, status, family_code)
-         VALUES ($1, $2, $3, $4, $5, 'Completed', $6)`,
+         VALUES ($1, $2, $3, $4, $5, 'Completed', $6) RETURNING id`,
         [childId, child.name, item.rewardId, item.name, item.cost, req.familyCode]
       );
+      redemptionIds.push(r.id);
     }
     await rememberRequest(client, req.familyCode, rq.id, 'stack_confirm', args,
-      { confirmed_count: stack.length, points_deducted: stackTotal });
+      { confirmed_count: stack.length, points_deducted: stackTotal, redemption_ids: redemptionIds });
 
     await client.query('COMMIT');
 
@@ -1212,7 +1709,7 @@ router.post('/api/children/:id/stack/confirm', authMiddleware, async (req, res) 
     );
 
     broadcastFn(req.familyCode, { type: 'points_updated', child_id: childId });
-    res.json({ child: updatedChild[0], confirmed_count: stack.length, points_deducted: stackTotal, duplicate: false });
+    res.json({ child: await balancedChild(pool, req.familyCode, updatedChild[0]), confirmed_count: stack.length, points_deducted: stackTotal, redemption_ids: redemptionIds, duplicate: false });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505' && req.spend) {
@@ -1232,7 +1729,7 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
   try {
     const familyCode = req.familyCode;
     const tz = `COALESCE((SELECT timezone FROM families WHERE family_code = $1), 'UTC')`;
-    const { rows: [{ week_start: weekStart }] } = await pool.query(`SELECT ${weekStartSql(tz)} AS week_start`, [familyCode]);
+    const { rows: [{ week_start: weekStart, timezone }] } = await pool.query(`SELECT ${weekStartSql(tz)} AS week_start, ${tz} AS timezone`, [familyCode]);
 
     const { rows: childStats } = await pool.query(`
       SELECT
@@ -1280,7 +1777,15 @@ router.get('/api/summary', authMiddleware, async (req, res) => {
       WHERE family_code = $1 AND created_date >= $2 AND points > 0
     `, [familyCode, weekStart]);
 
-    res.json({ weekStart, childStats, topCategories, categoryBreakdowns, weekEvents, activeDays });
+    // V1-C: today's-goal completions this week that were not undone (Undo
+    // and Correct both set undone_at).
+    const { rows: [{ goals_completed: goalsCompleted }] } = await pool.query(`
+      SELECT COUNT(*)::int AS goals_completed
+      FROM today_goal_completions
+      WHERE family_code = $1 AND created_at >= $2 AND undone_at IS NULL
+    `, [familyCode, weekStart]);
+
+    res.json({ weekStart, timezone, childStats, topCategories, categoryBreakdowns, weekEvents, activeDays, goalsCompleted });
   } catch (err) {
     return serverError(res, 'Summary error:', err);
   }
@@ -1744,63 +2249,77 @@ router.delete('/api/quick-actions/:id', authMiddleware, async (req, res) => {
 // ─── Unified Activity Feed ──────────────────────────────────────────────────
 
 // Merges point_events and redemptions into a single feed
+// V1-C (docs/engineering/V1-C-DESIGN.md §3.1). One row set ("All"); each
+// filter is a projection of it, so a filter can never disagree with All.
+// Goal rows are tagged by the completion join, never by the note. C7: an
+// undone award is never listed as earned (nor as a goal); All keeps every
+// row, undone ones marked. Order and paging apply after the filter.
+const FEED_FILTERS = {
+  all: 'TRUE',
+  earned: "f.type = 'earn' AND NOT f.undone AND f.goal_completion_id IS NULL",
+  goals: "f.type = 'earn' AND NOT f.undone AND f.goal_completion_id IS NOT NULL",
+  spent: "f.type = 'spend' AND NOT f.undone",
+};
 router.get('/api/activity-feed', authMiddleware, async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 50;
-    const offset = parseInt(req.query.offset) || 0;
-    const filter = req.query.filter || 'all'; // all, earned, spent
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 200);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    // Own keys only: '?filter=constructor' must not reach the SQL (code review of #62).
+    const where = Object.hasOwn(FEED_FILTERS, req.query.filter) ? FEED_FILTERS[req.query.filter] : FEED_FILTERS.all;
+    const childId = req.query.child_id;
+    if (childId !== undefined && !isUuid(childId)) return res.status(400).json({ error: 'Invalid child.' });
 
-    let query;
-    if (filter === 'earned') {
-      query = `
-        SELECT id, child_id, child_name, points, category as label, note, 'earn' as type, created_date
-        FROM effective_point_events
-        WHERE family_code = $1 AND points > 0
-        ORDER BY created_date DESC
-        LIMIT $2 OFFSET $3
-      `;
-    } else if (filter === 'spent') {
-      query = `
-        (SELECT id, child_id, child_name, -reward_cost as points, reward_title as label, NULL as note, 'spend' as type, created_date
-         FROM redemptions
-         WHERE family_code = $1 AND status = 'Completed')
-        UNION ALL
-        (SELECT id, child_id, child_name, points, category as label, note, 'adjust' as type, created_date
-         FROM effective_point_events
-         WHERE family_code = $1 AND points < 0)
-        ORDER BY created_date DESC
-        LIMIT $2 OFFSET $3
-      `;
-    } else {
-      query = `
+    const query = `
+      SELECT f.* FROM (
         -- Every history row, so the feed adds up to the balance. Starting
-        -- points and one-off corrections are labelled as what they are.
+        -- points and one-off corrections are labelled as what they are
+        -- (including legacy 'award' rows with those categories, migration 009).
         -- An undone award and its undo row are both shown, marked undone;
         -- an undone spend shows as the spend and its refund, both marked.
         (SELECT p.id, p.child_id, p.child_name, p.points, p.category as label, p.note,
-          CASE WHEN p.kind = 'starting' THEN 'starting'
-               WHEN p.kind = 'correction' THEN 'correction'
-               WHEN p.kind = 'undo' THEN 'undo'
+          CASE WHEN p.kind = 'starting' OR lower(trim(p.category)) = 'starting points' THEN 'starting'
+               WHEN p.kind = 'correction' OR lower(trim(p.category)) = 'balance correction' THEN 'correction'
+               WHEN p.kind = 'undo' OR lower(trim(p.category)) = 'undo' THEN 'undo'
                WHEN p.points > 0 THEN 'earn' ELSE 'adjust' END as type, p.created_date,
-          (p.kind = 'undo' OR EXISTS (SELECT 1 FROM point_events u WHERE u.reverses_id = p.id)) as undone
+          (p.kind = 'undo' OR EXISTS (SELECT 1 FROM point_events u WHERE u.reverses_id = p.id)) as undone,
+          x.id as goal_completion_id
          FROM point_events p
+         LEFT JOIN today_goal_completions x ON x.point_event_id = p.id
          WHERE p.family_code = $1)
         UNION ALL
-        (SELECT id, child_id, child_name, -reward_cost as points, reward_title as label, NULL as note, 'spend' as type, created_date,
-          (status = 'Reversed') as undone
+        (SELECT id, child_id, child_name, -reward_cost as points, reward_title as label, NULL::text as note, 'spend' as type, created_date,
+          (status = 'Reversed') as undone, NULL::uuid as goal_completion_id
          FROM redemptions
          WHERE family_code = $1 AND status IN ('Completed', 'Reversed'))
         UNION ALL
-        (SELECT id, child_id, child_name, reward_cost as points, reward_title as label, NULL as note, 'undo' as type,
-          COALESCE(reversed_at, created_date) as created_date, true as undone
+        (SELECT id, child_id, child_name, reward_cost as points, reward_title as label, NULL::text as note, 'undo' as type,
+          COALESCE(reversed_at, created_date) as created_date, true as undone, NULL::uuid as goal_completion_id
          FROM redemptions
          WHERE family_code = $1 AND status = 'Reversed')
-        ORDER BY created_date DESC
-        LIMIT $2 OFFSET $3
-      `;
-    }
+        UNION ALL
+        -- D1 (§19.3): a parent's savings moves. Not balance changes (total
+        -- points don't move), so they are their own types and only in All.
+        -- Their undo rows are not listed; the move is marked undone instead.
+        -- Spends and refunds of a goal show through the redemption rows.
+        (SELECT v.id, v.child_id, c.name as child_name, abs(v.delta) as points, v.reward_title as label, NULL::text as note,
+          CASE WHEN v.kind = 'save' THEN 'saving' ELSE 'moved_back' END as type, v.created_at as created_date,
+          EXISTS (SELECT 1 FROM savings_events u WHERE u.undoes = v.id) as undone, NULL::uuid as goal_completion_id
+         FROM savings_events v JOIN children c ON c.id = v.child_id AND c.family_code = $1
+         WHERE v.family_code = $1 AND v.kind IN ('save', 'release'))
+        UNION ALL
+        -- D1 §20.1: savings ended by un-marking, reassigning or deleting a goal
+        -- (child, goal, amount and cause in the note). Not a balance change.
+        (SELECT v.id, v.child_id, c.name as child_name, abs(v.delta) as points, v.reward_title as label, v.ended_by as note,
+          'savings_ended' as type, v.created_at as created_date, false as undone, NULL::uuid as goal_completion_id
+         FROM savings_events v JOIN children c ON c.id = v.child_id AND c.family_code = $1
+         WHERE v.family_code = $1 AND v.kind = 'reward_removed')
+      ) f
+      WHERE ${where} AND ($4::uuid IS NULL OR f.child_id = $4::uuid)
+      ORDER BY f.created_date DESC, f.type, f.id
+      LIMIT $2 OFFSET $3
+    `;
 
-    const { rows } = await pool.query(query, [req.familyCode, limit, offset]);
+    const { rows } = await pool.query(query, [req.familyCode, limit, offset, childId ?? null]);
     res.json(rows);
   } catch (err) {
     return serverError(res, 'Activity feed error:', err);
@@ -1861,7 +2380,7 @@ router.get('/api/:entity', authMiddleware, async (req, res) => {
       `SELECT * FROM ${table} ${where} ORDER BY ${sort} ${limit} ${offset}`,
       values
     );
-    res.json(table === 'children' ? await withWeekPoints(pool, req.familyCode, rows) : rows);
+    res.json(table === 'children' ? await withBalances(pool, req.familyCode, rows) : rows);
   } catch (err) {
     return serverError(res, `List ${req.params.entity} error:`, err);
   }
@@ -1900,7 +2419,7 @@ router.post('/api/:entity/filter', authMiddleware, async (req, res) => {
       `SELECT * FROM ${table} ${where} ORDER BY ${orderBy}`,
       values
     );
-    res.json(table === 'children' ? await withWeekPoints(pool, req.familyCode, rows) : rows);
+    res.json(table === 'children' ? await withBalances(pool, req.familyCode, rows) : rows);
   } catch (err) {
     return serverError(res, `Filter ${req.params.entity} error:`, err);
   }
@@ -1950,10 +2469,19 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
         await client.query('ROLLBACK');
         return res.status(404).json({ error: 'Not found' });
       }
+      // D1 §19.7 N3: a goal is created unmarked and marked in the same
+      // transaction, so its first generation is 1:0, never the 0:0 that 016's
+      // insert trigger gives any row. This narrows, but does not close, the
+      // re-inserted-id case (§19.8): the app cannot write ids, and the restore
+      // runbook never restores rewards without savings_events.
+      const asGoal = table === 'rewards' && data.is_bigger_goal === true;
       ({ rows } = await client.query(
         `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
-        values
+        asGoal ? values.map((v, i) => (keys[i] === 'is_bigger_goal' ? false : v)) : values
       ));
+      if (asGoal) {
+        ({ rows } = await client.query('UPDATE rewards SET is_bigger_goal = true WHERE id = $1 AND family_code = $2 RETURNING *', [rows[0].id, req.familyCode]));
+      }
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK').catch(() => {});
@@ -1964,7 +2492,7 @@ router.post('/api/:entity', authMiddleware, async (req, res) => {
     broadcastFn(req.familyCode, { type: `${req.params.entity}_created`, id: rows[0].id });
     res.json(rows[0]);
   } catch (err) {
-    if (err.status === 400) return res.status(400).json({ error: err.message });
+    if (err.status === 400 || err.status === 422) return res.status(err.status).json({ error: err.message });
     if (err.status === 404) return res.status(404).json({ error: 'Not found' });
     return serverError(res, `Create ${req.params.entity} error:`, err);
   }
@@ -2076,7 +2604,85 @@ export async function referencesAreOwned(db, data, familyCode) {
 // puts the caller's family_code in the WHERE clause of every statement it
 // runs, including cascades, so no handler can forget the scope.
 
-export async function scopedUpdate(db, table, id, familyCode, data) {
+// D1 §20.1 (owner review of #64, N2): when a reward edit or delete ends
+// children's savings towards it, record for each child the amount and the
+// cause, as a 'reward_removed' row in the ENDED generation (which no longer
+// counts, O6), so it changes no balance and is never a save or an earning.
+// Only children with savings in this goal are locked (KEY SHARE, id order,
+// §20.8): a child deleted meanwhile is skipped.
+async function recordEndedSavings(db, familyCode, before, after, cause, { dryRun = false, ended: given = null } = {}) {
+  if (!before?.is_bigger_goal) return [];
+  if (given) return writeEndedSavings(db, familyCode, before, given);
+  const { rows: sums } = await db.query(
+    `SELECT child_id, generation, SUM(delta)::int AS saved FROM savings_events
+     WHERE family_code = $1 AND reward_id = $2 GROUP BY child_id, generation HAVING SUM(delta) > 0`,
+    [familyCode, before.id]);
+  const was = new Map([[before.id, before]]);
+  const now = after ? new Map([[after.id, after]]) : new Map();
+  const ended = [];
+  for (const x of sums) {
+    const childId = String(x.child_id).toLowerCase();
+    if (!spendableFrom(was, before.id, childId)) continue;
+    const oldGen = goalGeneration(before, childId);
+    if (x.generation !== oldGen) continue; // already an ended generation
+    const stillGoal = after && after.is_bigger_goal && spendableFrom(now, after.id, childId) && goalGeneration(after, childId) === oldGen;
+    if (stillGoal) continue;
+    ended.push({ childId, saved: x.saved, generation: oldGen,
+      cause: cause === 'deleted' ? 'deleted' : (after && !after.is_bigger_goal ? 'unmarked' : 'reassigned') });
+  }
+  if (!ended.length || dryRun) return ended;
+  return writeEndedSavings(db, familyCode, before, ended);
+}
+
+// Writes exactly the list the check compared (§21 review: computed once).
+async function writeEndedSavings(db, familyCode, before, ended) {
+  if (!ended.length) return [];
+  const { rows: alive } = await db.query(
+    'SELECT id FROM children WHERE id = ANY($1::uuid[]) AND family_code = $2 ORDER BY id FOR KEY SHARE',
+    [ended.map((e) => e.childId), familyCode]);
+  const present = new Set(alive.map((r) => String(r.id)));
+  const written = [];
+  for (const e of ended.filter((x) => present.has(x.childId))) {
+    const { rows: [row] } = await db.query(
+      `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, ended_by)
+       VALUES ($1, $2, $3, $4, $5, $6, 'reward_removed', $7) RETURNING *`,
+      [familyCode, e.childId, before.id, before.title, e.generation, -e.saved, e.cause]);
+    written.push(row);
+  }
+  return written;
+}
+
+// D1 §21: a confirmation is the snapshot the parent was shown, never a
+// boolean. It must equal, under the reward's lock, what the change would end
+// now: the goal's generations and exactly the affected children and amounts.
+const normEpochs = (o) => Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {})
+  .map(([k, v]) => [String(k).toLowerCase(), Number(v) || 0]).filter(([, v]) => v !== 0).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+function snapshotMatches(snap, before, ended) {
+  if (!snap || typeof snap !== 'object' || Array.isArray(snap)) return false;
+  if (Number(snap.goal_epoch) !== Number(before.goal_epoch ?? 0)) return false;
+  if (JSON.stringify(normEpochs(snap.goal_child_epochs)) !== JSON.stringify(normEpochs(before.goal_child_epochs))) return false;
+  if (!Array.isArray(snap.children) || snap.children.length !== ended.length) return false;
+  const want = new Map(ended.map((e) => [e.childId, e.saved]));
+  const seen = new Set();
+  for (const c of snap.children) {
+    const cid = String(c?.child_id || '').toLowerCase();
+    if (seen.has(cid) || !want.has(cid) || want.get(cid) !== c?.saved) return false;
+    seen.add(cid);
+  }
+  return true;
+}
+async function endingReply(db, familyCode, before, ended) {
+  const { rows } = await db.query('SELECT id, name FROM children WHERE id = ANY($1::uuid[]) AND family_code = $2', [ended.map((e) => e.childId), familyCode]);
+  const names = new Map(rows.map((r) => [String(r.id), r.name]));
+  const children = [...ended].sort((a, b) => (a.childId < b.childId ? -1 : 1));
+  return {
+    ending: children.map((e) => ({ child_id: e.childId, name: names.get(e.childId) || '', saved: e.saved })),
+    snapshot: { goal_epoch: before.goal_epoch ?? 0, goal_child_epochs: normEpochs(before.goal_child_epochs),
+      children: children.map((e) => ({ child_id: e.childId, saved: e.saved })) },
+  };
+}
+
+export async function scopedUpdate(db, table, id, familyCode, data, { confirmSnapshot = null } = {}) {
   const clean = table === 'children' ? stripChildBalance(data) : { ...data };
   delete clean.family_code; // never client-settable
   delete clean.id;
@@ -2101,6 +2707,13 @@ export async function scopedUpdate(db, table, id, familyCode, data) {
     if (ids.length) await db.query('SELECT id FROM uploads WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
   }
   if (!(await uploadsAreOwned(db, clean, familyCode, stored))) return { status: 404 };
+  // D1 §20.1: the reward as it was, locked, to record savings this edit ends.
+  let rewardBefore = null;
+  if (table === 'rewards') {
+    const { rows: cur } = await db.query('SELECT * FROM rewards WHERE id = $1 AND family_code = $2 FOR UPDATE', [id, familyCode]);
+    if (cur.length === 0) return { status: 404 };
+    rewardBefore = cur[0];
+  }
   const values = Object.values(clean);
   const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
   values.push(id, familyCode);
@@ -2109,6 +2722,18 @@ export async function scopedUpdate(db, table, id, familyCode, data) {
     values
   );
   if (rows.length === 0) return { status: 404 };
+  if (rewardBefore) {
+    // Code review of addfe54: a stale page could end savings without the
+    // parent being asked. The server asks: an edit that ends savings needs
+    // the parent's explicit confirmation, or nothing is changed (409).
+    // §21: checked and written under the same reward lock, which every
+    // savings writer must share first, so nothing changes in between.
+    const ending = await recordEndedSavings(db, familyCode, rewardBefore, rows[0], 'edited', { dryRun: true });
+    if (ending.length && !snapshotMatches(confirmSnapshot, rewardBefore, ending)) {
+      return { status: 409, ...(await endingReply(db, familyCode, rewardBefore, ending)) };
+    }
+    if (ending.length) await recordEndedSavings(db, familyCode, rewardBefore, rows[0], 'edited', { ended: ending });
+  }
 
   // Replaced or cleared photo: delete the old upload if nothing else uses it.
   if (stored) {
@@ -2124,7 +2749,7 @@ export async function scopedUpdate(db, table, id, familyCode, data) {
   return { status: 200, row: rows[0] };
 }
 
-export async function scopedDelete(table, id, familyCode) {
+export async function scopedDelete(table, id, familyCode, { confirmSnapshot = null } = {}) {
   if (!isUuid(id)) return { status: 404 };
   const client = await pool.connect();
   try {
@@ -2144,10 +2769,19 @@ export async function scopedDelete(table, id, familyCode) {
       await client.query('DELETE FROM point_events WHERE child_id = $1 AND (family_code = $2 OR family_code IS NULL)', [id, familyCode]);
       await client.query('DELETE FROM redemptions WHERE child_id = $1 AND (family_code = $2 OR family_code IS NULL)', [id, familyCode]);
     } else if (table === 'rewards') {
+      // D1 §20.1, §21.2: the savings this delete ends, per child, checked
+      // straight after the reward lock against the snapshot the parent saw.
+      const ending = await recordEndedSavings(client, familyCode, owned.rows[0], null, 'deleted', { dryRun: true });
+      if (ending.length && !snapshotMatches(confirmSnapshot, owned.rows[0], ending)) {
+        const reply = await endingReply(client, familyCode, owned.rows[0], ending);
+        await client.query('ROLLBACK');
+        return { status: 409, ...reply };
+      }
       await client.query(
         "UPDATE redemptions SET status = 'Denied' WHERE reward_id = $1 AND status = 'Pending' AND (family_code = $2 OR family_code IS NULL)",
         [id, familyCode]
       );
+      if (ending.length) await recordEndedSavings(client, familyCode, owned.rows[0], null, 'deleted', { ended: ending });
     }
     await client.query(`DELETE FROM ${table} WHERE id = $1 AND family_code = $2`, [id, familyCode]);
     // The row's photo goes with it, unless something else still uses it.
@@ -2176,22 +2810,36 @@ router.put('/api/:entity/:id', authMiddleware, async (req, res) => {
     const client = await pool.connect();
     let result;
     try {
-      await client.query('BEGIN');
-      result = await scopedUpdate(client, table, req.params.id, req.familyCode, data);
-      await client.query(result.status === 200 ? 'COMMIT' : 'ROLLBACK');
-    } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw err;
+      // D1 §20.8: Postgres resolves any remaining lock cycle by aborting one
+      // transaction (40P01); any entity edit is retried once, from the start
+      // (everything it does is inside the transaction).
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await client.query('BEGIN');
+          result = await scopedUpdate(client, table, req.params.id, req.familyCode, data,
+            { confirmSnapshot: req.body?.confirm_end_savings ?? null });
+          await client.query(result.status === 200 ? 'COMMIT' : 'ROLLBACK');
+          break;
+        } catch (err) {
+          await client.query('ROLLBACK').catch(() => {});
+          if (err.code === '40P01' && attempt === 0) continue;
+          throw err;
+        }
+      }
     } finally {
       client.release();
     }
     if (result.status === 400) return res.status(400).json({ error: 'No valid fields provided' });
     if (result.status === 404) return res.status(404).json({ error: 'Not found' });
+    if (result.status === 409) {
+      return res.status(409).json({ code: 'ENDS_SAVINGS', error: 'Saved points would be released. Check the warning and confirm.',
+        ending: result.ending, snapshot: result.snapshot });
+    }
 
     broadcastFn(req.familyCode, { type: `${req.params.entity}_updated`, id: req.params.id });
-    res.json(table === 'children' ? (await withWeekPoints(pool, req.familyCode, [result.row]))[0] : result.row);
+    res.json(table === 'children' ? (await withBalances(pool, req.familyCode, [result.row]))[0] : result.row);
   } catch (err) {
-    if (err.status === 400) return res.status(400).json({ error: err.message });
+    if (err.status === 400 || err.status === 422) return res.status(err.status).json({ error: err.message });
     return serverError(res, `Update ${req.params.entity} error`, err);
   }
 });
@@ -2203,8 +2851,19 @@ router.delete('/api/:entity/:id', authMiddleware, async (req, res) => {
   if (HISTORY_TABLES.has(table)) return res.status(405).json({ error: 'Not allowed' });
 
   try {
-    const result = await scopedDelete(table, req.params.id, req.familyCode);
+    let result;
+    const opts = { confirmSnapshot: req.body?.confirm_end_savings ?? null };
+    try {
+      result = await scopedDelete(table, req.params.id, req.familyCode, opts);
+    } catch (err) {
+      if (err.code !== '40P01') throw err;
+      result = await scopedDelete(table, req.params.id, req.familyCode, opts); // D1 §20.8: once
+    }
     if (result.status === 404) return res.status(404).json({ error: 'Not found' });
+    if (result.status === 409) {
+      return res.status(409).json({ code: 'ENDS_SAVINGS', error: 'Saved points would be released. Check the warning and confirm.',
+        ending: result.ending, snapshot: result.snapshot });
+    }
     broadcastFn(req.familyCode, { type: `${req.params.entity}_deleted`, id: req.params.id });
     res.json({ success: true });
   } catch (err) {

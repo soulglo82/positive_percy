@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { refreshPoints, spendReward, undoAction, UNDO_TOAST_MS } from "@/lib/points";
+import { refreshPoints, spendReward, undoAction, UNDO_TOAST_MS, confirmRequests, removeRequest } from "@/lib/points";
+import { REQUEST_COPY } from "@/lib/rewardCopy";
+import RewardIcon from "@/components/rewards/RewardIcon";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Gift } from "lucide-react";
 import { Points } from "@/components/brand/PointsStar";
-import EmojiTile from "@/components/rewards/EmojiTile";
 import Logo from "@/components/brand/Logo";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,16 +20,57 @@ import { PERCY } from "@/constants/terminology";
 
 export default function SpendRewardsModal({ isOpen, onClose, child, rewards = [] }) {
   const [redeeming, setRedeeming] = useState(null);
+  const [busy, setBusy] = useState(false);
   const queryClient = useQueryClient();
 
   if (!child) return null;
 
+  // V1-D: points not already set aside for the child's requests (server value).
+  const available = child.available_points ?? child.total_points;
+  // The child's requests, priced by the server; only a parent's "Approve" spends them (D5).
+  const requests = child.reward_stack_priced || [];
+
+  const agree = async () => {
+    if (busy || requests.length === 0) return;
+    setBusy(true);
+    try {
+      const r = await confirmRequests(child.id, requests);
+      refreshPoints(queryClient);
+      onClose();
+      toast.success(REQUEST_COPY.agreed(child.name, r.confirmed_count));
+    } catch (e) {
+      // 409: the requests changed while this was open; show them as they are now.
+      if (e.status === 409) { refreshPoints(queryClient); toast.info(REQUEST_COPY.changed); }
+      else toast.error(e.message || 'Failed to redeem reward');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const notNow = async (item) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await removeRequest(child.id, item);
+      toast.success(REQUEST_COPY.removed(item.name, child.name));
+    } catch (e) {
+      if (e.status === 409) toast.info(REQUEST_COPY.changed);
+      else toast.error("Couldn't update points. Please try again.");
+    } finally {
+      refreshPoints(queryClient);
+      setBusy(false);
+    }
+  };
+
+  // O-I1: a requested reward is approved or declined above, not spent here.
+  const requestedIds = new Set(requests.map((item) => item.rewardId));
   const availableRewards = rewards
-    .filter(r => r.visible_to_child !== false)
+    // D1 (B1/O7): a bigger goal is redeemed from the Children page, never spent here.
+    .filter(r => r.visible_to_child !== false && !r.is_bigger_goal && !requestedIds.has(r.id))
     .sort((a, b) => a.cost_points - b.cost_points);
 
   const handleRedeem = async (reward) => {
-    if (child.total_points < reward.cost_points) {
+    if (available < reward.cost_points) {
       toast.error('Not enough points');
       return;
     }
@@ -47,6 +89,9 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
         action: { label: 'Undo', onClick: undoAction('spend', redemption.id, queryClient) },
       });
     } catch (e) {
+      // 409: the child asked for it meanwhile (O-I1); show the requests as they are now.
+      // Only that refusal; any other 409 keeps its own message.
+      if (e.status === 409 && e.message === REQUEST_COPY.changed) { refreshPoints(queryClient); toast.info(REQUEST_COPY.changed); return; }
       toast.error(e.message || 'Failed to redeem reward');
     } finally {
       setRedeeming(null);
@@ -62,12 +107,36 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
             Spend {child.name}'s Points
           </DialogTitle>
           <p className="text-sm text-muted-foreground flex items-center gap-1">
-            <Points value={child.total_points} className="font-semibold text-foreground" /> {PERCY.POINTS} available
+            <Points value={available} className="font-semibold text-foreground" /> {PERCY.POINTS} available
           </p>
         </DialogHeader>
 
-        <DialogBody>
-          {availableRewards.length === 0 ? (
+        <DialogBody className="space-y-5">
+          {requests.length > 0 && (
+            <section className="space-y-2 rounded-lg border border-border bg-warning p-3" aria-labelledby="requests-heading">
+              <h3 id="requests-heading" className="font-display font-bold text-primary">{REQUEST_COPY.heading(child.name)}</h3>
+              <ul className="space-y-2">
+                {requests.map((item) => (
+                  <li key={item.stackIndex + ':' + item.rewardId} className="flex items-center gap-3 rounded-md bg-card p-2">
+                    <RewardIcon reward={item} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-sm font-medium text-foreground">{item.name}</p>
+                      <Points value={item.cost} className="text-sm text-muted-foreground" />
+                    </div>
+                    <Button size="sm" variant="outline" disabled={busy} aria-label={`${REQUEST_COPY.notNow}: ${item.name}`}
+                      onClick={() => notNow(item)}>{REQUEST_COPY.notNow}</Button>
+                  </li>
+                ))}
+              </ul>
+              <p id="requests-total" className="text-sm font-semibold text-foreground" data-requests-total aria-live="polite">
+                {REQUEST_COPY.total(requests.reduce((n, item) => n + item.cost, 0), child.name)}
+              </p>
+              <Button className="w-full" disabled={busy} onClick={agree} aria-describedby="requests-total">{REQUEST_COPY.agree(requests.length)}</Button>
+            </section>
+          )}
+          {/* "No rewards created yet" only when there are none; a list emptied
+              because every reward is requested shows nothing extra (review of O-I1). */}
+          {availableRewards.length === 0 && requests.length > 0 ? null : availableRewards.length === 0 ? (
             <div className="text-center py-8">
               <Logo size={48} decorative className="mb-3" />
               <p className="text-muted-foreground text-sm">No rewards created yet.</p>
@@ -76,7 +145,7 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
           ) : (
             <div className="space-y-2">
               {availableRewards.map((reward) => {
-                const canAfford = child.total_points >= reward.cost_points;
+                const canAfford = available >= reward.cost_points;
                 const isRedeeming = redeeming === reward.id;
 
                 return (
@@ -88,9 +157,10 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
                         : 'bg-muted border-border'
                     }`}
                   >
-                    <EmojiTile emoji={reward.emoji} className={canAfford ? "" : "bg-card"} />
+                    <RewardIcon reward={reward} size="sm" className={canAfford ? "" : "bg-card"} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground text-sm truncate">{reward.title}</p>
+                      {/* Wraps, never cut to "Scr…": on a narrow phone the name is how a parent tells rewards apart (final validation 2026-11-22). */}
+                      <p className="font-medium text-foreground text-sm break-words">{reward.title}</p>
                       <Points value={reward.cost_points} className="text-sm text-muted-foreground mt-0.5" />
                     </div>
                     <Button
@@ -100,7 +170,7 @@ export default function SpendRewardsModal({ isOpen, onClose, child, rewards = []
                       onClick={() => handleRedeem(reward)}
                       className="shrink-0 px-4"
                     >
-                      {isRedeeming ? 'Spending...' : canAfford ? 'Spend' : `Need ${reward.cost_points - child.total_points} more`}
+                      {isRedeeming ? 'Spending...' : canAfford ? 'Spend' : `Need ${reward.cost_points - available} more`}
                     </Button>
                   </div>
                 );

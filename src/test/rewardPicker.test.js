@@ -1,0 +1,89 @@
+// V1-D (docs/engineering/V1-D-DESIGN.md §2, §4.2): one icon set in four
+// places - the owner approval register, the server validator, the migration
+// CHECK and the client picker - and the approved search, labels and
+// container breakpoints.
+import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import { REWARD_ICON_KEYS } from '../../server/rewardIcons.js';
+import {
+  PICKER_CATEGORIES, PICKER_ICONS, PICKER_ALIASES, pickerItems, pickerLabel, accentOf,
+} from '../lib/rewardPicker.js';
+
+const ROOT = path.resolve(__dirname, '../..');
+const FULL_REGISTER = JSON.parse(fs.readFileSync(path.join(ROOT, 'design/stage1/APPROVAL_REGISTER.json'), 'utf8'));
+const REGISTER = FULL_REGISTER.picker;
+const SQL = fs.readFileSync(path.join(ROOT, 'server/migrations/015_reward_icon_key.sql'), 'utf8');
+const label = (items) => items.map(pickerLabel);
+
+describe('one approved icon set', () => {
+  const fromRegister = Object.values(REGISTER.categories).flatMap((c) => c.asset_ids);
+  it('the client picker has the register categories, in order, with the same placements', () => {
+    expect(PICKER_CATEGORIES.map((c) => c.name)).toEqual(Object.keys(REGISTER.categories));
+    for (const c of PICKER_CATEGORIES) expect(c.icons, c.name).toEqual(REGISTER.categories[c.name].asset_ids);
+    expect(PICKER_CATEGORIES.flatMap((c) => c.icons)).toHaveLength(84);
+  });
+  it("the picker is the register's 71 icons; server and migration allow those plus the 12 approved artworks (83)", () => {
+    const want = [...new Set(fromRegister)].sort();
+    expect(want).toHaveLength(71);
+    expect([...PICKER_ICONS].sort()).toEqual(want);
+    const artwork = Object.values(FULL_REGISTER.decisions.rewards).map((e) => e.asset_id);
+    expect(artwork).toHaveLength(12);
+    const all = [...new Set([...want, ...artwork])].sort();
+    expect(all).toHaveLength(83);
+    expect([...REWARD_ICON_KEYS].sort()).toEqual(all);
+    expect([...new Set([...SQL.matchAll(/'((?:phosphor|streamline):[a-z0-9:-]+)'/g)].map((m) => m[1]))].sort()).toEqual(all);
+  });
+  it('category accents are the owner-approved mapping', () => {
+    const mapping = REGISTER.ux_choices.category_colour_mapping.per_category;
+    for (const c of PICKER_CATEGORIES) expect(c.accent, c.name).toBe(mapping[c.name]);
+  });
+});
+
+describe('approved search (pickerItems)', () => {
+  // V1-D §14: approved reward artwork matching the term comes first.
+  it('P1: an alias finds an icon once, though it sits in two categories', () => {
+    expect(label(pickerItems('Fun & games', 'bike'))).toEqual(['Bike ride', 'Bicycle']);
+  });
+  it('P2: "movie" finds Movie night (artwork) and Film Slate by alias, nothing else', () => {
+    expect(label(pickerItems('Fun & games', 'movie'))).toEqual(['Movie night', 'Film Slate']);
+  });
+  it('P3: case and spaces are ignored; names match too', () => {
+    expect(label(pickerItems('Outings', '  CAKE '))).toEqual(['Cake treat', 'Cake']);
+    expect(label(pickerItems('Outings', 'game controller'))).toEqual(['Game Controller']);
+  });
+  it('P4: no match gives an empty list', () => {
+    expect(pickerItems('Outings', 'zzz')).toEqual([]);
+  });
+  it('P5: an empty term shows the category', () => {
+    expect(pickerItems('Tech & media', '')).toHaveLength(4);
+    expect(pickerItems('Tech & media', '   ')).toHaveLength(4);
+  });
+  it('a search never returns an icon twice, across all 71', () => {
+    for (const t of ['a', 'e', 'o', 'ball', 'pet']) {
+      const r = pickerItems('x', t);
+      expect(new Set(r).size, t).toBe(r.length);
+    }
+  });
+  it('aliases are the approved HTML set (13 entries)', () => {
+    expect(Object.keys(PICKER_ALIASES)).toHaveLength(13);
+    expect(PICKER_ALIASES['piggy-bank']).toBe('money savings pocket money');
+  });
+});
+
+describe('labels, accents and columns', () => {
+  it('labels title-case the id', () => {
+    expect(pickerLabel('phosphor:game-controller:duotone')).toBe('Game Controller');
+    expect(pickerLabel('phosphor:person-simple-run:duotone')).toBe('Person Simple Run');
+  });
+  it('P6: the container breakpoints 520 and 760 are in the stylesheet (columns measured in E2E)', () => {
+    const css = fs.readFileSync(path.join(ROOT, 'src/index.css'), 'utf8');
+    expect(css).toMatch(/\.picker-container\s*\{\s*container-type:\s*inline-size;/);
+    expect(css).toMatch(/@container \(min-width: 520px\) \{ \.picker-grid \{ grid-template-columns: repeat\(5,/);
+    expect(css).toMatch(/@container \(min-width: 760px\) \{ \.picker-grid \{ grid-template-columns: repeat\(6,/);
+  });
+  it('accent of an icon is its first category\'s', () => {
+    expect(accentOf('phosphor:game-controller:duotone')).toBe('orange');
+    expect(accentOf('phosphor:cat:duotone')).toBe('purple');
+  });
+});

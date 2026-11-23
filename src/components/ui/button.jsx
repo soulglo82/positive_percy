@@ -19,6 +19,9 @@ const buttonVariants = cva("inline-flex items-center justify-center gap-2 whites
       sm: "h-9 px-3 touch:h-11 touch:min-w-11",
       lg: "h-11 px-8",
       icon: "h-10 w-10 shrink-0 touch:h-11 touch:w-11",
+      // E05: the goal completion control is 44px on every pointer (register
+      // control_size_weight), not only on touch screens.
+      goal: "min-h-11 min-w-11 px-3 [&_svg]:size-6",
     },
   },
   defaultVariants: { variant: "default", size: "default" },

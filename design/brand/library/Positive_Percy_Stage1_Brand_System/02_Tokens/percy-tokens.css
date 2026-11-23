@@ -1,0 +1,41 @@
+/* Positive Percy Stage 1 brand tokens — design approved, not deployed.
+ * Shared across app, website, and web documentation.
+ * Fonts are referenced by family name: install and license locally before production.
+ * Category-specific surface/accent treatment must pass contrast QA.
+ */
+:root {
+  --percy-percy-purple: #4B1D8C;
+  --percy-percy-orange: #FF6A00;
+  --percy-sunshine: #FFC938;
+  --percy-warm-cream: #FFF6E8;
+  --percy-ink: #271737;
+  --percy-fine-lilac: #E5DCEA;
+  --percy-white: #FFFFFF;
+  --percy-font-display: 'Nunito', system-ui, sans-serif;
+  --percy-font-body: 'Poppins', system-ui, sans-serif;
+  --percy-focus-color: var(--percy-purple);
+  --percy-tap-min: 44px;
+  --percy-goal-icon: 24px;
+}
+.percy-body {font-family:var(--percy-font-body); color:var(--percy-ink); background:var(--percy-warm-cream);}
+.percy-heading {font-family:var(--percy-font-display);font-weight:800;}
+.percy-primary {background:var(--percy-purple);color:var(--percy-white);border-radius:14px;}
+.percy-goal-action {min-width:var(--percy-tap-min);min-height:var(--percy-tap-min);display:inline-flex;align-items:center;justify-content:center;}
+.percy-goal-action svg {width:var(--percy-goal-icon);height:var(--percy-goal-icon);}
+.percy-picker-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;container-type:inline-size;}
+/* Use container queries on an outer picker container to determine inner grid columns. */
+.percy-picker-container {container-type:inline-size;}
+@container (min-width:520px) {.percy-picker-grid {grid-template-columns:repeat(5,minmax(0,1fr));}}
+@container (min-width:760px) {.percy-picker-grid {grid-template-columns:repeat(6,minmax(0,1fr));}}
+.percy-category--fun-and-games {--percy-category-accent:var(--percy-percy-orange);}
+.percy-category--treats-and-food {--percy-category-accent:var(--percy-percy-orange);}
+.percy-category--outings {--percy-category-accent:var(--percy-sunshine);}
+.percy-category--learning-and-growth {--percy-category-accent:var(--percy-percy-purple);}
+.percy-category--family-and-kindness {--percy-category-accent:var(--percy-percy-purple);}
+.percy-category--creative-time {--percy-category-accent:var(--percy-sunshine);}
+.percy-category--tech-and-media {--percy-category-accent:var(--percy-percy-purple);}
+.percy-category--things-and-pocket-money {--percy-category-accent:var(--percy-percy-orange);}
+.percy-category--nature-and-outdoors {--percy-category-accent:var(--percy-sunshine);}
+.percy-category--sports-and-movement {--percy-category-accent:var(--percy-percy-orange);}
+.percy-category--celebrations {--percy-category-accent:var(--percy-sunshine);}
+.percy-category--animals-and-pets {--percy-category-accent:var(--percy-percy-purple);}

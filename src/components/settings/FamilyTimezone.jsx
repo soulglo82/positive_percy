@@ -9,7 +9,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 // The family's timezone decides when "this week" starts (Monday 00:00) and
 // which day an award counts towards the streak.
-export default function FamilyTimezone() {
+// `embedded` (V1-E): inside a Settings dialog, without its own card.
+export default function FamilyTimezone({ embedded = false }) {
   const queryClient = useQueryClient();
   const [timezone, setTimezone] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -55,9 +56,8 @@ export default function FamilyTimezone() {
     }
   };
 
-  return (
-    <Card>
-      <CardContent className="p-4 space-y-2">
+  const body = (
+    <>
         <Label htmlFor="family-timezone">Timezone</Label>
         {/* Always controlled ('' shows the placeholder), so a failed save
             goes back to what is stored instead of showing the rejected zone. */}
@@ -74,7 +74,8 @@ export default function FamilyTimezone() {
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground">Weeks start on Monday at midnight in this timezone.</p>
-      </CardContent>
-    </Card>
+    </>
   );
+  if (embedded) return <div className="space-y-2">{body}</div>;
+  return <Card><CardContent className="p-4 space-y-2">{body}</CardContent></Card>;
 }

@@ -42,11 +42,21 @@ test('new family sees code, one-point behaviours, and editable screen-time rewar
     await expect(page.getByText('No rewards yet')).toBeVisible();
     await page.getByRole('button', { name: 'Start with screen time' }).click();
     const rewardDialog = page.getByRole('dialog');
-    await expect(rewardDialog.getByLabel('Reward Title')).toHaveValue('Extra Screen Time');
-    await expect(rewardDialog.getByLabel('Point Cost')).toHaveValue('30');
-    await rewardDialog.getByLabel('Point Cost').fill('12');
-    await rewardDialog.getByRole('button', { name: 'Create Reward', exact: true }).click();
+    await expect(rewardDialog.getByLabel('Reward name')).toHaveValue('Extra Screen Time');
+    await expect(rewardDialog.getByLabel('Points needed')).toHaveValue('30');
+    await rewardDialog.getByLabel('Points needed').fill('12');
+    await rewardDialog.getByRole('button', { name: 'Save reward', exact: true }).click();
     await expect(page.getByText('Extra Screen Time').first()).toBeVisible();
+
+    // V1-F: Home with no children is the Welcome card, after first-run onboarding.
+    await page.goto('/');
+    const start = page.getByRole('dialog');
+    await expect(start.getByRole('heading', { name: "Let's get started" })).toBeVisible();
+    await start.getByRole('button', { name: 'Explore Percy' }).click();
+    await expect(page.getByRole('heading', { name: 'Every adventure starts with a goal!' })).toBeVisible();
+    // The map is release-gated: a normal build has no map (V1-F-DESIGN §3).
+    await expect(page.locator('img[src*="treasure-map"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add your first child' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Sign out' }).first().click();
     await expect(page.getByRole('alertdialog')).toContainText("need your family code");

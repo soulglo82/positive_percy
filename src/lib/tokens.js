@@ -1,58 +1,62 @@
-// The one JS copy of the design tokens (Batch D). index.css holds the same
+// The one JS copy of the design tokens (Batch D structure, E02 Percy v2
+// values: docs/engineering/E01-E02-DESIGN.md section 3). index.css holds the same
 // values as HSL channels; src/test/tokens.test.js checks the two match.
 // Used where CSS variables can't reach: confetti, the manifest and the
 // theme-color meta (written by the Vite plugin in vite.config.js).
 
 export const TOKENS = {
-  background: '#fbf6ee',
+  background: '#fff6e8',
   card: '#ffffff',
   popover: '#ffffff',
-  muted: '#f3f1ec',
-  secondary: '#f3f1ec',
-  accent: '#e9e5dc',
-  foreground: '#1f1b16',
-  'card-foreground': '#1f1b16',
-  'popover-foreground': '#1f1b16',
-  'secondary-foreground': '#1f1b16',
-  'accent-foreground': '#1f1b16',
-  'muted-foreground': '#5e554a',
-  'subtle-foreground': '#6b6257',
-  primary: '#c2410c',
-  'primary-hover': '#9a3412',
+  muted: '#f9f3ff',
+  secondary: '#f9f3ff',
+  accent: '#eee4f0',
+  foreground: '#271737',
+  'card-foreground': '#271737',
+  'popover-foreground': '#271737',
+  'secondary-foreground': '#271737',
+  'accent-foreground': '#271737',
+  'muted-foreground': '#594e69',
+  'subtle-foreground': '#594e69',
+  primary: '#4b1d8c',
+  'primary-hover': '#35136a',
   'primary-foreground': '#ffffff',
   destructive: '#b42318',
   'destructive-foreground': '#ffffff',
-  negative: '#1f1b16',
-  spend: '#5e554a',
+  negative: '#271737',
+  spend: '#594e69',
   earn: '#2a6e33',
-  star: '#e8a317',
-  selected: '#fde4d3',
-  'selected-border': '#c2410c',
-  warning: '#fff4e5',
+  star: '#ffc938',
+  // V1: brand orange, decorative only (progress fills, accents). 2.87:1 on
+  // white, so never text, a border that marks state, or a focus ring
+  // (tokens.test.js asserts it stays below 3:1 and check is by review).
+  sunrise: '#ff6a00',
+  selected: '#e5dcea',
+  'selected-border': '#4b1d8c',
+  warning: '#fff1d1',
   'warning-border': '#b7791f',
-  'warning-foreground': '#1f1b16',
-  'brand-ink': '#1e3a5f',
-  border: '#e6e1d8',
-  input: '#8a8073',
-  ring: '#c2410c',
-  overlay: '#1f1b16',
+  'warning-foreground': '#271737',
+  'brand-ink': '#4b1d8c',
+  border: '#e5dcea',
+  input: '#857a96',
+  ring: '#4b1d8c',
+  overlay: '#271737',
   'earn-soft': '#e3f2e5',
-  'star-soft': '#fdf0d0',
-  // One colour per child (identity): sky, berry, teal, plum, cocoa, slate.
+  'star-soft': '#fff1d1',
+  // One colour per child (identity): sky, berry, teal, ochre, cocoa, slate.
   // Strong: band, bar, ring, selected edge. Soft: avatar fill, selected fill.
-  // No green (it means "earned") and nothing near the brand orange.
+  // No green (it means "earned"), nothing near the brand purple, nothing
+  // near ink (E02: kid-4 moved from plum to ochre).
   'kid-1': '#1f6fb2', 'kid-1-soft': '#dcebf8',
   'kid-2': '#c0265e', 'kid-2-soft': '#fbe1ea',
   'kid-3': '#0e7a7e', 'kid-3-soft': '#d3efef',
-  'kid-4': '#7d3c8f', 'kid-4-soft': '#f1e2f5',
+  'kid-4': '#8a6b0f', 'kid-4-soft': '#eeebd5',
   'kid-5': '#7a4b2a', 'kid-5-soft': '#f1e4d8',
   'kid-6': '#4a5a6a', 'kid-6-soft': '#e2e7ec',
   'chart-1': '#2a6e33',
-  'chart-2': '#1e3a5f',
-  'chart-3': '#e8a317',
-  'chart-4': '#5e554a',
-  'chart-5': '#c2410c',
+  'chart-2': '#4b1d8c',
+  'chart-4': '#594e69',
 };
 
 // Confetti uses the celebration colours only.
-export const CONFETTI_COLORS = [TOKENS.primary, TOKENS.star, TOKENS.earn, TOKENS['brand-ink']];
+export const CONFETTI_COLORS = [TOKENS.primary, TOKENS.star, TOKENS.earn, TOKENS['kid-1']];

@@ -5,7 +5,7 @@ export const MAX_AWARD = 1000;
 
 // Every query that shows a balance, history or weekly figures. Invalidated
 // together after any points change so no screen shows a stale number.
-export const POINTS_QUERY_KEYS = [['children'], ['recentActivity'], ['activityFeed'], ['weeklySummary']];
+export const POINTS_QUERY_KEYS = [['children'], ['recentActivity'], ['activityFeed'], ['weeklySummary'], ['todaysGoals']];
 
 export function refreshPoints(queryClient) {
   for (const queryKey of POINTS_QUERY_KEYS) {
@@ -104,7 +104,7 @@ export function undoAction(kind, id, queryClient, requestId = newRequestId()) {
     running = true;
     try {
       const r = await (kind === 'spend' ? undoSpend(id, requestId) : undoAward(id, requestId));
-      toast.success(`Undone. ${r.child.name} has ${r.child.total_points} points.`);
+      toast.success(`Undone. ${r.child.name} has ${r.child.total_points} ${r.child.total_points === 1 ? 'point' : 'points'}.`);
     } catch (err) {
       if (err.status === 409 || err.status === 404) {
         toast.error(err.message);
@@ -149,4 +149,69 @@ export async function spendReward(childId, rewardId, requestId = newRequestId())
     throw err;
   }
   return result; // { child, redemption, duplicate }
+}
+
+// V1-D (D5): a parent agrees to exactly the requests they saw, at the prices
+// they saw. `items` are the server's priced stack items ({ rewardId, stackIndex, cost }). Same retry
+// rule as a spend: one request id, reused once. A 409 means the requests
+// changed meanwhile; nothing was charged.
+export async function confirmRequests(childId, items, requestId = newRequestId()) {
+  const body = JSON.stringify({ request_id: requestId, expected: items.map((i) => ({ reward_id: i.rewardId, stack_index: i.stackIndex, cost: i.cost })) });
+  const send = () => fetch(`/api/children/${childId}/stack/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body,
+  });
+  let res;
+  try {
+    res = await send();
+  } catch {
+    res = null;
+  }
+  if (!res || res.status >= 500) {
+    await new Promise((r) => setTimeout(r, 800));
+    res = await send();
+  }
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(result.error || 'Could not confirm');
+    err.status = res.status;
+    throw err;
+  }
+  return result; // { child, confirmed_count, points_deducted, redemption_ids, duplicate }
+}
+
+// V1-D: remove one request ("Not this time"), naming the reward so a stale view
+// never removes a different one (409).
+export async function removeRequest(childId, item) {
+  const res = await fetch(`/api/children/${childId}/stack/${item.stackIndex}?reward_id=${encodeURIComponent(item.rewardId)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) {
+    const result = await res.json().catch(() => ({}));
+    const err = new Error(result.error || 'Could not remove');
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
+// V1-B (D5): a child asks for a reward; a parent confirms it later. Never
+// retried: the server has no request id for this, so a retry could add the
+// same request twice (V1-B design §3).
+export async function requestReward(childId, rewardId) {
+  const res = await fetch(`/api/children/${childId}/stack/add`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body: JSON.stringify({ reward_id: rewardId }),
+  });
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    // No raw fallback text: callers show the shipped wording when there is no message.
+    const err = new Error(result.error || '');
+    err.status = res.status;
+    throw err;
+  }
+  return result; // { reward_stack }
 }

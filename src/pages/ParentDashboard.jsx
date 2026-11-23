@@ -1,37 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
+import { isAssignedTo } from "@/lib/assignment";
 import { Child, Reward } from "@/api/entities";
 import { awardPoints, refreshPoints, undoAction, UNDO_TOAST_MS } from "@/lib/points";
 import { buildChildCreatePayload } from "@/lib/childPayload";
 import { useAuth, NEW_FAMILY_WELCOME_KEY } from "@/lib/AuthContext";
 import { getToken } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { UserPlus, ClipboardList } from "lucide-react";
-import Logo from "@/components/brand/Logo";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
-import { format } from "date-fns";
 import { CONFETTI_COLORS } from "@/lib/tokens";
-import ChildAvatar from "../components/child/ChildAvatar";
-import { childColour } from "@/lib/childColour";
 
-import SectionHeader from "../components/SectionHeader";
-import ChildCard from "../components/child/ChildCard";
+import { childOrder } from "@/lib/childColour";
+import { StreakStrip, FamilyStrip, LittleWins, WorkingTowards, QuickPoints } from "../components/home/HomeSections";
 import AddChildModal from "../components/child/AddChildModal";
-import EditChildModal from "../components/child/EditChildModal";
-import AddPointsModal from "../components/child/AddPointsModal";
+import AwardPointsDialog from "../components/home/AwardPointsDialog";
+import WelcomeCard from "../components/home/WelcomeCard";
 import SpendRewardsModal from "../components/child/SpendRewardsModal";
 import OnboardingTips, { shouldShowOnboarding } from "../components/OnboardingTips";
 import WelcomeFamilyDialog from "../components/WelcomeFamilyDialog";
-import HeroCard from "../components/dashboard/HeroCard";
+import TodaysGoalsPanel from "../components/dashboard/TodaysGoalsPanel";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorCard from "../components/ErrorCard";
 
 export default function ParentDashboard() {
   const { user, familyCode } = useAuth();
   const [showAddChild, setShowAddChild] = useState(false);
-  const [showEditChild, setShowEditChild] = useState(false);
   const [showAddPoints, setShowAddPoints] = useState(false);
   const [showSpendRewards, setShowSpendRewards] = useState(false);
   const [selectedChild, setSelectedChild] = useState(null);
@@ -84,7 +77,13 @@ export default function ParentDashboard() {
   });
 
   // Fetch behavior categories (quick actions are now derived from categories)
-  const { data: behaviorCategories } = useQuery({
+  // Quick Points is the first card on Home, so the page waits for the first
+  // load of the behaviours as it does for the children: otherwise the card
+  // says "No quick points yet" for a moment and then swaps to the tiles.
+  // Only the first attempt (with its one retry) holds the page back. If that
+  // fails, the page is shown, and a later refetch must not take it away again
+  // (it would close an open Manage goals dialog): hence the error count.
+  const { data: behaviorCategories, isLoading: categoriesLoading, errorUpdateCount: categoriesErrors } = useQuery({
     queryKey: ['behaviorCategories'],
     queryFn: async () => {
       const token = getToken();
@@ -97,6 +96,8 @@ export default function ParentDashboard() {
     enabled: !!user,
   });
 
+  const waitingForBehaviours = categoriesLoading && categoriesErrors === 0;
+
   // Derive quick actions from categories with is_quick_action=true
   const categoryQuickActions = (behaviorCategories || [])
     .filter(c => c.is_quick_action)
@@ -106,19 +107,7 @@ export default function ParentDashboard() {
   // and the card points to Settings (external review, 2026-11-11).
   const allQuickActions = categoryQuickActions;
 
-  // Fetch recent activity feed
-  const { data: recentActivity = [] } = useQuery({
-    queryKey: ['recentActivity'],
-    queryFn: async () => {
-      const token = getToken();
-      const res = await fetch('/api/activity-feed?limit=5&filter=all', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: !!user,
-  });
+  // V1: Recent Activity is no longer on Home (it lives in Activity).
 
   const createChildMutation = useMutation({
     mutationFn: (data) => Child.create(buildChildCreatePayload(data)),
@@ -128,19 +117,13 @@ export default function ParentDashboard() {
     },
   });
 
-  const updateChildMutation = useMutation({
-    mutationFn: ({ id, data }) => Child.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['children'] });
-    },
-  });
-
   // Children with an award in flight. A ref, not state, so a second tap in
   // the same frame sees the first one and is ignored.
   const awarding = useRef(new Set());
-  // Which child's star pops: set only by an award from this device.
-  const [pop, setPop] = useState({ childId: null, n: 0 });
   const [awardingIds, setAwardingIds] = useState([]);
+  // V1: the child selected in the family strip drives Goals, the summary,
+  // Working towards and Quick Points.
+  const [homeChildId, setHomeChildId] = useState(null);
 
   const handleAddPoints = (child) => {
     setSelectedChild(child);
@@ -150,29 +133,6 @@ export default function ParentDashboard() {
   const handleSpendRewards = (child) => {
     setSelectedChild(child);
     setShowSpendRewards(true);
-  };
-
-  const handleEditChild = (child) => {
-    setSelectedChild(child);
-    setShowEditChild(true);
-  };
-
-  const handleEditChildSubmit = async (data) => {
-    await updateChildMutation.mutateAsync({
-      id: selectedChild.id,
-      data: data,
-    });
-    toast.success(`${data.name}'s profile updated.`);
-  };
-
-  const handleDeleteChild = async (child) => {
-    try {
-      await Child.delete(child.id);
-      queryClient.invalidateQueries({ queryKey: ['children'] });
-      toast.success(`${child.name} has been removed`);
-    } catch {
-      toast.error("Failed to delete child");
-    }
   };
 
   const updateStreak = async () => {
@@ -235,7 +195,6 @@ export default function ParentDashboard() {
       queryClient.setQueryData(['children'], (old) => Array.isArray(old)
         ? old.map((c) => (c.id === updated.id ? { ...c, ...updated, week_points: typeof weekAfter === 'number' ? weekAfter : c.week_points } : c))
         : old);
-      if (points > 0) setTimeout(() => setPop((p) => ({ childId: child.id, n: p.n + 1 })), 220);
       toast.success(lines.join(' '), {
         duration: UNDO_TOAST_MS,
         action: { label: 'Undo', onClick: undoAction('award', event.id, queryClient) },
@@ -261,111 +220,56 @@ export default function ParentDashboard() {
     }
   };
 
-  const handlePointsSubmit = (data) => applyAward(selectedChild, data);
-
   const handleQuickAction = (child, action) =>
     applyAward(child, { points: action.points, category: action.category || action.label, note: '' });
 
+  // Oldest first, as in the approved design (and the colour order).
+  const ordered = [...children].sort(childOrder);
+  const homeChild = ordered.find((c) => c.id === homeChildId) || ordered[0];
+  const homeActions = homeChild ? allQuickActions.filter((qa) =>
+    !qa.assigned_children || qa.assigned_children.length === 0 || qa.assigned_children.includes(homeChild.id)) : [];
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
-        <HeroCard
-          children={children}
-          streak={streak}
-          onAddFirstChild={() => setShowAddChild(true)}
-        />
-
-        {/* Children Grid */}
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
         {isLoading ? (
           <LoadingSpinner message="Loading your family..." />
         ) : isError ? (
           <ErrorCard message="Couldn't load children" onRetry={refetch} />
+        ) : waitingForBehaviours ? (
+          <LoadingSpinner message="Loading your family..." />
         ) : children.length === 0 ? (
-          <Card className="border-2 border-dashed border-input shadow-none">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Logo size={48} decorative className="mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                No children added yet
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Add your first child to start tracking their progress
-              </p>
-              <Button onClick={() => setShowAddChild(true)}>
-                <UserPlus className="w-4 h-4" />
-                Add Your First Child
-              </Button>
-            </CardContent>
-          </Card>
+          <WelcomeCard onAddFirstChild={() => setShowAddChild(true)} />
         ) : (
-          <div className={
-            children.length === 1 ? "grid grid-cols-1 gap-6 max-w-xl"
-              : children.length === 2 ? "grid grid-cols-1 md:grid-cols-2 gap-6"
-              : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          }>
-            {children.map((child) => (
-              <ChildCard
-                key={child.id}
-                child={child}
-                colour={childColour(child, children)}
-                popKey={pop.childId === child.id ? pop.n : 0}
-                onAddPoints={handleAddPoints}
-                onEdit={handleEditChild}
-                onQuickAction={handleQuickAction}
-                awarding={awardingIds.includes(child.id)}
-                onSpendRewards={handleSpendRewards}
-                quickActions={allQuickActions.filter(qa =>
-                  !qa.assigned_children || qa.assigned_children.length === 0 || qa.assigned_children.includes(child.id)
-                )}
-                rewards={rewards.filter(r =>
-                  !r.assigned_child_ids || r.assigned_child_ids.length === 0 || r.assigned_child_ids.includes(child.id)
-                )}
-              />
-            ))}
-          </div>
+          <>
+            <StreakStrip streak={streak} />
+            <div>
+              <h1 className="font-display font-extrabold text-title text-primary">Welcome back!</h1>
+              <p className="text-muted-foreground">Good things are happening, one small step at a time.</p>
+            </div>
+            <FamilyStrip children={ordered} selectedId={homeChild.id} onSelect={setHomeChildId} />
+            {/* Owner, 22 November: awarding points is the point of this page,
+                so Quick Points comes straight after the child picker, then
+                Today's Goals, the available points and what the child is
+                working towards. The DOM is in that reading order, so Tab and
+                screen readers follow what phones show. Desktop sets the same
+                cards in two columns, each read top to bottom:
+                Quick Points + Goals | Little wins + Working towards. */}
+            <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+              <div className="flex flex-col gap-5">
+                <QuickPoints child={homeChild} actions={homeActions} awarding={awardingIds.includes(homeChild.id)}
+                  onAward={handleQuickAction}
+                  onOpenAward={() => handleAddPoints(homeChild)}
+                  onOpenRewards={() => handleSpendRewards(homeChild)} />
+                <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} selectedChildId={homeChild.id} />
+              </div>
+              <div className="flex flex-col gap-5">
+                <LittleWins child={homeChild} />
+                <WorkingTowards child={homeChild} />
+              </div>
+            </div>
+          </>
         )}
-
-        {/* Recent Activity Preview */}
-        {recentActivity.length > 0 && (
-          <div>
-            <SectionHeader icon={ClipboardList}>Recent activity</SectionHeader>
-            <Card>
-              <CardContent className="p-0">
-                <div className="divide-y divide-border">
-                  {recentActivity.map((event) => {
-                    const isEarn = event.type === 'earn';
-                    const isSpend = event.type === 'spend';
-                    const isUndo = event.type === 'undo';
-                    const isDeduct = !isEarn && !isSpend && !isUndo && event.points < 0;
-                    const colorClass = isEarn ? 'text-earn' : isSpend ? 'text-spend' : 'text-negative';
-                    const action = isUndo ? 'undo:' : isEarn ? 'earned' : isSpend ? 'spent on' : isDeduct ? 'had an earlier adjustment for' : 'adjusted';
-                    const eventChild = children.find(c => c.id === event.child_id);
-
-                    return (
-                      <div key={`${event.type}-${event.id}`} className="flex items-center gap-3 px-4 py-3">
-                        {/* Child avatar */}
-                        <ChildAvatar name={event.child_name} url={eventChild?.avatar_url} size="sm" colour={childColour(event.child_id, children)} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm leading-snug">
-                            <span className="font-semibold text-foreground">{event.child_name}</span>
-                            {' '}<span className="text-muted-foreground">{action}</span>{' '}
-                            <span className="font-medium text-foreground">{event.label}</span>
-                          </p>
-                          <p className="text-xs text-subtle-foreground mt-0.5">
-                            {format(new Date(event.created_date), "MMM d, h:mm a")}
-                          </p>
-                        </div>
-                        <span className={`text-sm font-semibold tabular-nums shrink-0 ${colorClass} ${event.undone ? 'line-through' : ''}`}>
-                          {isEarn ? '+' : (isSpend || event.points < 0) ? '−' : '+'}{Math.abs(event.points)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
       </div>
 
       {/* Modals */}
@@ -375,25 +279,16 @@ export default function ParentDashboard() {
         onSubmit={(data) => createChildMutation.mutateAsync(data)}
       />
 
-      <EditChildModal
-        isOpen={showEditChild}
-        onClose={() => {
-          setShowEditChild(false);
-          setSelectedChild(null);
-        }}
-        child={selectedChild}
-        onSubmit={handleEditChildSubmit}
-        onDelete={handleDeleteChild}
-      />
-
-      <AddPointsModal
+      <AwardPointsDialog
         isOpen={showAddPoints}
         onClose={() => {
           setShowAddPoints(false);
           setSelectedChild(null);
         }}
-        child={selectedChild}
-        onSubmit={handlePointsSubmit}
+        children={ordered}
+        categories={behaviorCategories || []}
+        initialChildId={selectedChild?.id}
+        onSubmit={applyAward}
       />
 
       <SpendRewardsModal
@@ -402,10 +297,8 @@ export default function ParentDashboard() {
           setShowSpendRewards(false);
           setSelectedChild(null);
         }}
-        child={selectedChild}
-        rewards={rewards.filter(r =>
-          !selectedChild || !r.assigned_child_ids || r.assigned_child_ids.length === 0 || r.assigned_child_ids.includes(selectedChild.id)
-        )}
+        child={ordered.find((c) => c.id === selectedChild?.id) || selectedChild}
+        rewards={rewards.filter(r => !selectedChild || isAssignedTo(r, selectedChild.id))}
       />
 
       <WelcomeFamilyDialog

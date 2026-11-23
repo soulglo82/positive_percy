@@ -16,6 +16,7 @@
     "test:a11y": "vitest run src/test/a11y.test.jsx",
     "test:ui": "playwright test",
     "check:tokens": "node scripts/check-tokens.mjs",
+    "check:release-gates": "node scripts/check-release-gates.mjs",
     "preview": "vite preview",
     "start": "node server/index.js"
   },

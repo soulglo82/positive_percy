@@ -31,6 +31,7 @@ module.exports = {
       spend: c('spend'),
       earn: { DEFAULT: c('earn'), soft: c('earn-soft') },
       star: { DEFAULT: c('star'), soft: c('star-soft') },
+      sunrise: c('sunrise'),
       kid: Object.fromEntries([1, 2, 3, 4, 5, 6].flatMap((n) => [[String(n), c(`kid-${n}`)], [`${n}-soft`, c(`kid-${n}-soft`)]])),
       selected: { DEFAULT: c('selected'), border: c('selected-border') },
       warning: { DEFAULT: c('warning'), border: c('warning-border'), foreground: c('warning-foreground') },
@@ -41,11 +42,11 @@ module.exports = {
       // Dialog backdrop: ink at 60%. Fixed alpha, set here so no call site
       // needs an opacity modifier.
       overlay: 'hsl(var(--overlay) / 0.6)',
-      chart: { 1: c('chart-1'), 2: c('chart-2'), 3: c('chart-3'), 4: c('chart-4'), 5: c('chart-5') },
+      chart: { 1: c('chart-1'), 2: c('chart-2'), 4: c('chart-4') },
     },
     fontFamily: {
-      sans: ['Figtree', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-      display: ['Fredoka', 'Figtree', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      display: ['Nunito', 'Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
     },
     fontSize: {
@@ -60,8 +61,10 @@ module.exports = {
       normal: '400',
       medium: '500',
       semibold: '600',
-      bold: '600',
-      extrabold: '600',
+      // E02: 700/800 exist only for Nunito (font-display). Poppins ships 400-600;
+      // src/test/brandAssets.test.js fails bold/extrabold without font-display.
+      bold: '700',
+      extrabold: '800',
     },
     borderRadius: {
       none: '0',

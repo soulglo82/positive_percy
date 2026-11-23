@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { Home, Gift, Activity, Settings, LogOut, User } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { approvedIcon } from '@/components/icons/PercyIcon';
+import { APPROVED_CONTEXTS } from '@/components/icons/approvedIcons';
+
+// E03: the five owner-approved navigation icons (register decisions.nav).
+const NAV_ICONS = Object.fromEntries(Object.entries(APPROVED_CONTEXTS.nav).map(([k, id]) => [k, approvedIcon(id)]));
 import { useAuth } from '@/lib/AuthContext';
 import Logo from '@/components/brand/Logo';
 import useRealtimeSync from '@/lib/useRealtimeSync';
@@ -18,6 +23,7 @@ import {
 
 const PAGE_TITLES = {
   ParentDashboard: 'Family',
+  Children: 'Children',
   ChildView: 'My Rewards',
   Activity: 'Activity',
   Rewards: 'Rewards',
@@ -30,11 +36,11 @@ export default function Layout({ children, currentPageName }) {
   useRealtimeSync(user?.family_code);
 
   const navItems = [
-    { name: 'ParentDashboard', label: 'Home', icon: Home },
-    { name: 'ChildView', label: 'Child', icon: User },
-    { name: 'Activity', label: 'Activity', icon: Activity },
-    { name: 'Rewards', label: 'Rewards', icon: Gift },
-    { name: 'ParentProfile', label: 'Settings', icon: Settings },
+    { name: 'ParentDashboard', label: 'Home', icon: NAV_ICONS.Home },
+    { name: 'Children', label: 'Children', icon: NAV_ICONS.Progress },
+    { name: 'Activity', label: 'Activity', icon: NAV_ICONS.Activity },
+    { name: 'Rewards', label: 'Rewards', icon: NAV_ICONS.Rewards },
+    { name: 'ParentProfile', label: 'Settings', icon: NAV_ICONS.Settings },
   ];
 
   const pageTitle = PAGE_TITLES[currentPageName] || '';
@@ -48,12 +54,16 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex items-center gap-3">
               <Link
                 to={createPageUrl('ParentDashboard')}
+                aria-label="Positive Percy home"
                 className="flex items-center min-h-11 rounded-md shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                <Logo size={32} wordmark />
+                <Logo size={40} wordmark decorative />
               </Link>
+              {/* From lg up only: between 640 and 1023 px there is no room beside
+                  the five tabs and it wrapped onto two lines (final visual
+                  review, 22 Nov). The active tab already names the page. */}
               {pageTitle && (
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className="hidden lg:inline whitespace-nowrap text-sm font-medium text-muted-foreground">
                   / {pageTitle}
                 </span>
               )}
@@ -62,7 +72,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex gap-1 items-center">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = currentPageName === item.name;
+                const isActive = currentPageName === item.name || (item.name === 'Children' && currentPageName === 'ChildView');
 
                 return (
                   <Link
@@ -75,7 +85,7 @@ export default function Layout({ children, currentPageName }) {
                         : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                     }`}
                   >
-                    <Icon className="w-[18px] h-[18px]" strokeWidth={1.5} aria-hidden="true" />
+                    <Icon className="w-[18px] h-[18px]" aria-hidden="true" />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -96,8 +106,8 @@ export default function Layout({ children, currentPageName }) {
       {/* Mobile top header, visible on mobile only */}
       <header className="sm:hidden bg-card border-b border-border sticky top-0 z-50">
         <div className="flex items-center justify-between pl-4 pr-1 h-12">
-          <Link to={createPageUrl('ParentDashboard')} className="flex items-center min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-            <Logo size={32} wordmark />
+          <Link to={createPageUrl('ParentDashboard')} aria-label="Positive Percy home" className="flex items-center min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <Logo size={36} wordmark decorative />
           </Link>
           <button
             onClick={() => setShowLogoutConfirm(true)}
@@ -120,7 +130,7 @@ export default function Layout({ children, currentPageName }) {
         <div className="flex justify-around items-center h-16 px-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentPageName === item.name;
+            const isActive = currentPageName === item.name || (item.name === 'Children' && currentPageName === 'ChildView');
 
             return (
               <Link
@@ -134,7 +144,7 @@ export default function Layout({ children, currentPageName }) {
                 }`}
               >
                 {/* Icon in brand orange (3:1 is enough for an icon); the label stays ink (4.24 in orange). */}
-                <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-primary' : ''}`} strokeWidth={1.5} aria-hidden="true" />
+                <Icon className={`w-[18px] h-[18px] ${isActive ? 'text-primary' : ''}`} aria-hidden="true" />
                 <span className="text-xs">
                   {item.label}
                 </span>
