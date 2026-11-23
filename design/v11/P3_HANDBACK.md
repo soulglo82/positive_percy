@@ -93,9 +93,19 @@ The repo's own layout checks (`e2e/checks.js`: sideways scroll, text under 12px,
 
 Findings and how each was handled are in section 8.
 
-## 7. Results
+## 7. Results (final build)
 
-Filled in at commit time.
+| Check | Result |
+|---|---|
+| `npm test` | 780 passed, 294 skipped (33 files passed, 21 skipped; the same skipped files as before this work) |
+| `npm run lint` | 0 errors, 3 warnings (pre-existing, in files this work does not touch) |
+| `npm run check:tokens` | Tokens OK (89 files) |
+| `npm run check:release-gates` | No gated file in dist/ or public/ |
+| Playwright e2e, 4 projects (320, 390 touch, 834 touch, 1280), local Postgres | 56 passed, 0 failed, 16 skipped (the suite's own per-project skips) |
+| App QA (`design/v11/qa/run-app-qa.mjs`) | 241 of 241 (`design/v11/evidence/app-qa-report.json`), including two control checks that must fail |
+| Design QA on the review pages (`design/v11/qa/run-qa.mjs`) | 515 of 515 at `7bd07d7`; not rerun (the pages did not change) |
+
+Not covered: Safari and real devices, screen-reader listening, production data, real child photos (none were used).
 
 ## 8. Review findings and outcomes
 
