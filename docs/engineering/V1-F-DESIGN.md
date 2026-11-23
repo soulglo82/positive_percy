@@ -5,7 +5,7 @@
 | Version | 1.4 |
 | Issued | 2026-11-18 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-f-forms`, stacked on V1-A `claude/percy-v1-a-home`) |
-| Status | Reviewed (design peer review v1.1; code review of PR #58 fixed, v1.2) |
+| Status | Reviewed (design peer review v1.1; code review of PR #58 fixed, v1.2; §9 design and code reviews, v1.3 and v1.4) |
 | Binding inputs | Approved HTML blob `9de1df2` (screens `award`, `goalsmanage`, `goalform`, `welcome`, `onboarding`); `V1-IMPLEMENTATION-PLAN.md` v1.1 (§2 rows Award Points, Manage Goals / Goal form, Welcome, Onboarding; §8.5, §8.6, §8.7); `E05-DESIGN.md` §9 (start-date safeguard), E04 R1/B2 |
 
 ## Change log
@@ -190,7 +190,7 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 - Until the parent chooses an amount, it is the selected behaviour's points (1 if the behaviour has none stored), and it follows the selection when the behaviour or the child changes (A2).
 - When the parent chooses an amount, with a quick amount or by typing, that amount stays until the dialog closes, whatever behaviour or child is picked afterwards. To go back to a behaviour's points the parent chooses that amount.
 - Tapping the quick amount that is already showing, before any amount has been chosen, changes nothing: it does not fix the amount. (Otherwise "+1" tapped on a fresh dialog would silently hold the amount at 1 when a 3-point behaviour is picked next.)
-- The amount controls are disabled while an award is being sent.
+- The amount controls are disabled while an award is being sent, and a child or behaviour picked in that time is ignored (v1.4), so what is shown is what was sent.
 - The summary and the button show the amount. An amount that cannot be awarded (empty, zero, negative, not whole, over 1,000) shows no summary, disables the button and makes it read "Award points".
 - The award is recorded under the selected behaviour's name. The server is unchanged: `POST /api/children/:id/award` already accepts any whole number from 1 to 1,000 for any category, with no cap, and stays idempotent through `request_id` (a retry with the same amount replays; a different amount under the same id is refused).
 
@@ -231,7 +231,10 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 | Focus the field and type "2", then "5" (one key at a time, over the amount the dialog opened with) | The field shows 25 and keeps the focus throughout; "Award 25 points" (v1.4) |
 | Focus the field, clear it, type "7" | Empty, then 7; the focus is kept throughout (v1.4) |
 | Type "03", press "+5", press "+3" with the focus left in the field | 03, then 5, then 3 (v1.4) |
-| Type "007", press "+7" with the focus left in the field | The field keeps "007"; the amount is 7 either way (v1.4) |
+| Type "005", press "+5" with the focus left in the field | The field keeps "005"; the amount is 5 either way (v1.4) |
+| Press Award, then pick another behaviour or child before the answer comes back | Ignored: the amount, behaviour and child shown stay the ones sent (v1.4) |
+| Type 25 and press Award with the focus left in the field; the server refuses | The same field, enabled again, still showing 25 (v1.4) |
+| Select the amount and type the same digit again | Nothing changes (the browser reports no change), so the amount is still the behaviour's (v1.4) |
 | Tap "+1" while it is already pressed and no amount is chosen, then pick a behaviour worth 3 | Amount 3 |
 | Type "05" | Amount 5; "+5" pressed |
 | Tap "+10", then choose another behaviour, then another child | Amount stays 10 throughout, including when the behaviour moves (A2) |
@@ -255,7 +258,7 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 - Browser (`e2e/ui.spec.js`, Home journey, four sizes): zero shows the message and the screen passes the shared checks in that state; 25 shows on the button; "+4" tapped afterwards shows in the field; choosing a behaviour keeps it; the request carries `points: 4` and the child's total rises by 4. Four is an amount no seeded behaviour has.
 - v1.4, unit: the field is the same element, with the focus, after each of two typed characters, after clearing and typing, and after a quick amount, a behaviour and a child are chosen with the focus left in it. The first three failed on the v1.3 dialog. `NumberInput.test.jsx` covers the field's new option on and off.
 - v1.4, browser: real keys, one at a time (select all, "2", "5"; clear; "-", "5"; select all, "1", "2"), with a mark on the field that is lost if the page replaces it. On the v1.3 dialog this step fails with "2" in the field.
-- **Not covered:** a real phone's number keypad; a screen reader pressing a quick amount with focus left in the field, in a real browser (the unit test covers the logic); touch widths between 320 and 390 px (the quick amounts are three to a row there, about 85 px each at 320 px).
+- **Not covered:** pasting into the field; a real phone's number keypad; a screen reader pressing a quick amount with focus left in the field, in a real browser (the unit test covers the logic); touch widths between 320 and 390 px (the quick amounts are three to a row there, about 85 px each at 320 px).
 
 **Rollout and reversal.** One pull request, CI, the owner's approval of the exact commit and of the new wording, then the merge (which deploys), with the read-only before and after counts. No migration. Reversal: revert the commit.
 
@@ -307,9 +310,20 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 | 3 | Note | A part-typed entry ("-", "1e") reaches the page as empty text, so a guard for text that is not a number could never run | The guard is not written |
 | 4 | Note | Typing "25" into the prefilled field with real keys gives 125 unless the old text is selected first | The browser step selects all first |
 | 5 | Note | No path still needs a redraw: reopening builds a new field; child, behaviour and late behaviours all arrive as the value | Confirmed |
-| 6 | Note | "007" then "+7" with the focus left in the field keeps "007" (the amount is 7) | Left as it is; recorded in the table above |
+| 6 | Note | Typed text with leading zeros, then the quick amount for the same number with the focus left in the field, keeps the typed text (the amount is the same) | Left as it is; recorded in the table above as "005" and "+5"; unit test |
 | 7 | Note | The summary is announced on each typed character of a longer amount | Existing behaviour (polite, announced whole); left as it is |
 | 8 | Note | Not covered by events that set the whole text: real part-typed entries | Browser step with real keys added |
 
-*Mutation checks (each makes a named test fail).* The option removed from the dialog; the option always on; the option passed through to the page; the number comparison removed; empty text compared as 0; the typed text not brought back in line after the value takes over; the v1.3 dialog restored.
+*Code review (fresh context, after the build).* No blocking finding. It confirmed that with the option off the field is identical to before, that nothing still depends on the removed redraw, and that the field, the button, the summary and the amount sent agree on every path.
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Should fix (older than this change) | A behaviour or child could be picked while an award was being sent, so with no amount chosen the disabled field and button could show 3 while 1 was sent | Fixed: picks are ignored while sending; unit test, which failed first |
+| 2 | Should fix | Two unit rows meant for an empty value of 0 ran with the empty text, and one skipped the step where the first sketch failed | Corrected: empty value 0 with "0", "0.5" and "-0", "-0.5" |
+| 3 | Should fix | The listener for React's warnings silenced everything else React said in those tests | It now fails on anything React reports |
+| 4 | Should fix | This section had a row with a quick amount that does not exist ("+7"), an out-of-date status line, and "keeps its caret" in the field's notes | Corrected |
+| 5 | Note | A browser sends no blur when a focused field is disabled, so the field still counts as focused after a refused award | Harmless with the option on; unit test added |
+| 6 | Note | Not covered: the field's arrow stepping, and paste | Arrow stepping added to the browser step; paste is not covered |
+
+*Mutation checks (each makes a named test fail).* Picks allowed while sending; The option removed from the dialog; the option always on; the option passed through to the page; the number comparison removed; empty text compared as 0; the typed text not brought back in line after the value takes over; the v1.3 dialog restored.
 

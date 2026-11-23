@@ -1,6 +1,6 @@
 // V1-F (docs/engineering/V1-F-DESIGN.md): Onboarding, Welcome and Award Points.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import OnboardingTips from '@/components/OnboardingTips';
@@ -282,7 +282,7 @@ describe('Award Points: the amount (V1-F section 9)', () => {
   it('typing an amount one character at a time keeps the same field, with focus', () => {
     const { d } = renderAward();
     const input = field(d);
-    input.focus();
+    act(() => input.focus());
     expect(document.activeElement).toBe(input);
     fireEvent.change(input, { target: { value: '2' } });
     expect(input.isConnected).toBe(true);
@@ -298,7 +298,7 @@ describe('Award Points: the amount (V1-F section 9)', () => {
   it('clearing the amount and typing another keeps the same field, with focus', () => {
     const { d } = renderAward();
     const input = field(d);
-    input.focus();
+    act(() => input.focus());
     fireEvent.change(input, { target: { value: '' } });
     expect(field(d)).toBe(input);
     expect(document.activeElement).toBe(input);
@@ -315,7 +315,7 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     // focus still in the field (a screen reader or switch).
     const { d } = renderAward();
     const input = field(d);
-    input.focus();
+    act(() => input.focus());
     fireEvent.click(tile(d, 'Chores +3'));
     expect(field(d)).toBe(input);
     expect(input.value).toBe('3');
@@ -336,7 +336,7 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     // "03" stands for 3. After +5 the typed text is gone for good: +3 shows "3".
     const { d } = renderAward();
     const input = field(d);
-    input.focus();
+    act(() => input.focus());
     fireEvent.change(input, { target: { value: '03' } });
     expect(input.value).toBe('03');
     fireEvent.click(within(amounts(d)).getByRole('button', { name: '+5' }));
@@ -387,6 +387,57 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     expect(onClose).not.toHaveBeenCalled();
     expect(field(d).value).toBe('10');
     expect(onSubmit.mock.calls[0][1].points).toBe(10);
+  });
+
+  it('nothing that decides the amount can change while an award is being sent', async () => {
+    // No amount chosen, so the amount is the behaviour's. A behaviour or child
+    // picked in flight would show another amount than the one being sent.
+    let release;
+    const onSubmit = vi.fn(() => new Promise((r) => { release = r; }));
+    const { d } = renderAward({ onSubmit });
+    fireEvent.click(within(d).getByRole('button', { name: 'Award 1 point' }));
+    fireEvent.click(tile(d, 'Chores +3'));
+    fireEvent.click(within(d).getByRole('button', { name: /^Omar/ }));
+    expect(awardButton(d).textContent).toBe('Award 1 point');
+    expect(field(d).value).toBe('1');
+    expect(tile(d, 'Kindness +1').getAttribute('aria-pressed')).toBe('true');
+    expect(within(d).getByRole('button', { name: /^Lara/ }).getAttribute('aria-pressed')).toBe('true');
+    release(false);
+    await waitFor(() => expect(field(d).disabled).toBe(false));
+    expect(onSubmit.mock.calls[0][0].name).toBe('Lara');
+    expect(onSubmit.mock.calls[0][1]).toMatchObject({ points: 1, category: 'Kindness' });
+    // Once the refusal is back the form works again.
+    fireEvent.click(tile(d, 'Chores +3'));
+    expect(awardButton(d).textContent).toBe('Award 3 points');
+  });
+
+  it('a refused award with the focus left in the field keeps the same field and the typed amount', async () => {
+    // A browser sends no blur when a focused field is disabled.
+    let release;
+    const onSubmit = vi.fn(() => new Promise((r) => { release = r; }));
+    const { d } = renderAward({ onSubmit });
+    const input = field(d);
+    act(() => input.focus());
+    fireEvent.change(input, { target: { value: '2' } });
+    fireEvent.change(input, { target: { value: '25' } });
+    fireEvent.click(within(d).getByRole('button', { name: 'Award 25 points' }));
+    release(false);
+    await waitFor(() => expect(field(d).disabled).toBe(false));
+    expect(field(d)).toBe(input);
+    expect(input.value).toBe('25');
+    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+4' }));
+    expect(input.value).toBe('4');
+  });
+
+  it('"005" then +5 with the focus left in the field keeps the typed text; the amount is 5', () => {
+    const { d } = renderAward();
+    const input = field(d);
+    act(() => input.focus());
+    fireEvent.change(input, { target: { value: '005' } });
+    expect(pressed(d)).toEqual(['+5']);
+    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+5' }));
+    expect(input.value).toBe('005');
+    expect(awardButton(d).textContent).toBe('Award 5 points');
   });
 
   const Dialog = (props) => {

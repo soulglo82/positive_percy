@@ -177,6 +177,10 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await expect(amountField).toHaveValue('12');
   await expect(amountField).toHaveAttribute('data-same-field', 'yes');
   await expect(award.getByRole('button', { name: 'Award 12 points' })).toBeEnabled();
+  // The field's own stepping still works from the typed amount.
+  await page.keyboard.press('ArrowUp');
+  await expect(amountField).toHaveValue('13');
+  await expect(award.getByRole('button', { name: 'Award 13 points' })).toBeEnabled();
   await amountField.fill('0');
   await expect(award.getByRole('alert')).toHaveText('Points must be a whole number from 1 to 1000.');
   await expect(award.getByRole('button', { name: 'Award points', exact: true })).toBeDisabled();

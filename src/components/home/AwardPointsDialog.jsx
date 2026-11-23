@@ -77,6 +77,11 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
   const showRule = points !== '' && !canAward(points);
   // Tapping the amount that is already showing changes nothing: it does not
   // turn the behaviour's points into a chosen amount behind the parent's back.
+  // While an award is being sent, nothing that decides the amount moves: the
+  // amount controls are disabled, and a child or behaviour picked in flight is
+  // ignored (it would show another amount than the one sent).
+  const pickChild = (id) => { if (!submitting) setChildId(id); };
+  const pickBehaviour = (id) => { if (!submitting) setCategoryId(id); };
   const pickAmount = (n) => {
     if (ownAmount === null && n === points) return;
     setOwnAmount(n);
@@ -104,7 +109,7 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
         <DialogBody className="space-y-5">
           <section className="space-y-3">
             <StepHeading n={1} title="Who's earned points?" hint="Select the child receiving the award." />
-            <FamilyStrip children={children} selectedId={child?.id} onSelect={setChildId} />
+            <FamilyStrip children={children} selectedId={child?.id} onSelect={pickChild} />
           </section>
           {offered.length > 0 && (
             <section className="space-y-3 border-t border-border pt-5">
@@ -140,7 +145,7 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
                 {offered.map((cat) => {
                   const on = cat.id === chosen?.id;
                   return (
-                    <button key={cat.id} type="button" aria-pressed={on} onClick={() => setCategoryId(cat.id)} data-tile
+                    <button key={cat.id} type="button" aria-pressed={on} onClick={() => pickBehaviour(cat.id)} data-tile
                       className={cn(TILE_LAYOUT, 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                         on ? 'border-2 border-selected-border bg-selected' : 'border border-border bg-card hover:bg-accent')}>
                       <BehaviourTileParts iconKey={cat.icon_key} name={cat.name} points={cat.points ?? 1} />

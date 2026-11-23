@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
  * control can set while the field has focus: when the typed text no longer
  * stands for `value`, the field shows `value`. Without it a focused field
  * shows only what was typed. The field itself is never replaced, so it keeps
- * its focus and caret. With followModel, `onChange` must store the number it
+ * its focus (the caret goes to the end when the value takes over). With followModel, `onChange` must store the number it
  * is given as `value` in the same update (as a state setter does); a parent
  * that stores something else has its version shown in place of the typing.
  */
