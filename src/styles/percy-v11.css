@@ -345,3 +345,11 @@
 .pv-quick-tile { grid-template-rows: auto 1fr; }
 .pv-quick-tile__label { align-self: start; }
 .pv-manage-action__label { display: flex; align-items: center; min-height: var(--pv-tap); }
+/* A tile fits a 40px icon and a "+1000" badge side by side at 138px wide
+   (the narrowest two-across tile, 320px screens). */
+.pv-quick-tile { padding: var(--pv-space-3); }
+.pv-quick-tile .pv-medallion { width: var(--pv-space-7); height: var(--pv-space-7); }
+.pv-quick-tile__points { padding: var(--pv-space-1) var(--pv-space-2); }
+/* Children never scroll sideways (repo rule, e2e/checks.js): a large family
+   wraps to a second row; nothing shrinks. */
+.pv-selector { flex-wrap: wrap; overflow-x: visible; scroll-snap-type: none; row-gap: var(--pv-space-3); }

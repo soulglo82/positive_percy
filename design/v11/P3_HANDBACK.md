@@ -45,6 +45,8 @@ Home and Children in the real app now use the V1.1 design system, on V1's own da
 5. **The Today ring counts only goals scheduled today.** Children's existing list (`?manage=true`) returns every goal, which would have been the wrong denominator; the page now also reads the plain today list (the same query Home uses).
 6. **Treats on Children are drawn in V1.1 rows** with the V1 tile's content (icon, title, points, visibility, Edit). The V1 `RewardTile` had 40px Edit buttons on non-touch screens and its tag overflowed at 200% text. `RewardTile` itself is unchanged, so the Rewards tab is unaffected.
 7. **Header and tab bar stay V1.** The V1.1 navigation waits for the other tabs.
+8. **The child selector wraps instead of scrolling sideways.** The repo forbids anything that scrolls sideways (`e2e/checks.js`). A family of six wraps onto more rows; nothing shrinks.
+9. **Quick Point tiles use a 40px icon and 12px padding**, so a "+1000" badge fits beside the icon on the narrowest two-across tile (138px at 320px wide).
 
 ## 4. New or changed wording (for owner approval)
 
@@ -116,12 +118,14 @@ Independent fresh-context review (read-only, given the code and screenshots, not
 | 13 | Manage card focus depended on `:has()` | **Fixed.** The card ring is used only where `:has()` is supported; elsewhere the label keeps its own focus ring |
 | Nits | Type role use, tile colours by position, desktop empty space under Quick Points, clouds clipped behind the selector, selector inside the profile section, lilac borders, Done chip styled like a button | Clouds removed; journey "Saving for something bigger" heading now uses the stop-label style. The rest are recorded for the next visual pass |
 
-## 9. Remaining blockers
+## 9. Remaining blockers and known edges
 
 - Fox artwork B1 to B6 (`design/v11/fox1a/asset-manifest.json`): no layered master, no pose art, colour questions, clipped stacked logos. Owner action: commission per the brief.
 - Owner approval of the wording in section 4.
 - Real-device check of the 12px tab labels (V1 tab bar, unchanged here).
-- Safari / iOS check (`:has()` is used for the Manage card focus ring; supported from Safari 15.4).
+- Safari / iOS check (`:has()` draws the Manage card focus ring where supported; elsewhere the label's own ring shows).
+- A very long single first name (e.g. "Alexandra-Josephine Montgomery-Wellington") breaks mid-word in the 32px Home headline at 320px. It is readable; recorded for the next visual pass.
+- Home at 1280px leaves space under Quick Points (review nit); the "before" screenshots use a different sample family from the "after" ones.
 
 ## Change log
 
