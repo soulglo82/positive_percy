@@ -51,11 +51,6 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
   // amount is the chosen behaviour's points; once chosen it stays until the
   // dialog closes, whatever behaviour or child is picked next.
   const [ownAmount, setOwnAmount] = useState(null);
-  // The number field keeps its own text while it has focus. A new key makes
-  // it show an amount that was not typed: a quick amount, or the behaviour's
-  // points changing underneath it (a screen reader or switch can press a
-  // button and leave focus in the field).
-  const [fieldKey, setFieldKey] = useState(0);
 
   const child = children.find((c) => c.id === childId) || children[0];
   const offered = child ? behavioursFor(categories, child.id) : [];
@@ -68,7 +63,6 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
     setCategoryId(null);
     setNote('');
     setOwnAmount(null);
-    setFieldKey((k) => k + 1);
   }, [isOpen, initialChildId]);
 
   // A2: keep the behaviour if this child can use it, otherwise their first.
@@ -86,7 +80,6 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
   const pickAmount = (n) => {
     if (ownAmount === null && n === points) return;
     setOwnAmount(n);
-    setFieldKey((k) => k + 1);
   };
 
   const submit = async () => {
@@ -124,7 +117,11 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
                   </Button>
                 ))}
               </div>
-              <NumberInput key={`${fieldKey}:${ownAmount === null ? points : 'own'}`} id="award-points" aria-label={PERCY.POINTS_COMPACT} inputMode="numeric"
+              {/* followModel: the field shows an amount that was not typed (a quick
+                  amount, the behaviour's points changing) even while it has focus,
+                  as a screen reader or switch can leave it. It is never remounted:
+                  a remount drops the keyboard focus in the middle of typing. */}
+              <NumberInput id="award-points" aria-label={PERCY.POINTS_COMPACT} inputMode="numeric" followModel
                 value={points} emptyValue="" min={1} max={MAX_AWARD} disabled={submitting}
                 aria-invalid={showRule} aria-describedby={showRule ? 'award-points-rule' : undefined}
                 onChange={setOwnAmount} onWheel={(e) => e.currentTarget.blur()}

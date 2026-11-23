@@ -149,6 +149,34 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   // tapped afterwards shows in the field; choosing a behaviour keeps it. 4 is
   // an amount no seeded behaviour has, so it can only come from the choice.
   const amountField = award.getByRole('spinbutton', { name: 'Percy Points' });
+  // Real keys, one at a time, over the amount the dialog opened with (PR #73
+  // review): the field must stay the same field and keep the keyboard, so the
+  // second character lands. fill() sets the whole text at once and cannot
+  // see that. The mark is lost if the page ever replaces the field.
+  await amountField.evaluate((el) => { el.dataset.sameField = 'yes'; });
+  await amountField.click();
+  await amountField.press('ControlOrMeta+a');
+  await page.keyboard.type('25');
+  await expect(amountField).toHaveValue('25');
+  await expect(amountField).toBeFocused();
+  await expect(amountField).toHaveAttribute('data-same-field', 'yes');
+  await expect(award.getByRole('button', { name: 'Award 25 points' })).toBeEnabled();
+  // Emptied, then a part-typed amount the browser does not yet count as a
+  // number ("-"), then finished: still the same field, still typing.
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press('Backspace');
+  await expect(amountField).toHaveValue('');
+  await expect(amountField).toBeFocused();
+  await page.keyboard.type('-');
+  await expect(award.getByRole('button', { name: 'Award points', exact: true })).toBeDisabled();
+  await page.keyboard.type('5');
+  await expect(amountField).toHaveValue('-5');
+  await expect(award.getByRole('alert')).toHaveText('Points must be a whole number from 1 to 1000.');
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.type('12');
+  await expect(amountField).toHaveValue('12');
+  await expect(amountField).toHaveAttribute('data-same-field', 'yes');
+  await expect(award.getByRole('button', { name: 'Award 12 points' })).toBeEnabled();
   await amountField.fill('0');
   await expect(award.getByRole('alert')).toHaveText('Points must be a whole number from 1 to 1000.');
   await expect(award.getByRole('button', { name: 'Award points', exact: true })).toBeDisabled();
@@ -159,6 +187,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await expect(amountField).toHaveValue('4');
   await award.getByRole('group', { name: /What did Sam do/ }).getByRole('button').first().click();
   await expect(amountField).toHaveValue('4');
+  await expect(amountField).toHaveAttribute('data-same-field', 'yes');
   await award.getByLabel('Add a note (optional)').fill('Shared the crayons');
   const samBefore = (await (await page.request.get('/api/children', { headers })).json()).find((k) => k.id === samId).total_points;
   const sent = page.waitForRequest((r) => r.method() === 'POST' && /\/api\/children\/[^/]+\/award$/.test(new URL(r.url()).pathname));

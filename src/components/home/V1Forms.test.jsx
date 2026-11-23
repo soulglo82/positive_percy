@@ -277,6 +277,74 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     expect(onSubmit.mock.calls[0][1].points).toBe(n);
   });
 
+  // PR #73 review: the first typed character must not replace the field. The
+  // other tests here set the whole amount in one event, which cannot see that.
+  it('typing an amount one character at a time keeps the same field, with focus', () => {
+    const { d } = renderAward();
+    const input = field(d);
+    input.focus();
+    expect(document.activeElement).toBe(input);
+    fireEvent.change(input, { target: { value: '2' } });
+    expect(input.isConnected).toBe(true);
+    expect(field(d)).toBe(input);
+    expect(document.activeElement).toBe(input);
+    fireEvent.change(input, { target: { value: '25' } });
+    expect(field(d)).toBe(input);
+    expect(document.activeElement).toBe(input);
+    expect(input.value).toBe('25');
+    expect(awardButton(d).textContent).toBe('Award 25 points');
+  });
+
+  it('clearing the amount and typing another keeps the same field, with focus', () => {
+    const { d } = renderAward();
+    const input = field(d);
+    input.focus();
+    fireEvent.change(input, { target: { value: '' } });
+    expect(field(d)).toBe(input);
+    expect(document.activeElement).toBe(input);
+    expect(input.value).toBe('');
+    expect(awardButton(d).disabled).toBe(true);
+    fireEvent.change(input, { target: { value: '7' } });
+    expect(field(d)).toBe(input);
+    expect(document.activeElement).toBe(input);
+    expect(awardButton(d).textContent).toBe('Award 7 points');
+  });
+
+  it('an amount that was not typed never replaces the field or takes its focus', () => {
+    // Quick amount, another behaviour, another child: each can happen with
+    // focus still in the field (a screen reader or switch).
+    const { d } = renderAward();
+    const input = field(d);
+    input.focus();
+    fireEvent.click(tile(d, 'Chores +3'));
+    expect(field(d)).toBe(input);
+    expect(input.value).toBe('3');
+    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+4' }));
+    expect(field(d)).toBe(input);
+    expect(input.value).toBe('4');
+    fireEvent.change(input, { target: { value: '40' } });
+    expect(input.value).toBe('40');
+    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+5' }));
+    expect(input.value).toBe('5');
+    fireEvent.click(within(d).getByRole('button', { name: /^Omar/ }));
+    expect(field(d)).toBe(input);
+    expect(input.value).toBe('5');
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('a quick amount pressed twice over typed text shows the plain amount', () => {
+    // "03" stands for 3. After +5 the typed text is gone for good: +3 shows "3".
+    const { d } = renderAward();
+    const input = field(d);
+    input.focus();
+    fireEvent.change(input, { target: { value: '03' } });
+    expect(input.value).toBe('03');
+    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+5' }));
+    expect(input.value).toBe('5');
+    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+3' }));
+    expect(input.value).toBe('3');
+  });
+
   it('the field follows the behaviour\'s points even while it has focus', () => {
     // Until an amount is chosen the field shows the behaviour's points; a
     // screen reader can pick another behaviour and leave focus in the field.

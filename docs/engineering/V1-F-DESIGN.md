@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.3 |
+| Version | 1.4 |
 | Issued | 2026-11-18 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-f-forms`, stacked on V1-A `claude/percy-v1-a-home`) |
 | Status | Reviewed (design peer review v1.1; code review of PR #58 fixed, v1.2) |
@@ -16,6 +16,7 @@
 | 1.1 | 2026-11-18 | Peer review: 2 blocking and 4 of 5 non-blocking findings adopted, 1 answered (§7). §3 is replaced by a build-time gate. G4 and E14–E16 are added. The Settings tips are kept |
 | 1.2 | 2026-11-18 | Code review of PR #58 (CodeRabbit-style): all 3 actionable and 5 nitpick findings fixed (§8). O corrected: Settings opens the parenting tips, not onboarding |
 | 1.3 | 2026-11-23 | The owner asked for custom points back in Give Percy Points: a parent can change the amount (§9). This reverses the v1.0 removal of the free amount recorded in §2 |
+| 1.4 | 2026-11-23 | Review of PR #73 found that the amount field was replaced on the first typed character, which dropped the keyboard. The field is no longer replaced at all (§9, "Review of the pull request") |
 
 ## 1. Scope
 
@@ -225,8 +226,12 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 | Choose a behaviour worth 3, amount not chosen | Amount 3; "+3" pressed |
 | Tap "+5" | Amount 5; "earns 5 Percy Points"; "Award 5 points"; the request carries `points: 5` and the behaviour's name |
 | Type 25 | Amount 25; no quick amount pressed; "Award 25 points" |
-| Type 25, then press "+4" while the field still has focus | The field shows 4 |
-| Focus the field, then pick a behaviour worth 3, amount not chosen | The field shows 3 |
+| Type 25, then press "+4" while the field still has focus | The field shows 4; it is the same field and keeps the focus |
+| Focus the field, then pick a behaviour worth 3, amount not chosen | The field shows 3; it is the same field and keeps the focus |
+| Focus the field and type "2", then "5" (one key at a time, over the amount the dialog opened with) | The field shows 25 and keeps the focus throughout; "Award 25 points" (v1.4) |
+| Focus the field, clear it, type "7" | Empty, then 7; the focus is kept throughout (v1.4) |
+| Type "03", press "+5", press "+3" with the focus left in the field | 03, then 5, then 3 (v1.4) |
+| Type "007", press "+7" with the focus left in the field | The field keeps "007"; the amount is 7 either way (v1.4) |
 | Tap "+1" while it is already pressed and no amount is chosen, then pick a behaviour worth 3 | Amount 3 |
 | Type "05" | Amount 5; "+5" pressed |
 | Tap "+10", then choose another behaviour, then another child | Amount stays 10 throughout, including when the behaviour moves (A2) |
@@ -248,6 +253,8 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 **Tests, written before the build.**
 - Unit (`V1Forms.test.jsx`, "Award Points: the amount"): every row above. The fourteen tests written against the first draft failed on the old dialog; they were then brought into line with this reviewed design.
 - Browser (`e2e/ui.spec.js`, Home journey, four sizes): zero shows the message and the screen passes the shared checks in that state; 25 shows on the button; "+4" tapped afterwards shows in the field; choosing a behaviour keeps it; the request carries `points: 4` and the child's total rises by 4. Four is an amount no seeded behaviour has.
+- v1.4, unit: the field is the same element, with the focus, after each of two typed characters, after clearing and typing, and after a quick amount, a behaviour and a child are chosen with the focus left in it. The first three failed on the v1.3 dialog. `NumberInput.test.jsx` covers the field's new option on and off.
+- v1.4, browser: real keys, one at a time (select all, "2", "5"; clear; "-", "5"; select all, "1", "2"), with a mark on the field that is lost if the page replaces it. On the v1.3 dialog this step fails with "2" in the field.
 - **Not covered:** a real phone's number keypad; a screen reader pressing a quick amount with focus left in the field, in a real browser (the unit test covers the logic); touch widths between 320 and 390 px (the quick amounts are three to a row there, about 85 px each at 320 px).
 
 **Rollout and reversal.** One pull request, CI, the owner's approval of the exact commit and of the new wording, then the merge (which deploys), with the read-only before and after counts. No migration. Reversal: revert the commit.
@@ -259,7 +266,7 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 | 1 | The first draft put the amount below the behaviours, so on a phone it needed a scroll; the old dialog had it at the top | The amount is step 2, above the behaviours |
 | 2 | The first draft reset the amount whenever a behaviour was chosen, which only worked with the amount below the behaviours | Replaced by the rule above: a chosen amount stays |
 | 3 | Where the amount is set mattered: keyed on the child or on the behaviour objects it would break | Nothing is copied into state; the amount is read from the behaviour while not chosen |
-| 4 | The number field keeps its own text while focused, so a quick amount pressed without moving focus would not show | The field is redrawn when a quick amount is chosen; unit test |
+| 4 | The number field keeps its own text while focused, so a quick amount pressed without moving focus would not show | The field is redrawn when a quick amount is chosen; unit test. Replaced in v1.4: the field follows the amount without being redrawn |
 | 5 | An amount that cannot be awarded could still appear in the summary and on the button | Hidden for every such amount |
 | 6 | Six buttons in a row are under 44 px wide on phones between 320 and 385 px | Three to a row below 640 px |
 | 7 | No name for the group of quick amounts; the summary's live region came and went; the messages were not tied to the field; nothing said why zero was refused | Group named by the heading; the live region stays; one announced message tied to the field |
@@ -271,10 +278,38 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 
 | # | Severity | Finding | Resolution |
 | --- | --- | --- | --- |
-| 1 | Should fix | While no amount is chosen, the field could show an old number if a behaviour or child was picked with focus left in the field (the button and summary were right) | Fixed: the field is redrawn when the behaviour's points change underneath it; unit test |
+| 1 | Should fix | While no amount is chosen, the field could show an old number if a behaviour or child was picked with focus left in the field (the button and summary were right) | Fixed: the field is redrawn when the behaviour's points change underneath it; unit test. This fix caused the v1.4 defect and is replaced there |
 | 2 | Note | Tapping the already-pressed quick amount fixed the amount with no visible change | Changed: it does nothing until an amount has been chosen; unit test |
 | 3 | Note | The amount could be changed while an award was being sent, so the disabled button could show a newer number than the one sent | Fixed: the amount controls are disabled while sending; unit test |
 | 4 | Note | A change of amount might announce only the changed number | Fixed: the summary is announced whole |
 | 5 | Note | Three rows were covered thinly (the emptied field's value, the reopened dialog's behaviour, a refused award with a custom amount); no test for a typed amount pressing a quick amount | All added |
 | 6 | Note | The evidence screenshots are not taken with a touch pointer, so the 44 px sizes rest on the browser tests in the touch projects | Stated here; those tests pass |
 | 7 | Note | A lone "-" in the field disables Award with no message; scrolling with the pointer over the focused field drops focus | Left as they are |
+
+**Review of the pull request (PR #73, automated review of `8995ed0`) (v1.4).**
+
+*Finding.* The field was redrawn (React `key`) whenever the amount changed other than by typing. The key also changed on the first typed character, because that is the moment the amount stops being the behaviour's and becomes the parent's. The browser then dropped the keyboard: typing "25" over the opening amount left "2". Confirmed two ways before the fix: three new unit tests failed, and the browser step with real keys failed with "2" in the field. The v1.3 tests set the whole amount in one event and could not see it.
+
+*Contract repaired.* The amount field is one field for as long as the dialog is open. It shows what was typed while the typing still stands for the amount, and the amount when something else set it. It is never replaced, so nothing can take the focus from it.
+
+*Fix.* The redraw is removed, not narrowed. `NumberInput` gains an option, `followModel`, off unless asked for: while the field has focus, if the typed text no longer stands for the value it was given, the field shows the value. "Stands for" means the text is the value's own text, or the number the text reported is the value (so "007" still stands for 7 and "1e3" for 1000). The dialog's `fieldKey` state and the `key` are deleted.
+
+*Every user of `NumberInput`.* Give Percy Points (uses the option); the reward form, the behaviour manager, the add-child and edit-child forms and the savings dialog (do not, and behave exactly as before: two unit tests hold the default).
+
+*Rejected.* Keeping the redraw and freezing the key when typing starts: it would still replace the field, and drop the focus, whenever a quick amount or a behaviour changed under a focused field.
+
+*Design review (fresh context, before the build; the reviewer ran the rule in a real browser).*
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Blocking for the first sketch | Comparing texts breaks when the typed number equals the field's empty value: with an empty value of 0, "0.5" lost its leading zero and "-0.5" its sign | The rule compares numbers, not texts; unit tests for an empty value of 0 and of 1 |
+| 2 | Note | "007", "2.5", a lone "-" and clear-then-type keep the text and the focus; no render loop | Confirmed; unit tests |
+| 3 | Note | A part-typed entry ("-", "1e") reaches the page as empty text, so a guard for text that is not a number could never run | The guard is not written |
+| 4 | Note | Typing "25" into the prefilled field with real keys gives 125 unless the old text is selected first | The browser step selects all first |
+| 5 | Note | No path still needs a redraw: reopening builds a new field; child, behaviour and late behaviours all arrive as the value | Confirmed |
+| 6 | Note | "007" then "+7" with the focus left in the field keeps "007" (the amount is 7) | Left as it is; recorded in the table above |
+| 7 | Note | The summary is announced on each typed character of a longer amount | Existing behaviour (polite, announced whole); left as it is |
+| 8 | Note | Not covered by events that set the whole text: real part-typed entries | Browser step with real keys added |
+
+*Mutation checks (each makes a named test fail).* The option removed from the dialog; the option always on; the option passed through to the page; the number comparison removed; empty text compared as 0; the typed text not brought back in line after the value takes over; the v1.3 dialog restored.
+
