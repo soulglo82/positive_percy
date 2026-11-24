@@ -744,6 +744,30 @@ Seven blocking findings, all adopted in the text above; fourteen non-blocking, a
 | N19, N20 | Test gaps; a description for each view | §12.5; W3 |
 | N21 | The pop-up makes a Big Goal for one child only | W9 says so. Not changed: a whole-family goal stays a Rewards-tab task |
 
+### 12.9 Build record
+
+Structure as designed: `ManageGoalsDialog` is a thin dialog whose content (`Popup`) is mounted only while it is open, so every opening starts from its own `start` and no reset effect can draw the previous opening for a frame; `RewardForm` and `SavingsDialog` gained `embedded`. Rows are named by their own text ("Edit {title} {details}", with real spaces between the parts) rather than by an `aria-label`: the browser checks' axe rule `label-content-name-mismatch` refused a label that differed from the visible text.
+
+Wording found during the build and added to §12.6 by the same two rules: Rewards page "Choose little treats and bigger adventures together." became "Choose little treats and Big Goals together."; the server's "This goal has been completed before. Create a separate goal for a different schedule." and its two siblings became "This Daily Win has been completed … Create a separate Daily Win …"; "Goal already completed today or request reused." became "Daily Win already completed today or request reused.".
+
+Naming guard allow-list (each with its reason in `src/test/naming.test.js`): the stored note prefix; "Goal Getter" (badge definition, no V1 screen); the family-goals API messages (no screen); seven server log labels (written to the server log only); "Goals" and "Routines" as names of behaviour icons in the approved icon register (they name pictures, not a Daily Win). The guard depends on `@babel/parser`, present through the Vite React plugin.
+
+Mutation checks (each makes a named test fail; the file is copied aside and copied back):
+
+| # | Change | Test that fails |
+| --- | --- | --- |
+| M1 | A Big Goal edit sends the long form's whole payload | "an edit sends exactly the name, the cost and a changed picture …" (and two more) |
+| M2 | The end-of-savings guard for a Big Goal edit removed | "an edit that loses a child with savings still asks nothing" |
+| M3 | The pop-up returns to the list after a savings move | "… a move closes the whole pop-up (X14)" |
+| M4 | `initialGoalId` ignored | the same test: the goal the row was for is not the one chosen |
+| M5 | "Asked for" ignored | "Big Goals: the child's marked rewards in order …" |
+| M6 | No space between the figure and "points" in the Home line | "one paragraph that reads …" (and two more) |
+| M7 | The opener is not passed to the pop-up | "… closing it returns focus to the door (X32)" |
+| M8 | A new Big Goal is assigned to nobody (the whole family) | "Add Big Goal for the child the picker shows … (X6)" |
+| M9 | A retired word in a rendered string | naming guard |
+| M10 | Changing child resets the side | "the child picker … keeps the side (X3)" |
+| M11 | A button inside a button in a Big Goal item | "Big Goals: … with their own controls" |
+
 ## 13. The points line on Home, "Points 1" (owner, 24 November 2026) (v1.7)
 
 The owner: the "Little wins, big adventures!" card "looks out of place". It is a heading and a slogan around one number. From two mock-ups the owner chose Points 1: one slim line directly under the child picker.
@@ -781,4 +805,8 @@ Two blocking findings, both adopted: P1 overrode the owner's recorded rule of 22
 Wording: "Available now for {name}" is new (today: "Available now" under the figure). Removed: "Little wins, big adventures!", "Every positive step counts.".
 
 Rollout and reversal: as §12.7.
+
+### 13.4 Build record: the measured cost of the line
+
+Measured on the built page at 390 × 844 with a three-child family with short names: the line is 54px tall; Quick Points starts 74px lower than before (at 487px) and its card, with four boxes and both buttons, ends at 731px, above the bottom navigation (779px). So the whole Quick Points card is still on the first screen for that family; a family with more Quick Points boxes or longer names scrolls sooner than before by those 74px. Reported to the owner with the built screens.
 

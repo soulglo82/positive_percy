@@ -243,13 +243,16 @@ function Popup({ onClose, busy, child: initialChild, children = [], categories =
                         goal.category_points ? pointsText(goal.category_points) : null].filter(Boolean).join(' · ');
                       return (
                       <li key={goal.id}>
-                        <button type="button" onClick={() => startEditing(goal)} aria-label={`Edit ${goal.title}: ${meta}`}
+                        <button type="button" onClick={() => startEditing(goal)}
                           className={cn('flex w-full min-h-11 items-center gap-3 rounded-md py-2 text-left hover:bg-accent', FOCUS)}>
                           <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center text-primary">
                             <CategoryIcon iconKey={goal.category_icon_key} className="w-6 h-6" />
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-semibold text-foreground break-words">{goal.title}</span>
+                            {/* Named by its own text, "Edit {title} {meta}": the spaces are real
+                                text nodes, so every browser and checker reads the same name. */}
+                            <span className="sr-only">Edit</span>{' '}
+                            <span className="block text-sm font-semibold text-foreground break-words">{goal.title}</span>{' '}
                             <span className="block text-sm text-muted-foreground">{meta}</span>
                           </span>
                           <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -279,13 +282,13 @@ function Popup({ onClose, busy, child: initialChild, children = [], categories =
                         <li key={g.rewardId} className="space-y-2 rounded-lg border border-border p-3" data-big-goal={g.rewardId}>
                           {/* Two sibling controls, never one inside the other (§12 W5). */}
                           <button type="button" onClick={() => openBigGoal(g.reward)}
-                            aria-label={`Edit ${g.name}: ${g.saved} of ${g.cost} points saved${g.hidden ? ', hidden from children' : ''}`}
                             className={cn('flex w-full min-h-11 items-center gap-3 rounded-md text-left hover:bg-accent', FOCUS)}>
                             <RewardIcon reward={g.reward} size="md" />
                             <span className="min-w-0 flex-1">
-                              <span className="block font-semibold text-foreground break-words">{g.name}</span>
+                              <span className="sr-only">Edit</span>{' '}
+                              <span className="block font-semibold text-foreground break-words">{g.name}</span>{' '}
                               <span className="block text-sm text-muted-foreground tabular-nums">{g.saved} of {g.cost} points saved</span>
-                              {g.hidden && <span className="block text-xs text-muted-foreground">Hidden from children</span>}
+                              {g.hidden && <>{' '}<span className="block text-xs text-muted-foreground">Hidden from children</span></>}
                             </span>
                             <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
                           </button>

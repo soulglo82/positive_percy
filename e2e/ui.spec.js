@@ -80,62 +80,72 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
     }
   };
   expectBoxes(await boxFacts(page.locator('[data-tile-grid="even"]')), 'Home');
-  // Owner, 22 November: awarding points is the point of this page. The order
-  // is the child picker, then Quick Points, Today's Goals, the available
-  // points ("Little wins") and what the child is working towards. The DOM
+  // Owner, 24 November ("Points 1", V1-F §13): the available points are one
+  // slim line straight under the child picker. That supersedes the rule of
+  // 22 November that nothing sits between the picker and Quick Points. Then
+  // Quick Points, Daily Wins and what the child is working towards; the DOM
   // (Tab and screen-reader) order is that reading order (review of PR #57).
   // One column (under 1024px): the cards stack in that order. Two columns:
-  // Quick Points then Today's Goals on the left, Little wins then Working
-  // towards on the right, the two columns equally wide.
-  // Nothing sits between the child picker and Quick Points. On a screen at
-  // least 800px tall the card starts on the first screen. (This fixture's
-  // long child name makes the picker tall: at 320x568 the heading starts at
-  // about 570px here, and at about 430px for a family with short names.)
+  // Quick Points then Daily Wins on the left, Working towards alone on the
+  // right, the two columns equally wide; the line is above both, full width.
+  // On a screen at least 800px tall Quick Points starts on the first screen.
   const order = await page.evaluate(() => {
     window.scrollTo(0, 0);
-    const titles = ['Quick Points', "Today's Goals", 'Little wins, big adventures!', "What you're working towards"];
+    const titles = ['Quick Points', 'Daily Wins', "What you're working towards"];
     const hs = titles.map((t) => [...document.querySelectorAll('h2')].find((h) => h.textContent.trim() === t));
     if (hs.some((h) => !h)) return { missing: titles.filter((_, i) => !hs[i]) };
-    const domOrdered = hs.every((h, i) => i === 0 || !!(hs[i - 1].compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING));
+    const line = document.querySelector('[data-points-line]');
+    const pickerEl = document.querySelector('[role="group"][aria-label="Choose a child"]');
+    if (!line || !pickerEl) return { missing: ['the points line or the child picker'] };
+    const after = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const domOrdered = after(pickerEl, line) && after(line, hs[0]) && after(hs[0], hs[1]) && after(hs[1], hs[2]);
     // The column that holds two cards: the nearest element containing both headings.
     const columnOf = (a, b) => { let el = a.parentElement; while (el && !el.contains(b)) el = el.parentElement; return el; };
     const left = columnOf(hs[0], hs[1]);
-    const right = columnOf(hs[2], hs[3]);
-    const box = (el) => { const r = el.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width) }; };
-    const picker = document.querySelector('[role="group"][aria-label="Choose a child"]').getBoundingClientRect();
+    const grid = left.parentElement;
+    const right = [...grid.children].find((c) => c !== left && c.contains(hs[2]));
+    if (!right) return { missing: ['a right column holding What you are working towards'] };
+    const box = (el) => { const r = el.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width), height: Math.round(r.height) }; };
     const boxes = hs.map((h) => h.getBoundingClientRect());
     return { domOrdered, tops: boxes.map((b) => Math.round(b.top)), lefts: boxes.map((b) => Math.round(b.left)),
-      pickerBottom: Math.round(picker.bottom), screen: window.innerHeight, oneColumn: window.innerWidth < 1024,
-      separateColumns: left !== right && !left.contains(right) && !right.contains(left),
+      picker: box(pickerEl), line: box(line), grid: box(grid), lineInGrid: grid.contains(line),
+      lineText: line.querySelector('p').textContent, lineParagraphs: line.querySelectorAll('p').length,
+      lineHeadings: line.querySelectorAll('h1, h2, h3, [role="status"], [aria-live]').length,
+      allHeadings: [...document.querySelectorAll('main h2, h2')].map((h) => h.textContent.trim()),
+      screen: window.innerHeight, oneColumn: window.innerWidth < 1024,
       left: box(left), right: box(right),
       leftCards: [...left.children].map(box), rightCards: [...right.children].map(box),
       quickCardHasAward: !!left.children[0] && left.children[0].contains(hs[0]) && [...left.children[0].querySelectorAll('button')].some((b) => b.textContent.trim() === 'Custom points') };
   });
   expect(order.missing, 'every Home section is present').toBeUndefined();
-  expect(order.domOrdered, 'DOM order: Quick Points, Goals, Little wins, Working towards').toBe(true);
-  const [quickTop, goalsTop, winsTop, towardsTop] = order.tops;
-  const [quickLeft, goalsLeft, winsLeft, towardsLeft] = order.lefts;
-  expect(quickTop, 'Quick Points comes after the child picker').toBeGreaterThan(order.pickerBottom);
-  // The gap between cards (20px) plus the card's own padding, and nothing else.
-  expect(quickTop - order.pickerBottom, 'Quick Points is the first thing under the child picker').toBeLessThanOrEqual(48);
+  expect(order.domOrdered, 'DOM order: picker, points line, Quick Points, Daily Wins, Working towards').toBe(true);
+  expect(order.allHeadings, 'the slogan card and its heading are gone').not.toContain('Little wins, big adventures!');
+  const [quickTop, winsTop, towardsTop] = order.tops;
+  const [quickLeft, winsLeft] = order.lefts;
+  // The points line: one paragraph, no heading, directly under the picker,
+  // full width, slim; Quick Points directly under it (20px is the page's gap).
+  expect(order.lineText, 'the line reads as one sentence').toMatch(/^Available now for .+ \d+ points?$/);
+  expect([order.lineParagraphs, order.lineHeadings], 'one paragraph; no heading or live region').toEqual([1, 0]);
+  expect(order.line.top - order.picker.bottom, 'the points line is directly under the child picker').toBe(20);
+  expect(order.leftCards[0].top - order.line.bottom, 'Quick Points is directly under the points line').toBe(20);
+  expect(order.lineInGrid, 'the line is above the columns, not in one').toBe(false);
+  expect(order.line.width, 'the line spans the page').toBe(order.grid.width);
+  expect(order.line.height, 'the line is slim (a long name may take two lines)').toBeLessThanOrEqual(84);
   if (order.screen >= 800) expect(quickTop, 'Quick Points starts on the first screen').toBeLessThan(order.screen);
-  expect(quickTop, "Quick Points is above Today's Goals").toBeLessThan(goalsTop);
-  expect(winsTop, 'Little wins is above Working towards').toBeLessThan(towardsTop);
-  // Two cards a column, nothing between them but the gap, and the Quick
-  // Points card is the whole card (its Custom points button is in it).
-  expect(order.separateColumns, 'the two pairs of cards are in separate columns').toBe(true);
-  expect(order.leftCards.length, 'left column: Quick Points and Goals only').toBe(2);
-  expect(order.rightCards.length, 'right column: Little wins and Working towards only').toBe(2);
+  expect(quickTop, 'Quick Points is above Daily Wins').toBeLessThan(winsTop);
+  // The left column is Quick Points then Daily Wins, nothing between them but
+  // the gap; the right column is one card. The Quick Points card is the whole
+  // card (its Custom points button is in it).
+  expect(order.leftCards.length, 'left column: Quick Points and Daily Wins only').toBe(2);
+  expect(order.rightCards.length, 'right column: Working towards only').toBe(1);
   expect(order.quickCardHasAward, 'the first card is Quick Points, with its Custom points button').toBe(true);
-  expect(order.leftCards[1].top - order.leftCards[0].bottom, 'the gap between Quick Points and Goals').toBe(20);
-  expect(order.rightCards[1].top - order.rightCards[0].bottom, 'the gap between Little wins and Working towards').toBe(20);
+  expect(order.leftCards[1].top - order.leftCards[0].bottom, 'the gap between Quick Points and Daily Wins').toBe(20);
   if (order.oneColumn) {
-    expect(goalsTop, "one column: Today's Goals is above Little wins").toBeLessThan(winsTop);
+    expect(winsTop, 'one column: Daily Wins is above Working towards').toBeLessThan(towardsTop);
     expect(new Set(order.lefts).size, 'one column: every card starts at the same left edge').toBe(1);
-    expect(order.right.top - order.left.bottom, 'one column: the gap between Goals and Little wins').toBe(20);
+    expect(order.right.top - order.left.bottom, 'one column: the gap between Daily Wins and Working towards').toBe(20);
   } else {
-    expect(goalsLeft, "two columns: Today's Goals is under Quick Points, in the left column").toBe(quickLeft);
-    expect(towardsLeft, 'two columns: Working towards is under Little wins, in the right column').toBe(winsLeft);
+    expect(winsLeft, 'two columns: Daily Wins is under Quick Points, in the left column').toBe(quickLeft);
     expect(order.right.left, 'two columns: the right column starts after the left one ends').toBeGreaterThan(order.left.right);
     expect(Math.abs(order.left.width - order.right.width), 'two columns: equally wide').toBeLessThanOrEqual(1);
     expect(Math.abs(order.right.top - order.left.top), 'two columns: the columns start level').toBeLessThanOrEqual(1);
@@ -267,14 +277,24 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await expect(page.getByText(/^Undone\./)).toBeVisible();
   await expect(page.getByText(/^Undone\./)).toHaveCount(0, { timeout: 15000 });
 
-  // V1-F: Manage goals list and the goal form.
-  await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
+  // V1-F §12: the Daily Wins & Big Goals pop-up, its two sides and both forms.
+  await page.getByRole('button', { name: 'Manage Daily Wins & Big Goals' }).click();
   const manage = page.getByRole('dialog');
-  await expect(manage.getByRole('heading', { name: "Manage Sam's goals" })).toBeVisible();
-  await checkScreen(page, 'manage goals', testInfo);
-  await manage.getByRole('button', { name: 'Add goal' }).click();
-  await expect(manage.getByRole('heading', { name: 'New goal' })).toBeVisible();
-  await checkScreen(page, 'goal form', testInfo);
+  await expect(manage.getByRole('heading', { name: 'Daily Wins & Big Goals' })).toBeVisible();
+  await checkScreen(page, 'pop-up, Daily Wins side', testInfo);
+  await manage.getByRole('button', { name: 'Add Daily Win' }).click();
+  await expect(manage.getByRole('heading', { name: 'New Daily Win' })).toBeVisible();
+  await checkScreen(page, 'Daily Win form', testInfo);
+  await manage.getByRole('button', { name: 'Cancel' }).click();
+  await manage.getByRole('button', { name: 'Big Goals', exact: true }).click();
+  await expect(manage.getByRole('region', { name: /Big Goals$/ })).toBeVisible();
+  await checkScreen(page, 'pop-up, Big Goals side', testInfo);
+  await manage.getByRole('button', { name: 'Add Big Goal' }).click();
+  await expect(manage.getByRole('heading', { name: 'New Big Goal' })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(1); // one dialog, never one on another
+  await checkScreen(page, 'Big Goal form', testInfo);
+  await manage.getByRole('button', { name: 'Change picture' }).click();
+  await checkScreen(page, 'Big Goal form with the pictures open', testInfo);
   await closeDialog(page);
 
   await page.getByRole('button', { name: /\+\d+ for Sam$/ }).first().click();
@@ -529,8 +549,8 @@ test('activity, with the log open and the child filter open', async ({ page }, t
   // V1-C: the log is open; the four approved filters ask the server.
   await expect(page.getByRole('heading', { name: 'Activity log' })).toBeVisible();
   await expect(page.getByText('Points earned')).toBeVisible();
-  await expect(page.getByText('Goals completed')).toBeVisible();
-  for (const name of ['Earned', 'Goals', 'Spent', 'All']) {
+  await expect(page.getByText('Daily Wins completed')).toBeVisible();
+  for (const name of ['Earned', 'Daily Wins', 'Spent', 'All']) {
     await page.getByRole('group', { name: 'Show activity' }).getByRole('button', { name }).click();
     await expect(page.getByRole('group', { name: 'Show activity' }).getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true');
   }
@@ -738,15 +758,15 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await checkScreen(page, 'invite parent', testInfo);
   await closeRow();
 
-  await page.getByRole('button', { name: 'Edit Today’s Goals' }).click();
+  await page.getByRole('button', { name: 'Edit Daily Wins & Big Goals' }).click();
   // Closed straight after opening: the case that raced on CI, kept so that
   // every run exercises the wait in closeRow. Then opened again for the
   // screen checks.
-  await expect(page.getByRole('dialog').getByRole('heading', { name: /^Manage .+'s goals$/ })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Daily Wins & Big Goals' })).toBeVisible();
   await closeRow();
-  await page.getByRole('button', { name: 'Edit Today’s Goals' }).click();
-  await expect(page.getByRole('dialog').getByRole('heading', { name: /^Manage .+'s goals$/ })).toBeVisible();
-  await checkScreen(page, 'manage goals from settings', testInfo);
+  await page.getByRole('button', { name: 'Edit Daily Wins & Big Goals' }).click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Daily Wins & Big Goals' })).toBeVisible();
+  await checkScreen(page, 'Daily Wins & Big Goals from settings', testInfo);
   await closeRow();
 
   await page.getByRole('button', { name: /parenting tips/i }).click();

@@ -452,7 +452,8 @@ describe('RewardForm, bigGoal variant (W7)', () => {
 
   it('an edit that loses a child with savings still asks nothing: no assignment is sent', async () => {
     const onSubmit = vi.fn(async () => true);
-    const withSavings = [{ ...kids[1], goals: [{ rewardId: 'r2', name: 'Telescope', cost: 120, saved: 40, to_go: 80 }] }, kids[0]];
+    // Omar has savings in it; this form's stale copy does not list him, so the long form would warn that he loses them.
+    const withSavings = [kids[1], { ...kids[0], goals: [{ rewardId: 'r2', name: 'Telescope', cost: 120, saved: 40, to_go: 80 }] }];
     const view = (reward) => <RewardForm isOpen onClose={() => {}} variant="bigGoal" children={withSavings} onSubmit={onSubmit} reward={reward} />;
     const { rerender } = render(view(rewards[1]));
     rerender(view({ ...rewards[1], assigned_child_ids: ['c1', 'c2'] }));
