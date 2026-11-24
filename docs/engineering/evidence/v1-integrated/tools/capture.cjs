@@ -74,7 +74,7 @@ const WIDTHS = [[320, 568], [390, 844], [834, 1194], [1280, 900]];
     await p.goto(base + '/'); await p.waitForLoadState('networkidle');
     await p.getByRole('button', { name: /^Rewards$/ }).click(); await snap(p, 'home-rewards-dialog', w);
     await p.keyboard.press('Escape'); await p.waitForTimeout(300);
-    await p.getByRole('button', { name: /^Award points/ }).first().click(); await snap(p, 'award', w);
+    await p.getByRole('button', { name: 'Custom points' }).click(); await snap(p, 'award', w);
     await p.keyboard.press('Escape'); await p.waitForTimeout(300);
     await p.getByRole('button', { name: 'Manage goals for Lara' }).click(); await snap(p, 'goalsmanage', w);
     await p.getByRole('dialog').getByRole('button', { name: 'Add goal' }).click(); await snap(p, 'goalform', w);

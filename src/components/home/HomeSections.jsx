@@ -44,7 +44,29 @@ function ProgressBar({ value, max }) {
 
 // Selected child is marked with a purple 2px border and aria-pressed. The
 // approved orange border is below 3:1 (intended deviation, recorded).
-export function FamilyStrip({ children, selectedId, onSelect }) {
+export function FamilyStrip({ children, selectedId, onSelect, compact = false }) {
+  // Compact (Give Percy Points, V1-F design section 11): one line per child,
+  // avatar and name only. A button is as wide as its content and grows to
+  // share the row; a name wraps only when it is wider than the whole row, so
+  // short names never break and a long one never overflows. The selected
+  // child is marked by a ring, so its border is the same width as the others'.
+  if (compact) {
+    return (
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Choose a child">
+        {children.map((child) => {
+          const selected = child.id === selectedId;
+          return (
+            <button key={child.id} type="button" aria-pressed={selected} onClick={() => onSelect(child.id)}
+              className={cn('flex min-h-11 max-w-full shrink-0 grow items-center gap-2 rounded-lg border bg-card px-2 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                selected ? 'border-selected-border ring-1 ring-selected-border' : 'border-border hover:bg-accent')}>
+              <ChildAvatar name={child.name} url={child.avatar_url} size="xs" colour={childColour(child, children)} decorative />
+              <span className="min-w-0 break-words text-sm font-semibold text-foreground">{child.name}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <div className="grid grid-cols-3 gap-2 xs:gap-3" role="group" aria-label="Choose a child">
       {/* Three across at every width. Below 360px it used to be two, which left the third child alone on a second row (design critique). On a desktop it was already three: the old `lg:grid-cols-4` never applied, because the custom `xs` rule is emitted after `lg` (code review). */}
@@ -127,7 +149,8 @@ export function QuickPoints({ child, actions, awarding, onAward, onOpenAward, on
       <CardContent className="p-4 sm:p-5 space-y-3">
         <div>
           <h2 className="font-display font-bold text-lg text-primary">Quick Points</h2>
-          <p className="text-sm text-muted-foreground">Award points for positive behaviour, whenever it happens.</p>
+          {/* Owner, 24 November 2026: say that a box acts at once. No boxes, no line. */}
+          {actions.length > 0 && <p className="text-sm text-muted-foreground">Tap a box to give its points straight away.</p>}
         </div>
         {actions.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -150,11 +173,13 @@ export function QuickPoints({ child, actions, awarding, onAward, onOpenAward, on
         )}
         {/* One column below 360px: side by side the label and its icon ran to the button's edges (owner review 2026-11-22). */}
         <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
-          <Button onClick={onOpenAward}>
+          {/* Owner, 24 November 2026: the boxes are the main thing; the form is
+              "Custom points" (soft orange) beside Rewards (soft purple), neither solid. */}
+          <Button variant="warm" onClick={onOpenAward}>
             <PercyIcon id="phosphor:plus-circle:duotone" className="h-4 w-4" />
-            Award points
+            Custom points
           </Button>
-          <Button variant="outline" onClick={onOpenRewards}>
+          <Button variant="soft" onClick={onOpenRewards}>
             <PercyIcon id="phosphor:gift:duotone" className="h-4 w-4" />
             Rewards
           </Button>

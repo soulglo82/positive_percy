@@ -31,6 +31,9 @@ export const TOKENS = {
   // white, so never text, a border that marks state, or a focus ring
   // (tokens.test.js asserts it stays below 3:1 and check is by review).
   sunrise: '#ff6a00',
+  // V1-F section 10: the Custom points button's fill, and its border and icon.
+  'warm-soft': '#f1e4d8',
+  'warm-ink': '#c25000',
   selected: '#e5dcea',
   'selected-border': '#4b1d8c',
   warning: '#fff1d1',

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.4 |
+| Version | 1.6 |
 | Issued | 2026-11-18 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-f-forms`, stacked on V1-A `claude/percy-v1-a-home`) |
 | Status | Reviewed (design peer review v1.1; code review of PR #58 fixed, v1.2; §9 design and code reviews, v1.3 and v1.4) |
@@ -17,6 +17,8 @@
 | 1.2 | 2026-11-18 | Code review of PR #58 (CodeRabbit-style): all 3 actionable and 5 nitpick findings fixed (§8). O corrected: Settings opens the parenting tips, not onboarding |
 | 1.3 | 2026-11-23 | The owner asked for custom points back in Give Percy Points: a parent can change the amount (§9). This reverses the v1.0 removal of the free amount recorded in §2 |
 | 1.4 | 2026-11-23 | Review of PR #73 found that the amount field was replaced on the first typed character, which dropped the keyboard. The field is no longer replaced at all (§9, "Review of the pull request") |
+| 1.5 | 2026-11-24 | The owner rejected the §9 layout as too clunky and chose a new one from mock-ups: slim one-line behaviour boxes, one Points row under them in the form, and on Home a "Custom points" button in place of "Award points" (§10). §10 replaces §9's layout, §9's rule that a chosen amount survives a change of behaviour, and the 22 November two-line tile rule from 375 px up |
+| 1.6 | 2026-11-24 | The owner saw the built §10 form and asked for more: − and + always on screen, no points on the category boxes, the amount set only by the Points box, and the whole pop-up compressed. Version "B" was chosen from mock-ups (§11). §11 replaces §10's form layout and amount rules; §10's Home card and slim tile stand |
 
 ## 1. Scope
 
@@ -326,4 +328,268 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 | 6 | Note | Not covered: the field's arrow stepping, and paste | Arrow stepping added to the browser step; paste is not covered |
 
 *Mutation checks (each makes a named test fail).* Picks allowed while sending; The option removed from the dialog; the option always on; the option passed through to the page; the number comparison removed; empty text compared as 0; the typed text not brought back in line after the value takes over; the v1.3 dialog restored.
+
+## 10. Quick Points and Custom points (owner, 24 November 2026) (v1.5)
+
+**Owner's decisions, from mock-ups (artifact "Give Points Options", versions 4 to 7).**
+1. "We keep the boxes for quick points, but they are too chunky, take too much space."
+2. "Below quick points needs to be an area for custom, but again small and tight."
+3. On Home, the boxes and the "Award points" button were confusing: "has to be a clear distinction between quick points and custom". Option A was chosen: the button becomes "Custom points" and stops being solid purple.
+4. Colours: "A4": Custom points in a soft orange tint, Rewards in a soft purple tint, dark text on both.
+
+The §9 layout (a full "How many points?" step with six quick amounts and a number box) was released on 23 November without the owner seeing a picture of it. That is the process failure this section corrects: §10 was chosen from pictures, and the built screens are shown to the owner before any release.
+
+**Prior ruling this touches.** Owner review 22 November ("standardised alignment"): in Quick Points at 320 px each tile wrapped its own way, so tiles became two rows below 640 px (`BehaviourTile.jsx`). §10 keeps the reason for that ruling and narrows where the two-row layout applies. The measurable rule in `e2e/checks.js` (same part positions in every tile of a grid, no overlap, no cut-off name, equal heights in a row, all equal on Home) is unchanged and still enforced at every width.
+
+### 10.1 Contract
+
+**Behaviour tile (Home Quick Points and the form share `BehaviourTile.jsx`).**
+- From 375 px (new breakpoint `phone`): one row, icon, name, "+N", centred on the tile's middle line. From 375 to 639 px the name is 12 px and the icon 14 px, with 6 px side padding, 4 px top and bottom, 4 px between parts, and 4 px side padding in the badge; from 640 px it is as before (14 px, 20 px icon).
+- Minimum height 44 px. Two lines of a 12 px name are 32 px; with 8 px of padding and a 1 px border each side that is 42 px, so a tile with a one-line name and a tile with a two-line name are both 44 px.
+- A tile's border is 1 px in every state. The form marks the selected tile with a ring (a shadow, which takes no room), so selecting a tile cannot change the room its name has.
+- A name wraps at spaces. A single word wider than its space breaks; it is never clipped and never runs under the badge. There is no hyphenation (measured: the browser left capitalised words alone and hyphenated a short word that fitted the next line).
+- A name needing three or more lines makes its row taller (on Home, every tile).
+- Below 375 px: unchanged from 22 November (icon and "+N" above, name beneath; 14 px from 360 px, 12 px below). One row cannot hold the default names there: at 360 px in the form "Adventurous" has about 65 px and needs 79.
+- Measured room for the name with a "+1" badge: 88 px at 375 px in the form, 95 px at 390 px; the widest default name, "Adventurous", needs 79 px on the build machine and a few pixels more on CI's. A browser test requires at least 7 px spare for every default name from 375 px. A longer single word, or a default name beside a wide badge at 375 px, breaks onto a second line inside the same 44 px.
+- The tile's accessible name, tap behaviour and order in the page are unchanged.
+
+**Home Quick Points card.**
+- Line under the heading: "Tap a box to give its points straight away." (was "Award points for positive behaviour, whenever it happens.").
+- A box still awards its own points to the selected child in one tap. No amount control on Home.
+- The line is shown only when there are boxes; with none, the card keeps "No quick points yet. Choose them in Settings".
+- Buttons: "Custom points" (opens the form; soft orange: `warm-soft` fill, `warm-ink` border and icon, dark text) and "Rewards" (soft purple: `accent` fill, `input` border, `primary` icon, dark text). Neither is solid. Same sizes and one-column rule below 360 px as today.
+- Colours: `sunrise`, the brand orange, is decorative only (2.9 to 1 on white; `tokens.test.js` forbids it as text or a border), so the button has two new tokens. `warm-soft` #f1e4d8 is the fill; `warm-ink` #c25000 is the border and icon (3.8 to 1 on the fill, 4.7 to 1 on the card). Text is the foreground: 13.3 to 1 on `warm-soft`, 13.5 to 1 on `accent`. The Rewards border, `input`, is 3.3 to 1 on `accent` and 4.0 to 1 on the card.
+
+**Give Percy Points form.**
+- Steps: 1 "Who's earned points?", 2 "What did {name} do?". The "How many points?" step, its hint and the six quick amounts are removed.
+- Under the tiles, inside step 2: one row, the label "Points" on the left; on the right "−", the number field, "+". The row is absent when the child has no behaviour to choose (as the amount step was).
+- The amount starts as the chosen behaviour's points. The parent's own amount (typed, or set with − or +) belongs to the behaviour it was chosen for: it stays through a child change that keeps the behaviour, and through a reload of the behaviours.
+- **Changed from §9:** tapping a box, the selected one too, sets Points back to that box's points, and so does a child change that moves the behaviour. In §9 a chosen amount survived a change of behaviour, which suited an amount placed above the behaviours. Under the boxes it would be a trap: a "+3" box tapped and 1 awarded.
+- Unchanged from §9: whole numbers 1 to 1,000; the rule message, the summary and the button; nothing that decides the amount moves while an award is being sent.
+- "+" adds one and "−" takes one away, kept within 1 to 1,000. From an empty field, or an amount that is not a number, either button gives 1. From a number outside the range or not whole, "+" goes to the next whole number up and "−" to the next down, then into the range (2.5: 3 or 2; 0: 1; 1001: 1000).
+- At the ends of the range the button is `aria-disabled` and dimmed, not disabled (a button that disables itself under the finger drops the focus); pressing it changes nothing. "−" at the behaviour's own 1, with nothing chosen, chooses nothing: the amount still follows the behaviour. The buttons are disabled only while an award is being sent.
+- The row is a group named by its label "Points", which is also the field's label.
+- The field is the §9 field (`NumberInput` with `followModel`): it shows an amount set by − or + while it has focus, and is never replaced.
+- Screen-reader names: the field is "Points"; the buttons are "One point fewer" and "One point more".
+
+**New wording for the owner to approve.** Seen: "Tap a box to give its points straight away.", "Custom points", "Points". Heard only: "One point fewer", "One point more". Removed: "How many points?", "Use the behaviour's points, or choose another amount.".
+
+### 10.2 Every path that touches the contract
+
+| Path | File | Change |
+| --- | --- | --- |
+| Tile layout, both uses | `src/components/home/BehaviourTile.jsx` (`TILE_LAYOUT`, `TILE_GRID`, `TILE_GRID_EVEN`, `BehaviourTileParts`) | One row from 375 px |
+| Home card | `src/components/home/HomeSections.jsx::QuickPoints` | Line, button name, button colours |
+| Button styles | `src/components/ui/button.jsx` (variants `warm` and `soft`) | New |
+| Tokens | `tailwind.config.js` (`warm`; the screens, now the whole list in order with `phone` added), `src/index.css`, `src/lib/tokens.js`, `src/test/tokens.test.js` | New |
+| Accessibility tests | `src/test/a11y.test.jsx` (renders the card) | Passes unchanged |
+| Form | `src/components/home/AwardPointsDialog.jsx` | Step removed, Points row added |
+| Number field | `src/components/ui/NumberInput.jsx` | None |
+| Server | `POST /api/children/:id/award` | None |
+| Layout checks | `e2e/checks.js` | None (already measures one-row tiles) |
+| Tests and tools naming the old button or the old step | `e2e/ui.spec.js`, `src/components/home/V1Forms.test.jsx`, `src/components/home/HomeSections.test.jsx`, `docs/engineering/evidence/v1-integrated/tools/capture.cjs` | Updated |
+
+Other users of `StepHeading` and `behavioursFor` (the reward form, Manage goals) are not changed.
+
+### 10.3 Edge cases (input → expected)
+
+| Input | Expected |
+| --- | --- |
+| 390 px, names "Kindness", "Helpfulness", "Adventurous", "+1" | Each on one line; every tile 44 px |
+| 390 px, "Tidying up without being asked", "+1000" | One row; the name on several lines, not cut, not under the badge; tiles in its row (on Home, all) one height |
+| 375, 390 and 414 px, the eight default names, "+1", selected or not | One row, one line, 44 px |
+| 375 to 414 px, "Brushing teeth nicely", "+10", selected or not | Two lines, 44 px |
+| 360 and 320 px | Two-row tiles, as before |
+| 834 and 1280 px | As before (one row, 14 px) |
+| Form opens, first behaviour worth 1 | Points 1; "Award 1 point" |
+| Press + four times | 2, 3, 4, 5; "Award 5 points"; the request carries `points: 5` |
+| Press − at 1; press + at 1000 | Stays 1; stays 1000; the button is `aria-disabled`, not disabled |
+| Press − at the behaviour's own 1, then the behaviour's points become 2 | 2 (nothing was chosen) |
+| Type 25, press − | 24 in the field, which is the same element and keeps the focus if it had it |
+| Clear the field, press + (or −) | 1 |
+| Type 2.5, press +; type 0, press −; type 1001, press + | 3; 1; 1000 |
+| Press +, then another child who has the same behaviour | The amount stays |
+| Set 10 or type 40 or clear the field, then tap a box (the selected one too) | Points is that box's points |
+| Omar, "Piano", set 7, then Lara (Piano is not hers) | The behaviour moves to Kindness; Points 1 |
+| Press Award, then − or + before the answer | The buttons are disabled; the amount shown is the amount sent |
+| No behaviour for the child | No Points row; Award disabled |
+| Home: tap a box | Its own points, one tap, as before |
+| Home: "Custom points" | Opens the form for the selected child |
+
+### 10.4 Abuse, outcome records
+
+Nothing new reaches the server: the same field, validated again there. One `point_events` row per award, the Undo toast and Activity are unchanged.
+
+### 10.5 Tests, written before the build
+
+- Unit (`V1Forms.test.jsx`): every form row of 10.3; the quick amounts and the old heading are gone; the field is named "Points"; the §9 focus tests (same element, focus kept) with − and + in place of the quick amounts.
+- Unit (`HomeSections.test.jsx`): the new line, "Custom points" opens the form, no "Award points" button, tapping a box still awards.
+- Browser (`e2e/ui.spec.js`, four sizes): Home journey with "Custom points"; real keys in the field; + pressed four times sends `points: 5`; the long-name test on Home and in the form (the shared layout checks measure the tiles); at 390 px the tiles of the seeded family are 44 px.
+- Mutation checks, listed with the code review.
+- Browser, added after the design review: one test sets 360, 375, 390 and 414 px itself and checks every default name (one line, 44 px, selected and not) and a two-line name (44 px) on Home and in the form, with the shared layout checks at each width.
+- **Not covered:** a real phone's keypad; a screen reader in a real browser; widths other than 320, 360, 375, 390, 414, 834 and 1280 px; a family's own single word longer than about 12 letters (it breaks onto a second line; no test fixes where).
+
+### 10.6 Rollout and reversal
+
+One pull request, CI, the built screens shown to the owner, the owner's approval of the exact commit and the wording, then the merge (which deploys) with the read-only before and after counts. No migration. Reversal: revert the merge commit.
+
+### 10.7 Design review (fresh context, before the build; it measured the planned classes in a real browser)
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Blocking | The orange border and icon used `sunrise`, which `tokens.test.js` forbids as text or a border (2.9 to 1) | Two new tokens, `warm-soft` and `warm-ink`; contrast asserted in `tokens.test.js` |
+| 2 | Blocking | "Two lines fit in 44 px" was false with the planned padding: 46 px on Home, 48 px for a selected tile | 4 px top and bottom from 375 px; a browser test holds a two-line name at 44 px |
+| 3 | Blocking | The selected tile's 2 px border took 2 px from its name: selecting "Adventurous" re-wrapped it | The border is 1 px in every state; selection is a ring; the browser test selects the widest names |
+| 4 | Blocking | 360 px was the worst width for one row ("Helpfulnes s", "Adventuro us"), and `hyphens: auto` did not help | One row starts at 375 px with tighter spacing; no hyphenation; 360 px keeps two rows |
+| 5 | Note | `e2e/checks.js` passes as written at every width tried | No change |
+| 6 | Note | "−" at 1 with nothing chosen was unspecified; "+" then "−" left 1 chosen, so a "+3" box tapped next would award 1 | "−" at 1 chooses nothing; tapping a box sets Points to the box's points (10.1, changed from §9) |
+| 7 | Note | A press at the limit announces nothing; no group; "Points" reverses §9's "Percy Points" name for the field | `aria-disabled` at the limits; the row is a group named by its label; the owner chose "Points" from the mock-up |
+| 8 | Note | The new line would also show above "No quick points yet" | Shown only when there are boxes |
+| 9 | Note | The path table missed `a11y.test.jsx` and the token files | Added |
+| 10 | Note | CI never ran 360 to 389 px | The widths test (10.5) |
+
+### 10.8 Mutation checks (each makes a named test fail)
+
+A box tap keeping the parent's amount; the amount not tied to its behaviour; no upper limit on "+"; "−" at 1 counting as a choice; a number that is not whole stepped by one; the buttons usable while an award is sent; a button disabled at the limit; the old button name on Home; the line shown with no boxes.
+
+Not held by a test: the selected tile's border width (with the final spacing, a 2 px border no longer re-wraps the default names at the tested widths; the 1 px border and ring are kept for names nearer the limit).
+
+### 10.9 Code review (fresh context, after the build; it measured the built app)
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Blocking | From 640 px the tiles had also become small (12 px text, 16 px icon, 4 px by 6 px padding): the added `phone` screen was written after `sm` in the built styles, so `phone:` beat `sm:` | The screens are now the whole list in ascending order in `tailwind.config.js`. Confirmed before the fix by a failing browser check at 834 and 1280 px |
+| 2 | Should fix | No test could see finding 1: a 44 px height was true either way | The Home journey now reads each tile's text size, padding, gap and icon size at every width: as before from 640 px (and 46 px tall, as it always was there), slim from 375 px, two rows below |
+| 3 | Should fix | An amount chosen earlier came back when a child change moved the behaviour away and a later one moved it back (each child with one behaviour of their own) | The amount is cleared whenever the behaviour moves; unit test, which failed first |
+| 4 | Should fix | One unit test passed either way (it could not tell a chosen 1 from the behaviour's 1) | Rewritten to test what it can show (the buttons' state at the limit); the re-render test holds "chooses nothing" |
+| 5 | Note | Two height loops would pass with no tiles; a comment sat inside the next test's comment; a stale comment; the clean-up skipped closing its connection if it threw | All corrected |
+| 6 | Note | The path table said 360 px; an orphan comment in the form | Corrected |
+| 7 | Note | A button at its limit still showed the hover fill and a pointer | It no longer does |
+| 8 | Note | The hover fills are faint and their contrast is not asserted | Left as they are |
+| 9 | Note | The selected tile's ring and the focus ring do not clash and are not clipped | Confirmed |
+
+Added to the mutation checks: an amount coming back after the behaviour moves away and back.
+
+### 10.10 CI failure on `31d0016` and its cause
+
+CI's `ui` job failed in the widths test: at 375 px in the form, "Adventurous" was on two lines. Locally it had 2.6 px to spare (16 px icon, 6 px badge padding); CI's machine draws the same text a few pixels wider. Not a flake: a real phone could do the same. Fix: 14 px icon and 4 px badge padding from 375 to 639 px, which gives about 9 px spare at the tightest place, and the test now requires 7 px spare, so a knife-edge pass fails on any machine. The check failed locally on the old spacing (2.6 px) before the fix.
+
+A second fault was in the test itself, found while fixing the first: run after other tests, it sometimes measured the boxes while the pop-up was still zooming open, and read a box a fraction short. It failed twice in two repeated runs before the change and passed six times in six after it; the test now waits for the pop-up's animations to finish before measuring.
+
+## 11. The compact form, version B (owner, 24 November 2026) (v1.6)
+
+**Owner's decisions, from the built screens and from mock-ups (artifact "Give Points Options", versions 9 to 12).**
+1. "On the pop up the + − button has been removed": in the §10 build the Points row was under the boxes and below the first screen. Chosen: the row fixed above Cancel and Award ("middle option").
+2. "The categories have points listed, these don't need to be there, just the categories." "The boxes with categories do not need a value. The value is determined by the box below and altered either by entering a number or by using the + − buttons."
+3. "This can all be compressed as takes too much real estate." Then, of three levels: "B".
+
+This changes parts of the form approved in the original V1 design (numbered steps, hint lines, child cards, the cream summary). The owner chose it from pictures of exactly those changes.
+
+### 11.1 Contract (the form only; Home is §10)
+
+**Layout, top to bottom.**
+- Title "Give Percy Points" at 18 px. The line "Notice something positive, whenever it happens." is no longer shown; it stays as the dialog's description for screen readers.
+- The child picker, straight under the title, with no heading: one line per child, a 24 px avatar (12 px initial) and the name, no weekly figure and no progress bar. The buttons wrap: each is as wide as its content, grows to share its row, and is never wider than the row; a name wraps only when it is wider than the whole row. The selected child is marked by a ring, so every button's border is the same width. The group keeps its name, "Choose a child". Home's picker is unchanged (the form uses a compact form of the same component).
+- "What did {name} do?" as a plain heading at 16 px: no number badge, no hint line.
+- The category boxes: icon and name, no "+N". One row at every width below 640 px (with no badge the name has room even at 320 px), 44 px tall, two-line names the same height, the selected box marked by the ring. From 640 px as the Home tile without its badge. Every category the child can use is listed, the family's own included (unchanged: `behavioursFor`).
+- "Add a note": a link. Tapping it shows the note field (label "Add a note (optional)", placeholder "What went well?", two lines) and puts the cursor in it. It stays open once opened or once it holds text; a reopened form starts closed and empty.
+- Fixed at the bottom of the pop-up, outside the scrolling part: the Points row (label "Points", "−", the number, "+"), then Cancel and the Award button.
+- The cream "{name} earns N Percy Points / For {category}." box is no longer shown. The same sentence stays in a visually hidden polite live region outside the scrolling part, updated half a second after the last change, so a change of amount, child or category is still announced, once ("125", not "1", "12", "125").
+- In a window under 420 px tall (a phone on its side, for instance) the footer cannot stay fixed without squeezing the list to nothing, so the pop-up scrolls as one piece. Whether a phone's keyboard makes the window that short depends on the browser; it was not tested on a device.
+- The form exists only while the pop-up is open, so every opening starts from fresh state and nothing of the last one is drawn.
+- While an award is being sent the note cannot be opened or changed either.
+
+**The amount (replaces §9 and §10's amount rules).**
+- Points starts at 1 each time the form opens.
+- It changes only when the parent types a number or presses "−" or "+". Choosing a category or a child never changes it. A category's stored points are not used by the form (they are still what a Quick Points box gives on Home).
+- Unchanged: whole numbers 1 to 1,000; "−" and "+" step by one inside that range, from an empty or unusable amount give 1, from a number that is not whole go to the next whole number in that direction; at a limit the button is `aria-disabled`, not disabled; the rule message "Points must be a whole number from 1 to 1000." for an amount that cannot be awarded. It is drawn over the bottom of the list, directly above the fixed area, and takes no room of its own: in the flow it moved the row and the buttons by up to 42 px under the finger; an empty field says nothing; the Award button reads "Award N point(s)" or, when it cannot award, "Award points" and is disabled; nothing moves while an award is being sent; the field is never replaced (`followModel`).
+- With no category for the child: "Add a behaviour in Family settings first.", no Points row, Award disabled (as before).
+
+**What is sent.** Unchanged: `{ points, category: the chosen category's name, note }`.
+
+**Wording.** New: "Add a note" (the link). Kept: "Points", "One point fewer", "One point more", "Add a note (optional)", "What went well?". No longer shown: "Who's earned points?", "Select the child receiving the award.", "Choose a positive behaviour.", the numbers 1 and 2, the "+N" on the form's boxes, the cream summary.
+
+### 11.2 Every path that touches the contract
+
+| Path | File | Change |
+| --- | --- | --- |
+| Form | `src/components/home/AwardPointsDialog.jsx` | Layout and amount rules above |
+| Child picker | `src/components/home/HomeSections.jsx::FamilyStrip` | A `compact` option, used only by the form |
+| Tile | `src/components/home/BehaviourTile.jsx` | The badge is optional; a layout for tiles without one |
+| Layout checks | `e2e/checks.js` | A tile grid that declares `data-tile-badge="none"` is measured without a badge and fails if one appears; any other grid still needs one on every tile |
+| Avatar | `src/components/child/ChildAvatar.jsx` | A 24 px size |
+| Screens | `tailwind.config.js` | `short` (height under 420 px) |
+| Other users of `FamilyStrip` (Home, Children, Child View, Manage goals) and of the pop-up's building blocks (`dialog.jsx`) | | None |
+| Evidence tool | `docs/engineering/evidence/v1-integrated/tools/capture.cjs` | None; pictures retaken |
+| Home card, Quick Points awards, server | | None |
+| Tests | `V1Forms.test.jsx`, `HomeSections.test.jsx`, `e2e/ui.spec.js` | Rewritten for the above |
+
+`StepHeading` stays exported: the reward form and Manage goals use it.
+
+### 11.3 Edge cases (input → expected)
+
+| Input | Expected |
+| --- | --- |
+| Open the form | First child the form was opened for; first category selected; Points 1; "Award 1 point"; note closed |
+| Tap a category worth 3 on Home's terms | Points stays 1 |
+| Type 5, tap another category, tap another child | Points stays 5 |
+| Press + four times | 5; the request carries `points: 5` and the chosen category's name |
+| Clear the field | Empty; Award disabled, "Award points"; no message |
+| 0, −3, 1001, 2.5 typed | The rule message; Award disabled |
+| Tap "Add a note", type, send | The note is sent; reopening the form shows the link again and no text |
+| 390 × 844 with nine categories | Everything visible without scrolling |
+| More categories than fit | The list scrolls; the Points row and the buttons stay in view |
+| A child with one category of their own, switch child | The category moves (A2); Points unchanged |
+| 320 px | One-row boxes; names of the default set on one line |
+| No category for the child | Guidance line; no Points row; Award disabled |
+| Press Award, then +, a category or a child before the answer | Ignored; what is shown is what was sent |
+
+### 11.4 Abuse, outcome records
+
+As §10.4: nothing new reaches the server; one `point_events` row, the Undo toast and Activity unchanged.
+
+### 11.5 Tests
+
+- Unit (`V1Forms.test.jsx`): the layout (no numbers, hints, summary box, "+N"; the description kept for screen readers; the hidden live sentence); every amount row of 11.3; the note link; the compact picker's names; nothing moves while sending; focus kept in the field.
+- Unit (`HomeSections.test.jsx`): the compact picker; Home's picker unchanged.
+- Browser (`e2e/ui.spec.js`): the journey at four sizes (real keys, `points` in the request, the note); at 390 × 844 the form's scrolling part does not scroll with the fixture's categories and the Points row is inside the screen at every size; the widths test for the form's boxes at 320, 360, 375, 390 and 414 px with spare room; the long-name test.
+- Browser, added after the design review: windows of 390 × 450, 320 × 300 and 568 × 320 (every control can be brought on screen and used); the form's boxes at 320 and 360 px as well.
+- **Not covered:** a real phone's keypad and its effect on the fixed row (on an iPhone the keyboard does not resize the page; the browser has to bring the field into view itself); a screen reader in a real browser; more than about a dozen categories.
+- The unit tests for this section were rewritten alongside the code, not before it; each rule is held by a mutation check (11.8).
+
+### 11.6 Rollout and reversal
+
+As §10.6, in the same pull request (#74). The built screens are shown to the owner before any release.
+
+### 11.7 Design review (fresh context, before the build; measured on the mock-up's restyling of the built pop-up)
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Note | The fixed footer is 123 px (149 with the rule). The field and buttons stay inside the pop-up down to 320 × 300; Award is first lost in a window 200 px tall | Under 420 px of height the pop-up scrolls as one piece; browser test at three short sizes |
+| 2 | Note | Nothing in the server or the app assumes an award from the form equals the category's points. Settings and the family report still show "N points" on each behaviour, which now applies to Quick Points and goals only | No code change; raised with the owner as a wording question for Settings |
+| 3 | Note | The live sentence spoke on every digit; "Add a note" must be a button and the field must take the focus in the same tap or a phone keyboard will not open; the live region belongs outside the scrolling part | All adopted |
+| 4 | Blocking | The child picker as three fixed columns left a name 27 to 41 px: "Omar" had 0.2 px spare at 390 px and broke at 320 px; the fixture's long name made the picker 256 px tall | Wrapping buttons sized by their content (11.1); 24 px avatar; ring for the selected child |
+| 5 | Note | Tiles without a badge are sound at 320 px (99 px for the name). The layout checks should accept a badge-less grid only where the grid says so | `data-tile-badge="none"` |
+| 6 | Note | The path table missed the avatar, the other users of the picker and the evidence tool; the heading's size was not stated | Added; 16 px |
+| 7 | Note | No test ran at a reduced height; a typed amount, then a child with no category, then back, was untested | Both added |
+| 8 | Note | The rule message in the flow moved the row by 13 to 42 px, enough for a second tap on "−" to land on a category | The message takes no room (11.1) |
+
+### 11.8 Mutation checks (each makes a named test fail)
+
+A category setting the amount; no reset to 1 on opening; no upper limit on "+"; the note field not focused when it opens; the description shown; the sentence spoken at once; the rule message in the flow; a child picked while an award is being sent; "−" disabled at 1; the Points row inside the scrolling part.
+
+### 11.9 Code review (fresh context, after the build; it measured the built app)
+
+No blocking finding. It confirmed that what is sent is what is shown on every path, that short windows scroll as one piece, that the compact picker never overflows (1 to 6 children, a 62-letter word, 320 and 390 px), and that the layout checks reject a Home grid without badges and any mixed grid.
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Should fix | The form was reset in an effect on the next opening, so a reopened pop-up drew the last opening for one frame: an old note field took the focus and was removed 12 ms later | The form is mounted only while the pop-up is open; the reset effect is gone. Unit test listens for the focus |
+| 2 | Should fix | The short-window browser test passed with the short-window rule removed | It now reads which part scrolls at each size |
+| 3 | Note | The note could be opened or typed in while an award was being sent | Disabled while sending; unit test |
+| 4 | Note | At 320 px the rule message is two lines and, at the end of the list, covers most of the "Add a note" link while the amount is wrong | Left: it goes when the amount is corrected, and it no longer moves anything |
+| 5 | Note | A comment said three children (the fixture has two); two pages using the picker were missing from 11.2; "Android with the keyboard open" was not verified | Corrected |
+| 6 | Note | The sentence for screen readers is spoken half a second after every opening, as the old summary was | Left as it is |
+
+Added to the mutation checks: the form reset in an effect and always mounted (the focus test); the short-window classes removed (the browser test).
 
