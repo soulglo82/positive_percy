@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 0.4.0 |
+| Version | 0.5.0 |
 | Issued | 23 November 2026 (revised 24 November) |
 | Owner | Percy V1.1 design engineering |
 | Status | **Draft PR for owner review. Not merged, not deployed.** Production V1 is untouched. |
@@ -206,11 +206,48 @@ Reproduced: in one run of six, a style injected by the QA script was still only 
 
 `e2e/daily-wins-big-goals.spec.js` "long names, large figures, many Daily Wins…" failed twice at 1280px on this branch: "the pop-up ends on the screen", 1063 > 800. It then passed three times unmodified, and the same test passed on the base. The figure is exactly the pop-up on the first frame of its opening zoom: 680px tall at `top: 50%` (400–1080), scaled 0.95 about its centre to 417–1063, before the final `translate(-50%, -50%)`. The test measured before the animation had finished, and lost the race under load. It now waits for the pop-up's animations to finish before measuring, exactly as the repo's slim-box test already does for the same reason. The assertion is unchanged. Full suite afterwards: 66 passed, 0 failed, 22 skipped by design.
 
+## 11. Owner decisions and final checks (24 November)
+
+### 11a. Decisions recorded
+
+| Item | Owner decision |
+|---|---|
+| Quick Points on phones | Keep 15px labels in compact two-row boxes; do not revert to 12px |
+| Home wording | Approved, including the headline "What went well for {name} today?" and the 24 Nov Quick Points wording and buttons |
+| Children wording | Approved as in section 4 (and the Daily Wins and Big Goals names from #75) |
+| Home and Children structure | Approved |
+| Fox 1A colours | Keep the existing appearance provisionally (`#FFA600` star, cream interiors, subtle gradient); verify against the approved original before vector sign-off (`fox1a/COMMISSIONING_BRIEF.md` v0.2.0) |
+| Fox artwork | Proceed: layered master, five approved poses, plus waving, celebrating and pointing |
+| Long-name wrapping | Fix before final visual acceptance (done, 11b) |
+| Child photos | The owner checks privately with authorised photos; none are uploaded to GitHub (11c) |
+
+### 11b. Long names no longer break mid-word
+
+- Headings break only between words or at a name's own hyphen, with no automatic hyphenation. A single word wider than the line (a 30-letter name with no spaces or hyphens) still breaks rather than widening the page.
+- A long name (over 16 letters, or one word over 11) steps the Home headline down from 32 to 28px on phones, and the headline takes the hero's full width with Percy below it.
+- "Alexandra-Josephine Montgomery-Wellington" now reads "What went well / for Alexandra- / Josephine / Montgomery- / Wellington today?" at 320px.
+- New app-QA check: it walks the Home headline and the Children profile name character by character and fails if a line breaks other than at a space or after a hyphen. It caught the old rule ("Montgomery|-Wellington") before the fix.
+- A side effect was found and fixed: without break-anywhere, one long word at 200% text widened Children by 4px. Headings and list rows can now shrink so the word wraps.
+
+### 11c. Photos in the real app (no family photos)
+
+The app QA now uploads three labelled crop-test cards (portrait 2:3, landscape 2:1 and square, each with a "FACE ZONE") through the app's own `/api/upload` and attaches them to children. The browser's request for the third is made to fail. On Home and Children at 320, 390 and 1280px it checks:
+- that the photos load and fill a circle (`object-fit: cover`, face zone in frame);
+- the sizes: 72 / 52 / 104px on phones, 88 / 64 / 136px on desktop;
+- that the failed photo shows the initial at the same size.
+
+Screens: `evidence/app/photos-*.png`. What remains for the owner, privately: how real faces sit in the circles at each size. The images stay on their own device or a local copy of the app; nothing goes to GitHub.
+
+### 11d. Results on the final head
+
+See the session handback for the exact head and CI. Local: app QA 269 of 269.
+
 ## Change log
 
 | Version | Date | Change |
 |---|---|---|
 | 0.1.0 | 2026-11-23 | First issue |
+| 0.5.0 | 2026-11-24 | Section 11: owner decisions; long-name fix with a mid-word check; real-upload photo checks |
 | 0.4.0 | 2026-11-24 | #75 merged in, Daily Wins and Big Goals (10g); QA harness waits for injected styles (10h) |
 | 0.3.0 | 2026-11-24 | Codex review (10e); deterministic QA control (10f) |
 | 0.2.0 | 2026-11-24 | Section 10: base merged (#73, #74); 24 Nov Quick Points decisions in V1.1; 12px/15px decision; final-acceptance items |

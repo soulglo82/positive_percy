@@ -29,7 +29,10 @@
 .pv-col { display: grid; gap: var(--pv-space-6); align-content: start; min-width: 0; }
 
 /* ---- Type roles. Sentence case and no tracking, as everywhere in Percy. ---- */
-.pv-t-hero, .pv-t-page, .pv-t-section, .pv-t-card { overflow-wrap: anywhere; hyphens: auto; margin: 0; }
+/* Headings break only between words or at a name's own hyphen; a single word
+   wider than the line (a 30-letter name) still breaks rather than overflow.
+   No automatic hyphenation: names are not split mid-word (owner, 24 Nov). */
+.pv-t-hero, .pv-t-page, .pv-t-section, .pv-t-card { overflow-wrap: break-word; hyphens: manual; margin: 0; }
 .pv-t-hero { font-family: var(--pv-font-display); font-weight: var(--pv-w-800); font-size: var(--pv-hero-size); line-height: var(--pv-hero-line); color: var(--pv-purple); text-wrap: balance; }
 .pv-t-page { font-family: var(--pv-font-display); font-weight: var(--pv-w-800); font-size: var(--pv-page-size); line-height: var(--pv-page-line); color: var(--pv-purple); text-wrap: balance; }
 .pv-t-section { font-family: var(--pv-font-display); font-weight: var(--pv-w-800); font-size: var(--pv-section-size); line-height: var(--pv-section-line); color: var(--pv-purple); }
@@ -390,3 +393,15 @@
 .pv-points-line { min-width: 0; }
 .pv-points-line > p { display: grid; gap: 0; margin: 0; min-width: 0; }
 .pv-points-line .pv-t-meta { overflow-wrap: anywhere; }
+
+/* A long name takes the Home headline one step down (owner, 24 Nov: no
+   mid-word breaks at 320px). */
+.pv-t-hero[data-long-name] { font-size: var(--pv-page-size); line-height: var(--pv-page-line); }
+/* Let headings and list rows shrink below their longest word so break-word
+   can wrap it (otherwise one long word at 200% text widens the page). */
+.pv-section > *, .pv-achievements > li, .pv-goals > li, .pv-manage > li, .pv-treats > li, .pv-goal-list > li,
+.pv-t-hero, .pv-t-page, .pv-t-section, .pv-t-card { min-width: 0; }
+/* A long name gets the whole width of the hero; Percy moves under it. */
+.pv-scene__text[data-long-name] { grid-column: 1 / -1; }
+.pv-scene__text[data-long-name] ~ .pv-scene__fox { grid-column: 2; }
+.pv-manage-door { flex-wrap: nowrap; }

@@ -4,8 +4,8 @@
   "owner": "Percy V1.1 design engineering",
   "status": "PASSING",
   "base": "local server, fictional seeded families",
-  "total": 247,
-  "passed": 247,
+  "total": 269,
+  "passed": 269,
   "failed": 0,
   "known_v1_component_text_under_14px": [],
   "results": [
@@ -525,6 +525,11 @@
       "detail": ""
     },
     {
+      "name": "home 320 (six children, long name selected): the name never breaks mid-word",
+      "pass": true,
+      "detail": ""
+    },
+    {
       "name": "children 320 (six children, long name selected): no horizontal page overflow",
       "pass": true,
       "detail": "0px"
@@ -556,6 +561,11 @@
     },
     {
       "name": "children 320 (six children, long name selected): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name selected): the name never breaks mid-word",
       "pass": true,
       "detail": ""
     },
@@ -600,6 +610,11 @@
       "detail": ""
     },
     {
+      "name": "home 390 (six children, long name selected): the name never breaks mid-word",
+      "pass": true,
+      "detail": ""
+    },
+    {
       "name": "children 390 (six children, long name selected): no horizontal page overflow",
       "pass": true,
       "detail": "0px"
@@ -636,6 +651,11 @@
     },
     {
       "name": "children 390 (six children, long name selected): axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name selected): the name never breaks mid-word",
       "pass": true,
       "detail": ""
     },
@@ -1218,6 +1238,96 @@
       "name": "All Daily Wins opens the Daily Wins & Big Goals pop-up",
       "pass": true,
       "detail": ""
+    },
+    {
+      "name": "photos home 320: two uploaded photos load and fill a circle",
+      "pass": true,
+      "detail": "[{\"size\":\"selected\",\"w\":72,\"h\":72,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"},{\"size\":\"other\",\"w\":52,\"h\":52,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"}]"
+    },
+    {
+      "name": "photos home 320: the missing photo falls back to the initial, same size",
+      "pass": true,
+      "detail": "[{\"size\":\"other\",\"w\":52,\"h\":52,\"round\":\"999px\",\"kind\":\"initial\",\"text\":\"J\",\"loaded\":null,\"fit\":null}]"
+    },
+    {
+      "name": "photos home 320: sizes are {\"selected\":72,\"other\":52,\"profile\":104}",
+      "pass": true,
+      "detail": "[[\"selected\",72],[\"other\",52],[\"other\",52]]"
+    },
+    {
+      "name": "photos children 320: two uploaded photos load and fill a circle",
+      "pass": true,
+      "detail": "[{\"size\":\"other\",\"w\":52,\"h\":52,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"},{\"size\":\"other\",\"w\":52,\"h\":52,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"},{\"size\":\"profile\",\"w\":104,\"h\":104,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"}]"
+    },
+    {
+      "name": "photos children 320: the missing photo falls back to the initial, same size",
+      "pass": true,
+      "detail": "[{\"size\":\"other\",\"w\":52,\"h\":52,\"round\":\"999px\",\"kind\":\"initial\",\"text\":\"J\",\"loaded\":null,\"fit\":null}]"
+    },
+    {
+      "name": "photos children 320: sizes are {\"selected\":72,\"other\":52,\"profile\":104}",
+      "pass": true,
+      "detail": "[[\"other\",52],[\"other\",52],[\"other\",52],[\"profile\",104]]"
+    },
+    {
+      "name": "photos home 390: two uploaded photos load and fill a circle",
+      "pass": true,
+      "detail": "[{\"size\":\"selected\",\"w\":72,\"h\":72,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"},{\"size\":\"other\",\"w\":52,\"h\":52,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"}]"
+    },
+    {
+      "name": "photos home 390: the missing photo falls back to the initial, same size",
+      "pass": true,
+      "detail": "[{\"size\":\"other\",\"w\":52,\"h\":52,\"round\":\"999px\",\"kind\":\"initial\",\"text\":\"J\",\"loaded\":null,\"fit\":null}]"
+    },
+    {
+      "name": "photos home 390: sizes are {\"selected\":72,\"other\":52,\"profile\":104}",
+      "pass": true,
+      "detail": "[[\"selected\",72],[\"other\",52],[\"other\",52]]"
+    },
+    {
+      "name": "photos children 390: two uploaded photos load and fill a circle",
+      "pass": true,
+      "detail": "[{\"size\":\"other\",\"w\":52,\"h\":52,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"},{\"size\":\"other\",\"w\":52,\"h\":52,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"},{\"size\":\"profile\",\"w\":104,\"h\":104,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"}]"
+    },
+    {
+      "name": "photos children 390: the missing photo falls back to the initial, same size",
+      "pass": true,
+      "detail": "[{\"size\":\"other\",\"w\":52,\"h\":52,\"round\":\"999px\",\"kind\":\"initial\",\"text\":\"J\",\"loaded\":null,\"fit\":null}]"
+    },
+    {
+      "name": "photos children 390: sizes are {\"selected\":72,\"other\":52,\"profile\":104}",
+      "pass": true,
+      "detail": "[[\"other\",52],[\"other\",52],[\"other\",52],[\"profile\",104]]"
+    },
+    {
+      "name": "photos home 1280: two uploaded photos load and fill a circle",
+      "pass": true,
+      "detail": "[{\"size\":\"selected\",\"w\":88,\"h\":88,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"},{\"size\":\"other\",\"w\":64,\"h\":64,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"}]"
+    },
+    {
+      "name": "photos home 1280: the missing photo falls back to the initial, same size",
+      "pass": true,
+      "detail": "[{\"size\":\"other\",\"w\":64,\"h\":64,\"round\":\"999px\",\"kind\":\"initial\",\"text\":\"J\",\"loaded\":null,\"fit\":null}]"
+    },
+    {
+      "name": "photos home 1280: sizes are {\"selected\":88,\"other\":64,\"profile\":136}",
+      "pass": true,
+      "detail": "[[\"selected\",88],[\"other\",64],[\"other\",64]]"
+    },
+    {
+      "name": "photos children 1280: two uploaded photos load and fill a circle",
+      "pass": true,
+      "detail": "[{\"size\":\"other\",\"w\":64,\"h\":64,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"},{\"size\":\"other\",\"w\":64,\"h\":64,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"},{\"size\":\"profile\",\"w\":136,\"h\":136,\"round\":\"999px\",\"kind\":\"photo\",\"text\":\"\",\"loaded\":true,\"fit\":\"cover\"}]"
+    },
+    {
+      "name": "photos children 1280: the missing photo falls back to the initial, same size",
+      "pass": true,
+      "detail": "[{\"size\":\"other\",\"w\":64,\"h\":64,\"round\":\"999px\",\"kind\":\"initial\",\"text\":\"J\",\"loaded\":null,\"fit\":null}]"
+    },
+    {
+      "name": "photos children 1280: sizes are {\"selected\":88,\"other\":64,\"profile\":136}",
+      "pass": true,
+      "detail": "[[\"other\",64],[\"other\",64],[\"other\",64],[\"profile\",136]]"
     },
     {
       "name": "control harness: the injected 44px removal took effect",

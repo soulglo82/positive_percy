@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Version | 0.1.0 |
+| Version | 0.2.0 |
 | Issued | 23 November 2026 |
 | Owner | Positive Percy (the owner commissions and approves; engineering prepared this brief) |
-| Status | Ready to send to an illustrator once the owner approves it. No artwork has been made. |
+| Status | Scope and provisional colours approved by the owner (24 Nov). Ready to send once budget and rights are agreed. No artwork has been made. |
 | Companion files | `design/v11/fox1a/asset-manifest.json` (keys, exports, blockers), `design/v11/review/fox1a-production-board.html` (visual board) |
 
 ## 1. What we need, in one paragraph
@@ -83,16 +83,15 @@ The app animates whole SVG groups with CSS, so the layered poses are enough. If 
 
 Each item is accepted by the owner, in this order: master, then each pose, then logo repair. A pose passes when it passes every rule in section 3 at 48 px and at full size. Until a pose is accepted, the app keeps showing the seated master in its place.
 
-## 7. Decisions the owner makes before sending
+## 7. Owner decisions (24 November 2026)
 
-1. Star colour: `#FFA600` (as in the current trace) or `#FFC938` (palette "sunshine").
-2. Inner areas: white or cream `#FFF6E8`.
-3. Body: keep the subtle orange gradient (`#FF6A00` → `#FF5200`) or flat `#FF6A00`.
-4. Rights: the contract assigns full commercial rights in the master, poses and source files to the owner.
-5. Budget and timeline.
+- **Colours, provisional:** keep the existing appearance as the reference: the star `#FFA600`, cream `#FFF6E8` inner areas and the subtle orange body gradient (`#FF6A00` → `#FF5200`). Do not recolour the mascot to match the app's UI palette. Verify against the approved original before the final vector is signed off.
+- **Scope approved:** a clean layered master first, then the five approved poses plus waving, celebrating and pointing, and the stacked-logo repair.
+- **Still to settle with the illustrator:** budget, timeline, and full commercial rights in the master, poses and source files assigned to the owner.
 
 ## Change log
 
 | Version | Date | Change |
 |---|---|---|
+| 0.2.0 | 2026-11-24 | Owner decisions: provisional colours kept as they are, scope approved (section 7) |
 | 0.1.0 | 2026-11-23 | First issue, from the P1 board and the owner's review of 23 Nov (layered master, five approved poses plus waving, celebrating and pointing, stacked-logo repair, keep the approved mascot colours until the master is reviewed) |

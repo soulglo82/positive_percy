@@ -74,6 +74,36 @@ async function setTextSize(page, pct, label) {
   if (!ok) record(`harness: ${label} text size ${pct}% took effect`, false, `root is ${await page.evaluate(() => getComputedStyle(document.documentElement).fontSize)}`);
   await page.waitForTimeout(150);
 }
+
+// Lines in a heading may break only after a space or a hyphen, never inside a
+// word (owner, 24 Nov: the long-name headline at 320px). Character by character.
+function midWordBreaks(selector) {
+  const el = document.querySelector(selector);
+  if (!el) return ['missing ' + selector];
+  const chars = [];
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    for (let i = 0; i < n.length; i++) {
+      const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + 1);
+      const rect = r.getClientRects()[0];
+      // A space at a line end collapses to no width: keep it as a break point.
+      chars.push({ c: n.data[i], top: rect && rect.width > 0 ? Math.round(rect.top) : null });
+    }
+  }
+  const bad = [];
+  // Between two drawn characters on different lines there must be a space, or
+  // the earlier one must be a hyphen.
+  let prev = -1;
+  for (let i = 0; i < chars.length; i++) {
+    if (chars[i].top === null) continue;
+    if (prev >= 0 && chars[i].top > chars[prev].top + 2) {
+      const between = chars.slice(prev + 1, i).map((x) => x.c).join('');
+      if (!/\s/.test(between) && chars[prev].c !== '-' && !/^\s/.test(chars[i].c)) bad.push(chars.slice(Math.max(0, prev - 5), prev + 1).map((x) => x.c).join('') + '|' + chars.slice(i, i + 6).map((x) => x.c).join(''));
+    }
+    prev = i;
+  }
+  return bad;
+}
 const browser = await chromium.launch();
 const errors = [];
 async function open(fam, w, h, dsf = 1) {
@@ -135,6 +165,11 @@ for (const [famX, label, q] of [[six, 'six children, long name selected', `?chil
     await go(page, path);
     if (view === 'home' && q) { await page.locator(`.pv-selector__item[title="${six.children[3].name}"]`).click(); await page.waitForTimeout(200); }
     await check(page, `${view} ${w} (${label})`, { axe: w === 390 });
+    if (famX === six && w <= 390) {
+      const sel = view === 'home' ? '#home-title' : '#child-title';
+      const bad = await page.evaluate(midWordBreaks, sel);
+      record(`${view} ${w} (${label}): the name never breaks mid-word`, bad.length === 0, bad.join(' ; '));
+    }
     if (w === 320) await full(page, `edge-${view}-${w}-${famX === six ? 'six' : 'empty'}.png`, w, h);
     await page.context().close();
   }
@@ -232,6 +267,56 @@ for (const pct of [150, 200]) for (const [w, h] of [[320, 568], [390, 844]]) for
   record('All Daily Wins opens the Daily Wins & Big Goals pop-up', await page.getByRole('dialog').isVisible());
   await page.context().close();
 }
+// 4b. Child photos through the app's own upload path. No family photos: the
+// images are labelled crop-test cards drawn here (portrait, landscape and
+// square, each with a FACE ZONE); one child's photo fails to load. Real photos are checked privately by the owner.
+{
+  const photoFam = await seed(BASE, 'full');
+  const api = async (method, path, body) => {
+    const r = await fetch(BASE + path, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${photoFam.token}` }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error(`${method} ${path} ${r.status} ${await r.text()}`);
+    return r.json();
+  };
+  const cardPage = await (await browser.newContext()).newPage();
+  const card = async (w, h, label) => {
+    await cardPage.setViewportSize({ width: w, height: h });
+    await cardPage.setContent(`<body style="margin:0"><svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="#e5dcea"/><path d="M0 0L${w} ${h}M${w} 0L0 ${h}" stroke="#857a96" stroke-width="3"/><circle cx="${w / 2}" cy="${h * 0.3}" r="${Math.min(w, h) * 0.2}" fill="#ffc938" stroke="#4b1d8c" stroke-width="6"/><text x="${w / 2}" y="${h * 0.3 + 8}" font-family="sans-serif" font-size="${Math.min(w, h) * 0.07}" font-weight="700" text-anchor="middle">FACE ZONE</text><text x="${w / 2}" y="${h - 20}" font-family="sans-serif" font-size="${Math.min(w, h) * 0.06}" text-anchor="middle">${label}</text></svg></body>`);
+    const png = await cardPage.screenshot({ type: 'png' });
+    return (await api('POST', '/api/upload', { data: `data:image/png;base64,${png.toString('base64')}` })).file_url;
+  };
+  const [lara, omar, joud] = photoFam.children;
+  await api('PUT', `/api/children/${lara.id}`, { avatar_url: await card(600, 900, 'portrait 2:3') });
+  await api('PUT', `/api/children/${omar.id}`, { avatar_url: await card(900, 450, 'landscape 2:1') });
+  // The server will not point a child at an upload that does not exist, so
+  // Joud gets a real one and the browser's request for it fails (below).
+  const joudPhoto = await card(500, 500, 'square 1:1');
+  await api('PUT', `/api/children/${joud.id}`, { avatar_url: joudPhoto });
+  await cardPage.context().close();
+  const EXPECT = { 390: { selected: 72, other: 52, profile: 104 }, 1280: { selected: 88, other: 64, profile: 136 } };
+  for (const [w, h] of [[320, 568], [390, 844], [1280, 800]]) for (const [view, path] of [['home', '/'], ['children', '/Children']]) {
+    const page = await open(photoFam, w, h, w === 320 ? 1 : 2);
+    // The deliberate failure logs "net::ERR_FAILED"; every other console error still counts.
+    page.removeAllListeners('console');
+    page.on('console', (m) => { if (m.type() === 'error' && !/net::ERR_FAILED/.test(m.text())) errors.push(m.text()); });
+    await page.route('**' + joudPhoto, (route) => route.abort('failed'));
+    await go(page, path);
+    await page.waitForFunction(() => [...document.querySelectorAll('.pv-avatar img')].every((i) => i.complete), null, { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(300);
+    const a = await page.evaluate(() => [...document.querySelectorAll('.pv-avatar')].map((el) => {
+      const r = el.getBoundingClientRect(); const img = el.querySelector('img'); const cs = getComputedStyle(el);
+      return { size: el.dataset.size, w: Math.round(r.width), h: Math.round(r.height), round: cs.borderRadius, kind: el.dataset.avatar, text: img ? '' : el.textContent.trim(),
+        loaded: img ? img.naturalWidth > 0 : null, fit: img ? getComputedStyle(img).objectFit : null };
+    }));
+    const photos = a.filter((x) => x.kind === 'photo');
+    record(`photos ${view} ${w}: two uploaded photos load and fill a circle`, photos.length >= 2 && photos.every((x) => x.loaded && x.fit === 'cover' && x.w === x.h), JSON.stringify(photos.slice(0, 3)));
+    record(`photos ${view} ${w}: the missing photo falls back to the initial, same size`, a.some((x) => x.kind === 'initial' && x.text === 'J'), JSON.stringify(a.filter((x) => x.kind === 'initial')));
+    const exp = EXPECT[w >= 834 ? 1280 : 390];
+    record(`photos ${view} ${w}: sizes are ${JSON.stringify(exp)}`, a.every((x) => !exp[x.size] || x.w === exp[x.size]), JSON.stringify(a.map((x) => [x.size, x.w])));
+    await full(page, `photos-${view}-${w}${w === 320 ? '' : '@2x'}.png`, w, h);
+    await page.context().close();
+  }
+}
+
 // 5. Controls: the checks must be able to fail.
 {
   const page = await open(fam, 390, 844);

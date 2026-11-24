@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ProgressRing, PercyAvatar, ChildSelector, PercyFox, JourneyStop } from './parts';
-import { HomeHero, HomeQuickPoints, HomeWorkingTowards } from './HomeV11';
+import { HomeHero, HomeQuickPoints, HomeWorkingTowards, isLongName } from './HomeV11';
 
 const C = 2 * Math.PI * 42;
 const arc = (el) => el.querySelector('[data-ring-value]');
@@ -135,5 +135,11 @@ describe('Home V1.1', () => {
     const { container } = render(<ol><JourneyStop label="This week" value={12} max={0} unit="points" note="No weekly target set yet" ring={null} /></ol>);
     expect(container.querySelector('.pv-stop__figure').textContent).toBe('12 points');
     expect(container.textContent).not.toContain('of 0');
+  });
+  it('long names take the headline one step down; ordinary names do not', () => {
+    expect(['Lara', 'Omar', 'Joud', 'Sam', 'Alexandra'].map(isLongName)).toEqual([false, false, false, false, false]);
+    expect(['Alexandra-Josephine Montgomery-Wellington', 'LongDWolfeschlegelsteinhausenb', 'Maximilianusz'].map(isLongName)).toEqual([true, true, true]);
+    const { container } = render(<HomeHero children={kids} child={{ ...kids[0], name: 'Alexandra-Josephine Montgomery-Wellington' }} streak={0} foxPlay={0} onSelect={() => {}} />);
+    expect(container.querySelector('#home-title').hasAttribute('data-long-name')).toBe(true);
   });
 });

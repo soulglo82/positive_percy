@@ -14,6 +14,10 @@ import { ChildSelector, PercyFox, MorningArt } from './parts';
 
 // The morning scene: child picker, the question, Percy, and the points the
 // child can use now as a plain balance (no ring: it is not progress).
+// A name that would crowd the 32px headline on a phone: long overall, or one
+// word (split at spaces and hyphens) longer than fits a 288px line.
+export const isLongName = (name = '') => name.length > 16 || name.split(/[\s-]+/).some((w) => w.length > 11);
+
 export function HomeHero({ children, child, streak, foxPlay, onSelect }) {
   const available = child.available_points ?? child.total_points ?? 0;
   return (
@@ -21,11 +25,11 @@ export function HomeHero({ children, child, streak, foxPlay, onSelect }) {
       <MorningArt />
       <div className="pv-scene__sky">
         <ChildSelector children={children} selectedId={child.id} onSelect={onSelect} />
-        <div className="pv-scene__text">
+        <div className="pv-scene__text" data-long-name={isLongName(child.name) ? '' : undefined}>
           {streak > 0 && (
             <p className="pv-chip"><PercyIcon id="phosphor:sparkle:duotone" />{streak}-day family streak</p>
           )}
-          <h1 id="home-title" className="pv-t-hero">What went well for {child.name} today?</h1>
+          <h1 id="home-title" className="pv-t-hero" data-long-name={isLongName(child.name) ? '' : undefined}>What went well for {child.name} today?</h1>
         </div>
         <div className="pv-scene__fox"><PercyFox pose="waving" size="hero" play={foxPlay} /></div>
       </div>
