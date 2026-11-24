@@ -4,8 +4,8 @@
   "owner": "Percy V1.1 design engineering",
   "status": "PASSING",
   "base": "local server, fictional seeded families",
-  "total": 241,
-  "passed": 241,
+  "total": 246,
+  "passed": 246,
   "failed": 0,
   "known_v1_component_text_under_14px": [],
   "results": [
@@ -930,6 +930,26 @@
       "detail": ""
     },
     {
+      "name": "home 320 at 100% text, 20 goals today: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 at 100% text, 20 goals today: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 200% text, 20 goals today: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 at 200% text, 20 goals today: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
       "name": "home 320 at 150% text: no horizontal page overflow",
       "pass": true,
       "detail": "0px"
@@ -1203,6 +1223,11 @@
       "name": "control: without their 44px height and stretched hit area the Manage labels fail the 44px check",
       "pass": true,
       "detail": "3 small"
+    },
+    {
+      "name": "control harness: the injected 10px labels took effect",
+      "pass": true,
+      "detail": ""
     },
     {
       "name": "control: 10px Quick Point labels fail the type-size check",

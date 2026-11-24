@@ -382,3 +382,7 @@
 @media (min-width: 834px) { .pv-quick-tile { grid-template-columns: auto minmax(0, 1fr) auto; } }
 /* The two buttons keep the icon beside the label; the label wraps instead. */
 .pv-quick-actions .pv-btn { flex-wrap: nowrap; padding-inline: var(--pv-space-3); }
+/* Codex review (PR #72): one dot per goal must never widen the page; the
+   strip wraps within the header, and "n of m done" stays the figure. */
+.pv-section__head > * { min-width: 0; max-width: 100%; }
+.pv-dots { flex-wrap: wrap; max-width: 100%; vertical-align: middle; }

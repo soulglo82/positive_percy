@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 0.2.0 |
+| Version | 0.3.0 |
 | Issued | 23 November 2026 (revised 24 November) |
 | Owner | Percy V1.1 design engineering |
 | Status | **Draft PR for owner review. Not merged, not deployed.** Production V1 is untouched. |
@@ -168,11 +168,22 @@ V1's one-row phone boxes fit names such as "Helpfulness" and "Adventurous" betwe
 
 - **A very long name at 320px:** "Alexandra-Josephine Montgomery-Wellington" breaks mid-word in the 32px Home headline. Readable, not yet acceptable; needs a design answer (for example, a smaller headline step for long names).
 - **No real-photo visual test yet:** every screenshot shows initials. The photo path, sizes, crop and fallback are built and unit-tested with test cards, but nobody has looked at real child photos in the screens. Needs authorised photos on the owner's device (they are never committed), or a one-off local review.
-- **Codex:** see the session handback for whether the Codex review ran. The earlier fresh-context review (section 8) is not a Codex review.
+### 10e. Codex review
+
+Requested on PR #72 ("@codex review") at `71759da`; completed 24 Nov 07:07 UTC. This is the Codex review; the fresh-context review in section 8 was not.
+
+| Finding | Severity | Verified | Outcome |
+|---|---|---|---|
+| Today's Goals progress dots do not wrap: 20 goals need 316px against 288px at 320px, so the page scrolls sideways (sooner with larger text) | P2 | **Yes.** Reproduced on a local server: 12px of sideways scroll at 320px with 20 goals; 344px at 200% text | **Fixed.** The dot strip and the header items wrap within the width; "n of m done" stays the figure. App QA now seeds a child with 20 goals and checks 320px at 100% and 200% text; those checks failed on the unfixed build and pass on the fix |
+
+### 10f. App QA control made deterministic
+
+While verifying this round, the control that injects 10px Quick Point labels once reported nothing small: the injected style had not taken effect when the check ran, so the check passed without testing anything. The cause was not found. The control now waits until the labels really are 10px, and a separate harness check fails if the style never takes, so it cannot silently pass again. Two consecutive runs: 246 of 246.
 
 ## Change log
 
 | Version | Date | Change |
 |---|---|---|
 | 0.1.0 | 2026-11-23 | First issue |
+| 0.3.0 | 2026-11-24 | Codex review (10e); deterministic QA control (10f) |
 | 0.2.0 | 2026-11-24 | Section 10: base merged (#73, #74); 24 Nov Quick Points decisions in V1.1; 12px/15px decision; final-acceptance items |

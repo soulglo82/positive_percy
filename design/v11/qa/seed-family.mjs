@@ -25,6 +25,15 @@ export async function seed(base, variant = 'full') {
   const award = (c, points, category) => api('POST', `/api/children/${c.id}/award`, { points, category, request_id: crypto.randomUUID() }, t);
   const out = { code: fam.family_code, token: t, children: [] };
 
+  if (variant === 'many-goals') {
+    // Codex review of PR #72: one dot per goal must not widen the page.
+    const kidA = await kid('Lara', 9, 30, 0);
+    out.children.push(kidA);
+    const cats0 = await api('GET', '/api/behavior-categories', null, t);
+    const day = (await api('GET', '/api/todays-goals', null, t)).date;
+    for (let i = 0; i < 20; i++) await api('POST', '/api/todays-goals', { title: `Goal ${i + 1}`, child_id: kidA.id, category_id: cats0[0].id, schedule_kind: 'one_off', scheduled_date: day }, t);
+    return out;
+  }
   if (variant === 'empty') {
     out.children.push(await kid('Joud', 4, 10, 0));
     return out;

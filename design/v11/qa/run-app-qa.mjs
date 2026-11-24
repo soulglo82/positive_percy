@@ -101,6 +101,7 @@ async function check(page, name, { axe = false } = {}) {
 const fam = await seed(BASE, 'full');
 const six = await seed(BASE, 'six');
 const empty = await seed(BASE, 'empty');
+const manyGoals = await seed(BASE, 'many-goals');
 const v1Small = new Set();
 
 // 1. Six widths, both screens, with screenshots and axe.
@@ -127,6 +128,17 @@ for (const [famX, label, q] of [[six, 'six children, long name selected', `?chil
     if (w === 320) await full(page, `edge-${view}-${w}-${famX === six ? 'six' : 'empty'}.png`, w, h);
     await page.context().close();
   }
+}
+
+// 2b. Twenty goals today (Codex review of PR #72): the progress dots wrap.
+for (const pct of [100, 200]) {
+  const page = await open(manyGoals, 320, 568);
+  await go(page, '/');
+  if (pct !== 100) { await page.addStyleTag({ content: `html{font-size:${pct}%}` }); await page.waitForTimeout(200); }
+  const r = await page.evaluate(inspect);
+  record(`home 320 at ${pct}% text, 20 goals today: no horizontal page overflow`, r.pageOverflow <= 0, `${r.pageOverflow}px`);
+  record(`home 320 at ${pct}% text, 20 goals today: nothing outside the viewport`, r.offscreen.length === 0, r.offscreen.slice(0, 3).join(' | '));
+  await page.context().close();
 }
 
 // 3. Larger text: the root size raised as a browser text setting does.
@@ -218,11 +230,18 @@ for (const pct of [150, 200]) for (const [w, h] of [[320, 568], [390, 844]]) for
   await page.addStyleTag({ content: '.pv-stretch::after{position:static} .pv-manage-action__label{min-height:0}' });
   const r = await page.evaluate(inspect);
   record('control: without their 44px height and stretched hit area the Manage labels fail the 44px check', r.smallTargets.some((x) => /pv-manage-action__label/.test(x)), `${r.smallTargets.length} small`);
-  await page.addStyleTag({ content: '.pv-quick-tile__label, .pv-goal__title{font-size:10px !important}' });
+  // The checker must flag 10px labels. Inject them and wait until they are
+  // really 10px before checking (an injected style was once seen not to
+  // apply in time; that is a harness failure and is reported as one).
   await go(page, '/');
   await page.addStyleTag({ content: '.pv-quick-tile__label{font-size:10px !important}' });
+  const applied = await page.waitForFunction(() => {
+    const l = [...document.querySelectorAll('.pv-quick-tile__label')];
+    return l.length > 0 && l.every((x) => getComputedStyle(x).fontSize === '10px');
+  }, null, { timeout: 5000 }).then(() => true).catch(() => false);
+  record('control harness: the injected 10px labels took effect', applied);
   const r2 = await page.evaluate(inspect);
-  record('control: 10px Quick Point labels fail the type-size check', r2.smallText.length > 0, `${r2.smallText.length} small`);
+  record('control: 10px Quick Point labels fail the type-size check', r2.smallText.some((x) => /pv-quick-tile__label/.test(x)), `${r2.smallText.length} small`);
   await page.context().close();
 }
 await browser.close();
