@@ -32,6 +32,8 @@ module.exports = {
       earn: { DEFAULT: c('earn'), soft: c('earn-soft') },
       star: { DEFAULT: c('star'), soft: c('star-soft') },
       sunrise: c('sunrise'),
+      // V1-F section 10: the Custom points button. warm-ink is the border and icon (3:1 or more on warm-soft and on card).
+      warm: { soft: c('warm-soft'), ink: c('warm-ink') },
       kid: Object.fromEntries([1, 2, 3, 4, 5, 6].flatMap((n) => [[String(n), c(`kid-${n}`)], [`${n}-soft`, c(`kid-${n}-soft`)]])),
       selected: { DEFAULT: c('selected'), border: c('selected-border') },
       warning: { DEFAULT: c('warning'), border: c('warning-border'), foreground: c('warning-foreground') },
@@ -81,6 +83,8 @@ module.exports = {
       screens: {
         // Narrow phones: below 360px some grids drop to 3 columns.
         xs: '360px',
+        // V1-F section 10: from here a behaviour tile is one row (icon, name, +N).
+        phone: '375px',
         touch: { raw: '(pointer: coarse)' },
       },
       keyframes: {

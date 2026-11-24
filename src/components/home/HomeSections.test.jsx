@@ -83,6 +83,30 @@ describe('QuickPoints and StreakStrip', () => {
     unmount();
     wrap(<QuickPoints child={lara} actions={[]} awarding={false} onAward={() => {}} onOpenAward={() => {}} onOpenRewards={() => {}} />);
     expect(screen.getByRole('link', { name: 'Choose them in Settings' })).toBeTruthy();
+    // No boxes, so nothing to tap: the line about tapping a box is not shown.
+    expect(document.body.textContent).not.toContain('Tap a box');
+  });
+  // Owner, 24 November 2026 (V1-F design section 10): the card says a box acts
+  // at once, and the form is reached by "Custom points", not "Award points".
+  it('says a box gives its points at once; Custom points opens the form; no Award points button', () => {
+    const onOpenAward = vi.fn();
+    const onOpenRewards = vi.fn();
+    const onAward = vi.fn();
+    const action = { id: 'k', label: 'Kindness', points: 1, icon_key: 'kindness' };
+    const { container } = wrap(<QuickPoints child={lara} actions={[action]} awarding={false} onAward={onAward} onOpenAward={onOpenAward} onOpenRewards={onOpenRewards} />);
+    expect(container.textContent).toContain('Tap a box to give its points straight away.');
+    expect(screen.getByRole('button', { name: 'Custom points' }).className).toMatch(/border-warm-ink/);
+    expect(container.textContent).not.toContain('whenever it happens');
+    expect(screen.queryByRole('button', { name: /Award points/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Custom points' }));
+    expect(onOpenAward).toHaveBeenCalledTimes(1);
+    expect(onAward).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Rewards' }));
+    expect(onOpenRewards).toHaveBeenCalledTimes(1);
+    // Neither button is the solid purple one: the boxes are the main thing on the card.
+    for (const name of ['Custom points', 'Rewards']) expect(screen.getByRole('button', { name }).className).not.toMatch(/(^|\s)bg-primary(\s|$)/);
+    expect(screen.getByRole('button', { name: 'Custom points' }).className).toMatch(/bg-warm-soft/);
+    expect(screen.getByRole('button', { name: 'Rewards' }).className).toMatch(/bg-accent/);
   });
   it('the streak strip is hidden at 0', () => {
     const { container } = wrap(<StreakStrip streak={0} />);

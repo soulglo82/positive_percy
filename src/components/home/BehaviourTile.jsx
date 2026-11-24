@@ -1,17 +1,25 @@
 // The inside of a behaviour tile, shared by Home's Quick Points and step 2 of
 // "Give Percy Points" so the two cannot drift.
 //
-// Contract (owner review 2026-11-22, "standardised alignment"): on one screen
-// every tile has the same structure whatever the length of its name, and a
-// name is never clipped or covered.
-// - Below 640px: icon top left, "+N" top right, the name beneath on its own
-//   line(s). One line cannot hold the name there: at 320px it would get about
-//   46px and "Helpfulness" needs 75px even at the 12px floor. Names are the
-//   family's own, so a layout that depends on the name fitting gives mixed
-//   tiles again.
-// - From 640px: icon, name, "+N" on one line.
+// Contract (V1-F design section 10, owner 24 November 2026: "keep the boxes,
+// but they are too chunky"; it keeps the reason for the 22 November ruling,
+// "standardised alignment"): on one screen every tile has the same structure
+// whatever the length of its name, and a name is never clipped or covered.
+// - From 375px: icon, name, "+N" on one row, centred on the tile's middle
+//   line. The name is 12px up to 640px, so two lines of it fit inside the
+//   44px tile: a one-line name and a two-line name give the same height.
+// - Below 375px: icon top left, "+N" top right, the name beneath on its own
+//   line(s), as since 22 November. One row cannot hold the name there: at
+//   360px in the form "Adventurous" would break, and at 320px even
+//   "Kindness" would.
+// - From 640px: one row at 14px, as before.
 // - Tiles in a row are one height; on Home (TILE_GRID_EVEN) all of them are.
-// - A word wider than the tile breaks; the name never runs under the badge.
+// - A name wraps at spaces. A single word wider than its space breaks; the
+//   name never runs under the badge. (No hyphenation: the browser hyphenates
+//   short words that fit and leaves capitalised ones.)
+// - A tile's border is one width in every state, so selecting a tile cannot
+//   change the room its name has. The form marks the selected tile with a
+//   ring (a shadow), which takes no room.
 // The order in the page stays icon, name, badge (what a screen reader reads).
 // e2e/checks.js measures every [data-tile-grid] on every screen it checks.
 import CategoryIcon from '@/components/CategoryIcon';
@@ -19,22 +27,23 @@ import CategoryIcon from '@/components/CategoryIcon';
 // Home (four tiles at most): every tile one height. The dialog lists every
 // behaviour, so there tiles match within a row only: one long name must not
 // stretch all five rows (design review).
-export const TILE_GRID = 'grid grid-cols-2 gap-2';
-export const TILE_GRID_EVEN = 'grid grid-cols-2 auto-rows-fr gap-2';
+export const TILE_GRID = 'grid grid-cols-2 gap-2 phone:gap-1.5 sm:gap-2';
+export const TILE_GRID_EVEN = 'grid grid-cols-2 auto-rows-fr gap-2 phone:gap-1.5 sm:gap-2';
 
-// For the tile's own element (a button). Text is 12px below 360px, 14px above.
-export const TILE_LAYOUT = 'grid grid-cols-[1fr_auto] content-start items-center gap-x-2 gap-y-1.5 sm:grid-cols-[auto_1fr_auto] sm:content-center min-h-11 rounded-md p-2.5 text-left text-xs xs:text-sm font-semibold text-foreground';
+// For the tile's own element (a button). Text is 12px below 360px, 14px from
+// 360px (two rows), 12px again from 375px (one row), 14px from 640px.
+export const TILE_LAYOUT = 'grid grid-cols-[1fr_auto] content-start items-center gap-x-2 gap-y-1.5 phone:grid-cols-[auto_1fr_auto] phone:content-center phone:gap-x-1 sm:gap-x-2 min-h-11 rounded-md p-2.5 phone:px-1.5 phone:py-1 sm:p-2.5 text-left text-xs xs:text-sm phone:text-xs sm:text-sm font-semibold text-foreground';
 
 export default function BehaviourTileParts({ iconKey, name, points }) {
   return (
     <>
       <span aria-hidden="true" data-tile-part="icon" className="col-start-1 row-start-1 text-primary">
-        <CategoryIcon iconKey={iconKey} className="h-5 w-5" />
+        <CategoryIcon iconKey={iconKey} className="h-5 w-5 phone:h-4 phone:w-4 sm:h-5 sm:w-5" />
       </span>
-      <span data-tile-part="name" className="col-span-2 row-start-2 min-w-0 break-words sm:col-span-1 sm:col-start-2 sm:row-start-1">{name}</span>
+      <span data-tile-part="name" className="col-span-2 row-start-2 min-w-0 break-words phone:col-span-1 phone:col-start-2 phone:row-start-1">{name}</span>
       {/* The space keeps the spoken name "Kindness +1" where the tile has no aria-label; a grid ignores it. */}
       {' '}
-      <span data-tile-part="badge" className="col-start-2 row-start-1 justify-self-end rounded-md bg-star px-1.5 py-0.5 tabular-nums sm:col-start-3">+{points}</span>
+      <span data-tile-part="badge" className="col-start-2 row-start-1 justify-self-end rounded-md bg-star px-1.5 py-0.5 tabular-nums phone:col-start-3">+{points}</span>
     </>
   );
 }

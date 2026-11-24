@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.4 |
+| Version | 1.5 |
 | Issued | 2026-11-18 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-f-forms`, stacked on V1-A `claude/percy-v1-a-home`) |
 | Status | Reviewed (design peer review v1.1; code review of PR #58 fixed, v1.2; §9 design and code reviews, v1.3 and v1.4) |
@@ -17,6 +17,7 @@
 | 1.2 | 2026-11-18 | Code review of PR #58 (CodeRabbit-style): all 3 actionable and 5 nitpick findings fixed (§8). O corrected: Settings opens the parenting tips, not onboarding |
 | 1.3 | 2026-11-23 | The owner asked for custom points back in Give Percy Points: a parent can change the amount (§9). This reverses the v1.0 removal of the free amount recorded in §2 |
 | 1.4 | 2026-11-23 | Review of PR #73 found that the amount field was replaced on the first typed character, which dropped the keyboard. The field is no longer replaced at all (§9, "Review of the pull request") |
+| 1.5 | 2026-11-24 | The owner rejected the §9 layout as too clunky and chose a new one from mock-ups: slim one-line behaviour boxes, one Points row under them in the form, and on Home a "Custom points" button in place of "Award points" (§10). §10 replaces §9's layout, §9's rule that a chosen amount survives a change of behaviour, and the 22 November two-line tile rule from 375 px up |
 
 ## 1. Scope
 
@@ -326,4 +327,129 @@ Review finding 1 is adopted. The production branch has no protection, Railway de
 | 6 | Note | Not covered: the field's arrow stepping, and paste | Arrow stepping added to the browser step; paste is not covered |
 
 *Mutation checks (each makes a named test fail).* Picks allowed while sending; The option removed from the dialog; the option always on; the option passed through to the page; the number comparison removed; empty text compared as 0; the typed text not brought back in line after the value takes over; the v1.3 dialog restored.
+
+## 10. Quick Points and Custom points (owner, 24 November 2026) (v1.5)
+
+**Owner's decisions, from mock-ups (artifact "Give Points Options", versions 4 to 7).**
+1. "We keep the boxes for quick points, but they are too chunky, take too much space."
+2. "Below quick points needs to be an area for custom, but again small and tight."
+3. On Home, the boxes and the "Award points" button were confusing: "has to be a clear distinction between quick points and custom". Option A was chosen: the button becomes "Custom points" and stops being solid purple.
+4. Colours: "A4": Custom points in a soft orange tint, Rewards in a soft purple tint, dark text on both.
+
+The §9 layout (a full "How many points?" step with six quick amounts and a number box) was released on 23 November without the owner seeing a picture of it. That is the process failure this section corrects: §10 was chosen from pictures, and the built screens are shown to the owner before any release.
+
+**Prior ruling this touches.** Owner review 22 November ("standardised alignment"): in Quick Points at 320 px each tile wrapped its own way, so tiles became two rows below 640 px (`BehaviourTile.jsx`). §10 keeps the reason for that ruling and narrows where the two-row layout applies. The measurable rule in `e2e/checks.js` (same part positions in every tile of a grid, no overlap, no cut-off name, equal heights in a row, all equal on Home) is unchanged and still enforced at every width.
+
+### 10.1 Contract
+
+**Behaviour tile (Home Quick Points and the form share `BehaviourTile.jsx`).**
+- From 375 px (new breakpoint `phone`): one row, icon, name, "+N", centred on the tile's middle line. From 375 to 639 px the name is 12 px and the icon 16 px, with 6 px side padding, 4 px top and bottom, and 4 px between parts; from 640 px it is as before (14 px, 20 px icon).
+- Minimum height 44 px. Two lines of a 12 px name are 32 px; with 8 px of padding and a 1 px border each side that is 42 px, so a tile with a one-line name and a tile with a two-line name are both 44 px.
+- A tile's border is 1 px in every state. The form marks the selected tile with a ring (a shadow, which takes no room), so selecting a tile cannot change the room its name has.
+- A name wraps at spaces. A single word wider than its space breaks; it is never clipped and never runs under the badge. There is no hyphenation (measured: the browser left capitalised words alone and hyphenated a short word that fitted the next line).
+- A name needing three or more lines makes its row taller (on Home, every tile).
+- Below 375 px: unchanged from 22 November (icon and "+N" above, name beneath; 14 px from 360 px, 12 px below). One row cannot hold the default names there: at 360 px in the form "Adventurous" has about 65 px and needs 79.
+- Measured room for the name with a "+1" badge: 82 px at 375 px in the form, 88 px at 390 px; the widest default name, "Adventurous", needs 79 px. A longer single word, or a default name beside a wide badge at 375 px, breaks onto a second line inside the same 44 px.
+- The tile's accessible name, tap behaviour and order in the page are unchanged.
+
+**Home Quick Points card.**
+- Line under the heading: "Tap a box to give its points straight away." (was "Award points for positive behaviour, whenever it happens.").
+- A box still awards its own points to the selected child in one tap. No amount control on Home.
+- The line is shown only when there are boxes; with none, the card keeps "No quick points yet. Choose them in Settings".
+- Buttons: "Custom points" (opens the form; soft orange: `warm-soft` fill, `warm-ink` border and icon, dark text) and "Rewards" (soft purple: `accent` fill, `input` border, `primary` icon, dark text). Neither is solid. Same sizes and one-column rule below 360 px as today.
+- Colours: `sunrise`, the brand orange, is decorative only (2.9 to 1 on white; `tokens.test.js` forbids it as text or a border), so the button has two new tokens. `warm-soft` #f1e4d8 is the fill; `warm-ink` #c25000 is the border and icon (3.8 to 1 on the fill, 4.7 to 1 on the card). Text is the foreground: 13.3 to 1 on `warm-soft`, 13.5 to 1 on `accent`. The Rewards border, `input`, is 3.3 to 1 on `accent` and 4.0 to 1 on the card.
+
+**Give Percy Points form.**
+- Steps: 1 "Who's earned points?", 2 "What did {name} do?". The "How many points?" step, its hint and the six quick amounts are removed.
+- Under the tiles, inside step 2: one row, the label "Points" on the left; on the right "−", the number field, "+". The row is absent when the child has no behaviour to choose (as the amount step was).
+- The amount starts as the chosen behaviour's points. The parent's own amount (typed, or set with − or +) belongs to the behaviour it was chosen for: it stays through a child change that keeps the behaviour, and through a reload of the behaviours.
+- **Changed from §9:** tapping a box, the selected one too, sets Points back to that box's points, and so does a child change that moves the behaviour. In §9 a chosen amount survived a change of behaviour, which suited an amount placed above the behaviours. Under the boxes it would be a trap: a "+3" box tapped and 1 awarded.
+- Unchanged from §9: whole numbers 1 to 1,000; the rule message, the summary and the button; nothing that decides the amount moves while an award is being sent.
+- "+" adds one and "−" takes one away, kept within 1 to 1,000. From an empty field, or an amount that is not a number, either button gives 1. From a number outside the range or not whole, "+" goes to the next whole number up and "−" to the next down, then into the range (2.5: 3 or 2; 0: 1; 1001: 1000).
+- At the ends of the range the button is `aria-disabled` and dimmed, not disabled (a button that disables itself under the finger drops the focus); pressing it changes nothing. "−" at the behaviour's own 1, with nothing chosen, chooses nothing: the amount still follows the behaviour. The buttons are disabled only while an award is being sent.
+- The row is a group named by its label "Points", which is also the field's label.
+- The field is the §9 field (`NumberInput` with `followModel`): it shows an amount set by − or + while it has focus, and is never replaced.
+- Screen-reader names: the field is "Points"; the buttons are "One point fewer" and "One point more".
+
+**New wording for the owner to approve.** Seen: "Tap a box to give its points straight away.", "Custom points", "Points". Heard only: "One point fewer", "One point more". Removed: "How many points?", "Use the behaviour's points, or choose another amount.".
+
+### 10.2 Every path that touches the contract
+
+| Path | File | Change |
+| --- | --- | --- |
+| Tile layout, both uses | `src/components/home/BehaviourTile.jsx` (`TILE_LAYOUT`, `TILE_GRID`, `TILE_GRID_EVEN`, `BehaviourTileParts`) | One row from 360 px |
+| Home card | `src/components/home/HomeSections.jsx::QuickPoints` | Line, button name, button colours |
+| Button styles | `src/components/ui/button.jsx` (variants `warm` and `soft`) | New |
+| Tokens | `tailwind.config.js` (`warm`, screen `phone`), `src/index.css`, `src/lib/tokens.js`, `src/test/tokens.test.js` | New |
+| Accessibility tests | `src/test/a11y.test.jsx` (renders the card) | Passes unchanged |
+| Form | `src/components/home/AwardPointsDialog.jsx` | Step removed, Points row added |
+| Number field | `src/components/ui/NumberInput.jsx` | None |
+| Server | `POST /api/children/:id/award` | None |
+| Layout checks | `e2e/checks.js` | None (already measures one-row tiles) |
+| Tests and tools naming the old button or the old step | `e2e/ui.spec.js`, `src/components/home/V1Forms.test.jsx`, `src/components/home/HomeSections.test.jsx`, `docs/engineering/evidence/v1-integrated/tools/capture.cjs` | Updated |
+
+Other users of `StepHeading` and `behavioursFor` (the reward form, Manage goals) are not changed.
+
+### 10.3 Edge cases (input → expected)
+
+| Input | Expected |
+| --- | --- |
+| 390 px, names "Kindness", "Helpfulness", "Adventurous", "+1" | Each on one line; every tile 44 px |
+| 390 px, "Tidying up without being asked", "+1000" | One row; the name on several lines, not cut, not under the badge; tiles in its row (on Home, all) one height |
+| 375, 390 and 414 px, the eight default names, "+1", selected or not | One row, one line, 44 px |
+| 375 to 414 px, "Brushing teeth nicely", "+10", selected or not | Two lines, 44 px |
+| 360 and 320 px | Two-row tiles, as before |
+| 834 and 1280 px | As before (one row, 14 px) |
+| Form opens, first behaviour worth 1 | Points 1; "Award 1 point" |
+| Press + four times | 2, 3, 4, 5; "Award 5 points"; the request carries `points: 5` |
+| Press − at 1; press + at 1000 | Stays 1; stays 1000; the button is `aria-disabled`, not disabled |
+| Press − at the behaviour's own 1, then the behaviour's points become 2 | 2 (nothing was chosen) |
+| Type 25, press − | 24 in the field, which is the same element and keeps the focus if it had it |
+| Clear the field, press + (or −) | 1 |
+| Type 2.5, press +; type 0, press −; type 1001, press + | 3; 1; 1000 |
+| Press +, then another child who has the same behaviour | The amount stays |
+| Set 10 or type 40 or clear the field, then tap a box (the selected one too) | Points is that box's points |
+| Omar, "Piano", set 7, then Lara (Piano is not hers) | The behaviour moves to Kindness; Points 1 |
+| Press Award, then − or + before the answer | The buttons are disabled; the amount shown is the amount sent |
+| No behaviour for the child | No Points row; Award disabled |
+| Home: tap a box | Its own points, one tap, as before |
+| Home: "Custom points" | Opens the form for the selected child |
+
+### 10.4 Abuse, outcome records
+
+Nothing new reaches the server: the same field, validated again there. One `point_events` row per award, the Undo toast and Activity are unchanged.
+
+### 10.5 Tests, written before the build
+
+- Unit (`V1Forms.test.jsx`): every form row of 10.3; the quick amounts and the old heading are gone; the field is named "Points"; the §9 focus tests (same element, focus kept) with − and + in place of the quick amounts.
+- Unit (`HomeSections.test.jsx`): the new line, "Custom points" opens the form, no "Award points" button, tapping a box still awards.
+- Browser (`e2e/ui.spec.js`, four sizes): Home journey with "Custom points"; real keys in the field; + pressed four times sends `points: 5`; the long-name test on Home and in the form (the shared layout checks measure the tiles); at 390 px the tiles of the seeded family are 44 px.
+- Mutation checks, listed with the code review.
+- Browser, added after the design review: one test sets 360, 375, 390 and 414 px itself and checks every default name (one line, 44 px, selected and not) and a two-line name (44 px) on Home and in the form, with the shared layout checks at each width.
+- **Not covered:** a real phone's keypad; a screen reader in a real browser; widths other than 320, 360, 375, 390, 414, 834 and 1280 px; a family's own single word longer than about 12 letters (it breaks onto a second line; no test fixes where).
+
+### 10.6 Rollout and reversal
+
+One pull request, CI, the built screens shown to the owner, the owner's approval of the exact commit and the wording, then the merge (which deploys) with the read-only before and after counts. No migration. Reversal: revert the merge commit.
+
+### 10.7 Design review (fresh context, before the build; it measured the planned classes in a real browser)
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Blocking | The orange border and icon used `sunrise`, which `tokens.test.js` forbids as text or a border (2.9 to 1) | Two new tokens, `warm-soft` and `warm-ink`; contrast asserted in `tokens.test.js` |
+| 2 | Blocking | "Two lines fit in 44 px" was false with the planned padding: 46 px on Home, 48 px for a selected tile | 4 px top and bottom from 375 px; a browser test holds a two-line name at 44 px |
+| 3 | Blocking | The selected tile's 2 px border took 2 px from its name: selecting "Adventurous" re-wrapped it | The border is 1 px in every state; selection is a ring; the browser test selects the widest names |
+| 4 | Blocking | 360 px was the worst width for one row ("Helpfulnes s", "Adventuro us"), and `hyphens: auto` did not help | One row starts at 375 px with tighter spacing; no hyphenation; 360 px keeps two rows |
+| 5 | Note | `e2e/checks.js` passes as written at every width tried | No change |
+| 6 | Note | "−" at 1 with nothing chosen was unspecified; "+" then "−" left 1 chosen, so a "+3" box tapped next would award 1 | "−" at 1 chooses nothing; tapping a box sets Points to the box's points (10.1, changed from §9) |
+| 7 | Note | A press at the limit announces nothing; no group; "Points" reverses §9's "Percy Points" name for the field | `aria-disabled` at the limits; the row is a group named by its label; the owner chose "Points" from the mock-up |
+| 8 | Note | The new line would also show above "No quick points yet" | Shown only when there are boxes |
+| 9 | Note | The path table missed `a11y.test.jsx` and the token files | Added |
+| 10 | Note | CI never ran 360 to 389 px | The widths test (10.5) |
+
+### 10.8 Mutation checks (each makes a named test fail)
+
+A box tap keeping the parent's amount; the amount not tied to its behaviour; no upper limit on "+"; "−" at 1 counting as a choice; a number that is not whole stepped by one; the buttons usable while an award is sent; a button disabled at the limit; the old button name on Home; the line shown with no boxes.
+
+Not held by a test: the selected tile's border width (with the final spacing, a 2 px border no longer re-wraps the default names at the tested widths; the 1 px border and ring are kept for names nearer the limit).
 

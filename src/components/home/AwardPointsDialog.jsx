@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import NumberInput from '@/components/ui/NumberInput';
 import { MAX_AWARD } from '@/lib/points';
-import { PERCY } from '@/constants/terminology';
 import { cn } from '@/lib/utils';
 import BehaviourTileParts, { TILE_GRID, TILE_LAYOUT } from '@/components/home/BehaviourTile';
 import { FamilyStrip } from '@/components/home/HomeSections';
@@ -24,7 +23,6 @@ export const behavioursFor = (categories, childId) => categories.filter((c) =>
 export const pointWord = (n) => (n === 1 ? 'point' : 'points');
 
 // The old dialog's quick amounts.
-const QUICK_AMOUNTS = [1, 2, 3, 4, 5, 10];
 // What the server accepts (POST /api/children/:id/award).
 const canAward = (n) => Number.isInteger(n) && n >= 1 && n <= MAX_AWARD;
 
@@ -46,11 +44,13 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
   const [categoryId, setCategoryId] = useState(null);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  // The parent's own amount: null until they choose one (a quick amount or a
-  // typed number), '' when they have cleared the field. While it is null the
-  // amount is the chosen behaviour's points; once chosen it stays until the
-  // dialog closes, whatever behaviour or child is picked next.
-  const [ownAmount, setOwnAmount] = useState(null);
+  // The parent's own amount, with the behaviour it was chosen for: null until
+  // they choose one (minus, plus or a typed number); its amount is '' when
+  // they have cleared the field. It counts only for that behaviour: tapping a
+  // box, or a child change that moves the behaviour, starts again from the
+  // behaviour's points (V1-F design section 10: the amount sits under the
+  // boxes, so a box says what the amount is).
+  const [own, setOwn] = useState(null);
 
   const child = children.find((c) => c.id === childId) || children[0];
   const offered = child ? behavioursFor(categories, child.id) : [];
@@ -62,7 +62,7 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
     setChildId(initialChildId);
     setCategoryId(null);
     setNote('');
-    setOwnAmount(null);
+    setOwn(null);
   }, [isOpen, initialChildId]);
 
   // A2: keep the behaviour if this child can use it, otherwise their first.
@@ -71,20 +71,30 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
     if (!chosen && offered.length) setCategoryId(offered[0].id);
   }, [isOpen, chosen, offered]);
 
+  const ownAmount = own && chosen && own.for === chosen.id ? own.amount : null;
   const points = ownAmount === null ? (chosen ? (chosen.points ?? 1) : '') : ownAmount;
   const valid = !!chosen && canAward(points);
   // Nothing is said about an empty field; anything else that cannot be awarded gets the rule.
   const showRule = points !== '' && !canAward(points);
-  // Tapping the amount that is already showing changes nothing: it does not
-  // turn the behaviour's points into a chosen amount behind the parent's back.
+  const setAmount = (amount) => { if (chosen) setOwn({ for: chosen.id, amount }); };
   // While an award is being sent, nothing that decides the amount moves: the
   // amount controls are disabled, and a child or behaviour picked in flight is
   // ignored (it would show another amount than the one sent).
   const pickChild = (id) => { if (!submitting) setChildId(id); };
-  const pickBehaviour = (id) => { if (!submitting) setCategoryId(id); };
-  const pickAmount = (n) => {
-    if (ownAmount === null && n === points) return;
-    setOwnAmount(n);
+  // A box says what the amount is: tapping one, the selected one too, goes
+  // back to that behaviour's points.
+  const pickBehaviour = (id) => { if (submitting) return; setCategoryId(id); setOwn(null); };
+  // Minus and plus: one down or one up, kept within 1 to MAX_AWARD. From an
+  // empty field or something that is not a number, 1. From a number that is
+  // not whole, the next whole number in that direction.
+  const step = (by) => {
+    if (submitting) return;
+    const n = points === '' ? NaN : Number(points);
+    const moved = !Number.isFinite(n) ? 1 : by > 0 ? Math.floor(n) + 1 : Math.ceil(n) - 1;
+    const next = Math.min(MAX_AWARD, Math.max(1, moved));
+    // Minus at 1 (or plus at the top) changes nothing, so it chooses nothing.
+    if (ownAmount === null && next === points) return;
+    setAmount(next);
   };
 
   const submit = async () => {
@@ -111,48 +121,52 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
             <StepHeading n={1} title="Who's earned points?" hint="Select the child receiving the award." />
             <FamilyStrip children={children} selectedId={child?.id} onSelect={pickChild} />
           </section>
-          {offered.length > 0 && (
-            <section className="space-y-3 border-t border-border pt-5">
-              <StepHeading n={2} id="award-amount" title="How many points?" hint="Use the behaviour's points, or choose another amount." />
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2" role="group" aria-labelledby="award-amount">
-                {QUICK_AMOUNTS.map((n) => (
-                  <Button key={n} type="button" size="sm" variant={points === n ? 'default' : 'outline'} disabled={submitting}
-                    aria-pressed={points === n} className="tabular-nums" onClick={() => pickAmount(n)}>
-                    +{n}
-                  </Button>
-                ))}
-              </div>
-              {/* followModel: the field shows an amount that was not typed (a quick
-                  amount, the behaviour's points changing) even while it has focus,
-                  as a screen reader or switch can leave it. It is never remounted:
-                  a remount drops the keyboard focus in the middle of typing. */}
-              <NumberInput id="award-points" aria-label={PERCY.POINTS_COMPACT} inputMode="numeric" followModel
-                value={points} emptyValue="" min={1} max={MAX_AWARD} disabled={submitting}
-                aria-invalid={showRule} aria-describedby={showRule ? 'award-points-rule' : undefined}
-                onChange={setOwnAmount} onWheel={(e) => e.currentTarget.blur()}
-                className="text-lg font-semibold tabular-nums" />
-              {showRule && (
-                <p id="award-points-rule" role="alert" className="text-xs text-destructive">Points must be a whole number from 1 to {MAX_AWARD}.</p>
-              )}
-            </section>
-          )}
           <section className="space-y-3 border-t border-border pt-5">
-            <StepHeading n={offered.length > 0 ? 3 : 2} id="award-behaviour" title={`What did ${child?.name || 'they'} do?`} hint="Choose a positive behaviour." />
+            <StepHeading n={2} id="award-behaviour" title={`What did ${child?.name || 'they'} do?`} hint="Choose a positive behaviour." />
             {offered.length === 0 ? (
               <p className="text-sm text-muted-foreground">Add a behaviour in Family settings first.</p>
             ) : (
+              <>
               <div className={TILE_GRID} role="group" aria-labelledby="award-behaviour" data-tile-grid>
                 {offered.map((cat) => {
                   const on = cat.id === chosen?.id;
                   return (
                     <button key={cat.id} type="button" aria-pressed={on} onClick={() => pickBehaviour(cat.id)} data-tile
                       className={cn(TILE_LAYOUT, 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                        on ? 'border-2 border-selected-border bg-selected' : 'border border-border bg-card hover:bg-accent')}>
+                        on ? 'border border-selected-border ring-1 ring-selected-border bg-selected' : 'border border-border bg-card hover:bg-accent')}>
                       <BehaviourTileParts iconKey={cat.icon_key} name={cat.name} points={cat.points ?? 1} />
                     </button>
                   );
                 })}
               </div>
+              {/* Owner, 24 November 2026: the amount is one tight row under the
+                  boxes. At the ends of the range a button is aria-disabled, not
+                  disabled: a button that disables itself under the finger drops
+                  the focus. followModel: the field shows an amount set by minus
+                  or plus, or by a box, even while it has focus; it is never
+                  remounted (a remount drops the keyboard in the middle of typing). */}
+              <div className="flex items-center justify-between gap-3">
+                <Label id="award-points-label" htmlFor="award-points">Points</Label>
+                <div className="flex items-center gap-1.5" role="group" aria-labelledby="award-points-label">
+                  <Button type="button" variant="outline" size="icon" aria-label="One point fewer" disabled={submitting}
+                    aria-disabled={points === 1} className="text-lg aria-disabled:opacity-50" onClick={() => step(-1)}>
+                    <span aria-hidden="true">−</span>
+                  </Button>
+                  <NumberInput id="award-points" inputMode="numeric" followModel
+                    value={points} emptyValue="" min={1} max={MAX_AWARD} disabled={submitting}
+                    aria-invalid={showRule} aria-describedby={showRule ? 'award-points-rule' : undefined}
+                    onChange={setAmount} onWheel={(e) => e.currentTarget.blur()}
+                    className="w-16 px-0 text-center text-lg font-semibold tabular-nums" />
+                  <Button type="button" variant="outline" size="icon" aria-label="One point more" disabled={submitting}
+                    aria-disabled={points === MAX_AWARD} className="text-lg aria-disabled:opacity-50" onClick={() => step(1)}>
+                    <span aria-hidden="true">+</span>
+                  </Button>
+                </div>
+              </div>
+              {showRule && (
+                <p id="award-points-rule" role="alert" className="text-xs text-destructive">Points must be a whole number from 1 to {MAX_AWARD}.</p>
+              )}
+              </>
             )}
           </section>
           <section className="space-y-2 border-t border-border pt-5">

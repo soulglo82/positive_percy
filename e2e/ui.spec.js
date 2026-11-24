@@ -58,6 +58,14 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await sam.click();
   await expect(sam).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText("Sam's checklist")).toBeVisible();
+  // Section 10 (owner, 24 November): the card says a box acts at once, the
+  // boxes are one row from 375px, and the form is behind "Custom points".
+  await expect(page.getByText('Tap a box to give its points straight away.')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Award points/ })).toHaveCount(0);
+  for (const h of await page.locator('[data-tile-grid="even"] [data-tile]').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height * 2) / 2))) {
+    if (page.viewportSize().width >= 375) expect(h, 'a Quick Points box is one row').toBe(44);
+    else expect(h, 'below 375px a box keeps two rows').toBeGreaterThan(56);
+  }
   // Owner, 22 November: awarding points is the point of this page. The order
   // is the child picker, then Quick Points, Today's Goals, the available
   // points ("Little wins") and what the child is working towards. The DOM
@@ -87,7 +95,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
       separateColumns: left !== right && !left.contains(right) && !right.contains(left),
       left: box(left), right: box(right),
       leftCards: [...left.children].map(box), rightCards: [...right.children].map(box),
-      quickCardHasAward: !!left.children[0] && left.children[0].contains(hs[0]) && [...left.children[0].querySelectorAll('button')].some((b) => b.textContent.trim() === 'Award points') };
+      quickCardHasAward: !!left.children[0] && left.children[0].contains(hs[0]) && [...left.children[0].querySelectorAll('button')].some((b) => b.textContent.trim() === 'Custom points') };
   });
   expect(order.missing, 'every Home section is present').toBeUndefined();
   expect(order.domOrdered, 'DOM order: Quick Points, Goals, Little wins, Working towards').toBe(true);
@@ -100,11 +108,11 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   expect(quickTop, "Quick Points is above Today's Goals").toBeLessThan(goalsTop);
   expect(winsTop, 'Little wins is above Working towards').toBeLessThan(towardsTop);
   // Two cards a column, nothing between them but the gap, and the Quick
-  // Points card is the whole card (its Award points button is in it).
+  // Points card is the whole card (its Custom points button is in it).
   expect(order.separateColumns, 'the two pairs of cards are in separate columns').toBe(true);
   expect(order.leftCards.length, 'left column: Quick Points and Goals only').toBe(2);
   expect(order.rightCards.length, 'right column: Little wins and Working towards only').toBe(2);
-  expect(order.quickCardHasAward, 'the first card is Quick Points, with its Award points button').toBe(true);
+  expect(order.quickCardHasAward, 'the first card is Quick Points, with its Custom points button').toBe(true);
   expect(order.leftCards[1].top - order.leftCards[0].bottom, 'the gap between Quick Points and Goals').toBe(20);
   expect(order.rightCards[1].top - order.rightCards[0].bottom, 'the gap between Little wins and Working towards').toBe(20);
   if (order.oneColumn) {
@@ -139,16 +147,25 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await page.request.delete(`/api/rewards/${cheap.id}`, { headers });
 
   // V1-F: "Give Percy Points" - child, amount, behaviour, note.
-  await page.getByRole('button', { name: /^Award points/ }).first().click();
+  await page.getByRole('button', { name: 'Custom points' }).click();
   const award = page.getByRole('dialog');
   await expect(award.getByRole('heading', { name: 'Give Percy Points' })).toBeVisible();
   await expect(award.getByText('What did Sam do?')).toBeVisible();
   await checkScreen(page, 'add points', testInfo);
-  // Section 9 (owner, 23 November): a custom amount. An amount that cannot be
-  // awarded shows the rule; a typed amount shows on the button; a quick amount
-  // tapped afterwards shows in the field; choosing a behaviour keeps it. 4 is
-  // an amount no seeded behaviour has, so it can only come from the choice.
-  const amountField = award.getByRole('spinbutton', { name: 'Percy Points' });
+  // Section 10 (owner, 24 November): slim boxes, and one Points row under
+  // them: minus, the number, plus. From 375px a box is one row, 44px tall for
+  // the seeded names; below 375px it keeps the two-row layout of 22 November.
+  const boxHeights = (scope) => scope.locator('[data-tile]').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height * 2) / 2));
+  for (const h of await boxHeights(award)) {
+    if (page.viewportSize().width >= 375) expect(h, 'a behaviour box in the form is one row').toBe(44);
+    else expect(h, 'below 375px a box keeps two rows').toBeGreaterThan(56);
+  }
+  await expect(award.getByText('How many points?')).toHaveCount(0);
+  // An amount that cannot be awarded shows the rule; a typed amount shows on
+  // the button; plus and minus change it in the field; choosing a behaviour
+  // keeps it. 4 is an amount no seeded behaviour has, so it can only come
+  // from the choice.
+  const amountField = award.getByRole('spinbutton', { name: 'Points', exact: true });
   // Real keys, one at a time, over the amount the dialog opened with (PR #73
   // review): the field must stay the same field and keep the keyboard, so the
   // second character lands. fill() sets the whole text at once and cannot
@@ -187,11 +204,18 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await checkScreen(page, 'add points, amount refused', testInfo);
   await amountField.fill('25');
   await expect(award.getByRole('button', { name: 'Award 25 points' })).toBeEnabled();
-  await award.getByRole('group', { name: 'How many points?' }).getByRole('button', { name: '+4' }).click();
-  await expect(amountField).toHaveValue('4');
+  await award.getByRole('button', { name: 'One point fewer' }).click();
+  await expect(amountField).toHaveValue('24');
+  // Tapping a box sets Points to that box's points (here the first, worth 1).
   await award.getByRole('group', { name: /What did Sam do/ }).getByRole('button').first().click();
+  await expect(amountField).toHaveValue('1');
+  await amountField.fill('2');
+  const more = award.getByRole('button', { name: 'One point more' });
+  await more.click();
+  await more.click();
   await expect(amountField).toHaveValue('4');
   await expect(amountField).toHaveAttribute('data-same-field', 'yes');
+  await checkScreen(page, 'add points, points row', testInfo);
   await award.getByLabel('Add a note (optional)').fill('Shared the crayons');
   const samBefore = (await (await page.request.get('/api/children', { headers })).json()).find((k) => k.id === samId).total_points;
   const sent = page.waitForRequest((r) => r.method() === 'POST' && /\/api\/children\/[^/]+\/award$/.test(new URL(r.url()).pathname));
@@ -242,6 +266,73 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
 // layout when a name wraps or a badge is wide. The fixture's names all fit on
 // one line, so this swaps a long behaviour into Quick Points for the check
 // (one worker, so no other test sees it) and puts everything back.
+// V1-F design section 10 (design review): the four projects run at 320, 390,
+// 834 and 1280px, so the widths where one row is tightest were never run.
+// One row starts at 375px; at 360px the boxes keep two rows. At every width
+// from 375px each default name sits on one line in a 44px box, selected or
+// not (the selected box's border is the same width), and a two-line name
+// gives the same 44px.
+test('slim behaviour boxes hold their names at 360, 375, 390 and 414px', async ({ page, playwright }, testInfo) => {
+  test.skip(testInfo.project.name !== 'phone-390-touch', 'sets its own widths; one project is enough');
+  const api = await playwright.request.newContext({ baseURL: testInfo.project.use.baseURL, extraHTTPHeaders: { Authorization: `Bearer ${family.token}` } });
+  const call = async (method, path, data) => {
+    const r = await api.fetch(path, { method, data });
+    expect(r.ok(), `${method} ${path}: ${await r.text()}`).toBe(true);
+    return r.status() === 204 ? null : r.json();
+  };
+  const TWO_LINES = 'Brushing teeth nicely';
+  const clean = async () => {
+    for (const c of (await call('GET', '/api/behavior-categories')).filter((x) => x.name === TWO_LINES)) await call('DELETE', `/api/behavior-categories/${c.id}`);
+  };
+  await clean();
+  const DEFAULTS = ['Kindness', 'Helpfulness', 'Bravery', 'Resilience', 'Caring', 'Chores', 'Homework', 'Adventurous'];
+  const measure = (scope) => scope.locator('[data-tile]').evaluateAll((els) => els.map((el) => {
+    const name = el.querySelector('[data-tile-part="name"]');
+    return { name: name.textContent, height: Math.round(el.getBoundingClientRect().height * 2) / 2,
+      lines: Math.round(name.getBoundingClientRect().height / parseFloat(getComputedStyle(name).lineHeight)) };
+  }));
+  try {
+    await call('POST', '/api/behavior-categories', { name: TWO_LINES, icon: '🪥', points: 10 });
+    for (const width of [360, 375, 390, 414]) {
+      await page.setViewportSize({ width, height: 844 });
+      await go(page, '/');
+      const home = await measure(page.locator('[data-tile-grid="even"]'));
+      expect(home.length, `${width}px: Quick Points boxes`).toBe(4);
+      for (const t of home) {
+        if (width >= 375) expect(t, `${width}px Home: ${t.name}`).toMatchObject({ height: 44, lines: 1 });
+        else expect(t.height, `${width}px Home: two rows`).toBeGreaterThan(56);
+      }
+      await checkScreen(page, `home at ${width}`, testInfo);
+      await page.getByRole('button', { name: 'Custom points' }).click();
+      const form = page.getByRole('dialog');
+      await expect(form.getByRole('heading', { name: 'Give Percy Points' })).toBeVisible();
+      const check = async (state) => {
+        const tiles = await measure(form);
+        for (const name of DEFAULTS) {
+          const t = tiles.find((x) => x.name === name);
+          expect(t, `${width}px form: ${name} is listed`).toBeTruthy();
+          if (width >= 375) expect(t, `${width}px form, ${state}: ${name}`).toMatchObject({ height: 44, lines: 1 });
+          else expect(t.height, `${width}px form: two rows`).toBeGreaterThan(56);
+        }
+        const two = tiles.find((x) => x.name === TWO_LINES);
+        if (width >= 375) expect(two, `${width}px form, ${state}: a two-line name is the same height`).toMatchObject({ height: 44, lines: 2 });
+      };
+      await check('as opened');
+      // Selecting a box must not change the room its name has.
+      for (const name of ['Adventurous', 'Helpfulness', TWO_LINES]) {
+        await form.locator('[data-tile]').filter({ hasText: name }).click();
+        await check(`${name} selected`);
+      }
+      await form.locator('[data-tile]').filter({ hasText: TWO_LINES }).scrollIntoViewIfNeeded();
+      await checkScreen(page, `add points at ${width}`, testInfo);
+      await closeDialog(page);
+    }
+  } finally {
+    await clean();
+    await api.dispose();
+  }
+});
+
 test('behaviour tiles stay aligned with a long name and a wide badge', async ({ page, playwright }, testInfo) => {
   // Its own connection, not the page's: after a timeout the page is closed,
   // and the clean-up must still run (code review). Every reply is checked.
@@ -272,7 +363,7 @@ test('behaviour tiles stay aligned with a long name and a wide badge', async ({ 
     await expect(tiles.filter({ hasText: 'Tidying up without being asked' })).toContainText('+1000');
     await tiles.first().scrollIntoViewIfNeeded();
     await checkScreen(page, 'home long tile', testInfo);
-    await page.getByRole('button', { name: /^Award points/ }).first().click();
+    await page.getByRole('button', { name: 'Custom points' }).click();
     await expect(page.getByRole('dialog').getByRole('heading', { name: 'Give Percy Points' })).toBeVisible();
     await page.getByRole('dialog').locator('[data-tile]').filter({ hasText: 'Tidying up' }).scrollIntoViewIfNeeded();
     await checkScreen(page, 'add points long tile', testInfo);

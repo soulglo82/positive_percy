@@ -145,44 +145,53 @@ describe('Award Points (V1-F A)', () => {
   });
 });
 
-// Owner, 23 November 2026: a parent can give a custom amount again, as in the
-// old dialog (V1-F design section 9). The amount starts as the behaviour's
-// points; once the parent chooses one it stays until the dialog closes.
-describe('Award Points: the amount (V1-F section 9)', () => {
+// Owner, 24 November 2026 (V1-F design section 10): the amount is one row,
+// "Points", under the behaviour boxes: minus, the number, plus. It starts as
+// the behaviour's points; once the parent chooses an amount (typed, or set
+// with minus or plus) it stays for that behaviour; tapping a box starts again
+// from the box's points.
+describe('Award Points: the Points row (V1-F section 10)', () => {
   const RULE = 'Points must be a whole number from 1 to 1000.';
-  const amounts = (d) => within(d).getByRole('group', { name: 'How many points?' });
-  const field = (d) => within(d).getByRole('spinbutton', { name: 'Percy Points' });
-  const pressed = (d) => within(amounts(d)).getAllByRole('button').filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent);
+  const field = (d) => within(d).getByRole('spinbutton', { name: 'Points' });
+  const plus = (d) => within(d).getByRole('button', { name: 'One point more' });
+  const minus = (d) => within(d).getByRole('button', { name: 'One point fewer' });
   const type = (d, text) => { fireEvent.focus(field(d)); fireEvent.change(field(d), { target: { value: text } }); };
   const awardButton = (d) => within(d).getByRole('button', { name: /^Award/ });
   const tile = (d, name) => within(d).getByRole('button', { name });
+  const press = (button, times = 1) => { for (let i = 0; i < times; i += 1) fireEvent.click(button); };
 
-  it('starts as the behaviour\'s points, with the wording, the six quick amounts and the step order', () => {
+  it('two steps; the Points row sits under the boxes, inside the second step; the old amount step is gone', () => {
     const { d } = renderAward();
-    expect(d.textContent).toContain('How many points?');
-    expect(d.textContent).toContain("Use the behaviour's points, or choose another amount.");
-    expect(within(amounts(d)).getAllByRole('button').map((b) => b.textContent)).toEqual(['+1', '+2', '+3', '+4', '+5', '+10']);
+    const headings = within(d).getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    expect(headings).toEqual(["Who's earned points?", 'What did Lara do?']);
+    expect(d.textContent).not.toContain('How many points?');
+    expect(d.textContent).not.toContain("Use the behaviour's points, or choose another amount.");
+    for (const old of ['+2', '+4', '+5', '+10']) expect(within(d).queryByRole('button', { name: old })).toBeNull();
     expect(field(d).value).toBe('1');
-    expect(pressed(d)).toEqual(['+1']);
     expect(awardButton(d).textContent).toBe('Award 1 point');
     expect(d.textContent).not.toContain(RULE);
-    // Who, how many, what: the amount comes before the behaviours, as in the old dialog.
-    const headings = within(d).getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
-    expect(headings).toEqual(["Who's earned points?", 'How many points?', 'What did Lara do?']);
+    // After the last box, before the note, in the same section as the boxes.
+    const section = tile(d, 'Kindness +1').closest('section');
+    expect(section.contains(field(d))).toBe(true);
+    const boxes = within(d).getAllByRole('button', { name: /\+\d+$/ });
+    const after = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(after(boxes.at(-1), minus(d))).toBe(true);
+    expect(after(minus(d), field(d))).toBe(true);
+    expect(after(field(d), plus(d))).toBe(true);
+    expect(after(plus(d), within(d).getByLabelText('Add a note (optional)'))).toBe(true);
+    expect(within(section).getByText('Points', { selector: 'label' })).toBeTruthy();
   });
 
   it('untouched, the amount follows the chosen behaviour', () => {
     const { d } = renderAward();
     fireEvent.click(tile(d, 'Chores +3'));
     expect(field(d).value).toBe('3');
-    expect(pressed(d)).toEqual(['+3']);
     expect(awardButton(d).textContent).toBe('Award 3 points');
   });
 
-  it('a quick amount changes what is awarded; the behaviour\'s name is kept', async () => {
+  it('plus four times gives 5; the request carries it with the behaviour\'s name', async () => {
     const { d, onSubmit } = renderAward();
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+5' }));
-    expect(pressed(d)).toEqual(['+5']);
+    press(plus(d), 4);
     expect(field(d).value).toBe('5');
     expect(d.textContent).toContain('Lara earns 5 Percy Points');
     expect(d.textContent).toContain('For Kindness.');
@@ -191,66 +200,130 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     expect(onSubmit.mock.calls[0][1]).toEqual({ points: 5, category: 'Kindness', note: '' });
   });
 
-  it('a typed amount is awarded; no quick amount is pressed for it', async () => {
+  it('minus takes one away from the behaviour\'s points', () => {
+    const { d } = renderAward();
+    fireEvent.click(tile(d, 'Chores +3'));
+    press(minus(d));
+    expect(field(d).value).toBe('2');
+    expect(awardButton(d).textContent).toBe('Award 2 points');
+  });
+
+  it('stays inside 1 to 1000, and the buttons stay usable at both ends', () => {
+    const { d } = renderAward();
+    press(minus(d), 3);
+    expect(field(d).value).toBe('1');
+    expect(minus(d).disabled).toBe(false); // a disabled button would drop the focus
+    expect(minus(d).getAttribute('aria-disabled')).toBe('true');
+    type(d, '999');
+    expect(minus(d).getAttribute('aria-disabled')).toBe('false');
+    press(plus(d), 3);
+    expect(field(d).value).toBe('1000');
+    expect(plus(d).disabled).toBe(false);
+    expect(plus(d).getAttribute('aria-disabled')).toBe('true');
+    expect(awardButton(d).textContent).toBe('Award 1000 points');
+    expect(d.textContent).not.toContain(RULE);
+  });
+
+  it.each([
+    ['', 'plus', '1'], ['', 'minus', '1'],
+    ['0', 'plus', '1'], ['0', 'minus', '1'], ['-3', 'plus', '1'], ['-3', 'minus', '1'],
+    ['2.5', 'plus', '3'], ['2.5', 'minus', '2'], ['0.5', 'minus', '1'],
+    ['1001', 'plus', '1000'], ['1001', 'minus', '1000'], ['5000', 'minus', '1000'],
+    ['25', 'plus', '26'], ['25', 'minus', '24'], ['007', 'plus', '8'],
+  ])('typed %j then %s gives %s, which can be awarded', (text, which, expected) => {
+    const { d } = renderAward();
+    type(d, text);
+    press(which === 'plus' ? plus(d) : minus(d));
+    expect(field(d).value).toBe(expected);
+    expect(awardButton(d).disabled).toBe(false);
+    expect(awardButton(d).textContent).toBe(`Award ${expected} ${expected === '1' ? 'point' : 'points'}`);
+    expect(d.textContent).not.toContain(RULE);
+  });
+
+  it('a typed amount is awarded', async () => {
     const { d, onSubmit } = renderAward();
     type(d, '25');
-    expect(pressed(d)).toEqual([]);
     expect(d.textContent).toContain('Lara earns 25 Percy Points');
     fireEvent.click(within(d).getByRole('button', { name: 'Award 25 points' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit.mock.calls[0][1].points).toBe(25);
   });
 
-  it('a quick amount chosen while the field still has focus shows in the field', () => {
-    // A screen reader or switch can press the button and leave focus in the field.
-    const { d } = renderAward();
-    type(d, '25');
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+4' }));
-    expect(field(d).value).toBe('4');
-    expect(awardButton(d).textContent).toBe('Award 4 points');
-  });
-
-  it('a chosen amount stays when another behaviour or child is picked', async () => {
+  it('a chosen amount stays through a child change that keeps the behaviour, and is sent', async () => {
     const { d, onSubmit } = renderAward();
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+10' }));
     fireEvent.click(tile(d, 'Chores +3'));
+    press(plus(d), 7);
     expect(field(d).value).toBe('10');
-    expect(d.textContent).toContain('Lara earns 10 Percy Points');
+    fireEvent.click(tile(d, /^Omar/)); // Chores is Omar's too: the behaviour and the amount stay
+    expect(tile(d, 'Chores +3').getAttribute('aria-pressed')).toBe('true');
+    expect(field(d).value).toBe('10');
+    expect(d.textContent).toContain('Omar earns 10 Percy Points');
     expect(d.textContent).toContain('For Chores.');
-    fireEvent.click(tile(d, /^Omar/));
-    fireEvent.click(tile(d, 'Piano +2'));
-    expect(field(d).value).toBe('10');
-    fireEvent.click(tile(d, /^Lara/)); // Piano is not Lara's: the behaviour moves to Kindness
-    expect(tile(d, 'Kindness +1').getAttribute('aria-pressed')).toBe('true');
-    expect(field(d).value).toBe('10');
     fireEvent.click(within(d).getByRole('button', { name: 'Award 10 points' }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    expect(onSubmit.mock.calls[0][1]).toEqual({ points: 10, category: 'Kindness', note: '' });
+    expect(onSubmit.mock.calls[0][0].name).toBe('Omar');
+    expect(onSubmit.mock.calls[0][1]).toEqual({ points: 10, category: 'Chores', note: '' });
+  });
+
+  it('tapping a box sets Points to that box\'s points, whatever was chosen before', () => {
+    const { d } = renderAward();
+    press(plus(d), 9);
+    expect(field(d).value).toBe('10');
+    fireEvent.click(tile(d, 'Chores +3'));
+    expect(field(d).value).toBe('3');
+    expect(awardButton(d).textContent).toBe('Award 3 points');
+    type(d, '40');
+    fireEvent.click(tile(d, 'Chores +3')); // the selected box too
+    expect(field(d).value).toBe('3');
+    type(d, '');
+    fireEvent.click(tile(d, 'Kindness +1')); // an emptied field is refilled
+    expect(field(d).value).toBe('1');
+    expect(awardButton(d).textContent).toBe('Award 1 point');
+  });
+
+  it('a child change that moves the behaviour starts again from the new behaviour\'s points', () => {
+    const { d } = renderAward();
+    fireEvent.click(tile(d, /^Omar/));
+    fireEvent.click(tile(d, 'Piano +2'));
+    press(plus(d), 5);
+    expect(field(d).value).toBe('7');
+    fireEvent.click(tile(d, /^Lara/)); // Piano is not Lara's: the behaviour moves to Kindness
+    expect(tile(d, 'Kindness +1').getAttribute('aria-pressed')).toBe('true');
+    expect(field(d).value).toBe('1');
+    expect(awardButton(d).textContent).toBe('Award 1 point');
+  });
+
+  it('minus at 1 changes nothing and chooses nothing; plus then minus is a chosen amount', () => {
+    const { d } = renderAward();
+    press(minus(d), 2); // already 1: not a choice
+    fireEvent.click(tile(d, /^Omar/)); // the behaviour stays, so a chosen amount would stay
+    expect(field(d).value).toBe('1');
+    press(plus(d));
+    press(minus(d)); // back to 1, but now chosen
+    expect(field(d).value).toBe('1');
+    expect(minus(d).getAttribute('aria-disabled')).toBe('true');
+    expect(plus(d).getAttribute('aria-disabled')).toBe('false');
   });
 
   it('an empty field cannot be awarded and says nothing', () => {
-    const { d, onSubmit } = renderAward();
+    const { d } = renderAward();
     type(d, '');
     expect(field(d).value).toBe('');
     expect(awardButton(d).disabled).toBe(true);
     expect(awardButton(d).textContent).toBe('Award points');
-    expect(d.textContent).not.toContain('Lara earns');
     expect(d.textContent).not.toContain(RULE);
+    expect(d.textContent).not.toContain('Lara earns');
     expect(field(d).getAttribute('aria-invalid')).toBe('false');
-    // Another behaviour does not fill it back in: the parent emptied it.
-    fireEvent.click(tile(d, 'Chores +3'));
+    // A child change that keeps the behaviour does not refill an amount the parent emptied.
+    fireEvent.click(tile(d, /^Omar/));
     expect(field(d).value).toBe('');
     expect(awardButton(d).disabled).toBe(true);
-    fireEvent.click(awardButton(d));
-    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('a number too large to be a number cannot be awarded', () => {
-    // A number field turns "1e400" into nothing or into Infinity, depending on the browser: neither is awarded.
     const { d, onSubmit } = renderAward();
     type(d, '1e400');
     expect(awardButton(d).disabled).toBe(true);
-    expect(d.textContent).not.toContain('Lara earns');
     fireEvent.click(awardButton(d));
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -260,10 +333,10 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     type(d, text);
     expect(awardButton(d).disabled).toBe(true);
     expect(awardButton(d).textContent).toBe('Award points');
-    expect(d.textContent).not.toContain('Lara earns');
     expect(within(d).getByRole('alert').textContent).toBe(RULE);
     expect(field(d).getAttribute('aria-invalid')).toBe('true');
     expect(field(d).getAttribute('aria-describedby')).toBe(within(d).getByRole('alert').id);
+    expect(d.textContent).not.toContain('Lara earns');
     fireEvent.click(awardButton(d));
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -271,14 +344,12 @@ describe('Award Points: the amount (V1-F section 9)', () => {
   it.each([['1000', 1000], ['1e3', 1000], ['007', 7]])('typing %j awards %i', async (text, n) => {
     const { d, onSubmit } = renderAward();
     type(d, text);
-    expect(d.textContent).not.toContain(RULE);
-    fireEvent.click(within(d).getByRole('button', { name: `Award ${n} points` }));
+    fireEvent.click(awardButton(d));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit.mock.calls[0][1].points).toBe(n);
   });
 
-  // PR #73 review: the first typed character must not replace the field. The
-  // other tests here set the whole amount in one event, which cannot see that.
+  // PR #73 review: the first typed character must not replace the field.
   it('typing an amount one character at a time keeps the same field, with focus', () => {
     const { d } = renderAward();
     const input = field(d);
@@ -311,7 +382,7 @@ describe('Award Points: the amount (V1-F section 9)', () => {
   });
 
   it('an amount that was not typed never replaces the field or takes its focus', () => {
-    // Quick amount, another behaviour, another child: each can happen with
+    // Minus, plus, another behaviour, another child: each can happen with
     // focus still in the field (a screen reader or switch).
     const { d } = renderAward();
     const input = field(d);
@@ -319,35 +390,32 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     fireEvent.click(tile(d, 'Chores +3'));
     expect(field(d)).toBe(input);
     expect(input.value).toBe('3');
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+4' }));
+    press(plus(d));
     expect(field(d)).toBe(input);
     expect(input.value).toBe('4');
     fireEvent.change(input, { target: { value: '40' } });
     expect(input.value).toBe('40');
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+5' }));
-    expect(input.value).toBe('5');
+    press(minus(d));
+    expect(input.value).toBe('39');
     fireEvent.click(within(d).getByRole('button', { name: /^Omar/ }));
     expect(field(d)).toBe(input);
-    expect(input.value).toBe('5');
+    expect(input.value).toBe('39');
     expect(document.activeElement).toBe(input);
   });
 
-  it('a quick amount pressed twice over typed text shows the plain amount', () => {
-    // "03" stands for 3. After +5 the typed text is gone for good: +3 shows "3".
+  it('typed text with leading zeros, then plus and minus, shows the plain amount', () => {
     const { d } = renderAward();
     const input = field(d);
     act(() => input.focus());
     fireEvent.change(input, { target: { value: '03' } });
     expect(input.value).toBe('03');
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+5' }));
-    expect(input.value).toBe('5');
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+3' }));
+    press(plus(d));
+    expect(input.value).toBe('4');
+    press(minus(d));
     expect(input.value).toBe('3');
   });
 
   it('the field follows the behaviour\'s points even while it has focus', () => {
-    // Until an amount is chosen the field shows the behaviour's points; a
-    // screen reader can pick another behaviour and leave focus in the field.
     const { d } = renderAward();
     fireEvent.focus(field(d));
     fireEvent.click(tile(d, 'Chores +3'));
@@ -355,35 +423,19 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     expect(awardButton(d).textContent).toBe('Award 3 points');
   });
 
-  it('tapping the amount already showing does not fix it; tapping it after a change does', () => {
-    const { d } = renderAward();
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+1' })); // already pressed: nothing changes
-    fireEvent.click(tile(d, 'Chores +3'));
-    expect(field(d).value).toBe('3'); // still following the behaviour
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+1' })); // now a choice
-    fireEvent.click(tile(d, 'Kindness +1'));
-    fireEvent.click(tile(d, 'Chores +3'));
-    expect(field(d).value).toBe('1');
-    expect(awardButton(d).textContent).toBe('Award 1 point');
-  });
-
-  it('a typed amount that equals a quick amount presses it', () => {
-    const { d } = renderAward();
-    type(d, '05');
-    expect(pressed(d)).toEqual(['+5']);
-    expect(awardButton(d).textContent).toBe('Award 5 points');
-  });
-
   it('a refused award keeps the dialog open with the chosen amount; the amount cannot change while it is being sent', async () => {
     let release;
     const onSubmit = vi.fn(() => new Promise((r) => { release = r; }));
     const { d, onClose } = renderAward({ onSubmit });
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+10' }));
+    press(plus(d), 9);
     fireEvent.click(within(d).getByRole('button', { name: 'Award 10 points' }));
     expect(field(d).disabled).toBe(true);
-    expect(within(amounts(d)).getAllByRole('button').every((b) => b.disabled)).toBe(true);
+    expect(plus(d).disabled).toBe(true);
+    expect(minus(d).disabled).toBe(true);
     release(false);
     await waitFor(() => expect(field(d).disabled).toBe(false));
+    expect(plus(d).disabled).toBe(false);
+    expect(minus(d).disabled).toBe(false);
     expect(onClose).not.toHaveBeenCalled();
     expect(field(d).value).toBe('10');
     expect(onSubmit.mock.calls[0][1].points).toBe(10);
@@ -425,19 +477,16 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     await waitFor(() => expect(field(d).disabled).toBe(false));
     expect(field(d)).toBe(input);
     expect(input.value).toBe('25');
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+4' }));
-    expect(input.value).toBe('4');
+    press(minus(d));
+    expect(input.value).toBe('24');
   });
 
-  it('"005" then +5 with the focus left in the field keeps the typed text; the amount is 5', () => {
-    const { d } = renderAward();
-    const input = field(d);
-    act(() => input.focus());
-    fireEvent.change(input, { target: { value: '005' } });
-    expect(pressed(d)).toEqual(['+5']);
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+5' }));
-    expect(input.value).toBe('005');
-    expect(awardButton(d).textContent).toBe('Award 5 points');
+  it('no behaviour to choose: no Points row', () => {
+    const { d } = renderAward({ categories: [] });
+    expect(within(d).queryByRole('spinbutton')).toBeNull();
+    expect(within(d).queryByRole('button', { name: 'One point more' })).toBeNull();
+    expect(within(d).queryByRole('button', { name: 'One point fewer' })).toBeNull();
+    expect(awardButton(d).disabled).toBe(true);
   });
 
   const Dialog = (props) => {
@@ -447,11 +496,11 @@ describe('Award Points: the amount (V1-F section 9)', () => {
 
   it('reopening the same dialog starts fresh', () => {
     const view = render(<Dialog isOpen categories={cats} />);
-    fireEvent.click(within(amounts(screen.getByRole('dialog'))).getByRole('button', { name: '+10' }));
+    press(plus(screen.getByRole('dialog')), 9);
+    expect(field(screen.getByRole('dialog')).value).toBe('10');
     view.rerender(<Dialog isOpen={false} categories={cats} />);
     view.rerender(<Dialog isOpen categories={cats} />);
     expect(field(screen.getByRole('dialog')).value).toBe('1');
-    expect(pressed(screen.getByRole('dialog'))).toEqual(['+1']);
     expect(tile(screen.getByRole('dialog'), 'Kindness +1').getAttribute('aria-pressed')).toBe('true');
   });
 
@@ -461,9 +510,20 @@ describe('Award Points: the amount (V1-F section 9)', () => {
     view.rerender(<Dialog isOpen categories={cats} />);
     const d = screen.getByRole('dialog');
     expect(field(d).value).toBe('1');
-    fireEvent.click(within(amounts(d)).getByRole('button', { name: '+4' }));
+    press(plus(d), 3);
     view.rerender(<Dialog isOpen categories={cats.map((c) => ({ ...c }))} />); // the same behaviours, new objects
     expect(field(screen.getByRole('dialog')).value).toBe('4');
+  });
+
+  it('minus at 1 chooses nothing: the amount still follows the behaviour if its points change', () => {
+    const view = render(<Dialog isOpen categories={cats} />);
+    press(minus(screen.getByRole('dialog')), 2); // already 1: nothing changes
+    view.rerender(<Dialog isOpen categories={cats.map((c) => (c.id === 'k1' ? { ...c, points: 2 } : c))} />);
+    expect(field(screen.getByRole('dialog')).value).toBe('2');
+    // A real choice does not follow.
+    press(plus(screen.getByRole('dialog')));
+    view.rerender(<Dialog isOpen categories={cats.map((c) => (c.id === 'k1' ? { ...c, points: 5 } : c))} />);
+    expect(field(screen.getByRole('dialog')).value).toBe('3');
   });
 
   it('a behaviour with no stored points counts as 1', () => {

@@ -127,7 +127,8 @@ export function QuickPoints({ child, actions, awarding, onAward, onOpenAward, on
       <CardContent className="p-4 sm:p-5 space-y-3">
         <div>
           <h2 className="font-display font-bold text-lg text-primary">Quick Points</h2>
-          <p className="text-sm text-muted-foreground">Award points for positive behaviour, whenever it happens.</p>
+          {/* Owner, 24 November 2026: say that a box acts at once. No boxes, no line. */}
+          {actions.length > 0 && <p className="text-sm text-muted-foreground">Tap a box to give its points straight away.</p>}
         </div>
         {actions.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -150,11 +151,13 @@ export function QuickPoints({ child, actions, awarding, onAward, onOpenAward, on
         )}
         {/* One column below 360px: side by side the label and its icon ran to the button's edges (owner review 2026-11-22). */}
         <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
-          <Button onClick={onOpenAward}>
+          {/* Owner, 24 November 2026: the boxes are the main thing; the form is
+              "Custom points" (soft orange) beside Rewards (soft purple), neither solid. */}
+          <Button variant="warm" onClick={onOpenAward}>
             <PercyIcon id="phosphor:plus-circle:duotone" className="h-4 w-4" />
-            Award points
+            Custom points
           </Button>
-          <Button variant="outline" onClick={onOpenRewards}>
+          <Button variant="soft" onClick={onOpenRewards}>
             <PercyIcon id="phosphor:gift:duotone" className="h-4 w-4" />
             Rewards
           </Button>
