@@ -353,3 +353,32 @@
 /* Children never scroll sideways (repo rule, e2e/checks.js): a large family
    wraps to a second row; nothing shrinks. */
 .pv-selector { flex-wrap: wrap; overflow-x: visible; scroll-snap-type: none; row-gap: var(--pv-space-3); }
+
+/* ---- Quick Points, owner decisions of 24 Nov 2026 in V1.1 type ----
+   Slimmer boxes; one row (icon, name, +N) where a 15px name fits on one line
+   (from 834px); on phones a compact two-row box keeps the name at 15px
+   instead of the 12px a one-row phone box would need. */
+.pv-quick-tile { min-height: var(--pv-tap); padding: var(--pv-space-3); gap: var(--pv-space-2); }
+.pv-quick-tile .pv-medallion { width: var(--pv-space-6); height: var(--pv-space-6); }
+.pv-quick-tile .pv-medallion svg { width: var(--pv-space-5); height: var(--pv-space-5); }
+@media (min-width: 834px) {
+  .pv-quick { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+  .pv-quick-tile { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto; grid-template-areas: "icon label points";
+    align-items: center; align-content: center; padding: var(--pv-space-2) var(--pv-space-3); }
+  .pv-quick-tile__label, .pv-quick-tile__points { align-self: center; }
+}
+.pv-quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: var(--pv-space-2); }
+.pv-btn--warm { background: var(--pv-warm-soft); color: var(--pv-ink); border-color: var(--pv-warm-ink); }
+.pv-btn--warm svg { color: var(--pv-warm-ink); }
+.pv-btn--warm:hover:not(:disabled) { background: var(--pv-star-soft); }
+.pv-btn--soft { background: var(--pv-accent); color: var(--pv-ink); border-color: var(--pv-input-border); }
+.pv-btn--soft svg { color: var(--pv-purple); }
+.pv-btn--soft:hover:not(:disabled) { background: var(--pv-lilac); }
+/* The name spans its whole named area (an earlier "grid-column: auto" cut it
+   to the first column), and the phone box stays compact (8px padding). */
+.pv-quick-tile__label { grid-column: label; grid-row: label; }
+.pv-quick-tile { grid-template-columns: auto minmax(0, 1fr); }
+@media (max-width: 833.98px) { .pv-quick-tile { padding: var(--pv-space-2) var(--pv-space-3); } }
+@media (min-width: 834px) { .pv-quick-tile { grid-template-columns: auto minmax(0, 1fr) auto; } }
+/* The two buttons keep the icon beside the label; the label wraps instead. */
+.pv-quick-actions .pv-btn { flex-wrap: nowrap; padding-inline: var(--pv-space-3); }

@@ -32,6 +32,8 @@ module.exports = {
       earn: { DEFAULT: c('earn'), soft: c('earn-soft') },
       star: { DEFAULT: c('star'), soft: c('star-soft') },
       sunrise: c('sunrise'),
+      // V1-F section 10: the Custom points button. warm-ink is the border and icon (3:1 or more on warm-soft and on card).
+      warm: { soft: c('warm-soft'), ink: c('warm-ink') },
       kid: Object.fromEntries([1, 2, 3, 4, 5, 6].flatMap((n) => [[String(n), c(`kid-${n}`)], [`${n}-soft`, c(`kid-${n}-soft`)]])),
       selected: { DEFAULT: c('selected'), border: c('selected-border') },
       warning: { DEFAULT: c('warning'), border: c('warning-border'), foreground: c('warning-foreground') },
@@ -77,12 +79,26 @@ module.exports = {
       DEFAULT: '0 1px 3px 0 hsl(var(--foreground) / 0.08), 0 1px 2px -1px hsl(var(--foreground) / 0.08)',
       none: 'none',
     },
+    // The whole list, smallest first, not an extension: Tailwind writes the
+    // rules in this order, and an added screen is written after the built-in
+    // ones, so `phone:` (375px) would beat `sm:` (640px) on wide screens
+    // (code review of V1-F section 10; e2e/ui.spec.js measures the tiles).
+    screens: {
+      // Narrow phones: below 360px some grids drop to 3 columns.
+      xs: '360px',
+      // V1-F section 10: from here a behaviour tile is one row (icon, name, +N).
+      phone: '375px',
+      sm: '640px',
+      md: '768px',
+      lg: '1024px',
+      xl: '1280px',
+      '2xl': '1536px',
+      touch: { raw: '(pointer: coarse)' },
+      // V1-F section 11: a window too short to keep a pop-up's footer fixed
+      // (a phone on its side, or with the keyboard open on Android).
+      short: { raw: '(max-height: 419px)' },
+    },
     extend: {
-      screens: {
-        // Narrow phones: below 360px some grids drop to 3 columns.
-        xs: '360px',
-        touch: { raw: '(pointer: coarse)' },
-      },
       keyframes: {
         'accordion-down': { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },
         'accordion-up': { from: { height: 'var(--radix-accordion-content-height)' }, to: { height: '0' } },

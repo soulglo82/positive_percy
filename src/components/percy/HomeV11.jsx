@@ -14,7 +14,7 @@ import { ChildSelector, PercyFox, MorningArt } from './parts';
 
 // The morning scene: child picker, the question, Percy, and the points the
 // child can use now as a plain balance (no ring: it is not progress).
-export function HomeHero({ children, child, streak, foxPlay, onSelect, onOpenRewards }) {
+export function HomeHero({ children, child, streak, foxPlay, onSelect }) {
   const available = child.available_points ?? child.total_points ?? 0;
   return (
     <section className="pv-scene pv-scene--morning" aria-labelledby="home-title">
@@ -37,9 +37,6 @@ export function HomeHero({ children, child, streak, foxPlay, onSelect, onOpenRew
             <span className="pv-t-action">{points(available)}</span>
           </p>
         </div>
-        <button type="button" className="pv-btn pv-btn--sun" onClick={onOpenRewards}>
-          <PercyIcon id="phosphor:gift:duotone" />Rewards
-        </button>
       </div>
     </section>
   );
@@ -47,12 +44,13 @@ export function HomeHero({ children, child, streak, foxPlay, onSelect, onOpenRew
 
 // Quick Points: the family's quick behaviours for the selected child. Labels
 // are 15px at every width; with large text the tiles go one across.
-export function HomeQuickPoints({ child, actions, awarding, onAward, onOpenAward }) {
+export function HomeQuickPoints({ child, actions, awarding, onAward, onOpenAward, onOpenRewards }) {
   return (
     <section className="pv-section" aria-labelledby="quick-title">
       <div>
         <h2 id="quick-title" className="pv-t-section">Quick Points</h2>
-        <p className="pv-t-support">Award points for positive behaviour, whenever it happens.</p>
+        {/* Owner, 24 November 2026: say that a box acts at once. No boxes, no line. */}
+        {actions.length > 0 && <p className="pv-t-support">Tap a box to give its points straight away.</p>}
       </div>
       {actions.length === 0 ? (
         <div className="pv-empty">
@@ -73,9 +71,16 @@ export function HomeQuickPoints({ child, actions, awarding, onAward, onOpenAward
           ))}
         </div>
       )}
-      <button type="button" className="pv-btn pv-btn--secondary pv-btn--block" onClick={onOpenAward}>
-        <PercyIcon id="phosphor:plus-circle:duotone" />Award points
-      </button>
+      {/* Owner, 24 November 2026: the boxes are the main thing; the form is
+          "Custom points" (soft orange) beside Rewards (soft purple), neither solid. */}
+      <div className="pv-quick-actions">
+        <button type="button" className="pv-btn pv-btn--warm" onClick={onOpenAward}>
+          <PercyIcon id="phosphor:plus-circle:duotone" />Custom points
+        </button>
+        <button type="button" className="pv-btn pv-btn--soft" onClick={onOpenRewards}>
+          <PercyIcon id="phosphor:gift:duotone" />Rewards
+        </button>
+      </div>
     </section>
   );
 }

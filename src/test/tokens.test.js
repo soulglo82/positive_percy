@@ -219,6 +219,20 @@ describe('Percy v2 brand values (E02)', () => {
     expect(ratio('sunrise', 'card')).toBeLessThan(3);
     expect(ratio('sunrise', 'background')).toBeLessThan(3);
   });
+  // V1-F section 10: the Custom points button (warm) and the Rewards button
+  // (accent). Their text is the foreground; the outline and the icon must
+  // show against the fill and against the card they sit on.
+  it('the soft orange and soft purple buttons are readable and have a visible edge', () => {
+    expect(TOKENS['warm-soft']).toBe('#f1e4d8');
+    expect(TOKENS['warm-ink']).toBe('#c25000');
+    expect(ratio('foreground', 'warm-soft')).toBeGreaterThanOrEqual(4.5);
+    expect(ratio('foreground', 'accent')).toBeGreaterThanOrEqual(4.5);
+    expect(ratio('warm-ink', 'warm-soft')).toBeGreaterThanOrEqual(3);
+    expect(ratio('warm-ink', 'card')).toBeGreaterThanOrEqual(3);
+    expect(ratio('input', 'accent')).toBeGreaterThanOrEqual(3);
+    expect(ratio('input', 'card')).toBeGreaterThanOrEqual(3);
+    expect(ratio('primary', 'accent')).toBeGreaterThanOrEqual(3);
+  });
   it('sunrise is only used as a background fill in the app (never text, border or ring)', () => {
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
     const files = walk(path.join(ROOT, 'src')).filter((f) => /\.jsx?$/.test(f) && !f.includes(`${path.sep}test${path.sep}`) && !/\.test\./.test(f));

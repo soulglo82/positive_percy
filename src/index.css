@@ -122,6 +122,8 @@
     --earn: 127.9 44.7% 29.8%; /* #2a6e33 */
     --star: 43.7 100% 61%; /* #ffc938 */
     --sunrise: 24.9 100% 50%; /* #ff6a00 */
+    --warm-soft: 28.8 47.2% 89.6%; /* #f1e4d8 */
+    --warm-ink: 24.9 100% 38%; /* #c25000 */
     --selected: 278.6 25% 89%; /* #e5dcea */
     --selected-border: 264.9 65.7% 33.1%; /* #4b1d8c */
     --warning: 41.7 100% 91%; /* #fff1d1 */
@@ -167,6 +169,9 @@
     --pv-ink-soft: hsl(var(--muted-foreground));
     --pv-lilac: hsl(var(--selected));
     --pv-white: hsl(var(--card));
+    --pv-warm-soft: hsl(var(--warm-soft));
+    --pv-warm-ink: hsl(var(--warm-ink));
+    --pv-accent: hsl(var(--accent));
     --pv-earn: hsl(var(--earn));
     --pv-earn-soft: hsl(var(--earn-soft));
     --pv-star-soft: hsl(var(--star-soft));

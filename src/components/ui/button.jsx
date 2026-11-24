@@ -13,6 +13,10 @@ const buttonVariants = cva("inline-flex items-center justify-center gap-2 whites
       secondary: "border border-border bg-muted text-foreground hover:bg-accent",
       ghost: "text-foreground hover:bg-accent",
       link: "text-primary underline-offset-4 hover:underline",
+      // V1-F section 10 (owner, 24 November 2026): two quiet, colour-coded buttons
+      // on Home. Neither is solid, so the Quick Points boxes stay the main thing.
+      warm: "border border-warm-ink bg-warm-soft text-foreground hover:bg-warning [&_svg]:text-warm-ink",
+      soft: "border border-input bg-accent text-foreground hover:bg-selected [&_svg]:text-primary",
     },
     size: {
       default: "h-10 px-4 py-2 touch:h-11 touch:min-w-11",

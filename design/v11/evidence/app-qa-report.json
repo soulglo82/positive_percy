@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "issued": "2026-11-23",
+  "issued": "2026-11-24",
   "owner": "Percy V1.1 design engineering",
   "status": "PASSING",
   "base": "local server, fictional seeded families",
@@ -1135,7 +1135,7 @@
       "detail": ""
     },
     {
-      "name": "Award points opens the V1 dialog",
+      "name": "Custom points opens the Give Percy Points dialog",
       "pass": true,
       "detail": ""
     },

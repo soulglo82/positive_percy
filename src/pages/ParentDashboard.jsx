@@ -248,11 +248,12 @@ export default function ParentDashboard() {
           // Today's Goals, then what the child is working towards.
           <div className="pv">
             <HomeHero children={ordered} child={homeChild} streak={streak} foxPlay={foxPlay}
-              onSelect={setHomeChildId} onOpenRewards={() => handleSpendRewards(homeChild)} />
+              onSelect={setHomeChildId} />
             <div className="pv-columns">
               <div className="pv-col">
                 <HomeQuickPoints child={homeChild} actions={homeActions} awarding={awardingIds.includes(homeChild.id)}
-                  onAward={handleQuickAction} onOpenAward={() => handleAddPoints(homeChild)} />
+                  onAward={handleQuickAction} onOpenAward={() => handleAddPoints(homeChild)}
+                  onOpenRewards={() => handleSpendRewards(homeChild)} />
               </div>
               <div className="pv-col">
                 <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} selectedChildId={homeChild.id} />

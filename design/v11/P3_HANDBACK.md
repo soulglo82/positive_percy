@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Version | 0.1.0 |
-| Issued | 23 November 2026 |
+| Version | 0.2.0 |
+| Issued | 23 November 2026 (revised 24 November) |
 | Owner | Percy V1.1 design engineering |
 | Status | **Draft PR for owner review. Not merged, not deployed.** Production V1 is untouched. |
 | Direction | Owner review of 23 November 2026 (P3 go-ahead with conditions 1 to 9) |
@@ -137,8 +137,42 @@ Independent fresh-context review (read-only, given the code and screenshots, not
 - A very long single first name (e.g. "Alexandra-Josephine Montgomery-Wellington") breaks mid-word in the 32px Home headline at 320px. It is readable; recorded for the next visual pass.
 - Home at 1280px leaves space under Quick Points (review nit); the "before" screenshots use a different sample family from the "after" ones.
 
+## 10. Validation round, 24 November
+
+### 10a. Production moved on: merged, not overwritten
+
+After PR #72 was opened, the owner approved and merged #73 and #74 into the base branch, and so into production. They change the very Quick Points card this PR replaces: the line "Tap a box to give its points straight away.", "Custom points" (soft orange) beside "Rewards" (soft purple) with neither solid, slimmer boxes, and a compact Give Percy Points form. As opened, PR #72 would have undone the wording and buttons.
+
+The base was merged into this branch (a merge commit; no rebase or force-push). Then:
+
+| Owner decision of 24 Nov (V1-F §10–11) | In V1.1 Home |
+|---|---|
+| "Tap a box to give its points straight away." (only when there are boxes) | Kept, exact |
+| "Custom points" (soft orange) beside "Rewards" (soft purple), neither solid | Kept, exact, under Quick Points; Rewards moved out of the hero to sit beside it. The tokens are the owner's (`--warm-soft`, `--warm-ink`) |
+| Compact Give Percy Points form | Unchanged; it comes from the base branch |
+| Slimmer boxes, one row (icon, name, +N) from 375px | One row from 834px. On phones a compact two-row box (at most 80px; it was about 100px), see 10b |
+
+### 10b. A decision for the owner: 12px or 15px names on phones
+
+V1's one-row phone boxes fit names such as "Helpfulness" and "Adventurous" between 375 and 833px only at 12px. The V1.1 baseline (reaffirmed 24 Nov) keeps action labels at 15px and nothing interactive under 14px. Both cannot hold at once in two columns. This branch keeps V1.1 type: phone boxes are two rows (icon and +N, then the name), every default name stays on one line with at least 7px to spare (tested at 320, 360, 375, 390 and 414px), and from 834px boxes are one row. **If you prefer V1's one-row 12px phone boxes, say so and they will be used instead.**
+
+### 10c. Test changes in this round
+
+| Test | Change |
+|---|---|
+| `e2e/ui.spec.js` Home journey | Kept the owner's wording checks from #74 ("Tap a box…", no "Award points"); the V1 box measurements (height 44/46px, 12px names, 14px icons) replaced by the V1.1 contract (names ≥14px, boxes ≥44px, one row from 834px, compact two rows on phones); "Custom points" is in the Quick Points section |
+| `e2e/ui.spec.js` slim boxes at 320–414px | Home part: one line, ≥7px to spare, ≤80px, at every width. The form part (V1 component) unchanged |
+| `design/v11/qa/run-app-qa.mjs` | Opens the form with "Custom points" |
+
+### 10d. For final acceptance (owner, 24 Nov)
+
+- **A very long name at 320px:** "Alexandra-Josephine Montgomery-Wellington" breaks mid-word in the 32px Home headline. Readable, not yet acceptable; needs a design answer (for example, a smaller headline step for long names).
+- **No real-photo visual test yet:** every screenshot shows initials. The photo path, sizes, crop and fallback are built and unit-tested with test cards, but nobody has looked at real child photos in the screens. Needs authorised photos on the owner's device (they are never committed), or a one-off local review.
+- **Codex:** see the session handback for whether the Codex review ran. The earlier fresh-context review (section 8) is not a Codex review.
+
 ## Change log
 
 | Version | Date | Change |
 |---|---|---|
 | 0.1.0 | 2026-11-23 | First issue |
+| 0.2.0 | 2026-11-24 | Section 10: base merged (#73, #74); 24 Nov Quick Points decisions in V1.1; 12px/15px decision; final-acceptance items |

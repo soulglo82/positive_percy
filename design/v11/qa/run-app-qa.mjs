@@ -175,8 +175,8 @@ for (const pct of [150, 200]) for (const [w, h] of [[320, 568], [390, 844]]) for
   record('Home has no progress rings (the balance is a number)', (await page.locator('.pv-ring').count()) === 0);
   await page.getByRole('button', { name: 'Omar' }).click();
   record('switching child changes the headline and balance', /Omar/.test(await page.locator('#home-title').textContent()));
-  await page.getByRole('button', { name: 'Award points' }).click();
-  record('Award points opens the V1 dialog', await page.getByRole('dialog').isVisible());
+  await page.getByRole('button', { name: 'Custom points' }).click();
+  record('Custom points opens the Give Percy Points dialog', await page.getByRole('dialog').isVisible());
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Rewards' }).click();
   record('Rewards opens the V1 rewards dialog for the child', await page.getByRole('dialog').isVisible());
