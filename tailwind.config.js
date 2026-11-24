@@ -94,6 +94,9 @@ module.exports = {
       xl: '1280px',
       '2xl': '1536px',
       touch: { raw: '(pointer: coarse)' },
+      // V1-F section 11: a window too short to keep a pop-up's footer fixed
+      // (a phone on its side, or with the keyboard open on Android).
+      short: { raw: '(max-height: 419px)' },
     },
     extend: {
       keyframes: {

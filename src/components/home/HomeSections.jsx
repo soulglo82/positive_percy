@@ -44,7 +44,29 @@ function ProgressBar({ value, max }) {
 
 // Selected child is marked with a purple 2px border and aria-pressed. The
 // approved orange border is below 3:1 (intended deviation, recorded).
-export function FamilyStrip({ children, selectedId, onSelect }) {
+export function FamilyStrip({ children, selectedId, onSelect, compact = false }) {
+  // Compact (Give Percy Points, V1-F design section 11): one line per child,
+  // avatar and name only. A button is as wide as its content and grows to
+  // share the row; a name wraps only when it is wider than the whole row, so
+  // short names never break and a long one never overflows. The selected
+  // child is marked by a ring, so its border is the same width as the others'.
+  if (compact) {
+    return (
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Choose a child">
+        {children.map((child) => {
+          const selected = child.id === selectedId;
+          return (
+            <button key={child.id} type="button" aria-pressed={selected} onClick={() => onSelect(child.id)}
+              className={cn('flex min-h-11 max-w-full shrink-0 grow items-center gap-2 rounded-lg border bg-card px-2 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                selected ? 'border-selected-border ring-1 ring-selected-border' : 'border-border hover:bg-accent')}>
+              <ChildAvatar name={child.name} url={child.avatar_url} size="xs" colour={childColour(child, children)} decorative />
+              <span className="min-w-0 break-words text-sm font-semibold text-foreground">{child.name}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <div className="grid grid-cols-3 gap-2 xs:gap-3" role="group" aria-label="Choose a child">
       {/* Three across at every width. Below 360px it used to be two, which left the third child alone on a second row (design critique). On a desktop it was already three: the old `lg:grid-cols-4` never applied, because the custom `xs` rule is emitted after `lg` (code review). */}

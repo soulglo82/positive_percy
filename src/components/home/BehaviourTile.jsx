@@ -51,3 +51,24 @@ export default function BehaviourTileParts({ iconKey, name, points }) {
     </>
   );
 }
+
+// Give Percy Points (V1-F design section 11, owner 24 November 2026: "the
+// categories have points listed, these don't need to be there"): a tile with
+// no "+N". With no badge the name has room on one row at every width (about
+// 99px at 320px in the form; "Adventurous" needs about 80), so there is one
+// layout below 640px: icon and name on one row, 44px tall, two lines of a
+// 12px name the same height. A grid of these declares data-tile-badge="none"
+// so e2e/checks.js measures it without a badge (and fails if one appears).
+export const TILE_GRID_PLAIN = 'grid grid-cols-2 gap-1.5 sm:gap-2';
+export const TILE_LAYOUT_PLAIN = 'flex items-center gap-1 sm:gap-2 min-h-11 rounded-md px-1.5 py-1 sm:p-2.5 text-left text-xs sm:text-sm font-semibold text-foreground';
+
+export function BehaviourTilePlain({ iconKey, name }) {
+  return (
+    <>
+      <span aria-hidden="true" data-tile-part="icon" className="shrink-0 text-primary">
+        <CategoryIcon iconKey={iconKey} className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
+      </span>
+      <span data-tile-part="name" className="min-w-0 flex-1 break-words">{name}</span>
+    </>
+  );
+}

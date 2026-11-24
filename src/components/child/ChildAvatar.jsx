@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils';
 // decorative: the name is shown beside it, so the photo is hidden from
 // assistive tech (E05: a chip reads "Sam", not "Sam Sam").
 export default function ChildAvatar({ name, url, size = 'md', colour, className, decorative = false }) {
-  const box = size === 'sm' ? 'w-8 h-8 text-xs' : size === 'lg' ? 'w-16 h-16 text-title' : 'w-12 h-12 text-lg';
+  // xs: the one-line child picker in Give Percy Points (V1-F design section 11).
+  const box = size === 'xs' ? 'w-6 h-6 text-xs' : size === 'sm' ? 'w-8 h-8 text-xs' : size === 'lg' ? 'w-16 h-16 text-title' : 'w-12 h-12 text-lg';
   // The ring is drawn 4px outside the picture; the same margin keeps its outer
   // edge on the line the text below starts on (design critique: it hung 4px left).
   const ring = colour ? cn('m-1 ring-2 ring-offset-2 ring-offset-card', colour.ring) : '';

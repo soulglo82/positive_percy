@@ -100,6 +100,12 @@ export async function checkScreen(page, label, testInfo) {
     // thicker), to half a pixel.
     for (const grid of scope.querySelectorAll('[data-tile-grid]')) {
       const tiles = [...grid.querySelectorAll('[data-tile]')].filter(visible);
+      // A grid whose tiles carry no "+N" says so (the form, V1-F section 11).
+      // Only then is a tile without a badge allowed, and then none may have
+      // one: a Home grid that lost its badges, or a grid that mixes the two,
+      // still fails.
+      const plain = grid.getAttribute('data-tile-badge') === 'none';
+      if (plain && grid.querySelector('[data-tile-part="badge"]')) out.uneven.push('a badge in a grid that declares none');
       const at = tiles.map((t) => {
         const outer = t.getBoundingClientRect();
         // Inside the border, from fractional figures (clientWidth is a whole
@@ -109,20 +115,21 @@ export async function checkScreen(page, label, testInfo) {
         const box = { left: outer.left + edge('Left'), top: outer.top + edge('Top'), right: outer.right - edge('Right'), bottom: outer.bottom - edge('Bottom') };
         const part = (name) => t.querySelector(`[data-tile-part="${name}"]`)?.getBoundingClientRect();
         const [icon, name, badge] = ['icon', 'name', 'badge'].map(part);
-        if (!icon || !name || !badge) return null;
+        if (!icon || !name || (!badge && !plain)) return null;
         const meet = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
-        const overlap = meet(name, badge) || meet(name, icon) || meet(icon, badge);
+        const overlap = meet(name, icon) || (!!badge && (meet(name, badge) || meet(icon, badge)));
         // A name cut off at the bottom (a fixed height or a line clamp).
         const nameEl = t.querySelector('[data-tile-part="name"]');
         const cut = nameEl.scrollHeight > nameEl.clientHeight + 1;
         // Two rows (narrow): parts hang from the top of the tile. One row
         // (wide): parts are centred on the tile's middle line.
-        const centred = cs.alignContent === 'center';
+        const centred = cs.alignContent === 'center' || (cs.display === 'flex' && cs.alignItems === 'center');
         const middle = (box.top + box.bottom) / 2;
         const y = (r) => (centred ? (r.top + r.bottom) / 2 - middle : r.top - box.top);
         return { top: outer.top, bottom: outer.bottom, height: outer.height, overlap, cut, label: t.textContent.trim().slice(0, 20),
-          same: { iconLeft: icon.left - box.left, iconY: y(icon), nameLeft: name.left - box.left,
-            nameY: y(name), badgeRight: box.right - badge.right, badgeY: y(badge) } };
+          same: { iconLeft: icon.left - box.left, iconY: y(icon), nameLeft: name.left - box.left, nameY: y(name),
+            // With a badge: where the badge sits. Without: where the name's box ends.
+            ...(badge ? { badgeRight: box.right - badge.right, badgeY: y(badge) } : { nameRight: box.right - name.right }) } };
       });
       if (at.some((x) => !x)) { out.uneven.push('a tile has no icon, name or badge part'); continue; }
       const spread = (values) => Math.max(...values) - Math.min(...values);

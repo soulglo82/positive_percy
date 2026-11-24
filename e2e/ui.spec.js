@@ -160,22 +160,43 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await closeDialog(page);
   await page.request.delete(`/api/rewards/${cheap.id}`, { headers });
 
-  // V1-F: "Give Percy Points" - child, amount, behaviour, note.
+  // V1-F: "Give Percy Points", the compact form (design section 11).
   await page.getByRole('button', { name: 'Custom points' }).click();
   const award = page.getByRole('dialog');
   await expect(award.getByRole('heading', { name: 'Give Percy Points' })).toBeVisible();
   await expect(award.getByText('What did Sam do?')).toBeVisible();
   await checkScreen(page, 'add points', testInfo);
-  // Section 10 (owner, 24 November): slim boxes, and one Points row under
-  // them: minus, the number, plus. From 375px a box is one row, 44px tall for
-  // the seeded names; below 375px it keeps the two-row layout of 22 November.
-  expectBoxes(await boxFacts(award), 'the form');
-  await expect(award.getByText('How many points?')).toHaveCount(0);
-  // An amount that cannot be awarded shows the rule; a typed amount shows on
-  // the button; plus and minus change it in the field; tapping a box sets it
-  // back to the box's points. 4 is an amount no seeded behaviour has, so it
-  // can only come from the choice.
+  // Section 11 (owner, 24 November, version B): the category boxes carry no
+  // "+N" and are one row at every width; the amount comes only from the
+  // Points row, which is fixed above Cancel and Award.
+  const grid = award.getByRole('group', { name: /What did Sam do/ });
+  await expect(grid).toHaveAttribute('data-tile-badge', 'none');
+  await expect(award.locator('[data-tile-part="badge"]')).toHaveCount(0);
+  await expect(award).not.toContainText('+1');
+  for (const gone of ["Who's earned points?", 'How many points?', 'Choose a positive behaviour.']) await expect(award.getByText(gone)).toHaveCount(0);
+  const formBoxes = await grid.locator('[data-tile]').evaluateAll((els) => els.map((el) => {
+    const cs = getComputedStyle(el);
+    const icon = el.querySelector('[data-tile-part="icon"]').firstElementChild;
+    return { height: Math.round(el.getBoundingClientRect().height * 2) / 2, text: cs.fontSize, padding: `${cs.paddingTop} ${cs.paddingLeft}`, icon: `${Math.round(icon.getBoundingClientRect().width)}px` };
+  }));
+  expect(formBoxes.length, 'the form lists the categories').toBeGreaterThan(4);
+  for (const f of formBoxes) {
+    if (page.viewportSize().width >= 640) expect(f, 'from 640px a form box').toMatchObject({ text: '14px', padding: '10px 10px', icon: '20px' });
+    else expect(f, 'a slim form box').toMatchObject({ height: 44, text: '12px', padding: '4px 6px', icon: '14px' });
+  }
   const amountField = award.getByRole('spinbutton', { name: 'Points', exact: true });
+  // The Points row and the buttons are on screen as the pop-up opens, at every size.
+  for (const fixed of [amountField, award.getByRole('button', { name: 'One point fewer' }), award.getByRole('button', { name: 'One point more' }), award.getByRole('button', { name: 'Award 1 point' }), award.getByRole('button', { name: 'Cancel' })]) {
+    await expect(fixed).toBeInViewport({ ratio: 1 });
+  }
+  // On a 390 x 844 phone the whole form fits: nothing to scroll (nine categories, three children).
+  if (testInfo.project.name === 'phone-390-touch') {
+    const list = await award.locator('.overflow-y-auto').evaluate((el) => ({ content: el.scrollHeight, room: el.clientHeight }));
+    expect(list.content, 'the form does not scroll at 390 x 844').toBeLessThanOrEqual(list.room);
+  }
+  // An amount that cannot be awarded shows the rule; a typed amount shows on
+  // the button; plus and minus change it in the field; a category never
+  // changes it. 4 is an amount no seeded behaviour has.
   // Real keys, one at a time, over the amount the dialog opened with (PR #73
   // review): the field must stay the same field and keep the keyboard, so the
   // second character lands. fill() sets the whole text at once and cannot
@@ -216,9 +237,10 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await expect(award.getByRole('button', { name: 'Award 25 points' })).toBeEnabled();
   await award.getByRole('button', { name: 'One point fewer' }).click();
   await expect(amountField).toHaveValue('24');
-  // Tapping a box sets Points to that box's points (here the first, worth 1).
-  await award.getByRole('group', { name: /What did Sam do/ }).getByRole('button').first().click();
-  await expect(amountField).toHaveValue('1');
+  // Choosing a category does not change the amount.
+  await grid.getByRole('button').nth(1).click();
+  await expect(grid.getByRole('button').nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await expect(amountField).toHaveValue('24');
   await amountField.fill('2');
   const more = award.getByRole('button', { name: 'One point more' });
   await more.click();
@@ -226,11 +248,15 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await expect(amountField).toHaveValue('4');
   await expect(amountField).toHaveAttribute('data-same-field', 'yes');
   await checkScreen(page, 'add points, points row', testInfo);
+  // The note is behind a link; it opens with the cursor in it.
+  await award.getByRole('button', { name: 'Add a note' }).click();
+  await expect(award.getByLabel('Add a note (optional)')).toBeFocused();
   await award.getByLabel('Add a note (optional)').fill('Shared the crayons');
+  await checkScreen(page, 'add points, note open', testInfo);
   const samBefore = (await (await page.request.get('/api/children', { headers })).json()).find((k) => k.id === samId).total_points;
   const sent = page.waitForRequest((r) => r.method() === 'POST' && /\/api\/children\/[^/]+\/award$/.test(new URL(r.url()).pathname));
   await award.getByRole('button', { name: 'Award 4 points' }).click();
-  expect((await sent).postDataJSON().points).toBe(4);
+  expect((await sent).postDataJSON()).toMatchObject({ points: 4, note: 'Shared the crayons' });
   await expect(award).toHaveCount(0);
   await expect.poll(async () => (await (await page.request.get('/api/children', { headers })).json()).find((k) => k.id === samId).total_points).toBe(samBefore + 4);
   await page.getByRole('button', { name: 'Undo' }).first().click();
@@ -271,13 +297,13 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   expect(await page.evaluate(() => localStorage.getItem('percy_onboarding_done'))).toBe('true');
 });
 
-// V1-F design section 10 (design review): the four projects run at 320, 390,
-// 834 and 1280px, so the widths where one row is tightest were never run.
-// One row starts at 375px; at 360px the boxes keep two rows. At every width
-// from 375px each default name sits on one line in a 44px box, selected or
-// not (the selected box's border is the same width), and a two-line name
-// gives the same 44px.
-test('slim behaviour boxes hold their names at 360, 375, 390 and 414px', async ({ page, playwright }, testInfo) => {
+// V1-F design sections 10 and 11 (design reviews): the four projects run at
+// 320, 390, 834 and 1280px, so the widths where one row is tightest were
+// never run. Home's boxes (with "+N") are one row from 375px and keep two
+// rows below. The form's boxes (no "+N") are one row at every width. Where a
+// box is one row, each default name sits on one line in a 44px box with room
+// to spare, selected or not, and a two-line name gives the same 44px.
+test('slim behaviour boxes hold their names at 320, 360, 375, 390 and 414px', async ({ page, playwright }, testInfo) => {
   test.skip(testInfo.project.name !== 'phone-390-touch', 'sets its own widths; one project is enough');
   const api = await playwright.request.newContext({ baseURL: testInfo.project.use.baseURL, extraHTTPHeaders: { Authorization: `Bearer ${family.token}` } });
   const call = async (method, path, data) => {
@@ -285,7 +311,7 @@ test('slim behaviour boxes hold their names at 360, 375, 390 and 414px', async (
     expect(r.ok(), `${method} ${path}: ${await r.text()}`).toBe(true);
     return r.status() === 204 ? null : r.json();
   };
-  const TWO_LINES = 'Brushing teeth nicely';
+  const TWO_LINES = 'Brushing teeth without any fuss';
   const clean = async () => {
     for (const c of (await call('GET', '/api/behavior-categories')).filter((x) => x.name === TWO_LINES)) await call('DELETE', `/api/behavior-categories/${c.id}`);
   };
@@ -304,7 +330,7 @@ test('slim behaviour boxes hold their names at 360, 375, 390 and 414px', async (
   const SPARE = 7; // px a one-line default name must have left over
   try {
     await call('POST', '/api/behavior-categories', { name: TWO_LINES, icon: '🪥', points: 10 });
-    for (const width of [360, 375, 390, 414]) {
+    for (const width of [320, 360, 375, 390, 414]) {
       await page.setViewportSize({ width, height: 844 });
       await go(page, '/');
       const home = await measure(page.locator('[data-tile-grid="even"]'));
@@ -328,14 +354,14 @@ test('slim behaviour boxes hold their names at 360, 375, 390 and 414px', async (
         for (const name of DEFAULTS) {
           const t = tiles.find((x) => x.name === name);
           expect(t, `${width}px form: ${name} is listed`).toBeTruthy();
-          if (width >= 375) {
-            expect(t, `${width}px form, ${state}: ${name}`).toMatchObject({ height: 44, lines: 1 });
-            expect(t.spare, `${width}px form, ${state}: ${name} has room to spare`).toBeGreaterThanOrEqual(SPARE);
-          }
-          else expect(t.height, `${width}px form: two rows`).toBeGreaterThan(56);
+          expect(t, `${width}px form, ${state}: ${name}`).toMatchObject({ height: 44, lines: 1 });
+          expect(t.spare, `${width}px form, ${state}: ${name} has room to spare`).toBeGreaterThanOrEqual(SPARE);
         }
         const two = tiles.find((x) => x.name === TWO_LINES);
+        // From 375px this name takes two lines and its box is still 44px. On a
+        // narrower phone it takes three and the box grows: never cut off.
         if (width >= 375) expect(two, `${width}px form, ${state}: a two-line name is the same height`).toMatchObject({ height: 44, lines: 2 });
+        else { expect(two.lines, `${width}px form: the long name wraps`).toBeGreaterThanOrEqual(2); expect(two.height, `${width}px form: its box holds every line`).toBe(two.lines <= 2 ? 44 : two.lines * 16 + 10); }
       };
       await check('as opened');
       // Selecting a box must not change the room its name has.
@@ -349,6 +375,43 @@ test('slim behaviour boxes hold their names at 360, 375, 390 and 414px', async (
     }
   } finally {
     try { await clean(); } finally { await api.dispose(); }
+  }
+});
+
+// V1-F design section 11 (design review): the Points row and the buttons are
+// fixed at the bottom of the pop-up. In a short window (a phone on its side,
+// or with the keyboard open on Android) they must stay reachable: from 420px
+// of height they stay fixed and inside the screen; below that the pop-up
+// scrolls as one piece and each can be brought into view and used.
+test('the Give Percy Points pop-up in short windows', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'phone-390-touch', 'sets its own sizes; one project is enough');
+  for (const [width, height] of [[390, 450], [320, 300], [568, 320]]) {
+    await page.setViewportSize({ width, height });
+    await go(page, '/');
+    await page.getByRole('button', { name: 'Custom points' }).click();
+    const form = page.getByRole('dialog');
+    await expect(form.getByRole('heading', { name: 'Give Percy Points' })).toBeVisible();
+    await form.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => {}))));
+    const where = `${width} x ${height}`;
+    const amount = form.getByRole('spinbutton', { name: 'Points', exact: true });
+    if (height >= 420) {
+      for (const fixed of [amount, form.getByRole('button', { name: 'Award 1 point' })]) await expect(fixed, `${where}: fixed and on screen`).toBeInViewport({ ratio: 1 });
+      await checkScreen(page, `add points at ${width} by ${height}`, testInfo);
+    }
+    // Every control can be reached and used.
+    await amount.scrollIntoViewIfNeeded();
+    await expect(amount, `${where}: the amount field can be brought on screen`).toBeInViewport({ ratio: 1 });
+    await amount.fill('7');
+    const award = form.getByRole('button', { name: 'Award 7 points' });
+    await award.scrollIntoViewIfNeeded();
+    await expect(award, `${where}: Award can be brought on screen`).toBeInViewport({ ratio: 1 });
+    await expect(award).toBeEnabled();
+    const last = form.locator('[data-tile]').last();
+    await last.scrollIntoViewIfNeeded();
+    await expect(last, `${where}: the last category can be brought on screen`).toBeInViewport({ ratio: 1 });
+    await last.click();
+    await expect(last).toHaveAttribute('aria-pressed', 'true');
+    await closeDialog(page);
   }
 });
 

@@ -73,6 +73,26 @@ describe('FamilyStrip', () => {
   });
 });
 
+// V1-F design section 11: Give Percy Points uses a one-line picker.
+describe('FamilyStrip, compact (Give Percy Points)', () => {
+  it('one line per child: the name only, the selected one marked, no weekly figure', () => {
+    const onSelect = vi.fn();
+    const kids = [lara, { ...lara, id: 'c2', name: 'Omar' }, { ...lara, id: 'c3', name: 'Alexandra-Josephine Montgomery-Wellington' }];
+    wrap(<FamilyStrip compact children={kids} selectedId="c1" onSelect={onSelect} />);
+    const group = screen.getByRole('group', { name: 'Choose a child' });
+    expect(within(group).getAllByRole('button').map((b) => b.getAttribute('aria-pressed'))).toEqual(['true', 'false', 'false']);
+    expect(within(group).getByRole('button', { name: 'Lara' })).toBeTruthy();
+    expect(group.textContent).not.toContain('this week');
+    fireEvent.click(within(group).getByRole('button', { name: 'Omar' }));
+    expect(onSelect).toHaveBeenCalledWith('c2');
+    // A button is never wider than the row, and a name can wrap inside it.
+    const long = within(group).getByRole('button', { name: 'Alexandra-Josephine Montgomery-Wellington' });
+    expect(long.className).toMatch(/(^|\s)max-w-full(\s|$)/);
+    // The selected child's border is the same width as the others' (a ring marks it).
+    for (const b of within(group).getAllByRole('button')) expect(b.className).not.toMatch(/border-2/);
+  });
+});
+
 describe('QuickPoints and StreakStrip', () => {
   it('tiles name the behaviour, points and child; none ticked links to Settings', () => {
     const onAward = vi.fn();
