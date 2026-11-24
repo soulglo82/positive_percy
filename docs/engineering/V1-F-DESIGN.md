@@ -752,8 +752,8 @@ The owner: the "Little wins, big adventures!" card "looks out of place". It is a
 
 | ID | Rule |
 | --- | --- |
-| P1 | Home shows the selected child's available points once, in one slim card directly under the child picker and above Quick Points: the piggy-bank icon, "Available now for {name}", and "{n} point(s)". It spans the page width at every size |
-| P2 | The figure is the one shown today: `available_points`, falling back to `total_points`, then 0. It keeps the `data-available` hook, and it changes with the selected child |
+| P1 | Home shows the selected child's available points once, in one slim card directly under the child picker and above Quick Points: a 36px piggy-bank tile, "Available now for {name}", and "{n} point(s)" at `text-lg`. One `<p>` holds the label and the figure with a real space between them, so it reads and copies as "Available now for Lara 90 points"; the name is in `<bdi>`; the icon is hidden from screen readers; it is not a live region (an award already raises a toast). On a phone the figure sits at the right and drops under the label when both are too long for one line; from `lg` the figure follows the label directly rather than sitting at the far edge of a wide page. **This supersedes the owner's rule of 22 November (`V1-RELEASE-ASSESSMENT.md` §3.5, "Nothing sits between the child picker and Quick Points"), by the owner's own choice of this layout from a picture on 24 November.** The cost is measured on the built page and reported to the owner: where Quick Points now starts and whether its boxes and both buttons are still on the first screen at 390 × 844 |
+| P2 | The figure is the one shown today: `available_points`, falling back to `total_points`, then 0, printed as plain digits. `data-available` stays on the bare number. The line carries no `data-figure` (that hook's alignment check in `e2e/checks.js` is for the stacked figure on Children and Child View, which keep `PointsFigure`); Home now differs from those two screens on purpose |
 | P3 | The heading "Little wins, big adventures!" and the line "Every positive step counts." are removed. The line is a paragraph, not a heading, so the heading outline of Home is Welcome back, Quick Points, Daily Wins, What you're working towards |
 | P4 | Order on a phone and in the DOM: child picker, points line, Quick Points, Daily Wins, What you're working towards. At desktop width the left column is Quick Points then Daily Wins and the right column is What you're working towards alone |
 
@@ -764,12 +764,19 @@ Paths: `home/HomeSections.jsx` (`LittleWins` becomes `AvailableLine`), `pages/Pa
 | # | Input | Expected |
 | --- | --- | --- |
 | A1 | 1 point | "1 point" |
-| A2 | 0 points, and a child with no `available_points` field | "0 points"; the fallback to `total_points` |
-| A3 | A 30-character name with no spaces at 320px | The name wraps or breaks inside the line; the figure stays on one line at the right; no sideways scroll |
-| A4 | 1,000,000 points | The figure is not clipped at 320px |
+| A2 | 0 points; no `available_points` but `total_points` 40; neither field | "0 points"; "40 points"; "0 points" |
+| A3 | A 30-character name with no spaces and 1000000 points at 320px | The name breaks inside the line, the figure drops under it, nothing is clipped and the page does not scroll sideways |
+| A4 | 1000000 points with a short name | "1000000 points" on one line at the right |
 | A5 | Select another child | The name and the figure both change |
+| A6 | Home loading, failed with nothing to show, or no children | No line |
+| A7 | A name in Arabic script | The number and "points" keep their order (`<bdi>`) |
+| A8 | Desktop, child with no Big Goal and no requests | The right column is the short "What you're working towards" card alone; columns stay level at the top |
 
-Tests: unit for P1 to P3 and A1, A2, A5; browser for P4 by position at all four sizes and A3, A4 by measurement. Not covered: none beyond §12.5.
+Tests: unit for P1 to P3 (the exact text of the line, the bare number hook, no heading, no live region) and A1, A2, A5 (as a prop change), A7. Browser, all four sizes: the Home order test is rewritten, not edited: three headings (Quick Points, Daily Wins, What you're working towards); the line is directly under the picker and Quick Points directly under the line (replacing "Quick Points is within 48px of the picker"); the Quick Points heading is still on the first screen at 800px tall or more, and at 390 × 844 the Quick Points card ends above the bottom navigation for the test family; the line is outside the two-column grid; the right column holds exactly one card; columns level and equal width as before; A3 and A4 by measurement; A6. Not covered: a screen reader in a real browser; text zoom at 200%; widths under 320px.
+
+### 13.3 Design review (fresh context, before the build)
+
+Two blocking findings, both adopted: P1 overrode the owner's recorded rule of 22 November without saying so or measuring the cost (now stated in P1, measured and reported); the Home order test needed a rewrite, not an edit (now listed). Ten non-blocking, adopted: no `data-figure` and the bare-number hook (P2); the other readers of `LittleWins` (path list); one paragraph with a real separator and no live region (P1); the heading trade-off (the line belongs to no heading and is reached by reading on from the child picker: accepted); edge cases A2 split, A3 with A4, A6 to A8; the desktop figure kept next to its label (P1); "card" and "line" are the same thing: a card-styled row of about 52px.
 
 Wording: "Available now for {name}" is new (today: "Available now" under the figure). Removed: "Little wins, big adventures!", "Every positive step counts.".
 
