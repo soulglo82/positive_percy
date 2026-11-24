@@ -14,7 +14,7 @@ async function callGoals(path, options = {}) {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(body.error || 'Could not update goals');
+    const err = new Error(body.error || 'Could not update Daily Wins');
     err.status = res.status;
     throw err;
   }

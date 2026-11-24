@@ -14,7 +14,7 @@ export default function RewardTile({ reward, onEdit }) {
       <p className="break-words font-display font-bold text-foreground">{reward.title}</p>
       {/* "{cost} points · Bigger achievement": approved wording for a bigger goal (D1, N7). */}
       <p className="text-sm text-muted-foreground tabular-nums">
-        {reward.cost_points} {pointsWord(reward.cost_points)}{reward.is_bigger_goal ? ' · Bigger achievement' : ''}
+        {reward.cost_points} {pointsWord(reward.cost_points)}{reward.is_bigger_goal ? ' · Big Goal' : ''}
       </p>
       <span className={cn('self-start rounded-md border px-2 py-0.5 text-xs font-semibold',
         visible ? 'border-border bg-muted text-primary' : 'border-border bg-card text-muted-foreground')}>

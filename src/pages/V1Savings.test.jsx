@@ -1,7 +1,7 @@
 // D1 savings screens (docs/engineering/D1-SAVINGS-LEDGER-DESIGN.md §19.3):
-// Children "Saving for something bigger" and its Edit dialog, Child View's
-// points card and "My next big adventure", Home's goal, the Rewards
-// "Bigger rewards" section and form switch, Spend leaving goals out, and the
+// Children "Big Goals" and its Edit dialog, Child View's
+// points card and "My Big Goal", Home's goal, the Rewards
+// "Big Goals" section and form switch, Spend leaving goals out, and the
 // Activity rows. Every figure comes from the server (child.goals).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within, fireEvent, waitFor, cleanup } from '@testing-library/react';
@@ -61,13 +61,13 @@ beforeEach(() => {
   global.fetch = vi.fn(async () => ({ ok: true, json: async () => [] }));
 });
 
-describe('Children: Saving for something bigger', () => {
+describe('Children: Big Goals', () => {
   it('shows each goal from the server, with the approved figures, and leaves goals out of weekly treats', async () => {
     mount(<Children />);
-    expect(await screen.findByRole('heading', { name: 'Saving for something bigger' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Big Goals' })).toBeTruthy();
     expect(screen.getByText('120 of 300 points saved')).toBeTruthy();
     expect(screen.getAllByText('180 to go').length).toBeGreaterThan(0);
-    expect(screen.getByText('Weekly target and bigger goal')).toBeTruthy();
+    expect(screen.getByText('Weekly target and Big Goals')).toBeTruthy();
     expect(screen.getByText('Bike: 180 to go')).toBeTruthy();
     // Goals are not weekly treats.
     const treats = screen.getByRole('heading', { name: 'Weekly treats to choose from' }).closest('div').parentElement;
@@ -77,7 +77,7 @@ describe('Children: Saving for something bigger', () => {
 
   it('Edit: save is limited by available and by what the goal still needs; move back by what is saved', async () => {
     mount(<Children />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Big Goals for Lara' }));
     const d = await screen.findByRole('dialog');
     expect(d.querySelector('[data-saved]').textContent).toBe('120'); // figure and caption, like "Available now" beside it
     expect(d.querySelector('[data-saved]').nextElementSibling.textContent).toBe('Saved');
@@ -102,7 +102,7 @@ describe('Children: Saving for something bigger', () => {
     state.children = [{ ...lara, available_points: 2006, saved_total: 1500, goals: [goal('g1', 'Bike', 5000, 1500)] }];
     state.rewards = [R('g1', 'Bike', 5000, { is_bigger_goal: true })];
     mount(<Children />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Big Goals for Lara' }));
     const d = await screen.findByRole('dialog');
     expect(within(d).getByText('Save up to 1000 · Move back up to 1000')).toBeTruthy();
     expect(within(d).getByLabelText('Points', { exact: true }).getAttribute('max')).toBe('1000'); // the field agrees with the help text
@@ -116,7 +116,7 @@ describe('Children: Saving for something bigger', () => {
   it('Edit: a save sends one request with the amount and offers Undo', async () => {
     saveTowards.mockResolvedValue({ event: { id: 'e1' }, child: lara });
     mount(<Children />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Big Goals for Lara' }));
     const d = await screen.findByRole('dialog');
     fireEvent.change(within(d).getByLabelText('Points'), { target: { value: '30' } });
     fireEvent.click(within(d).getByRole('button', { name: 'Save points' }));
@@ -138,7 +138,7 @@ describe('Children: Saving for something bigger', () => {
   it('Edit: a refused save with no message shows the stale-figures message', async () => {
     saveTowards.mockRejectedValue(Object.assign(new Error(''), { status: 409 }));
     mount(<Children />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Big Goals for Lara' }));
     const d = await screen.findByRole('dialog');
     fireEvent.change(within(d).getByLabelText('Points'), { target: { value: '10' } });
     fireEvent.click(within(d).getByRole('button', { name: 'Save points' }));
@@ -148,7 +148,7 @@ describe('Children: Saving for something bigger', () => {
   it('Redeem: enabled only when saved + available covers the cost; confirms what it spends', async () => {
     redeemGoal.mockResolvedValue({ redemption: { id: 'red1' }, child: lara });
     mount(<Children />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Big Goals for Lara' }));
     const d = await screen.findByRole('dialog');
     const redeem = within(d).getByRole('button', { name: 'Redeem Bike' });
     expect(redeem.disabled).toBe(false); // 120 + 200 >= 300
@@ -162,25 +162,25 @@ describe('Children: Saving for something bigger', () => {
   it('Redeem is disabled when the points do not cover it', async () => {
     state.children = [{ ...lara, available_points: 100 }]; // 120 + 100 < 300
     mount(<Children />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Big Goals for Lara' }));
     const d = await screen.findByRole('dialog');
     expect(within(d).getByRole('button', { name: 'Redeem Bike' }).disabled).toBe(true);
   });
 
-  it('no bigger goals: a pointer to Rewards and no Edit', async () => {
+  it('no Big Goals: a button that opens the pop-up on its Big Goals side, and no Edit', async () => {
     state.rewards = [R('r1', 'Movie night', 25)];
     state.children = [{ ...lara, goals: [], saved_total: 0 }];
     mount(<Children />);
-    expect(await screen.findByText('No bigger goals yet.', { exact: false })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Mark a reward as a bigger goal' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Edit saving for something bigger/ })).toBeNull();
+    expect(await screen.findByText('No Big Goals yet.', { exact: false })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add a Big Goal' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Edit Big Goals/ })).toBeNull();
   });
 });
 
 describe('Child View', () => {
-  it('savings appear once, in "My next big adventure", from the server; no controls; goals are not choosable', async () => {
+  it('savings appear once, in "My Big Goal", from the server; no controls; goals are not choosable', async () => {
     mount(<ChildView />, '/childview?child=c1');
-    expect(await screen.findByRole('heading', { name: 'My next big adventure' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'My Big Goal' })).toBeTruthy();
     // Owner review 22 Nov (V1-B design §10): the points card holds one figure;
     // the saved figure is in the card below and nowhere else.
     expect(document.querySelector('[data-available]').closest('p').textContent).toBe('200 points Ready to use');
@@ -209,7 +209,7 @@ describe('Child View', () => {
     mount(<ChildView />, '/childview?child=c1');
     expect(await screen.findByText('Ready to use')).toBeTruthy();
     expect(screen.queryByText(/Saved towards|points saved/)).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'My next big adventure' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'My Big Goal' })).toBeNull();
   });
 });
 
@@ -223,27 +223,27 @@ describe('Home, Rewards, Spend and Activity', () => {
   it('Home shows the goal with the most saved, labelled, above the requests', () => {
     const child = { ...lara, goals: [goal('g2', 'Tent', 80, 10), goal('g1', 'Bike', 300, 120)], reward_stack_priced: [{ rewardId: 'r1', name: 'Movie night', cost: 25, stackIndex: 0 }] };
     mount(<WorkingTowards child={child} />);
-    expect(screen.getByText('Saving for something bigger')).toBeTruthy();
+    expect(screen.getByText('Big Goal')).toBeTruthy();
     expect(screen.getByText('120 of 300 points saved')).toBeTruthy();
     expect(screen.queryByText('10 of 80 points saved')).toBeNull();
     expect(screen.getByText('25 points · Ready when a parent agrees')).toBeTruthy();
     expect(leadingGoal([goal('a', 'A', 100, 50), goal('b', 'B', 60, 50)]).rewardId).toBe('b'); // tie: closer to done
   });
 
-  it('Rewards lists goals under "Bigger rewards" with the approved subtitle', async () => {
+  it('Rewards lists goals under "Big Goals" with the approved subtitle', async () => {
     mount(<Rewards />);
-    const section = (await screen.findByRole('heading', { name: 'Bigger rewards' })).closest('section');
+    const section = (await screen.findByRole('heading', { name: 'Big Goals' })).closest('section');
     expect(within(section).getByText('Bike')).toBeTruthy();
-    expect(within(section).getByText('300 points · Bigger achievement')).toBeTruthy();
+    expect(within(section).getByText('300 points · Big Goal')).toBeTruthy();
     expect(within(section).queryByText('Movie night')).toBeNull();
     expect(screen.getByText('Movie night')).toBeTruthy();
   });
 
-  it('the reward form sends the Bigger goal switch', async () => {
+  it('the reward form sends the Big Goal switch', async () => {
     const onSubmit = vi.fn(async () => true);
     mount(<RewardForm isOpen onClose={() => {}} onSubmit={onSubmit} />);
     fireEvent.change(screen.getByLabelText('Reward name'), { target: { value: 'Scooter' } });
-    const sw = screen.getByRole('checkbox', { name: /Bigger goal/ });
+    const sw = screen.getByRole('checkbox', { name: /Big Goal/ });
     expect(sw.getAttribute('aria-describedby')).toBe('reward-bigger-goal-help');
     expect(screen.getByText('Save points towards this reward over time')).toBeTruthy();
     fireEvent.click(sw);
@@ -254,7 +254,7 @@ describe('Home, Rewards, Spend and Activity', () => {
 
   it('editing a goal starts with the switch on', () => {
     mount(<RewardForm isOpen onClose={() => {}} onSubmit={vi.fn()} reward={R('g1', 'Bike', 300, { is_bigger_goal: true })} />);
-    expect(screen.getByRole('checkbox', { name: /Bigger goal/ }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('checkbox', { name: /Big Goal/ }).getAttribute('aria-checked')).toBe('true');
   });
 
   it("Home's Spend list leaves bigger goals out (they are redeemed from Children)", () => {
@@ -274,7 +274,7 @@ describe('Home, Rewards, Spend and Activity', () => {
     const ended = (note, points = 40) => rowText({ type: 'savings_ended', points, label: 'Bike', note, child_name: 'Lara', created_date: t }, 'UTC');
     // Owner wording (handover 21 Nov): "Lara's Bike savings are back in their points." (a cancellation, not a success).
     expect(ended('unmarked')).toMatchObject({ possessive: true, what: 'Bike', after: 'savings are back in their points.' });
-    expect(ended('unmarked').sub).toContain('40 points returned · Bigger goal removed');
+    expect(ended('unmarked').sub).toContain('40 points returned · Big Goal removed');
     expect(ended('reassigned').sub).toContain('40 points returned · No longer assigned');
     expect(ended('deleted').sub).toContain('Reward deleted');
     expect(ended('unmarked', 1).sub).toContain('1 point returned');
@@ -289,11 +289,11 @@ describe('code review of the screens', () => {
     const kids = [{ id: 'c1', name: 'Lara', goals: [goal('g1', 'Bike', 300, 120)] }, { id: 'c2', name: 'Omar', goals: [goal('g1', 'Bike', 300, 1)] }];
     mount(<RewardForm isOpen onClose={() => {}} onSubmit={onSubmit} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true, goal_epoch: 1, goal_child_epochs: {} })} />);
     expect(screen.queryByRole('status')).toBeNull();
-    fireEvent.click(screen.getByRole('checkbox', { name: /Bigger goal/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Big Goal/ }));
     const status = screen.getByRole('status').textContent;
     expect(status).toContain('Lara: 120 saved points will become available again.');
     expect(status).toContain('Omar: 1 saved point will become available again.');
-    expect(status).toContain("Past savings won't be restored if you re-enable the goal.");
+    expect(status).toContain("Past savings won't be restored if you make it a Big Goal again.");
     fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
     const alert = await screen.findByRole('alertdialog');
     expect(onSubmit).not.toHaveBeenCalled();
@@ -337,19 +337,19 @@ describe('code review of the screens', () => {
     mount(<Children />);
     expect((await screen.findAllByText('Saved!')).length).toBeGreaterThan(0);
     expect(screen.getByText('Bike: Saved!')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Big Goals for Lara' }));
     const d = await screen.findByRole('dialog');
     expect(within(d).getByText('340 of 300 points saved · Ready to redeem')).toBeTruthy();
     fireEvent.click(within(d).getByRole('button', { name: 'Redeem Bike' }));
     const confirm = await screen.findByRole('alertdialog');
-    expect(within(confirm).getByText('40 saved points are more than this goal needs. They stay saved for Bike, and you can move them back.')).toBeTruthy();
+    expect(within(confirm).getByText('40 saved points are more than this Big Goal needs. They stay saved for Bike, and you can move them back.')).toBeTruthy();
   });
 
   it('a goal already requested is not offered (S1); the server message is shown when it refuses', async () => {
     state.children = [{ ...lara, reward_stack_priced: [{ rewardId: 'g2', name: 'Tent', cost: 80, stackIndex: 0 }] }];
     saveTowards.mockRejectedValue(Object.assign(new Error('More than this goal needs'), { status: 400 }));
     mount(<Children />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Big Goals for Lara' }));
     const d = await screen.findByRole('dialog');
     expect(within(d).queryByRole('radio', { name: /Tent/ })).toBeNull();
     fireEvent.change(within(d).getByLabelText('Points', { exact: true }), { target: { value: '5' } });
@@ -362,7 +362,7 @@ describe('code review of the screens', () => {
     moveBack.mockRejectedValueOnce(Object.assign(new Error('Not enough points saved'), { status: 400 }));
     saveTowards.mockResolvedValueOnce({ event: { id: 'e9' }, child: lara });
     mount(<Children />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Big Goals for Lara' }));
     const d = await screen.findByRole('dialog');
     const input = within(d).getByLabelText('Points', { exact: true });
     fireEvent.change(input, { target: { value: '10' } });
@@ -379,7 +379,7 @@ describe('code review of the screens', () => {
     let resolve;
     saveTowards.mockImplementation(() => new Promise((r) => { resolve = r; }));
     mount(<Children />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Big Goals for Lara' }));
     const d = await screen.findByRole('dialog');
     fireEvent.change(within(d).getByLabelText('Points', { exact: true }), { target: { value: '10' } });
     const btn = within(d).getByRole('button', { name: 'Save points' });
@@ -392,7 +392,7 @@ describe('code review of the screens', () => {
   it('reopening starts on the goal Home leads with, with the amount cleared', async () => {
     state.children = [{ ...lara, goals: [goal('g2', 'Tent', 80, 50), goal('g1', 'Bike', 300, 50)] }]; // tie: Tent is closer
     mount(<Children />);
-    const edit = await screen.findByRole('button', { name: 'Edit saving for something bigger for Lara' });
+    const edit = await screen.findByRole('button', { name: 'Edit Big Goals for Lara' });
     fireEvent.click(edit);
     let d = await screen.findByRole('dialog');
     expect(within(d).getByRole('radio', { name: /Tent/ }).checked).toBe(true);
@@ -412,7 +412,7 @@ describe('code review of the screens', () => {
     expect(screen.getByText('0 of 80 points saved')).toBeTruthy();
   });
 
-  it('Rewards names the other rewards beside "Bigger rewards"', async () => {
+  it('Rewards names the other rewards beside "Big Goals"', async () => {
     mount(<Rewards />);
     expect(await screen.findByRole('heading', { name: 'Other rewards' })).toBeTruthy();
     state.rewards = [R('r1', 'Movie night', 25)];
@@ -444,7 +444,7 @@ describe('§21: the confirmation is bound to what the parent saw', () => {
       .mockResolvedValueOnce(true);
     const kids = [{ id: 'c1', name: 'Lara', goals: [] }, { id: 'c2', name: 'Omar', goals: [] }]; // stale: nothing saved
     mount(<RewardForm isOpen onClose={() => {}} onSubmit={onSubmit} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true, goal_epoch: 1 })} />);
-    fireEvent.click(screen.getByRole('checkbox', { name: /Bigger goal/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Big Goal/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Save reward' })); // no local warning: sent unconfirmed
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('confirm_end_savings');
@@ -460,12 +460,12 @@ describe('§21: the confirmation is bound to what the parent saw', () => {
     const onSubmit = vi.fn().mockResolvedValueOnce({ needsConfirm: serverSaw });
     const kids = [{ id: 'c1', name: 'Lara', goals: [] }, { id: 'c2', name: 'Omar', goals: [] }];
     mount(<RewardForm isOpen onClose={() => {}} onSubmit={onSubmit} children={kids} reward={R('g1', 'Bike', 300, { is_bigger_goal: true, goal_epoch: 1 })} />);
-    fireEvent.click(screen.getByRole('checkbox', { name: /Bigger goal/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Big Goal/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Save reward' }));
     const alert = await screen.findByRole('alertdialog');
     fireEvent.click(within(alert).getByRole('button', { name: 'Keep saving' }));
     expect(screen.getByRole('status').textContent).toContain('Lara: 70');
-    fireEvent.click(screen.getByRole('checkbox', { name: /Bigger goal/ })); // back on: nothing ends
+    fireEvent.click(screen.getByRole('checkbox', { name: /Big Goal/ })); // back on: nothing ends
     expect(screen.queryByRole('status')).toBeNull();
   });
 

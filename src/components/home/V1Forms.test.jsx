@@ -30,12 +30,12 @@ describe('Onboarding (V1-F O)', () => {
     const d = screen.getByRole('dialog');
     expect(within(d).getByRole('heading', { name: "Let's get started" })).toBeTruthy();
     expect(d.textContent).toContain('Three ways to help good habits grow.');
-    expect(d.textContent).toContain("1. Today's Goals");
-    expect(d.textContent).toContain('Make daily and weekly routines easy to see and celebrate.');
+    expect(d.textContent).toContain('1. Daily Wins');
+    expect(d.textContent).toContain('Make things to do each day easy to see and celebrate.');
     expect(d.textContent).toContain('2. Notice positive behaviour');
     expect(d.textContent).toContain('Reward kindness, effort, learning and helping whenever you see them.');
-    expect(d.textContent).toContain('3. Save for something bigger');
-    expect(d.textContent).toContain('Enjoy smaller weekly treats, or keep saving points towards bigger adventures.');
+    expect(d.textContent).toContain('3. Save for a Big Goal');
+    expect(d.textContent).toContain('Enjoy smaller weekly treats, or keep saving points towards a Big Goal.');
     expect(d.querySelector('img')).toBeNull(); // no illustration in the locked design
     expect(document.activeElement.textContent).toBe('Explore Percy'); // opens on the action, not the list
     fireEvent.click(within(d).getByRole('button', { name: 'Explore Percy' }));
@@ -49,8 +49,8 @@ describe('Welcome (V1-F W)', () => {
   it('approved copy and Add your first child; no map when the build supplies none (gate coverage: releaseGates.test.js and CI)', () => {
     const onAdd = vi.fn();
     const { container } = render(<WelcomeCard onAddFirstChild={onAdd} />);
-    expect(screen.getByRole('heading', { name: 'Every adventure starts with a goal!' })).toBeTruthy();
-    expect(container.textContent).toContain('Add your first child, recognise positive behaviours, and choose a little treat or something bigger to save towards.');
+    expect(screen.getByRole('heading', { name: 'Every adventure starts with a Big Goal!' })).toBeTruthy();
+    expect(container.textContent).toContain('Add your first child, recognise positive behaviours, and choose a little treat or a Big Goal to save towards.');
     expect(container.querySelector('img')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Add your first child' }));
     expect(onAdd).toHaveBeenCalled();

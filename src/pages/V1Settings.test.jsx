@@ -50,14 +50,14 @@ describe('Settings rows', () => {
     mount();
     expect(await screen.findByRole('heading', { name: 'Family settings' })).toBeTruthy();
     expect(screen.getByText('Make Percy work for your family.')).toBeTruthy();
-    for (const g of ['Behaviours & Quick Points', 'Children & goals', 'Family & access', 'Reports & privacy']) {
+    for (const g of ['Behaviours & Quick Points', 'Children, Daily Wins & Big Goals', 'Family & access', 'Reports & privacy']) {
       expect(screen.getByRole('heading', { name: g })).toBeTruthy();
     }
     const rows = [
       ['Positive behaviour categories', 'Names, point values and approved icons', 'Edit Positive behaviour categories'],
       ['Quick Points', 'Choose your quick award buttons for Home', 'Edit Quick Points'],
       ['Children', 'Profiles, avatars and weekly targets', 'Edit Children'],
-      ['Today’s Goals', 'Recurring routines and one-off achievements', 'Edit Today’s Goals'],
+      ['Daily Wins & Big Goals', 'Things to do and things to save for', 'Edit Daily Wins & Big Goals'],
       ['Family timezone', 'Determines today’s date and weekly schedule', 'Edit Family timezone'],
       ['Family name', 'How your family appears in Percy', 'Edit Family name'],
       ['Invite parent', 'Available with existing family invitation flow', 'View Invite parent'],
@@ -80,9 +80,9 @@ describe('Settings rows', () => {
     expect(screen.getByRole('button', { name: 'Edit Family name' }).textContent).toBe('Edit');
   });
 
-  it('Today’s Goals is disabled with no children (E4)', async () => {
+  it('Daily Wins & Big Goals is disabled with no children (E4)', async () => {
     mount();
-    expect((await screen.findByRole('button', { name: 'Edit Today’s Goals' })).disabled).toBe(true);
+    expect((await screen.findByRole('button', { name: 'Edit Daily Wins & Big Goals' })).disabled).toBe(true);
   });
 });
 

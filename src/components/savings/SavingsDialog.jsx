@@ -1,4 +1,4 @@
-// "Saving for something bigger" Edit (D1, savings design §19.3). A parent
+// The savings pop-up, "Save points for a Big Goal" (D1, savings design §19.3; names V1-F §12). A parent
 // chooses one of the child's bigger goals, then saves points towards it or
 // moves points back, with Undo; and redeems the goal when it is within reach
 // (O7). Limits come from the server's figures (child.available_points and the
@@ -54,7 +54,12 @@ export function undoSavingsAction(eventId, queryClient, requestId = newRequestId
   };
 }
 
-export default function SavingsDialog({ open, onClose, child, goalRewards, returnFocusRef = null }) {
+// `embedded` (V1-F §12 W8): the header, body and footer without a dialog of
+// their own, inside the Daily Wins & Big Goals pop-up. `initialGoalId` opens
+// on that goal when it is one of the options. `onClose({ acted: true })`
+// after a move or a redeem, so the pop-up can close and leave Undo usable.
+export default function SavingsDialog({ open, onClose, child, goalRewards, returnFocusRef = null,
+  embedded = false, initialGoalId = null, titleRef = null }) {
   const queryClient = useQueryClient();
   const [goalId, setGoalId] = useState(null);
   const [amount, setAmount] = useState(0);
@@ -85,7 +90,8 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
     ids.current = new Map();
     // The same goal Home and Child View lead with.
     const lead = leadingGoal(child?.goals || []);
-    setGoalId(options.some((o) => o.id === lead?.rewardId) ? lead.rewardId : (options[0]?.id ?? null));
+    setGoalId(options.some((o) => o.id === initialGoalId) ? initialGoalId
+      : options.some((o) => o.id === lead?.rewardId) ? lead.rewardId : (options[0]?.id ?? null));
   }, [open, child?.id]); // reset on each opening, and for another child
 
   if (!child) return null;
@@ -136,7 +142,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
       toast.success(message, { duration: UNDO_TOAST_MS, action: { label: 'Undo', onClick: undoSavingsAction(r.event.id, queryClient) } });
       // Close, as the award dialog does: while a modal dialog is open the
       // page behind it (the toast and its Undo) cannot be used (e2e, §19.8).
-      onClose();
+      onClose({ acted: true });
     } catch (err) {
       fail(err, key);
     } finally {
@@ -155,7 +161,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
         duration: UNDO_TOAST_MS,
         action: { label: 'Undo', onClick: undoAction('spend', r.redemption.id, queryClient) },
       });
-      onClose();
+      onClose({ acted: true });
     } catch (err) {
       setConfirmRedeem(false);
       fail(err, key);
@@ -168,19 +174,18 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
     if (returnFocusRef?.current) { e.preventDefault(); returnFocusRef.current.focus(); }
   };
 
-  return (
+  const content = (
     <>
-      <Dialog open={open} onOpenChange={(o) => { if (!o && !busyRef.current) onClose(); }}>
-        <DialogContent className="sm:max-w-lg" onCloseAutoFocus={focusBack}>
-          <DialogHeader>
-            <DialogTitle className="text-title font-extrabold text-primary">Saving for something bigger</DialogTitle>
+          <DialogHeader className={embedded ? 'pb-2 pt-4' : undefined}>
+            <DialogTitle ref={titleRef} tabIndex={-1} className={embedded ? 'text-lg text-primary focus-visible:outline-none' : 'text-title font-extrabold text-primary focus-visible:outline-none'}>Save points for a Big Goal</DialogTitle>
             <DialogDescription>
-              Set points aside for {child.name}'s bigger goal. Saved points stay {child.name}'s; you can move them back.
+              Set points aside for {child.name}'s Big Goal. Saved points stay {child.name}'s; you can move them back.
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
+            {options.length === 0 && <p className="text-sm text-muted-foreground">No Big Goals to save for yet.</p>}
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium text-foreground">Bigger goal</legend>
+              <legend className="text-sm font-medium text-foreground">Big Goal</legend>
               {options.map((o) => (
                 <label key={o.id} className={cn('flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border p-3',
                   o.id === goalId ? 'border-2 border-selected-border bg-selected' : 'border-border bg-card hover:bg-accent')}>
@@ -224,7 +229,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
             )}
           </DialogBody>
           <DialogFooter>
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={busy}>Close</Button>
+            <Button type="button" variant="outline" className="flex-1" onClick={() => onClose()} disabled={busy}>Close</Button>
             {goal && (
               <Button type="button" className="flex-1" onClick={() => setConfirmRedeem(true)} disabled={!canRedeem}
                 aria-label={`Redeem ${goal.name}`}>
@@ -232,8 +237,16 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
               </Button>
             )}
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
+    </>
+  );
+
+  return (
+    <>
+      {embedded ? content : (
+        <Dialog open={open} onOpenChange={(o) => { if (!o && !busyRef.current) onClose(); }}>
+          <DialogContent className="sm:max-w-lg" onCloseAutoFocus={focusBack}>{content}</DialogContent>
+        </Dialog>
+      )}
 
       <AlertDialog open={confirmRedeem} onOpenChange={(o) => { if (!busyRef.current) setConfirmRedeem(o); }}>
         <AlertDialogContent onCloseAutoFocus={focusBack}>
@@ -245,7 +258,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
             {/* E12 (owner review of #64): an excess over a lowered cost stays saved, never lost or counted twice. */}
             {saved > (goal?.cost ?? 0) && (
               <p className="text-sm text-muted-foreground" data-excess>
-                {saved - goal.cost} saved points are more than this goal needs. They stay saved for {goal.name}, and you can move them back.
+                {saved - goal.cost} saved points are more than this Big Goal needs. They stay saved for {goal.name}, and you can move them back.
               </p>
             )}
           </AlertDialogHeader>

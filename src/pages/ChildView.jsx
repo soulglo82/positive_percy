@@ -157,7 +157,7 @@ export default function ChildView() {
         </Link>
         <div>
           <h1 className="font-display font-extrabold text-title text-primary">My Percy adventure</h1>
-          <p className="text-muted-foreground">A child-friendly view of goals, points and rewards. No independent child account.</p>
+          <p className="text-muted-foreground">A child-friendly view of Daily Wins, points and rewards. No independent child account.</p>
         </div>
         <FamilyStrip children={ordered} selectedId={child.id} onSelect={setChildId} />
 
@@ -174,7 +174,7 @@ export default function ChildView() {
         {goal && (
           <Card>
             <CardContent className="p-4 sm:p-5 space-y-3">
-              <h2 className="font-display font-bold text-lg text-primary">My next big adventure</h2>
+              <h2 className="font-display font-bold text-lg text-primary">My Big Goal</h2>
               <GoalProgress goal={goal} showToGo={false} />
               {/* Owner wording (21 Nov): "{n} points to go" while n > 0; at 0 the
                   celebration of a funded goal. It is not a redemption: a parent

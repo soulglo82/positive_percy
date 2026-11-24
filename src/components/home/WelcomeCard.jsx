@@ -14,9 +14,9 @@ export default function WelcomeCard({ onAddFirstChild }) {
           <img src={map} alt="" aria-hidden="true" width={192} height={192}
             className="h-48 w-48 rounded-lg bg-warning p-4" />
         )}
-        <h1 className="font-display font-extrabold text-title text-primary">Every adventure starts with a goal!</h1>
+        <h1 className="font-display font-extrabold text-title text-primary">Every adventure starts with a Big Goal!</h1>
         <p className="max-w-md text-muted-foreground">
-          Add your first child, recognise positive behaviours, and choose a little treat or something bigger to save towards.
+          Add your first child, recognise positive behaviours, and choose a little treat or a Big Goal to save towards.
         </p>
         <Button onClick={onAddFirstChild}>Add your first child</Button>
       </CardContent>

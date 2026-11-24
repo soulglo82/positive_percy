@@ -92,17 +92,17 @@ describe('Children page (§2)', () => {
     // Achievements: two plain rows with a picture each, no boxes inside the card (owner, 22 Nov; design §11).
     const rows = [...document.querySelectorAll('[data-achievements] > div')];
     expect(rows.map((r) => r.querySelector('[data-icon]').getAttribute('data-icon'))).toEqual(['phosphor:check-circle:duotone', 'phosphor:trophy:duotone']);
-    expect(rows.map((r) => r.querySelector('p').textContent)).toEqual(['Goals completed', 'Next milestone']);
+    expect(rows.map((r) => r.querySelector('p').textContent)).toEqual(['Daily Wins completed', 'Next milestone']);
     expect(rows.some((r) => /(^|\s)border(\s|$)/.test(r.className) || /rounded-md/.test(r.className))).toBe(false); // neither a border nor a box, in any class order
     expect(screen.getByRole('link', { name: 'All rewards' })).toBeTruthy();
     // D1 (savings §19.3): the savings section and the approved milestone
     // subtitle; with no bigger goals there is nothing to Edit. The
     // design-only note never ships.
-    expect(screen.getByRole('heading', { name: 'Saving for something bigger' })).toBeTruthy();
-    expect(screen.getByText('No bigger goals yet.', { exact: false })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Edit saving for something bigger/ })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Big Goals' })).toBeTruthy();
+    expect(screen.getByText('No Big Goals yet.', { exact: false })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Edit Big Goals/ })).toBeNull();
     expect(document.body.textContent).not.toContain('Multiple rewards can be shown');
-    expect(screen.getByText('Weekly target and bigger goal')).toBeTruthy();
+    expect(screen.getByText('Weekly target and Big Goals')).toBeTruthy();
   });
 
   it('goals of this child only, with today\'s completions counted', async () => {
@@ -112,7 +112,7 @@ describe('Children page (§2)', () => {
     expect(screen.getByText('Reading · Mon, Wed, Fri · +1 point')).toBeTruthy();
     expect(screen.queryByText('Practise piano')).toBeNull();
     expect(screen.getByText('2 today')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Manage all goals for Lara' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Manage all Daily Wins for Lara' })).toBeTruthy();
   });
 
   it('treats: hidden ones shown tagged, other children\'s left out; Edit opens the reward form', async () => {
@@ -143,11 +143,11 @@ describe('Children page (§2)', () => {
     expect(await screen.findByRole('heading', { name: "Lara's page" })).toBeTruthy();
   });
 
-  it('New goal opens the goal form; a goal\'s Edit opens it filled in; weekly target Edit has no Delete', async () => {
+  it('New Daily Win opens the form; a Daily Win\'s Edit opens it filled in; weekly target Edit has no Delete', async () => {
     mount(Children);
-    fireEvent.click(await screen.findByRole('button', { name: 'New goal' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'New Daily Win' }));
     let d = await screen.findByRole('dialog');
-    expect(within(d).getByRole('heading', { name: 'New goal' })).toBeTruthy();
+    expect(within(d).getByRole('heading', { name: 'New Daily Win' })).toBeTruthy();
     fireEvent.keyDown(d, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     fireEvent.click(screen.getByRole('button', { name: 'Edit Finish homework' }));
@@ -195,7 +195,7 @@ describe('Child View page (§3)', () => {
     mount(ChildView);
     expect(await screen.findByRole('heading', { name: 'My Percy adventure' })).toBeTruthy();
     expect(screen.getByRole('link', { name: '← Back to Home' })).toBeTruthy();
-    expect(screen.getByText('A child-friendly view of goals, points and rewards. No independent child account.')).toBeTruthy();
+    expect(screen.getByText('A child-friendly view of Daily Wins, points and rewards. No independent child account.')).toBeTruthy();
     expect(screen.getByRole('heading', { name: "You're doing great, Lara!" })).toBeTruthy();
     // Owner review 22 Nov (design §10): one figure with a piggy bank, its unit beside it and the label beneath.
     const figure = document.querySelector('[data-available]');
@@ -212,7 +212,7 @@ describe('Child View page (§3)', () => {
     expect(screen.getAllByRole('button', { name: /^Ask a parent for / }).length).toBeGreaterThan(0);
     expect(screen.getByText('Choosing a reward is a request. Only a parent-authorised confirmation can spend points.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Spend|Edit/ })).toBeNull();
-    expect(document.body.textContent).not.toMatch(/Visible to children|Hidden from children|Saved towards|My next big adventure/);
+    expect(document.body.textContent).not.toMatch(/Visible to children|Hidden from children|Saved towards|My Big Goal/);
   });
 
   it('the points figure is singular for 1, plain for 0, and falls back when the server sends none (design §10.4)', async () => {

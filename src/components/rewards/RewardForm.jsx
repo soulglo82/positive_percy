@@ -31,8 +31,15 @@ const DEFAULT_EMOJI = '🎁';
 export const currentArtLabel = (reward) =>
   (reward?.image_url && !rewardArt(reward?.icon_key) ? 'Current image' : 'Current icon');
 
-export default function RewardForm({ isOpen, onClose, reward = null, initialTemplate = null, children = [], onSubmit, onDelete }) {
+// `variant="bigGoal"` (V1-F §12 W7): the short form the Daily Wins & Big Goals
+// pop-up uses. A new one is a Big Goal for `forChild`; an edit sends only the
+// name, the cost and a changed picture, so it can never change who the goal
+// is for, hide it, un-mark it or end savings. `embedded` renders the form's
+// header, body and footer without a dialog of its own (§12 W8).
+export default function RewardForm({ isOpen, onClose, reward = null, initialTemplate = null, children = [], onSubmit, onDelete,
+  variant = 'reward', forChild = null, embedded = false, titleRef = null }) {
   const editing = !!reward;
+  const big = variant === 'bigGoal';
   const [title, setTitle] = useState('');
   const [costPoints, setCostPoints] = useState(50);
   const [description, setDescription] = useState('');
@@ -60,14 +67,14 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
     opened.current = true;
     const src = reward || initialTemplate || {};
     setTitle(src.title || '');
-    setCostPoints(src.cost_points ?? 50);
+    setCostPoints(src.cost_points ?? (big ? 100 : 50));
     setDescription(src.description || '');
     setVisible(reward ? reward.visible_to_child !== false : true);
-    setBiggerGoal(!!reward?.is_bigger_goal);
-    setAssigned(reward?.assigned_child_ids || []);
+    setBiggerGoal(big ? true : !!reward?.is_bigger_goal);
+    setAssigned(reward?.assigned_child_ids || (big && forChild ? [forChild.id] : []));
     setIconKey(reward?.icon_key ?? null);
     setIconTouched(false);
-    setPickerOpen(!reward); // approved: a new reward opens the picker; edit starts closed
+    setPickerOpen(big ? false : !reward); // approved: a new reward opens the picker; edit starts closed. A Big Goal opens it on Change
     setSaving(false);
     setServerEnding(null);
     setDeleteEnding(null);
@@ -93,7 +100,9 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   const hasFor = (id) => { const now = lower(assigned); return now.length === 0 || now.includes(String(id).toLowerCase()); };
   // Who loses the goal, and how much each has saved towards it (server figures,
   // child.goals). Nothing saved: nothing is lost, so no warning (§20.3).
-  const losing = !reward?.is_bigger_goal ? [] : children
+  // A Big Goal edit from the pop-up sends no assignment and no mark, so it
+  // can end nobody's savings whatever this form's copy says (§12 X21).
+  const losing = (!reward?.is_bigger_goal || (big && editing)) ? [] : children
     .filter((c) => hadFor(c.id) && (!biggerGoal || !hasFor(c.id)))
     .map((c) => ({ id: c.id, name: c.name, saved: (c.goals || []).find((g) => String(g.rewardId) === String(reward.id))?.saved ?? 0 }))
     .filter((c) => c.saved > 0);
@@ -118,12 +127,16 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
     if (endsSavings && confirmed !== true) { setConfirmEnd(true); return; }
     setSaving(true);
     try {
-      const payload = {
+      const payload = big && editing ? {
+        title: title.trim(),
+        cost_points: costPoints,
+        ...(iconTouched ? { icon_key: iconKey } : {}),
+      } : {
         title: title.trim(),
         cost_points: costPoints,
         description: description.trim(),
-        visible_to_child: visible,
-        is_bigger_goal: biggerGoal,
+        visible_to_child: big ? true : visible,
+        is_bigger_goal: big ? true : biggerGoal,
         assigned_child_ids: assigned,
         ...(editing ? {} : { emoji }),
         ...(iconTouched ? { icon_key: iconKey } : {}),
@@ -140,16 +153,47 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
     }
   };
 
-  return (
+  // Who a Big Goal is for: the child it is being made for, or on an edit the
+  // assigned children who still exist (ids compared in lower case).
+  const forNames = () => {
+    if (!editing) return forChild ? [forChild.name] : [];
+    const ids = lower(reward.assigned_child_ids);
+    return children.filter((c) => ids.includes(String(c.id).toLowerCase())).map((c) => c.name);
+  };
+  const listNames = (names) => (names.length <= 1 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]);
+  const forLine = !big ? '' : (editing && lower(reward.assigned_child_ids).length === 0) || forNames().length === 0
+    ? 'For the whole family' : 'For ' + listNames(forNames());
+  const heading = big ? (reward ? 'Edit Big Goal' : 'New Big Goal') : (reward ? 'Edit reward' : 'Add reward');
+
+  const content = (
     <>
-      <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
+          <DialogHeader className={big ? 'pb-2 pt-4' : undefined}>
             {/* Owner-approved wording C1 and C2 (2026-11-19). */}
-            <DialogTitle className="text-title font-extrabold text-primary">{reward ? 'Edit reward' : 'Add reward'}</DialogTitle>
-            <DialogDescription>Name the reward, set its points cost and choose an icon.</DialogDescription>
+            <DialogTitle ref={titleRef} tabIndex={-1} className={big ? 'text-lg text-primary focus-visible:outline-none' : 'text-title font-extrabold text-primary focus-visible:outline-none'}>{heading}</DialogTitle>
+            <DialogDescription>{big ? forLine : 'Name the reward, set its points cost and choose an icon.'}</DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-5">
+            {big ? (
+              <section className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="reward-name">What is it?</Label>
+                  <Input id="reward-name" value={title} maxLength={100} placeholder="e.g. New bike"
+                    onChange={(e) => setTitle(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="reward-cost">Points needed</Label>
+                  <NumberInput id="reward-cost" value={costPoints} onChange={setCostPoints} min="1" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <RewardIcon reward={preview} size="md" />
+                  <p className="min-w-0 flex-1 text-sm text-muted-foreground">Picture</p>
+                  <Button type="button" variant="outline" aria-expanded={pickerOpen} aria-controls="reward-icon-picker"
+                    aria-label={pickerOpen ? 'Hide pictures' : 'Change picture'} onClick={() => setPickerOpen((o) => !o)}>
+                    {pickerOpen ? 'Hide' : 'Change'}
+                  </Button>
+                </div>
+              </section>
+            ) : (
             <section className="space-y-3">
               <StepHeading n={1} title="The reward" hint="Set the name and point cost." />
               <div className="grid gap-3 sm:grid-cols-2">
@@ -189,14 +233,14 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
                 <Checkbox id="reward-bigger-goal" checked={biggerGoal} onCheckedChange={(v) => { setServerEnding(null); setBiggerGoal(v === true); }}
                   aria-describedby="reward-bigger-goal-help" className="mt-0.5" />
                 <span className="min-w-0">
-                  <span className="block text-sm font-medium text-foreground">Bigger goal</span>
+                  <span className="block text-sm font-medium text-foreground">Big Goal</span>
                   <span id="reward-bigger-goal-help" className="block text-xs text-muted-foreground">Save points towards this reward over time</span>
                 </span>
               </label>
               {endsSavings && (
                 <div role="status" className="space-y-1 rounded-md border border-border bg-warning p-3 text-sm text-foreground">
                   {shown.map((c) => <p key={c.id}>{releaseLine(c)}</p>)}
-                  <p>Past savings won't be restored if you re-enable the goal.</p>
+                  <p>Past savings won't be restored if you make it a Big Goal again.</p>
                 </div>
               )}
               {children.length > 0 && (
@@ -207,33 +251,42 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
                 </div>
               )}
             </section>
+            )}
             {pickerOpen && (
               <section className="space-y-3 border-t border-border pt-5">
-                <StepHeading n={2} title="Choose an icon" />
+                {!big && <StepHeading n={2} title="Choose an icon" />}
                 <RewardPicker id="reward-icon-picker" value={iconKey} onChange={choose} />
               </section>
             )}
             {editing && onDelete && (
               <div className="border-t border-border pt-4">
                 <Button type="button" variant="outline" onClick={() => setConfirmDelete(true)} disabled={saving}>
-                  Delete Reward
+                  {big ? 'Delete Big Goal' : 'Delete Reward'}
                 </Button>
               </div>
             )}
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={saving}>Cancel</Button>
-            <Button type="button" className="flex-1" onClick={() => save()} disabled={!valid || saving}>Save reward</Button>
+            <Button type="button" className="flex-1" onClick={() => save()} disabled={!valid || saving}>{big ? 'Save Big Goal' : 'Save reward'}</Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
+    </>
+  );
+
+  return (
+    <>
+      {embedded ? content : (
+        <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
+          <DialogContent className="sm:max-w-2xl">{content}</DialogContent>
+        </Dialog>
+      )}
 
       <AlertDialog open={confirmEnd} onOpenChange={setConfirmEnd}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>End this bigger goal's savings?</AlertDialogTitle>
+            <AlertDialogTitle>End this Big Goal's savings?</AlertDialogTitle>
             <AlertDialogDescription>
-              {shown.map(releaseLine).join(' ')} Past savings won't be restored if you re-enable the goal.
+              {shown.map(releaseLine).join(' ')} Past savings won't be restored if you make it a Big Goal again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -249,7 +302,7 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {reward?.title}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this reward. Any pending redemptions will be denied. This cannot be undone.
+              {big ? 'This will permanently delete this Big Goal for everyone it is for.' : 'This will permanently delete this reward.'} Any pending redemptions will be denied. This cannot be undone.
             </AlertDialogDescription>
             {/* D1 §21.2: what deleting a bigger goal releases, per child. */}
             {deleteShown.length > 0 && (

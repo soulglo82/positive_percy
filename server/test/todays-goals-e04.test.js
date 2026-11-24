@@ -349,7 +349,7 @@ describe.skipIf(!hasDb)('E04: Today\'s Goals server hardening', () => {
       await ctx.pool.query("UPDATE today_goal_completions SET scheduled_for = scheduled_for - 1 WHERE goal_id=$1", [g.id]);
       const edit = await call(f, 'PUT', `/api/todays-goals/${g.id}`, oneOff(f, today));
       expect(edit.status).toBe(409);
-      expect(edit.json.error).toMatch(/separate goal/i);
+      expect(edit.json.error).toMatch(/separate Daily Win/);
       // Same kind, new days: still allowed.
       const keep = await call(f, 'PUT', `/api/todays-goals/${g.id}`, { ...oneOff(f), schedule_kind: 'weekly', weekdays: [1, 3], scheduled_date: undefined, start_date: today });
       expect(keep.status).toBe(200);
