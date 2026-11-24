@@ -202,6 +202,10 @@ Test changes this round: `TodaysGoalsPanel.test.jsx` looks for the V1.1 empty-st
 
 Reproduced: in one run of six, a style injected by the QA script was still only partly in effect when checked, and fully in effect 1.5s later. The cause was not found. Every injected style (the two controls and the 150% and 200% text checks) now uses `!important` and waits until it is really in effect. A harness check fails if it never takes, so no check can silently test the wrong thing. Two consecutive runs: 247 of 247.
 
+### 10i. One timing race in #75's stress journey
+
+`e2e/daily-wins-big-goals.spec.js` "long names, large figures, many Daily Wins…" failed twice at 1280px on this branch: "the pop-up ends on the screen", 1063 > 800. It then passed three times unmodified, and the same test passed on the base. The figure is exactly the pop-up on the first frame of its opening zoom: 680px tall at `top: 50%` (400–1080), scaled 0.95 about its centre to 417–1063, before the final `translate(-50%, -50%)`. The test measured before the animation had finished, and lost the race under load. It now waits for the pop-up's animations to finish before measuring, exactly as the repo's slim-box test already does for the same reason. The assertion is unchanged. Full suite afterwards: 66 passed, 0 failed, 22 skipped by design.
+
 ## Change log
 
 | Version | Date | Change |
