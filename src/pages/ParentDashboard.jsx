@@ -188,7 +188,7 @@ export default function ParentDashboard() {
           origin: { y: 0.6 },
           colors: CONFETTI_COLORS,
         });
-        lines.push(`${child.name} hit their weekly goal.`);
+        lines.push(`${child.name} hit their weekly target.`);
       }
       // A replayed award (first reply lost) carries no streak; read it instead.
       if (duplicate) updateStreak(); else { const s = showStreak(streakResult); if (s) lines.push(s); }
@@ -236,7 +236,9 @@ export default function ParentDashboard() {
     <div className="min-h-screen bg-background">
         {isLoading ? (
           <div className="max-w-5xl mx-auto p-4 sm:p-6"><LoadingSpinner message="Loading your family..." /></div>
-        ) : isError ? (
+        ) : isError && children.length === 0 ? (
+          // Only when there is nothing to show: a failed background refresh
+          // must not replace the page and an open pop-up (V1-F §12 X27).
           <div className="max-w-5xl mx-auto p-4 sm:p-6"><ErrorCard message="Couldn't load children" onRetry={refetch} /></div>
         ) : waitingForBehaviours ? (
           <div className="max-w-5xl mx-auto p-4 sm:p-6"><LoadingSpinner message="Loading your family..." /></div>
@@ -245,7 +247,7 @@ export default function ParentDashboard() {
         ) : (
           // V1.1 Home, the daily action centre (design/v11; owner review 23 Nov:
           // Quick Points sooner). Reading order: child, balance, Quick Points,
-          // Today's Goals, then what the child is working towards.
+          // Daily Wins, then what the child is working towards.
           <div className="pv">
             <HomeHero children={ordered} child={homeChild} streak={streak} foxPlay={foxPlay}
               onSelect={setHomeChildId} />

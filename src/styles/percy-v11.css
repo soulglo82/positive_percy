@@ -386,3 +386,7 @@
    strip wraps within the header, and "n of m done" stays the figure. */
 .pv-section__head > * { min-width: 0; max-width: 100%; }
 .pv-dots { flex-wrap: wrap; max-width: 100%; vertical-align: middle; }
+.pv-manage-door { justify-content: flex-start; text-align: left; }
+.pv-points-line { min-width: 0; }
+.pv-points-line > p { display: grid; gap: 0; margin: 0; min-width: 0; }
+.pv-points-line .pv-t-meta { overflow-wrap: anywhere; }

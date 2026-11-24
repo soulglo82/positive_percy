@@ -4,7 +4,7 @@ import axe from 'axe-core';
 import React from 'react';
 
 import { MemoryRouter } from 'react-router-dom';
-import { StreakStrip, FamilyStrip, LittleWins, WorkingTowards, QuickPoints } from '../components/home/HomeSections';
+import { StreakStrip, FamilyStrip, AvailableLine, WorkingTowards, QuickPoints } from '../components/home/HomeSections';
 import { RewardTile } from '../pages/Rewards';
 import RewardPicker from '../components/rewards/RewardPicker';
 import { HomeHero, HomeQuickPoints, HomeWorkingTowards } from '../components/percy/HomeV11';
@@ -48,13 +48,13 @@ describe('Accessibility: V1 Home sections', () => {
       reward_stack_priced: [{ rewardId: 'r1', name: 'New bike', cost: 30 }] },
     { id: 'c2', name: 'Omar', colour_index: 1, created_date: '2026-01-02', week_points: 0, weekly_target: 20, total_points: 0, available_points: 0, reward_stack_priced: [] },
   ];
-  it('streak, family strip, Little wins, Working towards and Quick Points have no critical/serious axe violations', async () => {
+  it('streak, family strip, the points line, Working towards and Quick Points have no critical/serious axe violations', async () => {
     const { container } = render(
       <MemoryRouter>
         <main>
           <StreakStrip streak={3} />
           <FamilyStrip children={kids} selectedId="c1" onSelect={() => {}} />
-          <LittleWins child={kids[0]} />
+          <AvailableLine child={kids[0]} />
           <WorkingTowards child={kids[0]} />
           <QuickPoints child={kids[0]} actions={[{ id: 'k', label: 'Kindness', points: 1, icon_key: 'kindness' }]}
             awarding={false} onAward={() => {}} onOpenAward={() => {}} onOpenRewards={() => {}} />

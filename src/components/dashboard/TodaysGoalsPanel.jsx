@@ -18,6 +18,8 @@ import ManageGoalsDialog from './ManageGoalsDialog';
 export default function TodaysGoalsPanel({ children = [], categories = [], enabled = false, selectedChildId }) {
   const queryClient = useQueryClient();
   const [manageOpen, setManageOpen] = useState(false);
+  // Focus returns here when the pop-up closes (V1-F §12 W8, X32).
+  const manageButton = useRef(null);
   const [pendingIds, setPendingIds] = useState([]);
   const inFlight = useRef(new Set());
   // After a completion, focus moves to that row's Done label (design N4).
@@ -57,7 +59,7 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
           action: { label: 'Undo', onClick: undoAction('award', result.event.id, queryClient) },
         });
       } else {
-        toast.info('That goal is already recorded.');
+        toast.info('That Daily Win is already recorded.');
       }
       refreshPoints(queryClient);
       setFocusGoalId(goal.id);
@@ -68,9 +70,9 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
     } catch (err) {
       if (err.status === 409) {
         refreshPoints(queryClient);
-        toast.info(err.message || 'This goal has already been completed.');
+        toast.info(err.message || 'This Daily Win has already been completed.');
       } else {
-        toast.error(err.message || 'Could not complete the goal. Please try again.');
+        toast.error(err.message || 'Could not complete the Daily Win. Please try again.');
       }
     } finally {
       inFlight.current.delete(goal.id);
@@ -85,7 +87,7 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
       <div className="pv-section__head">
         <div>
           {/* E03: approved header accent (goals_interactions.header_accent); decorative. */}
-          <h2 id="todays-goals-title" className="pv-t-section pv-heading-icon"><PercyIcon id="phosphor:sparkle:duotone" />Today's Goals</h2>
+          <h2 id="todays-goals-title" className="pv-t-section pv-heading-icon"><PercyIcon id="phosphor:sparkle:duotone" />Daily Wins</h2>
           <p className="pv-t-support">
             <span className="break-words">{child.name}'s checklist</span>
             {data?.date && <> · <span>{goalDateShortLine(data.date)}</span></>}
@@ -101,16 +103,15 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
 
       {isError ? (
         <div className="pv-empty">
-          <p className="pv-t-body">Could not load today's goals.</p>
+          <p className="pv-t-body">Could not load Daily Wins.</p>
           <button type="button" className="pv-btn pv-btn--secondary" onClick={() => refetch()}>Try again</button>
         </div>
       ) : isLoading ? (
-        <p className="pv-t-support" role="status">Loading goals…</p>
+        <p className="pv-t-support" role="status">Loading Daily Wins…</p>
       ) : goals.length === 0 ? (
         <div className="pv-empty">
-          <p className="pv-t-card">No goals scheduled for {child.name} today.</p>
-          <p className="pv-t-support">Add a weekly routine or a one-off task to give them something to work towards.</p>
-          <button type="button" className="pv-btn pv-btn--primary" onClick={() => setManageOpen(true)}>Set up goals</button>
+          <p className="pv-t-card">No Daily Wins for {child.name} today.</p>
+          <p className="pv-t-support">Something to do today or every week.</p>
         </div>
       ) : (
         <ul className="pv-goals">
@@ -150,11 +151,13 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
         </ul>
       )}
       <div>
-        <button type="button" className="pv-link" onClick={() => setManageOpen(true)} aria-label={'Manage goals for ' + child.name}>
-          <PercyIcon id="phosphor:target:duotone" className="h-5 w-5" /> Manage goals
+        {/* One door for both kinds (owner's option C, V1-F §12 W2); focus comes
+            back here when the pop-up closes (W8). The label may wrap. */}
+        <button type="button" ref={manageButton} className="pv-btn pv-btn--soft pv-btn--block pv-manage-door" onClick={() => setManageOpen(true)}>
+          <PercyIcon id="phosphor:target:duotone" /><span>Manage Daily Wins &amp; Big Goals</span>
         </button>
       </div>
-      <ManageGoalsDialog open={manageOpen} onClose={() => setManageOpen(false)}
+      <ManageGoalsDialog open={manageOpen} onClose={() => setManageOpen(false)} returnFocusRef={manageButton}
         child={child} children={children} categories={categories} today={data?.date || ''} />
     </section>
   );

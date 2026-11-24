@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 0.3.0 |
+| Version | 0.4.0 |
 | Issued | 23 November 2026 (revised 24 November) |
 | Owner | Percy V1.1 design engineering |
 | Status | **Draft PR for owner review. Not merged, not deployed.** Production V1 is untouched. |
@@ -180,10 +180,33 @@ Requested on PR #72 ("@codex review") at `71759da`; completed 24 Nov 07:07 UTC. 
 
 While verifying this round, the control that injects 10px Quick Point labels once reported nothing small: the injected style had not taken effect when the check ran, so the check passed without testing anything. The cause was not found. The control now waits until the labels really are 10px, and a separate harness check fails if the style never takes, so it cannot silently pass again. Two consecutive runs: 246 of 246.
 
+### 10g. Production moved again: #75 merged, not overwritten (24 Nov, about 12:00 UTC)
+
+The owner approved and merged #75 ("Daily Wins & Big Goals in one pop-up, and the points line on Home") into the base, so it is in production. It conflicted with this PR on Home, Children, the Daily Wins panel and the e2e journeys. The base was merged in again (a merge commit; no rebase or force-push), and the V1.1 screens adopt #75's decisions:
+
+| #75 decision (owner, 24 Nov) | In V1.1 |
+|---|---|
+| Names "Daily Win(s)" and "Big Goal(s)"; "goal" alone, "bigger", "routine", "Today's Goals" and "Little wins" retired (enforced by `src/test/naming.test.js`) | Every V1.1 string renamed. The guard passes |
+| One door, "Manage Daily Wins & Big Goals", opening one pop-up; focus returns to it | Under Daily Wins on Home, V1.1 soft button; focus returns |
+| Empty state "No Daily Wins for {name} today." / "Something to do today or every week.", no button of its own | Kept, exact |
+| Points line "Available now for {name} … points": one paragraph, no heading, no live region | The hero's balance band is now that line (`[data-points-line]`, one paragraph) |
+| Children: "Big Goals" section, "Add a Big Goal" opens the pop-up on its Big Goals side; "{name}'s Daily Wins", "New Daily Win", "Manage all Daily Wins", "Daily Wins completed", "Weekly target and Big Goals" | Kept. The Manage card is labelled "Big Goals" and opens the savings dialog, or the pop-up when there are none |
+| A failed background refresh does not replace the page | Kept on Home and Children |
+| Home "working towards": "Big Goal", "View all Big Goals and rewards" | Kept |
+
+New V1.1 wording from this round, for approval: "Daily Wins today" (journey stop), "No Daily Wins today", "Couldn't load Daily Wins", "{n} set up" (Manage card), "None yet", "Treats and Big Goals", "Today, this week, and the Big Goal.".
+
+Test changes this round: `TodaysGoalsPanel.test.jsx` looks for the V1.1 empty-state box (`.pv-empty`) instead of V1's `.border-dashed`, with the same assertion (no button inside). `V1Children.test.jsx` keeps #75's "Daily Wins completed". The e2e Home journey keeps the V1.1 layout checks and adds #75's points-line rules (one paragraph, "Available now for … points", no heading or live region, the slogan card gone). `batch-e-goals` and `v1-journeys` take #75's names with V1.1's child picker and profile heading.
+
+### 10h. App QA harness: injected styles can apply late
+
+Reproduced: in one run of six, a style injected by the QA script was still only partly in effect when checked, and fully in effect 1.5s later. The cause was not found. Every injected style (the two controls and the 150% and 200% text checks) now uses `!important` and waits until it is really in effect. A harness check fails if it never takes, so no check can silently test the wrong thing. Two consecutive runs: 247 of 247.
+
 ## Change log
 
 | Version | Date | Change |
 |---|---|---|
 | 0.1.0 | 2026-11-23 | First issue |
+| 0.4.0 | 2026-11-24 | #75 merged in, Daily Wins and Big Goals (10g); QA harness waits for injected styles (10h) |
 | 0.3.0 | 2026-11-24 | Codex review (10e); deterministic QA control (10f) |
 | 0.2.0 | 2026-11-24 | Section 10: base merged (#73, #74); 24 Nov Quick Points decisions in V1.1; 12px/15px decision; final-acceptance items |

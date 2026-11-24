@@ -4,8 +4,8 @@
   "owner": "Percy V1.1 design engineering",
   "status": "PASSING",
   "base": "local server, fictional seeded families",
-  "total": 246,
-  "passed": 246,
+  "total": 247,
+  "passed": 247,
   "failed": 0,
   "known_v1_component_text_under_14px": [],
   "results": [
@@ -1195,7 +1195,7 @@
       "detail": "35 of 30 points"
     },
     {
-      "name": "today's ring counts only goals scheduled today (1 of 3 for the sample)",
+      "name": "the Daily Wins ring counts only those scheduled today (1 of 3 for the sample)",
       "pass": true,
       "detail": "1 of 3 done"
     },
@@ -1210,19 +1210,24 @@
       "detail": ""
     },
     {
-      "name": "Savings opens the V1 savings dialog",
+      "name": "Big Goals opens the savings dialog",
       "pass": true,
       "detail": ""
     },
     {
-      "name": "Goals opens the V1 manage-goals dialog",
+      "name": "All Daily Wins opens the Daily Wins & Big Goals pop-up",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "control harness: the injected 44px removal took effect",
       "pass": true,
       "detail": ""
     },
     {
       "name": "control: without their 44px height and stretched hit area the Manage labels fail the 44px check",
       "pass": true,
-      "detail": "3 small"
+      "detail": "4 small"
     },
     {
       "name": "control harness: the injected 10px labels took effect",

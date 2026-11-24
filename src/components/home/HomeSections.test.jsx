@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { StreakStrip, FamilyStrip, LittleWins, WorkingTowards, QuickPoints } from './HomeSections';
+import { StreakStrip, FamilyStrip, AvailableLine, WorkingTowards, QuickPoints } from './HomeSections';
 
 const wrap = (ui) => render(<MemoryRouter>{ui}</MemoryRouter>);
 const lara = { id: 'c1', name: 'Lara', colour_index: 0, created_date: '2026-01-01', week_points: 18, weekly_target: 25,
@@ -31,21 +31,31 @@ describe('WorkingTowards', () => {
   });
   it('the link carries the selected child to Child View', () => {
     wrap(<WorkingTowards child={lara} />);
-    expect(screen.getByRole('link', { name: 'View all goals and rewards' }).getAttribute('href')).toBe('/childview?child=c1');
+    expect(screen.getByRole('link', { name: 'View all Big Goals and rewards' }).getAttribute('href')).toBe('/childview?child=c1');
   });
 });
 
-describe('LittleWins', () => {
-  it('shows the points available now from the server, and does not repeat the week', () => {
-    const { container } = wrap(<LittleWins child={lara} />);
-    // The same figure as Child View and Children (owner, 22 Nov): icon, figure with its unit, approved label.
-    // The week is in the child's tile above, so it is not said again here (owner, 22 Nov: trim repetition).
-    expect([...container.querySelectorAll('[data-figure]')].map((f) => f.querySelector('p').textContent))
-      .toEqual(['90 points Available now']);
-    expect([...container.querySelectorAll('[data-figure] [data-icon]')].map((i) => i.getAttribute('data-icon')))
-      .toEqual(['phosphor:piggy-bank:duotone']);
-    expect(container.textContent).not.toContain('18 / 25');
-    expect(container.textContent).not.toContain('This week');
+describe('AvailableLine: the points line on Home (V1-F §13)', () => {
+  it('one paragraph that reads "Available now for Lara 90 points", with the bare number on its hook', () => {
+    const { container } = wrap(<AvailableLine child={lara} />);
+    const line = container.querySelector('[data-points-line]');
+    expect(line.querySelectorAll('p')).toHaveLength(1);
+    expect(line.querySelector('p').textContent).toBe('Available now for Lara 90 points');
+    expect(line.querySelector('[data-available]').textContent).toBe('90');
+    expect(line.querySelector('bdi').textContent).toBe('Lara'); // a right-to-left name cannot reorder the figure (A7)
+    expect([...line.querySelectorAll('[data-icon]')].map((i) => i.getAttribute('data-icon'))).toEqual(['phosphor:piggy-bank:duotone']);
+    expect(line.querySelector('[data-icon]').closest('[aria-hidden="true"]')).toBeTruthy();
+    // Not a heading, not a live region, and not the stacked figure e2e/checks.js measures (P2, P3).
+    expect(line.querySelectorAll('h1, h2, h3, [role="status"], [aria-live], [data-figure]')).toHaveLength(0);
+    // The slogan card is gone, and the week is not repeated (owner, 22 and 24 Nov).
+    expect(container.textContent).not.toMatch(/Little wins|Every positive step|18 \/ 25|This week/);
+  });
+  it('the figure: 0, the fall-back to total_points, then 0 (A2); and it follows the child (A5)', () => {
+    const text = (child) => { const { container, unmount } = wrap(<AvailableLine child={child} />); const t = container.querySelector('p').textContent; unmount(); return t; };
+    expect(text({ ...lara, available_points: 0 })).toBe('Available now for Lara 0 points');
+    expect(text({ id: 'c2', name: 'Omar', total_points: 40 })).toBe('Available now for Omar 40 points');
+    expect(text({ id: 'c3', name: 'Joud' })).toBe('Available now for Joud 0 points');
+    expect(text({ ...lara, available_points: 1000000 })).toBe('Available now for Lara 1000000 points');
   });
   it('the week is in the selected child\'s tile, once', () => {
     const { container } = wrap(<FamilyStrip children={[lara]} selectedId={lara.id} onSelect={() => {}} />);
@@ -56,7 +66,8 @@ describe('LittleWins', () => {
     expect(container.textContent).toContain('18 / 0 this week');
   });
   it('1 available point is singular', () => {
-    const { container } = wrap(<LittleWins child={{ ...lara, available_points: 1 }} />);
+    const { container } = wrap(<AvailableLine child={{ ...lara, available_points: 1 }} />);
+    expect(container.querySelector('p').textContent).toBe('Available now for Lara 1 point');
     expect(container.textContent).toContain('1 point');
     expect(container.textContent).not.toContain('1 points');
   });

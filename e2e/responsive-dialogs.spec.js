@@ -97,14 +97,14 @@ test('reward forms and confirmations at six widths', async ({ page }, testInfo) 
       // Edit form with the "savings will end" warning, then the confirmation.
       await page.getByRole('button', { name: `Edit ${goal.title}` }).click();
       await expect(form.getByRole('heading', { name: 'Edit reward' })).toBeVisible();
-      await form.getByRole('checkbox', { name: /Bigger goal/ }).click();
+      await form.getByRole('checkbox', { name: /Big Goal/ }).click();
       await expect(form.getByRole('status')).toContainText(`${name}: 120 saved points will become available again.`);
       await form.getByRole('status').scrollIntoViewIfNeeded();
       await checkScreen(page, at('edit reward form with warning'), testInfo);
       await controlsReachable(page, form, at('edit reward form with warning'));
       await form.getByRole('button', { name: 'Save reward' }).click();
       const confirm = page.getByRole('alertdialog');
-      await expect(confirm.getByRole('heading', { name: "End this bigger goal's savings?" })).toBeVisible();
+      await expect(confirm.getByRole('heading', { name: "End this Big Goal's savings?" })).toBeVisible();
       await checkScreen(page, at('end savings confirmation'), testInfo);
       await controlsReachable(page, confirm, at('end savings confirmation'));
       await confirm.getByRole('button', { name: 'Keep saving' }).click();
@@ -123,7 +123,7 @@ test('reward forms and confirmations at six widths', async ({ page }, testInfo) 
       // Savings dialog and the redeem confirmation.
       await page.goto(`/children?child=${kid.id}`);
       await page.waitForLoadState('networkidle');
-      await page.getByRole('button', { name: `Edit saving for something bigger for ${name}` }).click();
+      await page.getByRole('button', { name: `Edit Big Goals for ${name}` }).click();
       const savings = page.getByRole('dialog');
       await expect(savings.locator('[data-saved]')).toHaveText('120');
       await checkScreen(page, at('savings dialog'), testInfo);

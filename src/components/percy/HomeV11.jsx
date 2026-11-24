@@ -30,11 +30,17 @@ export function HomeHero({ children, child, streak, foxPlay, onSelect }) {
         <div className="pv-scene__fox"><PercyFox pose="waving" size="hero" play={foxPlay} /></div>
       </div>
       <div className="pv-scene__ground pv-on-dark">
-        <div>
-          <p className="pv-t-meta">Available now</p>
-          <p className="pv-balance">
-            <span className="pv-t-number" data-available>{available}</span>{' '}
-            <span className="pv-t-action">{points(available)}</span>
+        {/* The owner's points line ("Points 1", 24 Nov, V1-F §13): one paragraph,
+            so it reads "Available now for Lara 95 points"; not a heading and not
+            a live region (an award already raises a toast). <bdi> keeps a
+            right-to-left name from reordering the figure. */}
+        <div className="pv-points-line" data-points-line>
+          <p>
+            <span className="pv-t-meta">Available now for <bdi>{child.name}</bdi></span>{' '}
+            <span className="pv-balance">
+              <span className="pv-t-number" data-available>{available}</span>{' '}
+              <span className="pv-t-action">{points(available)}</span>
+            </span>
           </p>
         </div>
       </div>
@@ -102,7 +108,7 @@ export function HomeWorkingTowards({ child }) {
             <div className="pv-towards-row">
               <RewardIcon reward={goal} size="md" />
               <div className="pv-towards-text">
-                <p className="pv-t-meta">Saving for something bigger</p>
+                <p className="pv-t-meta">Big Goal</p>
                 <p className="pv-t-card">{goal.name}</p>
                 <p className="pv-t-support">{goal.saved} of {goal.cost} points saved</p>
                 <p className="pv-t-action">{goal.to_go > 0 ? `${goal.to_go} to go` : 'Saved!'}</p>
@@ -123,7 +129,7 @@ export function HomeWorkingTowards({ child }) {
           </div>
         ))}
         <Link to={createPageUrl('ChildView') + '?child=' + encodeURIComponent(child.id)} className="pv-link">
-          View all goals and rewards
+          View all Big Goals and rewards
         </Link>
       </div>
     </section>

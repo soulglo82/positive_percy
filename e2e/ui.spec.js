@@ -53,7 +53,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await go(page, '/');
   await checkScreen(page, 'home', testInfo);
   // V1.1 Home (design/v11; owner review 23 Nov 2026): the daily action centre.
-  // Child picker and balance in the hero, then Quick Points, Today's Goals and
+  // Child picker and balance in the hero, then Quick Points, Daily Wins and
   // what the child is working towards. Progress rings belong to Children.
   await expect(page.locator('#home-title')).toHaveText(/^What went well for .+ today\?$/);
   const sam = page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: 'Sam', exact: true });
@@ -81,7 +81,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   }
   const order = await page.evaluate(() => {
     window.scrollTo(0, 0);
-    const titles = ['Quick Points', "Today's Goals", "What you're working towards"];
+    const titles = ['Quick Points', 'Daily Wins', "What you're working towards"];
     const hs = titles.map((t) => [...document.querySelectorAll('h2')].find((h) => h.textContent.trim() === t));
     if (hs.some((h) => !h)) return { missing: titles.filter((_, i) => !hs[i]) };
     const domOrdered = hs.every((h, i) => i === 0 || !!(hs[i - 1].compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING));
@@ -92,25 +92,35 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
       heroBottom: Math.round(hero.getBoundingClientRect().bottom), screen: window.innerHeight, oneColumn: window.innerWidth < 834,
       balanceInHero: !!hero.querySelector('[data-available]'), pickerInHero: !!hero.querySelector('[role="group"][aria-label="Choose a child"]'),
       rings: document.querySelectorAll('.pv-ring').length,
-      quickHasAward: [...quick.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Custom points') };
+      quickHasAward: [...quick.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Custom points'),
+      // The owner's points line (24 Nov, V1-F §13), in V1.1 the hero's band.
+      lineInHero: !!hero.querySelector('[data-points-line]'), lines: document.querySelectorAll('[data-points-line]').length,
+      lineText: (hero.querySelector('[data-points-line]')?.textContent || '').replace(/\s+/g, ' ').trim(),
+      lineParagraphs: hero.querySelector('[data-points-line]')?.querySelectorAll('p').length,
+      lineHeadings: hero.querySelector('[data-points-line]')?.querySelectorAll('h1, h2, h3, [role="status"], [aria-live]').length,
+      allHeadings: [...document.querySelectorAll('h2')].map((h) => h.textContent.trim()) };
   });
   expect(order.missing, 'every Home section is present').toBeUndefined();
-  expect(order.domOrdered, 'DOM order: Quick Points, Goals, Working towards').toBe(true);
+  expect(order.domOrdered, 'DOM order: Quick Points, Daily Wins, Working towards').toBe(true);
   expect(order.pickerInHero && order.balanceInHero, 'the child picker and the balance are in the hero').toBe(true);
   expect(order.rings, 'Home has no progress rings (the balance is a number)').toBe(0);
   expect(order.quickHasAward, 'Custom points sits in the Quick Points section').toBe(true);
+  expect([order.lineInHero, order.lines], 'one points line, in the hero').toEqual([true, 1]);
+  expect(order.lineText, 'the line reads as one sentence').toMatch(/^Available now for .+ \d+ points?$/);
+  expect([order.lineParagraphs, order.lineHeadings], 'one paragraph; no heading or live region').toEqual([1, 0]);
+  expect(order.allHeadings, 'the slogan card and its heading are gone').not.toContain('Little wins, big adventures!');
   const [quickTop, goalsTop, towardsTop] = order.tops;
   const [quickLeft, goalsLeft, towardsLeft] = order.lefts;
   expect(quickTop, 'Quick Points comes after the hero').toBeGreaterThan(order.heroBottom);
   expect(quickTop - order.heroBottom, 'nothing between the hero and Quick Points but the gap').toBeLessThanOrEqual(48);
   if (order.screen >= 800) expect(quickTop, 'Quick Points starts on the first screen').toBeLessThan(order.screen);
-  expect(goalsTop, "Today's Goals is above Working towards").toBeLessThan(towardsTop);
+  expect(goalsTop, 'Daily Wins is above Working towards').toBeLessThan(towardsTop);
   if (order.oneColumn) {
-    expect(quickTop, "one column: Quick Points is above Today's Goals").toBeLessThan(goalsTop);
+    expect(quickTop, 'one column: Quick Points is above Daily Wins').toBeLessThan(goalsTop);
     expect(new Set(order.lefts).size, 'one column: every section starts at the same left edge').toBe(1);
   } else {
-    expect(goalsLeft, "two columns: Today's Goals is in the right column").toBeGreaterThan(quickLeft);
-    expect(towardsLeft, 'two columns: Working towards is under Today\'s Goals').toBe(goalsLeft);
+    expect(goalsLeft, 'two columns: Daily Wins is in the right column').toBeGreaterThan(quickLeft);
+    expect(towardsLeft, 'two columns: Working towards is under Daily Wins').toBe(goalsLeft);
     expect(Math.abs(goalsTop - quickTop), 'two columns: the columns start level').toBeLessThanOrEqual(1);
   }
 
@@ -240,14 +250,24 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await expect(page.getByText(/^Undone\./)).toBeVisible();
   await expect(page.getByText(/^Undone\./)).toHaveCount(0, { timeout: 15000 });
 
-  // V1-F: Manage goals list and the goal form.
-  await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
+  // V1-F §12: the Daily Wins & Big Goals pop-up, its two sides and both forms.
+  await page.getByRole('button', { name: 'Manage Daily Wins & Big Goals' }).click();
   const manage = page.getByRole('dialog');
-  await expect(manage.getByRole('heading', { name: "Manage Sam's goals" })).toBeVisible();
-  await checkScreen(page, 'manage goals', testInfo);
-  await manage.getByRole('button', { name: 'Add goal' }).click();
-  await expect(manage.getByRole('heading', { name: 'New goal' })).toBeVisible();
-  await checkScreen(page, 'goal form', testInfo);
+  await expect(manage.getByRole('heading', { name: 'Daily Wins & Big Goals' })).toBeVisible();
+  await checkScreen(page, 'pop-up, Daily Wins side', testInfo);
+  await manage.getByRole('button', { name: 'Add Daily Win' }).click();
+  await expect(manage.getByRole('heading', { name: 'New Daily Win' })).toBeVisible();
+  await checkScreen(page, 'Daily Win form', testInfo);
+  await manage.getByRole('button', { name: 'Cancel' }).click();
+  await manage.getByRole('button', { name: 'Big Goals', exact: true }).click();
+  await expect(manage.getByRole('region', { name: /Big Goals$/ })).toBeVisible();
+  await checkScreen(page, 'pop-up, Big Goals side', testInfo);
+  await manage.getByRole('button', { name: 'Add Big Goal' }).click();
+  await expect(manage.getByRole('heading', { name: 'New Big Goal' })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(1); // one dialog, never one on another
+  await checkScreen(page, 'Big Goal form', testInfo);
+  await manage.getByRole('button', { name: 'Change picture' }).click();
+  await checkScreen(page, 'Big Goal form with the pictures open', testInfo);
   await closeDialog(page);
 
   await page.getByRole('button', { name: /\+\d+ for Sam$/ }).first().click();
@@ -502,8 +522,8 @@ test('activity, with the log open and the child filter open', async ({ page }, t
   // V1-C: the log is open; the four approved filters ask the server.
   await expect(page.getByRole('heading', { name: 'Activity log' })).toBeVisible();
   await expect(page.getByText('Points earned')).toBeVisible();
-  await expect(page.getByText('Goals completed')).toBeVisible();
-  for (const name of ['Earned', 'Goals', 'Spent', 'All']) {
+  await expect(page.getByText('Daily Wins completed')).toBeVisible();
+  for (const name of ['Earned', 'Daily Wins', 'Spent', 'All']) {
     await page.getByRole('group', { name: 'Show activity' }).getByRole('button', { name }).click();
     await expect(page.getByRole('group', { name: 'Show activity' }).getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true');
   }
@@ -711,15 +731,15 @@ test('settings, its selects and dialogs', async ({ page }, testInfo) => {
   await checkScreen(page, 'invite parent', testInfo);
   await closeRow();
 
-  await page.getByRole('button', { name: 'Edit Today’s Goals' }).click();
+  await page.getByRole('button', { name: 'Edit Daily Wins & Big Goals' }).click();
   // Closed straight after opening: the case that raced on CI, kept so that
   // every run exercises the wait in closeRow. Then opened again for the
   // screen checks.
-  await expect(page.getByRole('dialog').getByRole('heading', { name: /^Manage .+'s goals$/ })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Daily Wins & Big Goals' })).toBeVisible();
   await closeRow();
-  await page.getByRole('button', { name: 'Edit Today’s Goals' }).click();
-  await expect(page.getByRole('dialog').getByRole('heading', { name: /^Manage .+'s goals$/ })).toBeVisible();
-  await checkScreen(page, 'manage goals from settings', testInfo);
+  await page.getByRole('button', { name: 'Edit Daily Wins & Big Goals' }).click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Daily Wins & Big Goals' })).toBeVisible();
+  await checkScreen(page, 'Daily Wins & Big Goals from settings', testInfo);
   await closeRow();
 
   await page.getByRole('button', { name: /parenting tips/i }).click();

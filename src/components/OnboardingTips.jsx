@@ -14,9 +14,9 @@ import { useRef } from 'react';
 import { Button } from "@/components/ui/button";
 
 const MODES = [
-  { title: "1. Today's Goals", body: 'Make daily and weekly routines easy to see and celebrate.' },
+  { title: '1. Daily Wins', body: 'Make things to do each day easy to see and celebrate.' },
   { title: '2. Notice positive behaviour', body: 'Reward kindness, effort, learning and helping whenever you see them.' },
-  { title: '3. Save for something bigger', body: 'Enjoy smaller weekly treats, or keep saving points towards bigger adventures.' },
+  { title: '3. Save for a Big Goal', body: 'Enjoy smaller weekly treats, or keep saving points towards a Big Goal.' },
 ];
 
 const STORAGE_KEY = 'percy_onboarding_done';

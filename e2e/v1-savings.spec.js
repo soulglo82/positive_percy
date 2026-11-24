@@ -1,7 +1,7 @@
 // D1 savings journey (docs/engineering/D1-SAVINGS-LEDGER-DESIGN.md §19), at
 // all four sizes, with the Batch D checks (axe, touch targets, text floor,
-// no sideways scroll) on every new screen and dialog. A parent marks a bigger
-// goal, saves towards it, undoes, moves points back, sees the goal on Home,
+// no sideways scroll) on every new screen and dialog. A parent marks a Big
+// Goal, saves towards it, undoes, moves points back, sees the goal on Home,
 // Child View, Rewards and Activity, then redeems it and undoes the
 // redemption. One child and one goal are made for the run and removed after.
 import { test, expect } from '@playwright/test';
@@ -18,7 +18,7 @@ test.beforeEach(async ({ context }) => {
   }, [family.code, family.token]);
 });
 
-test('a parent saves towards a bigger goal, undoes, moves back and redeems', async ({ page }, testInfo) => {
+test('a parent saves towards a Big Goal, undoes, moves back and redeems', async ({ page }, testInfo) => {
   const tag = { 'phone-320': 'A', 'phone-390-touch': 'B', 'ipad-834-touch': 'C', 'desktop-1280': 'D' }[testInfo.project.name] || 'X';
   const name = `Sav${tag}`;
   const api = async (method, path, data) => {
@@ -38,12 +38,12 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     // Children: the card, then the dialog.
     await page.goto(`/children?child=${kid.id}`);
     await page.waitForLoadState('networkidle');
-    await expect(page.getByRole('heading', { name: 'Saving for something bigger' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Big Goals', exact: true })).toBeVisible();
     await expect(page.getByText('120 of 300 points saved')).toBeVisible();
     // The card itself, scrolled into view (owner review of #64: on phones it is below the fold).
-    await page.getByRole('heading', { name: 'Saving for something bigger' }).scrollIntoViewIfNeeded();
+    await page.getByRole('heading', { name: 'Big Goals', exact: true }).scrollIntoViewIfNeeded();
     await checkScreen(page, 'children with savings', testInfo);
-    await page.getByRole('button', { name: `Edit saving for something bigger for ${name}` }).click();
+    await page.getByRole('button', { name: `Edit Big Goals for ${name}` }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.locator('[data-saved]')).toHaveText('120');
     await expect(dialog.getByText('Save up to 180 · Move back up to 120')).toBeVisible();
@@ -62,7 +62,7 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     await expect.poll(async () => (await me()).saved_total).toBe(120);
 
     // Move 20 back.
-    await page.getByRole('button', { name: `Edit saving for something bigger for ${name}` }).click();
+    await page.getByRole('button', { name: `Edit Big Goals for ${name}` }).click();
     await expect(dialog.locator('[data-saved]')).toHaveText('120');
     await dialog.getByLabel('Points', { exact: true }).fill('20');
     await dialog.getByRole('button', { name: 'Move points back' }).click();
@@ -76,7 +76,7 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     await expect(page.locator('[data-available]')).toHaveText('220');
     await expect(page.locator('p').filter({ has: page.locator('[data-available]') })).toHaveText(/^220\s+points\s+Ready to use$/);
     await expect(page.getByText(/Saved towards/)).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'My next big adventure' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My Big Goal' })).toBeVisible();
     await expect(page.getByText('100 of 300 points saved')).toBeVisible();
     await expect(page.getByText('200 points to go')).toBeVisible();
     await expect(page.getByRole('button', { name: /Save points|Move points back|Redeem/ })).toHaveCount(0);
@@ -88,12 +88,12 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     await page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: new RegExp(`^${name}`) }).click();
     await expect(page.getByText('100 of 300 points saved')).toBeVisible();
 
-    // Rewards: the Bigger rewards section.
+    // Rewards: the Big Goals section.
     await page.goto('/rewards');
     await page.waitForLoadState('networkidle');
-    const bigger = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Bigger rewards' }) });
-    await expect(bigger.getByText('300 points · Bigger achievement').first()).toBeVisible();
-    await checkScreen(page, 'rewards with bigger rewards', testInfo);
+    const bigger = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Big Goals', exact: true }) });
+    await expect(bigger.getByText('300 points · Big Goal').first()).toBeVisible();
+    await checkScreen(page, 'rewards with Big Goals', testInfo);
 
     // Activity: the moves, under All only.
     await page.goto('/activity');
@@ -106,7 +106,7 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     // Redeem from Children, with the confirm, then undo it.
     await page.goto(`/children?child=${kid.id}`);
     await page.waitForLoadState('networkidle');
-    await page.getByRole('button', { name: `Edit saving for something bigger for ${name}` }).click();
+    await page.getByRole('button', { name: `Edit Big Goals for ${name}` }).click();
     await page.getByRole('dialog').getByRole('button', { name: `Redeem ${bike.title}` }).click();
     const confirm = page.getByRole('alertdialog');
     await expect(confirm.getByText(`This will spend 300 points from ${name}'s balance: 100 saved and 200 available.`)).toBeVisible();
@@ -123,13 +123,13 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: `Edit ${bike.title}` }).click();
     const form = page.getByRole('dialog');
-    await form.getByRole('checkbox', { name: /Bigger goal/ }).click();
+    await form.getByRole('checkbox', { name: /Big Goal/ }).click();
     await expect(form.getByRole('status')).toContainText(`${name}: 100 saved points will become available again.`);
     await form.getByRole('status').scrollIntoViewIfNeeded();
     await checkScreen(page, 'unmark warning', testInfo);
     await form.getByRole('button', { name: 'Save reward' }).click();
     const endConfirm = page.getByRole('alertdialog');
-    await expect(endConfirm.getByText("Past savings won't be restored if you re-enable the goal.", { exact: false })).toBeVisible();
+    await expect(endConfirm.getByText("Past savings won't be restored if you make it a Big Goal again.", { exact: false })).toBeVisible();
     await checkScreen(page, 'end savings confirm', testInfo);
     await endConfirm.getByRole('button', { name: 'Keep saving' }).click();
     await page.keyboard.press('Escape');
@@ -142,7 +142,7 @@ test('a parent saves towards a bigger goal, undoes, moves back and redeems', asy
     await page.waitForLoadState('networkidle');
     await expect(page.getByText(`${name} has saved enough for ${tent.title}!`)).toBeVisible();
     await expect(page.getByText(/0 points to go/)).toHaveCount(0);
-    await page.getByRole('heading', { name: 'My next big adventure' }).scrollIntoViewIfNeeded();
+    await page.getByRole('heading', { name: 'My Big Goal' }).scrollIntoViewIfNeeded();
     await checkScreen(page, 'child view fully saved', testInfo);
 
     // Deleting a goal with savings: a per-child warning and confirmation (§21.2).

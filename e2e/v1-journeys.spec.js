@@ -76,7 +76,7 @@ test('child asks, parent approves, history and settings follow', async ({ page }
     await log.getByRole('button', { name: 'Spent' }).click();
     await expect(page.locator('[data-row-key^="spend-"]').filter({ hasText: `${name} redeemed ${reward.title}` }).first()).toContainText(/\d{1,2}:\d{2}\s[AP]M/); // its time; "redeemed" is said once, in the first line
     await expect(page.locator('[data-row-key^="spend-"]').filter({ hasText: `${name} redeemed ${reward.title}` }).first()).not.toContainText('Reward redeemed');
-    await log.getByRole('button', { name: 'Goals' }).click();
+    await log.getByRole('button', { name: 'Daily Wins' }).click();
     await expect(page.getByText(`“${name} tidies up”`).first()).toBeVisible();
     await log.getByRole('button', { name: 'Earned' }).click();
     await expect(page.getByText(`“${name} tidies up”`)).toHaveCount(0); // Earned and Goals are distinct
@@ -96,7 +96,7 @@ test('child asks, parent approves, history and settings follow', async ({ page }
     await page.goto(`/children?child=${kid.id}`);
     // V1.1 Children: the child's profile heading is their name.
     await expect(page.getByRole('heading', { name, exact: true, level: 2 })).toBeVisible();
-    await expect(page.getByRole('heading', { name: `${name}'s goals` })).toBeVisible();
+    await expect(page.getByRole('heading', { name: `${name}'s Daily Wins` })).toBeVisible();
 
     // Parent, Settings: rename the family; it survives a reload.
     familyName = (await api('GET', `/api/auth/me?family_code=${family.code}`)).family.family_name;

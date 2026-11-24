@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PercyIcon from '@/components/icons/PercyIcon';
-import PointsFigure from '@/components/PointsFigure';
 import BehaviourTileParts, { TILE_GRID_EVEN, TILE_LAYOUT } from '@/components/home/BehaviourTile';
 import RewardIcon from '@/components/rewards/RewardIcon';
 import ChildAvatar from '@/components/child/ChildAvatar';
@@ -89,21 +88,28 @@ export function FamilyStrip({ children, selectedId, onSelect, compact = false })
   );
 }
 
-// "Little wins, big adventures!" with the points available now.
-export function LittleWins({ child }) {
+// The points line (owner's "Points 1", 24 November; V1-F §13): the selected
+// child's available points in one slim card straight under the child picker.
+// One paragraph, so it reads "Available now for Lara 90 points"; the name is
+// in <bdi> so a right-to-left name cannot reorder the figure. Not a heading
+// and not a live region (an award already raises a toast). On a phone the
+// figure sits at the right and drops under a long name; from lg it follows
+// the label instead of sitting at the far edge of a wide page.
+export function AvailableLine({ child }) {
   const available = child.available_points ?? child.total_points ?? 0;
   return (
-    <Card>
-      <CardContent className="p-4 sm:p-5 space-y-3">
-        <div>
-          <h2 className="font-display font-bold text-lg text-primary">Little wins, big adventures!</h2>
-          <p className="text-sm text-muted-foreground">Every positive step counts.</p>
-        </div>
-        {/* The same figure as Child View's points card (owner, 22 Nov). The week
-            is not repeated here: the selected child's tile above shows it with
-            its bar (owner, 22 Nov: trim repetition). */}
-        <PointsFigure icon={<PercyIcon id="phosphor:piggy-bank:duotone" className="h-7 w-7" />}
-          value={available} valueProps={{ 'data-available': true }} unit={available === 1 ? 'point' : 'points'} label="Available now" />
+    <Card data-points-line>
+      <CardContent className="flex items-center gap-3 px-3 py-2">
+        <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-warning text-primary">
+          <PercyIcon id="phosphor:piggy-bank:duotone" className="h-5 w-5" />
+        </span>
+        <p className="flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-3 lg:justify-start">
+          <span className="min-w-0 break-words text-sm font-medium text-muted-foreground">Available now for <bdi>{child.name}</bdi></span>
+          {' '}
+          <span className="whitespace-nowrap font-display text-lg font-bold text-foreground tabular-nums">
+            <span data-available>{available}</span>{' '}{available === 1 ? 'point' : 'points'}
+          </span>
+        </p>
       </CardContent>
     </Card>
   );
@@ -120,7 +126,7 @@ export function WorkingTowards({ child }) {
     <Card>
       <CardContent className="p-4 sm:p-5 space-y-3">
         <h2 className="font-display font-bold text-lg text-primary">What you're working towards</h2>
-        {goal && <GoalProgress goal={goal} label="Saving for something bigger" />}
+        {goal && <GoalProgress goal={goal} label="Big Goal" />}
         {/* Owner wording (21 Nov): the funded-goal celebration (not a redemption). */}
         {goal && goal.to_go === 0 && <p className="text-sm font-semibold text-foreground">{child.name} has saved enough for {goal.name}!</p>}
         {stack.map((item, i) => (
@@ -134,7 +140,7 @@ export function WorkingTowards({ child }) {
         ))}
         <div className="flex justify-end">
           <Link to={createPageUrl('ChildView') + '?child=' + encodeURIComponent(child.id)} className="inline-flex items-center min-h-11 text-sm font-semibold text-primary underline-offset-4 hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-            View all goals and rewards
+            View all Big Goals and rewards
           </Link>
         </div>
       </CardContent>

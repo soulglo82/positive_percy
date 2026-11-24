@@ -185,9 +185,9 @@ export default function ParentProfile() {
           <SettingsRow title="Point defaults" subtitle="New behaviours and Quick Points start at 1 point" />
         </Group>
 
-        <Group title="Children & goals">
+        <Group title="Children, Daily Wins & Big Goals">
           <SettingsRow title="Children" subtitle="Profiles, avatars and weekly targets" action="Edit" onAction={() => setOpen('children')} />
-          <SettingsRow title="Today’s Goals" subtitle="Recurring routines and one-off achievements" action="Edit" onAction={() => setOpen('goals')} disabled={ordered.length === 0} />
+          <SettingsRow title="Daily Wins & Big Goals" subtitle="Things to do and things to save for" action="Edit" onAction={() => setOpen('goals')} disabled={ordered.length === 0} />
           <SettingsRow title="Family timezone" subtitle="Determines today’s date and weekly schedule" action="Edit" onAction={() => setOpen('timezone')} />
         </Group>
 

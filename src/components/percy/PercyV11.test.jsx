@@ -90,7 +90,8 @@ describe('Home V1.1', () => {
   const hero = (child, extra = {}) => render(<HomeHero children={kids} child={child} streak={0} foxPlay={0} onSelect={() => {}} onOpenRewards={() => {}} {...extra} />);
   it('the balance is a number with its unit, not a ring; 1 is singular', () => {
     const { container } = hero(kids[1]);
-    expect(container.querySelector('[data-available]').closest('p').textContent).toBe('1 point');
+    // The owner's points line (24 Nov): one sentence, singular at 1.
+    expect(container.querySelector('[data-points-line] p').textContent.replace(/\s+/g, ' ').trim()).toBe('Available now for Omar 1 point');
     expect(container.querySelector('.pv-ring')).toBeNull();
   });
   it('no streak, no streak chip; a streak shows it', () => {

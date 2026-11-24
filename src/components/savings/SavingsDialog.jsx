@@ -1,12 +1,11 @@
-// "Saving for something bigger" Edit (D1, savings design §19.3). A parent
+// The savings pop-up, "Save points for a Big Goal" (D1, savings design §19.3; names V1-F §12). A parent
 // chooses one of the child's bigger goals, then saves points towards it or
 // moves points back, with Undo; and redeems the goal when it is within reach
 // (O7). Limits come from the server's figures (child.available_points and the
 // goal's saved, cost and to_go in child.goals); the server re-checks every one.
 //
-// Wording: "Saving for something bigger" and "Saved: {n}" are approved; "Save
-// points" and "Move points back" are the owner's proposed O4 wording; the
-// rest is provisional for the owner's screen review (§19.8).
+// Wording: "Saved: {n}", "Save points" and "Move points back" are the owner's
+// (O4); the names "Big Goal" and "Save points for a Big Goal" are V1-F §12.6.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -54,18 +53,13 @@ export function undoSavingsAction(eventId, queryClient, requestId = newRequestId
   };
 }
 
-export default function SavingsDialog({ open, onClose, child, goalRewards, returnFocusRef = null }) {
+// `embedded` (V1-F §12 W8): the header, body and footer without a dialog of
+// their own, inside the Daily Wins & Big Goals pop-up. `initialGoalId` opens
+// on that goal when it is one of the options. `onClose({ acted: true })`
+// after a move or a redeem, so the pop-up can close and leave Undo usable.
+export default function SavingsDialog({ open, onClose, child, goalRewards, returnFocusRef = null,
+  embedded = false, initialGoalId = null, titleRef = null, onBusyChange = null }) {
   const queryClient = useQueryClient();
-  const [goalId, setGoalId] = useState(null);
-  const [amount, setAmount] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [confirmRedeem, setConfirmRedeem] = useState(false);
-  const busyRef = useRef(false); // state alone lets two taps in one tick through
-  // One request id per action for the life of the open dialog, kept until
-  // that action succeeds or is refused, so a retry after a lost reply can
-  // only replay, whatever else was tried in between (code review).
-  const ids = useRef(new Map());
-
   // A goal already asked for cannot be saved towards (S1): left out here.
   const requested = useMemo(() => new Set((child?.reward_stack_priced || []).map((i) => i.rewardId)), [child]);
   const serverGoals = useMemo(() => new Map((child?.goals || []).map((g) => [g.rewardId, g])), [child]);
@@ -78,14 +72,33 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
       : { id: r.id, name: r.title, cost: r.cost_points, saved: 0, toGo: r.cost_points, reward: r };
   }), [goalRewards, requested, serverGoals]);
 
+  // The goal an opening starts on: the one asked for when it is an option,
+  // else the goal Home and Child View lead with, else the first.
+  const startGoal = () => {
+    const lead = leadingGoal(child?.goals || []);
+    return options.some((o) => o.id === initialGoalId) ? initialGoalId
+      : options.some((o) => o.id === lead?.rewardId) ? lead.rewardId : (options[0]?.id ?? null);
+  };
+  // Starts there, so a view mounted already open (embedded) is right on its
+  // first paint; the effect below does the same for a later opening.
+  const [goalId, setGoalId] = useState(startGoal);
+  const [amount, setAmount] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [confirmRedeem, setConfirmRedeem] = useState(false);
+  const busyRef = useRef(false); // state alone lets two taps in one tick through
+  // One request id per action for the life of the open dialog, kept until
+  // that action succeeds or is refused, so a retry after a lost reply can
+  // only replay, whatever else was tried in between (code review).
+  const ids = useRef(new Map());
+  // The pop-up it is embedded in must not close under a request (code review 5).
+  useEffect(() => { onBusyChange?.(busy); }, [busy]);
+
   useEffect(() => {
     if (!open) return;
     setAmount(0);
     setConfirmRedeem(false);
     ids.current = new Map();
-    // The same goal Home and Child View lead with.
-    const lead = leadingGoal(child?.goals || []);
-    setGoalId(options.some((o) => o.id === lead?.rewardId) ? lead.rewardId : (options[0]?.id ?? null));
+    setGoalId(startGoal());
   }, [open, child?.id]); // reset on each opening, and for another child
 
   if (!child) return null;
@@ -136,7 +149,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
       toast.success(message, { duration: UNDO_TOAST_MS, action: { label: 'Undo', onClick: undoSavingsAction(r.event.id, queryClient) } });
       // Close, as the award dialog does: while a modal dialog is open the
       // page behind it (the toast and its Undo) cannot be used (e2e, §19.8).
-      onClose();
+      onClose({ acted: true });
     } catch (err) {
       fail(err, key);
     } finally {
@@ -155,7 +168,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
         duration: UNDO_TOAST_MS,
         action: { label: 'Undo', onClick: undoAction('spend', r.redemption.id, queryClient) },
       });
-      onClose();
+      onClose({ acted: true });
     } catch (err) {
       setConfirmRedeem(false);
       fail(err, key);
@@ -168,19 +181,19 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
     if (returnFocusRef?.current) { e.preventDefault(); returnFocusRef.current.focus(); }
   };
 
-  return (
+  const content = (
     <>
-      <Dialog open={open} onOpenChange={(o) => { if (!o && !busyRef.current) onClose(); }}>
-        <DialogContent className="sm:max-w-lg" onCloseAutoFocus={focusBack}>
-          <DialogHeader>
-            <DialogTitle className="text-title font-extrabold text-primary">Saving for something bigger</DialogTitle>
+          <DialogHeader className={embedded ? 'pb-2 pt-4' : undefined}>
+            <DialogTitle ref={titleRef} tabIndex={-1} className={embedded ? 'text-lg text-primary focus-visible:outline-none' : 'text-title font-extrabold text-primary focus-visible:outline-none'}>Save points for a Big Goal</DialogTitle>
             <DialogDescription>
-              Set points aside for {child.name}'s bigger goal. Saved points stay {child.name}'s; you can move them back.
+              Set points aside for {child.name}'s Big Goal. Saved points stay {child.name}'s; you can move them back.
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
+            {options.length === 0 && <p className="text-sm text-muted-foreground">No Big Goals to save for yet.</p>}
+            {options.length > 0 && (
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium text-foreground">Bigger goal</legend>
+              <legend className="text-sm font-medium text-foreground">Big Goal</legend>
               {options.map((o) => (
                 <label key={o.id} className={cn('flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border p-3',
                   o.id === goalId ? 'border-2 border-selected-border bg-selected' : 'border-border bg-card hover:bg-accent')}>
@@ -196,6 +209,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
                 </label>
               ))}
             </fieldset>
+            )}
             {goal && (
               <>
                 <div className="grid grid-cols-2 gap-3">
@@ -224,7 +238,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
             )}
           </DialogBody>
           <DialogFooter>
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={busy}>Close</Button>
+            <Button type="button" variant="outline" className="flex-1" onClick={() => onClose()} disabled={busy}>Close</Button>
             {goal && (
               <Button type="button" className="flex-1" onClick={() => setConfirmRedeem(true)} disabled={!canRedeem}
                 aria-label={`Redeem ${goal.name}`}>
@@ -232,8 +246,16 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
               </Button>
             )}
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
+    </>
+  );
+
+  return (
+    <>
+      {embedded ? content : (
+        <Dialog open={open} onOpenChange={(o) => { if (!o && !busyRef.current) onClose(); }}>
+          <DialogContent className="sm:max-w-lg" onCloseAutoFocus={focusBack}>{content}</DialogContent>
+        </Dialog>
+      )}
 
       <AlertDialog open={confirmRedeem} onOpenChange={(o) => { if (!busyRef.current) setConfirmRedeem(o); }}>
         <AlertDialogContent onCloseAutoFocus={focusBack}>
@@ -245,7 +267,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
             {/* E12 (owner review of #64): an excess over a lowered cost stays saved, never lost or counted twice. */}
             {saved > (goal?.cost ?? 0) && (
               <p className="text-sm text-muted-foreground" data-excess>
-                {saved - goal.cost} saved points are more than this goal needs. They stay saved for {goal.name}, and you can move them back.
+                {saved - goal.cost} saved points are more than this Big Goal needs. They stay saved for {goal.name}, and you can move them back.
               </p>
             )}
           </AlertDialogHeader>

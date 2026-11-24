@@ -64,6 +64,16 @@ function inspect() {
   return { pageOverflow: document.documentElement.scrollWidth - window.innerWidth, smallText, v1Small, offscreen, clipped, smallTargets, stacked, mirrored };
 }
 
+
+// Raise the root text size and wait until it really applies (injected styles
+// were seen to apply late); a harness failure is recorded, never ignored.
+async function setTextSize(page, pct, label) {
+  await page.addStyleTag({ content: `html{font-size:${pct}% !important}` });
+  const want = `${16 * pct / 100}px`;
+  const ok = await page.waitForFunction((w) => getComputedStyle(document.documentElement).fontSize === w, want, { timeout: 5000 }).then(() => true).catch(() => false);
+  if (!ok) record(`harness: ${label} text size ${pct}% took effect`, false, `root is ${await page.evaluate(() => getComputedStyle(document.documentElement).fontSize)}`);
+  await page.waitForTimeout(150);
+}
 const browser = await chromium.launch();
 const errors = [];
 async function open(fam, w, h, dsf = 1) {
@@ -134,7 +144,7 @@ for (const [famX, label, q] of [[six, 'six children, long name selected', `?chil
 for (const pct of [100, 200]) {
   const page = await open(manyGoals, 320, 568);
   await go(page, '/');
-  if (pct !== 100) { await page.addStyleTag({ content: `html{font-size:${pct}%}` }); await page.waitForTimeout(200); }
+  if (pct !== 100) await setTextSize(page, pct, 'home 320, 20 goals');
   const r = await page.evaluate(inspect);
   record(`home 320 at ${pct}% text, 20 goals today: no horizontal page overflow`, r.pageOverflow <= 0, `${r.pageOverflow}px`);
   record(`home 320 at ${pct}% text, 20 goals today: nothing outside the viewport`, r.offscreen.length === 0, r.offscreen.slice(0, 3).join(' | '));
@@ -145,7 +155,7 @@ for (const pct of [100, 200]) {
 for (const pct of [150, 200]) for (const [w, h] of [[320, 568], [390, 844]]) for (const [view, path] of [['home', '/'], ['children', '/Children']]) {
   const page = await open(six, w, h);
   await go(page, path);
-  await page.addStyleTag({ content: `html{font-size:${pct}%}` }); await page.waitForTimeout(200);
+  await setTextSize(page, pct, `${view} ${w}`);
   const r = await page.evaluate(inspect);
   record(`${view} ${w} at ${pct}% text: no horizontal page overflow`, r.pageOverflow <= 0, `${r.pageOverflow}px`);
   record(`${view} ${w} at ${pct}% text: nothing outside the viewport`, r.offscreen.length === 0, r.offscreen.slice(0, 3).join(' | '));
@@ -209,17 +219,17 @@ for (const pct of [150, 200]) for (const [w, h] of [[320, 568], [390, 844]]) for
   record('week ring valuenow never exceeds valuemax', vn <= vm, `${vn}/${vm}`);
   const figure = await page.locator('.pv-stop', { hasText: 'This week' }).locator('.pv-stop__figure').textContent();
   record('the week figure is shown unclamped from the server (35 of 30 for the sample)', figure.replace(/\s+/g, ' ').trim() === '35 of 30 points', figure);
-  const today = await page.locator('.pv-stop', { hasText: "Today's goals" }).locator('.pv-stop__figure').textContent();
-  record("today's ring counts only goals scheduled today (1 of 3 for the sample)", today.replace(/\s+/g, ' ').trim() === '1 of 3 done', today);
+  const today = await page.locator('.pv-stop', { hasText: 'Daily Wins today' }).locator('.pv-stop__figure').textContent();
+  record('the Daily Wins ring counts only those scheduled today (1 of 3 for the sample)', today.replace(/\s+/g, ' ').trim() === '1 of 3 done', today);
   record('savings show the approved wording', await page.getByText('60 of 300 points saved').isVisible());
   await page.getByRole('button', { name: "Edit Lara's weekly target" }).click();
   record('Weekly target opens the V1 edit dialog', await page.getByRole('dialog').isVisible());
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Edit saving for something bigger for Lara' }).click();
-  record('Savings opens the V1 savings dialog', await page.getByRole('dialog').isVisible());
+  await page.getByRole('button', { name: 'Edit Big Goals for Lara' }).click();
+  record('Big Goals opens the savings dialog', await page.getByRole('dialog').isVisible());
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Manage all goals for Lara' }).click();
-  record('Goals opens the V1 manage-goals dialog', await page.getByRole('dialog').isVisible());
+  await page.getByRole('button', { name: 'Manage all Daily Wins for Lara' }).click();
+  record('All Daily Wins opens the Daily Wins & Big Goals pop-up', await page.getByRole('dialog').isVisible());
   await page.context().close();
 }
 // 5. Controls: the checks must be able to fail.
@@ -227,7 +237,14 @@ for (const pct of [150, 200]) for (const [w, h] of [[320, 568], [390, 844]]) for
   const page = await open(fam, 390, 844);
   await go(page, '/Children');
   // The labels are 44px themselves and stretched over the card; take both away.
-  await page.addStyleTag({ content: '.pv-stretch::after{position:static} .pv-manage-action__label{min-height:0}' });
+  // Injected styles were seen to take effect up to ~1.5s late (cause not found),
+  // so wait until they really apply; a harness failure is reported separately.
+  await page.addStyleTag({ content: '.pv-stretch::after{position:static !important} .pv-manage-action__label{min-height:0 !important}' });
+  const applied1 = await page.waitForFunction(() => {
+    const l = [...document.querySelectorAll('.pv-manage-action__label')];
+    return l.length > 0 && l.every((x) => getComputedStyle(x).minHeight === '0px' && getComputedStyle(x, '::after').position === 'static');
+  }, null, { timeout: 5000 }).then(() => true).catch(() => false);
+  record('control harness: the injected 44px removal took effect', applied1);
   const r = await page.evaluate(inspect);
   record('control: without their 44px height and stretched hit area the Manage labels fail the 44px check', r.smallTargets.some((x) => /pv-manage-action__label/.test(x)), `${r.smallTargets.length} small`);
   // The checker must flag 10px labels. Inject them and wait until they are

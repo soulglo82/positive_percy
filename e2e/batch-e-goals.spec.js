@@ -19,17 +19,17 @@ test('parent can add, complete once, edit and archive a dated goal', async ({ pa
   const title = 'Read together ' + Date.now().toString(36);
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: "Today's goals" })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Daily Wins' })).toBeVisible();
   // V1.1 Home: the child picker names the child only (week figures are on Children).
   await page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: 'Sam', exact: true }).click();
-  await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
+  await page.getByRole('button', { name: 'Manage Daily Wins & Big Goals' }).click();
   const dialog = page.getByRole('dialog');
-  await expect(dialog.getByRole('heading', { name: "Manage Sam's goals" })).toBeVisible();
-  await dialog.getByRole('button', { name: 'Add goal' }).click();
-  await dialog.getByLabel('Goal name').fill(title);
-  await dialog.getByRole('button', { name: 'One-off' }).click();
+  await expect(dialog.getByRole('heading', { name: 'Daily Wins & Big Goals' })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Add Daily Win' }).click();
+  await dialog.getByLabel('What is it?').fill(title);
+  await dialog.getByRole('button', { name: 'One day' }).click();
   await dialog.getByLabel('Date').fill(today);
-  await dialog.getByRole('button', { name: 'Create goal' }).click();
+  await dialog.getByRole('button', { name: 'Save Daily Win' }).click();
   await expect(dialog.getByText(title)).toBeVisible();
   await dialog.getByRole('button', { name: 'Close' }).click();
   // Wait for the close animation: until then the goal row is in the page twice.
@@ -49,16 +49,16 @@ test('parent can add, complete once, edit and archive a dated goal', async ({ pa
   await expect(page.getByRole('button', { name: 'Complete ' + title })).toHaveCount(0);
 
   // The management screen keeps completed entries editable and auditable.
-  await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
+  await page.getByRole('button', { name: 'Manage Daily Wins & Big Goals' }).click();
   await dialog.getByRole('button', { name: 'Edit ' + title }).click();
-  await dialog.getByLabel('Goal name').fill(title + ' updated');
-  await dialog.getByRole('button', { name: 'Save changes' }).click();
+  await dialog.getByLabel('What is it?').fill(title + ' updated');
+  await dialog.getByRole('button', { name: 'Save Daily Win' }).click();
   await expect(dialog.getByText(title + ' updated')).toBeVisible();
   await dialog.getByRole('button', { name: 'Edit ' + title + ' updated' }).click();
-  await dialog.getByRole('button', { name: 'Archive goal' }).click();
+  await dialog.getByRole('button', { name: 'Archive Daily Win' }).click();
   const confirmation = page.getByRole('alertdialog');
-  await expect(confirmation.getByText('Archive this goal?')).toBeVisible();
-  await confirmation.getByRole('button', { name: 'Archive goal' }).click();
+  await expect(confirmation.getByText('Archive this Daily Win?')).toBeVisible();
+  await confirmation.getByRole('button', { name: 'Archive Daily Win' }).click();
   await expect(dialog.getByText(title + ' updated')).toHaveCount(0);
 });
 
@@ -77,10 +77,10 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
   const samChip = page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: 'Sam', exact: true });
   await samChip.click();
   await expect(samChip).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
+  await page.getByRole('button', { name: 'Manage Daily Wins & Big Goals' }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByRole('button', { name: 'Add goal' }).click();
-  await dialog.getByLabel('Goal name').fill(title);
+  await dialog.getByRole('button', { name: 'Add Daily Win' }).click();
+  await dialog.getByLabel('What is it?').fill(title);
   for (const day of ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']) {
     const b = dialog.getByRole('button', { name: day, exact: true });
     if ((await b.getAttribute('aria-pressed')) !== 'true') await b.click();
@@ -89,7 +89,7 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
     const b = dialog.getByRole('button', { name: day, exact: true });
     if ((await b.getAttribute('aria-pressed')) !== 'true') await b.click();
   }
-  await dialog.getByRole('button', { name: 'Create goal' }).click();
+  await dialog.getByRole('button', { name: 'Save Daily Win' }).click();
   await expect(dialog.getByText(title)).toBeVisible();
   await expect(dialog.getByRole('listitem').filter({ hasText: title }).getByText(/· Daily ·/)).toBeVisible();
   await dialog.getByRole('button', { name: 'Close' }).click();
@@ -123,10 +123,10 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
 
   // Rename keeps the start date (server value unchanged).
   const before = (await api()).goals.find(g => g.title === title);
-  await page.getByRole('button', { name: 'Manage goals for Sam' }).click();
+  await page.getByRole('button', { name: 'Manage Daily Wins & Big Goals' }).click();
   await dialog.getByRole('button', { name: 'Edit ' + title }).click();
-  await dialog.getByLabel('Goal name').fill(title + ' x');
-  await dialog.getByRole('button', { name: 'Save changes' }).click();
+  await dialog.getByLabel('What is it?').fill(title + ' x');
+  await dialog.getByRole('button', { name: 'Save Daily Win' }).click();
   await expect(dialog.getByText(title + ' x')).toBeVisible();
   const renamed = (await api()).goals.find(g => g.title === title + ' x');
   expect(renamed.start_date).toBe(before.start_date);
@@ -137,14 +137,14 @@ test('E05: weekly goal - complete, undo, redo, rename keeps start, reschedule, s
   await expect(dialog.getByText(/The new schedule starts on/)).toBeVisible();
 
   // Turning a completed weekly goal into a one-off is refused, inline.
-  await dialog.getByRole('button', { name: 'One-off' }).click();
-  await dialog.getByRole('button', { name: 'Save changes' }).click();
-  await expect(dialog.getByRole('alert')).toContainText('Create a separate goal');
+  await dialog.getByRole('button', { name: 'One day' }).click();
+  await dialog.getByRole('button', { name: 'Save Daily Win' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Create a separate Daily Win');
   await dialog.getByRole('button', { name: 'Cancel' }).click();
 
   await dialog.getByRole('button', { name: 'Edit ' + title + ' x' }).click();
-  await dialog.getByRole('button', { name: 'Archive goal' }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Archive goal' }).click();
+  await dialog.getByRole('button', { name: 'Archive Daily Win' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Archive Daily Win' }).click();
   await expect(dialog.getByText(title + ' x')).toHaveCount(0);
   expect(await balance()).toBe(start + pts); // archive keeps earned points
 });

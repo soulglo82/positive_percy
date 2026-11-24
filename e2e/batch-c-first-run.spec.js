@@ -53,7 +53,7 @@ test('new family sees code, one-point behaviours, and editable screen-time rewar
     const start = page.getByRole('dialog');
     await expect(start.getByRole('heading', { name: "Let's get started" })).toBeVisible();
     await start.getByRole('button', { name: 'Explore Percy' }).click();
-    await expect(page.getByRole('heading', { name: 'Every adventure starts with a goal!' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Every adventure starts with a Big Goal!' })).toBeVisible();
     // The map is release-gated: a normal build has no map (V1-F-DESIGN §3).
     await expect(page.locator('img[src*="treasure-map"]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Add your first child' })).toBeVisible();

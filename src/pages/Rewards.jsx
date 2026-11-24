@@ -67,7 +67,7 @@ export default function Rewards() {
       <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
         <div>
           <h1 className="font-display font-extrabold text-title text-primary">Rewards</h1>
-          <p className="text-muted-foreground">Choose little treats and bigger adventures together.</p>
+          <p className="text-muted-foreground">Choose little treats and Big Goals together.</p>
         </div>
 
         {isLoading ? (
@@ -119,7 +119,7 @@ export default function Rewards() {
                 <>
                   {bigger.length > 0 && (
                     <section aria-labelledby="bigger-rewards" className="space-y-3">
-                      <h3 id="bigger-rewards" className="font-display font-bold text-foreground">Bigger rewards</h3>
+                      <h3 id="bigger-rewards" className="font-display font-bold text-foreground">Big Goals</h3>
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                         {bigger.map((reward) => <RewardTile key={reward.id} reward={reward} onEdit={openEdit} />)}
                       </div>

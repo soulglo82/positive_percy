@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  buildFamilyReportModel, buildFamilyReportPages, imagesToPdf,
+  buildFamilyReportModel, buildFamilyReportPages, imagesToPdf, displayNote,
 } from './familyReport';
 
 const now = new Date('2026-11-12T05:00:00Z'); // Thursday 13:00 SGT.
@@ -77,5 +77,44 @@ describe('parent Family Report calculations', () => {
     expect(text).toContain('/Subtype /Image');
     expect(text).toContain('xref\n0 7');
     expect(text.trimEnd().endsWith('%%EOF')).toBe(true);
+  });
+});
+
+// V1-F §12.1 W1: a completed Daily Win stores its note as "Today’s Goal: {title}"
+// (curly apostrophe). The report shows the prefix as "Daily Win: "; the stored
+// value is not changed.
+describe('Family Report: the stored Daily Win note', () => {
+  it('shows the stored prefix as "Daily Win: "', () => {
+    expect(displayNote('Today’s Goal: Tidy your room')).toBe('Daily Win: Tidy your room');
+    expect(displayNote('Today’s Goal: ')).toBe('Daily Win: ');
+  });
+
+  it('leaves every other note as it is', () => {
+    expect(displayNote('Helped with dinner')).toBe('Helped with dinner');
+    expect(displayNote("Today's Goal: Tidy your room")).toBe("Today's Goal: Tidy your room"); // straight apostrophe: not the stored prefix
+    expect(displayNote('today’s goal: tidy')).toBe('today’s goal: tidy');
+    expect(displayNote('Well done. Today’s Goal: Tidy')).toBe('Well done. Today’s Goal: Tidy'); // only at the start
+    expect(displayNote('Today’s Goal')).toBe('Today’s Goal');
+    expect(displayNote('')).toBe('');
+    expect(displayNote(null)).toBe('');
+    expect(displayNote(undefined)).toBe('');
+  });
+
+  it('prints a completed Daily Win by its new name and does not change the data', () => {
+    const input = data();
+    input.pointEvents.push(
+      { id: '7', child_id: 'a', kind: 'award', category: 'Helpfulness', points: 1,
+        note: 'Today’s Goal: Feed <the> cat', created_date: '2026-11-11T02:00:00Z' },
+      { id: '8', child_id: 'a', kind: 'award', category: 'Kindness', points: 1,
+        note: 'Shared a toy', created_date: '2026-11-11T03:00:00Z' },
+    );
+    const model = buildFamilyReportModel(input, now);
+    const details = model.children[0].activity.map(e => e.detail);
+    expect(details).toContain('Helpfulness · Daily Win: Feed <the> cat');
+    expect(details).toContain('Kindness · Shared a toy');
+    expect(input.pointEvents.find(e => e.id === '7').note).toBe('Today’s Goal: Feed <the> cat');
+    const html = buildFamilyReportPages(input, now).join('');
+    expect(html).toContain('Helpfulness · Daily Win: Feed &lt;the&gt; cat');
+    expect(html).not.toContain('Today’s Goal');
   });
 });

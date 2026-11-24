@@ -40,6 +40,14 @@ function truncate(value, limit = 160) {
   const s = String(value ?? '');
   return s.length > limit ? s.slice(0, limit - 1) + '…' : s;
 }
+// A completed Daily Win stores its award note as "Today’s Goal: {title}"
+// (server/todaysGoals.js; Activity.jsx parses it). The stored value is not
+// changed: the report only shows the prefix by the product's name.
+const STORED_WIN_NOTE = 'Today’s Goal: ';
+export function displayNote(note) {
+  const text = String(note ?? '');
+  return text.startsWith(STORED_WIN_NOTE) ? 'Daily Win: ' + text.slice(STORED_WIN_NOTE.length) : text;
+}
 function chunk(values, count) {
   const out = [];
   for (let i = 0; i < values.length; i += count) out.push(values.slice(i, i + count));
@@ -91,7 +99,7 @@ export function buildFamilyReportModel(data, at = new Date()) {
           label: isUndo ? 'Award corrected' : isStarting ? 'Starting balance'
             : e.kind === 'correction' ? 'Balance correction'
             : num(e.points) < 0 ? 'Earlier adjustment' : 'Points awarded',
-          detail: e.category + (e.note ? ' · ' + e.note : '') + (reversed ? ' (corrected)' : ''),
+          detail: e.category + (e.note ? ' · ' + displayNote(e.note) : '') + (reversed ? ' (corrected)' : ''),
           points: (num(e.points) > 0 ? '+' : '') + num(e.points), reversed,
         };
       }),
