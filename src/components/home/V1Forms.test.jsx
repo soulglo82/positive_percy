@@ -293,16 +293,36 @@ describe('Award Points: the Points row (V1-F section 10)', () => {
     expect(awardButton(d).textContent).toBe('Award 1 point');
   });
 
-  it('minus at 1 changes nothing and chooses nothing; plus then minus is a chosen amount', () => {
+  it('at 1 minus is marked unavailable and changes nothing; it is available again above 1', () => {
     const { d } = renderAward();
-    press(minus(d), 2); // already 1: not a choice
-    fireEvent.click(tile(d, /^Omar/)); // the behaviour stays, so a chosen amount would stay
-    expect(field(d).value).toBe('1');
-    press(plus(d));
-    press(minus(d)); // back to 1, but now chosen
-    expect(field(d).value).toBe('1');
     expect(minus(d).getAttribute('aria-disabled')).toBe('true');
     expect(plus(d).getAttribute('aria-disabled')).toBe('false');
+    press(minus(d), 2);
+    expect(field(d).value).toBe('1');
+    press(plus(d));
+    expect(field(d).value).toBe('2');
+    expect(minus(d).getAttribute('aria-disabled')).toBe('false');
+    press(minus(d));
+    expect(field(d).value).toBe('1');
+    expect(minus(d).getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('an amount chosen earlier does not come back when the behaviour moves away and back', () => {
+    // Each child has one behaviour of their own, so a child change always moves the behaviour.
+    const own = [
+      { id: 'a1', name: 'Reading', points: 2, icon_key: 'reading', assigned_children: ['c1'] },
+      { id: 'b1', name: 'Piano', points: 1, icon_key: 'music', assigned_children: ['c2'] },
+    ];
+    const { d } = renderAward({ categories: own });
+    press(plus(d), 5);
+    expect(field(d).value).toBe('7');
+    fireEvent.click(tile(d, /^Omar/));
+    expect(tile(d, 'Piano +1').getAttribute('aria-pressed')).toBe('true');
+    expect(field(d).value).toBe('1');
+    fireEvent.click(tile(d, /^Lara/));
+    expect(tile(d, 'Reading +2').getAttribute('aria-pressed')).toBe('true');
+    expect(field(d).value).toBe('2');
+    expect(awardButton(d).textContent).toBe('Award 2 points');
   });
 
   it('an empty field cannot be awarded and says nothing', () => {

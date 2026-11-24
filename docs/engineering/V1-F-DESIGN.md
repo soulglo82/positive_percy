@@ -377,10 +377,10 @@ The §9 layout (a full "How many points?" step with six quick amounts and a numb
 
 | Path | File | Change |
 | --- | --- | --- |
-| Tile layout, both uses | `src/components/home/BehaviourTile.jsx` (`TILE_LAYOUT`, `TILE_GRID`, `TILE_GRID_EVEN`, `BehaviourTileParts`) | One row from 360 px |
+| Tile layout, both uses | `src/components/home/BehaviourTile.jsx` (`TILE_LAYOUT`, `TILE_GRID`, `TILE_GRID_EVEN`, `BehaviourTileParts`) | One row from 375 px |
 | Home card | `src/components/home/HomeSections.jsx::QuickPoints` | Line, button name, button colours |
 | Button styles | `src/components/ui/button.jsx` (variants `warm` and `soft`) | New |
-| Tokens | `tailwind.config.js` (`warm`, screen `phone`), `src/index.css`, `src/lib/tokens.js`, `src/test/tokens.test.js` | New |
+| Tokens | `tailwind.config.js` (`warm`; the screens, now the whole list in order with `phone` added), `src/index.css`, `src/lib/tokens.js`, `src/test/tokens.test.js` | New |
 | Accessibility tests | `src/test/a11y.test.jsx` (renders the card) | Passes unchanged |
 | Form | `src/components/home/AwardPointsDialog.jsx` | Step removed, Points row added |
 | Number field | `src/components/ui/NumberInput.jsx` | None |
@@ -452,4 +452,20 @@ One pull request, CI, the built screens shown to the owner, the owner's approval
 A box tap keeping the parent's amount; the amount not tied to its behaviour; no upper limit on "+"; "−" at 1 counting as a choice; a number that is not whole stepped by one; the buttons usable while an award is sent; a button disabled at the limit; the old button name on Home; the line shown with no boxes.
 
 Not held by a test: the selected tile's border width (with the final spacing, a 2 px border no longer re-wraps the default names at the tested widths; the 1 px border and ring are kept for names nearer the limit).
+
+### 10.9 Code review (fresh context, after the build; it measured the built app)
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Blocking | From 640 px the tiles had also become small (12 px text, 16 px icon, 4 px by 6 px padding): the added `phone` screen was written after `sm` in the built styles, so `phone:` beat `sm:` | The screens are now the whole list in ascending order in `tailwind.config.js`. Confirmed before the fix by a failing browser check at 834 and 1280 px |
+| 2 | Should fix | No test could see finding 1: a 44 px height was true either way | The Home journey now reads each tile's text size, padding, gap and icon size at every width: as before from 640 px (and 46 px tall, as it always was there), slim from 375 px, two rows below |
+| 3 | Should fix | An amount chosen earlier came back when a child change moved the behaviour away and a later one moved it back (each child with one behaviour of their own) | The amount is cleared whenever the behaviour moves; unit test, which failed first |
+| 4 | Should fix | One unit test passed either way (it could not tell a chosen 1 from the behaviour's 1) | Rewritten to test what it can show (the buttons' state at the limit); the re-render test holds "chooses nothing" |
+| 5 | Note | Two height loops would pass with no tiles; a comment sat inside the next test's comment; a stale comment; the clean-up skipped closing its connection if it threw | All corrected |
+| 6 | Note | The path table said 360 px; an orphan comment in the form | Corrected |
+| 7 | Note | A button at its limit still showed the hover fill and a pointer | It no longer does |
+| 8 | Note | The hover fills are faint and their contrast is not asserted | Left as they are |
+| 9 | Note | The selected tile's ring and the focus ring do not clash and are not clipped | Confirmed |
+
+Added to the mutation checks: an amount coming back after the behaviour moves away and back.
 

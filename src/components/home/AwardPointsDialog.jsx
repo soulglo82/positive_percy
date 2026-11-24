@@ -22,7 +22,6 @@ export const behavioursFor = (categories, childId) => categories.filter((c) =>
 
 export const pointWord = (n) => (n === 1 ? 'point' : 'points');
 
-// The old dialog's quick amounts.
 // What the server accepts (POST /api/children/:id/award).
 const canAward = (n) => Number.isInteger(n) && n >= 1 && n <= MAX_AWARD;
 
@@ -68,7 +67,12 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
   // A2: keep the behaviour if this child can use it, otherwise their first.
   useEffect(() => {
     if (!isOpen) return;
-    if (!chosen && offered.length) setCategoryId(offered[0].id);
+    if (!chosen && offered.length) {
+      setCategoryId(offered[0].id);
+      // The behaviour moved, so an amount chosen earlier is over: it must not
+      // come back if a later move lands on its behaviour again (code review).
+      setOwn(null);
+    }
   }, [isOpen, chosen, offered]);
 
   const ownAmount = own && chosen && own.for === chosen.id ? own.amount : null;
@@ -149,7 +153,7 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
                 <Label id="award-points-label" htmlFor="award-points">Points</Label>
                 <div className="flex items-center gap-1.5" role="group" aria-labelledby="award-points-label">
                   <Button type="button" variant="outline" size="icon" aria-label="One point fewer" disabled={submitting}
-                    aria-disabled={points === 1} className="text-lg aria-disabled:opacity-50" onClick={() => step(-1)}>
+                    aria-disabled={points === 1} className="text-lg aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:hover:bg-card" onClick={() => step(-1)}>
                     <span aria-hidden="true">−</span>
                   </Button>
                   <NumberInput id="award-points" inputMode="numeric" followModel
@@ -158,7 +162,7 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
                     onChange={setAmount} onWheel={(e) => e.currentTarget.blur()}
                     className="w-16 px-0 text-center text-lg font-semibold tabular-nums" />
                   <Button type="button" variant="outline" size="icon" aria-label="One point more" disabled={submitting}
-                    aria-disabled={points === MAX_AWARD} className="text-lg aria-disabled:opacity-50" onClick={() => step(1)}>
+                    aria-disabled={points === MAX_AWARD} className="text-lg aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:hover:bg-card" onClick={() => step(1)}>
                     <span aria-hidden="true">+</span>
                   </Button>
                 </div>

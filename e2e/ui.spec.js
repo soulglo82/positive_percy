@@ -62,10 +62,24 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   // boxes are one row from 375px, and the form is behind "Custom points".
   await expect(page.getByText('Tap a box to give its points straight away.')).toBeVisible();
   await expect(page.getByRole('button', { name: /Award points/ })).toHaveCount(0);
-  for (const h of await page.locator('[data-tile-grid="even"] [data-tile]').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height * 2) / 2))) {
-    if (page.viewportSize().width >= 375) expect(h, 'a Quick Points box is one row').toBe(44);
-    else expect(h, 'below 375px a box keeps two rows').toBeGreaterThan(56);
-  }
+  // What a box is made of at this width (code review: at 640px and above the
+  // phone sizes had leaked in, and a 44px height could not show it).
+  const boxFacts = (scope) => scope.locator('[data-tile]').evaluateAll((els) => els.map((el) => {
+    const cs = getComputedStyle(el);
+    const icon = el.querySelector('[data-tile-part="icon"] svg, [data-tile-part="icon"] img') || el.querySelector('[data-tile-part="icon"]').firstElementChild;
+    return { height: Math.round(el.getBoundingClientRect().height * 2) / 2, text: cs.fontSize, padding: `${cs.paddingTop} ${cs.paddingLeft}`,
+      gap: cs.columnGap, icon: `${Math.round(icon.getBoundingClientRect().width)}px`, oneRow: cs.alignContent === 'center' };
+  }));
+  const expectBoxes = (facts, where) => {
+    const width = page.viewportSize().width;
+    expect(facts.length, `${where}: there are boxes to measure`).toBeGreaterThan(0);
+    for (const f of facts) {
+      if (width >= 640) expect(f, `${where}: from 640px a box is as it was`).toMatchObject({ height: 46, text: '14px', padding: '10px 10px', gap: '8px', icon: '20px', oneRow: true });
+      else if (width >= 375) expect(f, `${where}: a slim one-row box`).toMatchObject({ height: 44, text: '12px', padding: '4px 6px', gap: '4px', icon: '16px', oneRow: true });
+      else expect(f, `${where}: below 375px a box keeps two rows`).toMatchObject({ oneRow: false, icon: '20px', padding: '10px 10px' });
+    }
+  };
+  expectBoxes(await boxFacts(page.locator('[data-tile-grid="even"]')), 'Home');
   // Owner, 22 November: awarding points is the point of this page. The order
   // is the child picker, then Quick Points, Today's Goals, the available
   // points ("Little wins") and what the child is working towards. The DOM
@@ -155,16 +169,12 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   // Section 10 (owner, 24 November): slim boxes, and one Points row under
   // them: minus, the number, plus. From 375px a box is one row, 44px tall for
   // the seeded names; below 375px it keeps the two-row layout of 22 November.
-  const boxHeights = (scope) => scope.locator('[data-tile]').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height * 2) / 2));
-  for (const h of await boxHeights(award)) {
-    if (page.viewportSize().width >= 375) expect(h, 'a behaviour box in the form is one row').toBe(44);
-    else expect(h, 'below 375px a box keeps two rows').toBeGreaterThan(56);
-  }
+  expectBoxes(await boxFacts(award), 'the form');
   await expect(award.getByText('How many points?')).toHaveCount(0);
   // An amount that cannot be awarded shows the rule; a typed amount shows on
-  // the button; plus and minus change it in the field; choosing a behaviour
-  // keeps it. 4 is an amount no seeded behaviour has, so it can only come
-  // from the choice.
+  // the button; plus and minus change it in the field; tapping a box sets it
+  // back to the box's points. 4 is an amount no seeded behaviour has, so it
+  // can only come from the choice.
   const amountField = award.getByRole('spinbutton', { name: 'Points', exact: true });
   // Real keys, one at a time, over the amount the dialog opened with (PR #73
   // review): the field must stay the same field and keep the keyboard, so the
@@ -261,11 +271,6 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   expect(await page.evaluate(() => localStorage.getItem('percy_onboarding_done'))).toBe('true');
 });
 
-// V1-B: the Children page (nav "Children") and the request-only Child View.
-// Owner review 2026-11-22 ("standardised alignment"): behaviour tiles keep one
-// layout when a name wraps or a badge is wide. The fixture's names all fit on
-// one line, so this swaps a long behaviour into Quick Points for the check
-// (one worker, so no other test sees it) and puts everything back.
 // V1-F design section 10 (design review): the four projects run at 320, 390,
 // 834 and 1280px, so the widths where one row is tightest were never run.
 // One row starts at 375px; at 360px the boxes keep two rows. At every width
@@ -328,11 +333,14 @@ test('slim behaviour boxes hold their names at 360, 375, 390 and 414px', async (
       await closeDialog(page);
     }
   } finally {
-    await clean();
-    await api.dispose();
+    try { await clean(); } finally { await api.dispose(); }
   }
 });
 
+// Owner review 2026-11-22 ("standardised alignment"): behaviour tiles keep one
+// layout when a name wraps or a badge is wide. The fixture's names all fit on
+// one line, so this swaps a long behaviour into Quick Points for the check
+// (one worker, so no other test sees it) and puts everything back.
 test('behaviour tiles stay aligned with a long name and a wide badge', async ({ page, playwright }, testInfo) => {
   // Its own connection, not the page's: after a timeout the page is closed,
   // and the clean-up must still run (code review). Every reply is checked.
@@ -377,6 +385,7 @@ test('behaviour tiles stay aligned with a long name and a wide badge', async ({ 
   }
 });
 
+// V1-B: the Children page (nav "Children") and the request-only Child View.
 test('children page', async ({ page }, testInfo) => {
   await go(page, '/');
   await page.getByRole('link', { name: 'Children' }).first().click();
