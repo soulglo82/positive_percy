@@ -189,7 +189,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   for (const fixed of [amountField, award.getByRole('button', { name: 'One point fewer' }), award.getByRole('button', { name: 'One point more' }), award.getByRole('button', { name: 'Award 1 point' }), award.getByRole('button', { name: 'Cancel' })]) {
     await expect(fixed).toBeInViewport({ ratio: 1 });
   }
-  // On a 390 x 844 phone the whole form fits: nothing to scroll (nine categories, three children).
+  // On a 390 x 844 phone the whole form fits: nothing to scroll, with the fixture's children and categories.
   if (testInfo.project.name === 'phone-390-touch') {
     const list = await award.locator('.overflow-y-auto').evaluate((el) => ({ content: el.scrollHeight, room: el.clientHeight }));
     expect(list.content, 'the form does not scroll at 390 x 844').toBeLessThanOrEqual(list.room);
@@ -394,6 +394,14 @@ test('the Give Percy Points pop-up in short windows', async ({ page }, testInfo)
     await form.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => {}))));
     const where = `${width} x ${height}`;
     const amount = form.getByRole('spinbutton', { name: 'Points', exact: true });
+    // Which part scrolls (code review: without this the test passed with the
+    // short-window rule removed, because Playwright can scroll either way).
+    const scroll = await form.evaluate((el) => {
+      const list = el.querySelector('#award-behaviour').closest('section').parentElement;
+      return { popUp: getComputedStyle(el).overflowY, popUpScrolls: el.scrollHeight > el.clientHeight + 1, list: getComputedStyle(list).overflowY };
+    });
+    if (height >= 420) expect(scroll, `${where}: the list scrolls, the footer is fixed`).toMatchObject({ popUp: 'hidden', popUpScrolls: false, list: 'auto' });
+    else expect(scroll, `${where}: the pop-up scrolls as one piece`).toMatchObject({ popUp: 'auto', popUpScrolls: true, list: 'visible' });
     if (height >= 420) {
       for (const fixed of [amount, form.getByRole('button', { name: 'Award 1 point' })]) await expect(fixed, `${where}: fixed and on screen`).toBeInViewport({ ratio: 1 });
       await checkScreen(page, `add points at ${width} by ${height}`, testInfo);

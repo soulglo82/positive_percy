@@ -332,6 +332,7 @@ describe('Give Percy Points: the compact form (V1-F section 11)', () => {
     fireEvent.click(btn);
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(field(d).disabled).toBe(true);
+    expect(within(d).getByLabelText('Add a note (optional)').disabled).toBe(true);
     expect(plus(d).disabled).toBe(true);
     expect(minus(d).disabled).toBe(true);
     release(false);
@@ -351,6 +352,10 @@ describe('Give Percy Points: the compact form (V1-F section 11)', () => {
     fireEvent.click(box(d, 'Chores'));
     fireEvent.click(kid(d, 'Omar'));
     press(plus(d));
+    // The note cannot be opened in flight either: its text would not be in the award.
+    expect(within(d).getByRole('button', { name: 'Add a note' }).disabled).toBe(true);
+    fireEvent.click(within(d).getByRole('button', { name: 'Add a note' }));
+    expect(within(d).queryByRole('textbox')).toBeNull();
     expect(awardButton(d).textContent).toBe('Award 1 point');
     expect(field(d).value).toBe('1');
     expect(box(d, 'Kindness').getAttribute('aria-pressed')).toBe('true');
@@ -416,7 +421,14 @@ describe('Give Percy Points: the compact form (V1-F section 11)', () => {
     fireEvent.click(within(d()).getByRole('button', { name: 'Add a note' }));
     fireEvent.change(within(d()).getByLabelText('Add a note (optional)'), { target: { value: 'x' } });
     view.rerender(<Dialog isOpen={false} categories={cats} />);
+    // Nothing of the last opening may be drawn, even for a frame: the old note
+    // field would take the focus and then vanish (code review).
+    const focused = [];
+    const seen = (e) => focused.push(e.target.id || e.target.tagName);
+    document.addEventListener('focusin', seen);
     view.rerender(<Dialog isOpen categories={cats} />);
+    document.removeEventListener('focusin', seen);
+    expect(focused).not.toContain('award-note');
     expect(field(d()).value).toBe('1');
     expect(box(d(), 'Kindness').getAttribute('aria-pressed')).toBe('true');
     expect(within(d()).queryByRole('textbox')).toBeNull();

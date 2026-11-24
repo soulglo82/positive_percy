@@ -39,11 +39,29 @@ export function StepHeading({ n, title, hint, id }) {
 }
 
 export default function AwardPointsDialog({ isOpen, onClose, children = [], categories = [], initialChildId, onSubmit }) {
+  // Held here because closing must wait for an award that is being sent.
+  const [submitting, setSubmitting] = useState(false);
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !submitting) onClose(); }}>
+      {/* short: in a window under 420px tall the footer cannot stay fixed (the
+          list would have no room), so the whole pop-up scrolls as one piece. */}
+      <DialogContent className="sm:max-w-lg short:overflow-y-auto">
+        {/* The form exists only while the pop-up is open, so each opening starts
+            from fresh state. Resetting an always-mounted form in an effect drew
+            the previous opening for one frame: an old note field took the focus
+            and was then removed (code review). A new child to open for is a new form. */}
+        <AwardForm key={initialChildId ?? ''} onClose={onClose} children={children} categories={categories}
+          initialChildId={initialChildId} onSubmit={onSubmit} submitting={submitting} setSubmitting={setSubmitting} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AwardForm({ onClose, children, categories, initialChildId, onSubmit, submitting, setSubmitting }) {
   const [childId, setChildId] = useState(initialChildId);
   const [categoryId, setCategoryId] = useState(null);
   const [note, setNote] = useState('');
   const [noteOpen, setNoteOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   // The amount: a number, or '' when the parent has cleared the field. It
   // starts at 1 and changes only by typing or by minus and plus; choosing a
   // category or a child never changes it (owner, 24 November 2026: "the value
@@ -57,21 +75,10 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
   const offered = child ? behavioursFor(categories, child.id) : [];
   const chosen = offered.find((c) => c.id === categoryId) || null;
 
-  // Fresh form each time it opens, for the child it was opened for.
-  useEffect(() => {
-    if (!isOpen) return;
-    setChildId(initialChildId);
-    setCategoryId(null);
-    setNote('');
-    setNoteOpen(false);
-    setPoints(1);
-  }, [isOpen, initialChildId]);
-
   // A2: keep the category if this child can use it, otherwise their first.
   useEffect(() => {
-    if (!isOpen) return;
     if (!chosen && offered.length) setCategoryId(offered[0].id);
-  }, [isOpen, chosen, offered]);
+  }, [chosen, offered]);
 
   const valid = !!chosen && canAward(points);
   // Nothing is said about an empty field; anything else that cannot be awarded gets the rule.
@@ -109,10 +116,7 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !submitting) onClose(); }}>
-      {/* short: in a window under 420px tall the footer cannot stay fixed (the
-          list would have no room), so the whole pop-up scrolls as one piece. */}
-      <DialogContent className="sm:max-w-lg short:overflow-y-auto">
+    <>
         <DialogHeader className="pb-2 pt-4">
           <DialogTitle className="text-lg font-extrabold text-primary">Give Percy Points</DialogTitle>
           {/* Not shown (the owner asked for a compact form); still the pop-up's description for a screen reader. */}
@@ -143,12 +147,12 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
             <section className="space-y-1.5">
               <Label htmlFor="award-note">Add a note (optional)</Label>
               {/* Focused as it appears: on a phone the keyboard only opens for a field focused in the same tap. */}
-              <Textarea id="award-note" autoFocus value={note} maxLength={500} rows={2}
+              <Textarea id="award-note" autoFocus value={note} maxLength={500} rows={2} disabled={submitting}
                 placeholder="What went well?" onChange={(e) => setNote(e.target.value)} />
             </section>
           ) : (
-            <button type="button" onClick={() => setNoteOpen(true)}
-              className="inline-flex min-h-11 items-center rounded-sm text-sm font-semibold text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <button type="button" onClick={() => setNoteOpen(true)} disabled={submitting}
+              className="inline-flex min-h-11 items-center rounded-sm text-sm font-semibold text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50">
               <span aria-hidden="true">+&nbsp;</span>Add a note
             </button>
           )}
@@ -195,7 +199,6 @@ export default function AwardPointsDialog({ isOpen, onClose, children = [], cate
           {/* What the cream summary used to show, kept for screen readers, outside the scrolling part. */}
           <p className="sr-only" aria-live="polite" aria-atomic="true">{said}</p>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   );
 }

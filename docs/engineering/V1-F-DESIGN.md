@@ -495,7 +495,9 @@ This changes parts of the form approved in the original V1 design (numbered step
 - "Add a note": a link. Tapping it shows the note field (label "Add a note (optional)", placeholder "What went well?", two lines) and puts the cursor in it. It stays open once opened or once it holds text; a reopened form starts closed and empty.
 - Fixed at the bottom of the pop-up, outside the scrolling part: the Points row (label "Points", "−", the number, "+"), then Cancel and the Award button.
 - The cream "{name} earns N Percy Points / For {category}." box is no longer shown. The same sentence stays in a visually hidden polite live region outside the scrolling part, updated half a second after the last change, so a change of amount, child or category is still announced, once ("125", not "1", "12", "125").
-- In a window under 420 px tall (a phone on its side, or Android with the keyboard open) the footer cannot stay fixed without squeezing the list to nothing, so the pop-up scrolls as one piece.
+- In a window under 420 px tall (a phone on its side, for instance) the footer cannot stay fixed without squeezing the list to nothing, so the pop-up scrolls as one piece. Whether a phone's keyboard makes the window that short depends on the browser; it was not tested on a device.
+- The form exists only while the pop-up is open, so every opening starts from fresh state and nothing of the last one is drawn.
+- While an award is being sent the note cannot be opened or changed either.
 
 **The amount (replaces §9 and §10's amount rules).**
 - Points starts at 1 each time the form opens.
@@ -517,7 +519,7 @@ This changes parts of the form approved in the original V1 design (numbered step
 | Layout checks | `e2e/checks.js` | A tile grid that declares `data-tile-badge="none"` is measured without a badge and fails if one appears; any other grid still needs one on every tile |
 | Avatar | `src/components/child/ChildAvatar.jsx` | A 24 px size |
 | Screens | `tailwind.config.js` | `short` (height under 420 px) |
-| Other users of `FamilyStrip` (Home, Manage goals) and of the pop-up's building blocks (`dialog.jsx`) | | None |
+| Other users of `FamilyStrip` (Home, Children, Child View, Manage goals) and of the pop-up's building blocks (`dialog.jsx`) | | None |
 | Evidence tool | `docs/engineering/evidence/v1-integrated/tools/capture.cjs` | None; pictures retaken |
 | Home card, Quick Points awards, server | | None |
 | Tests | `V1Forms.test.jsx`, `HomeSections.test.jsx`, `e2e/ui.spec.js` | Rewritten for the above |
@@ -575,4 +577,19 @@ As §10.6, in the same pull request (#74). The built screens are shown to the ow
 ### 11.8 Mutation checks (each makes a named test fail)
 
 A category setting the amount; no reset to 1 on opening; no upper limit on "+"; the note field not focused when it opens; the description shown; the sentence spoken at once; the rule message in the flow; a child picked while an award is being sent; "−" disabled at 1; the Points row inside the scrolling part.
+
+### 11.9 Code review (fresh context, after the build; it measured the built app)
+
+No blocking finding. It confirmed that what is sent is what is shown on every path, that short windows scroll as one piece, that the compact picker never overflows (1 to 6 children, a 62-letter word, 320 and 390 px), and that the layout checks reject a Home grid without badges and any mixed grid.
+
+| # | Severity | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | Should fix | The form was reset in an effect on the next opening, so a reopened pop-up drew the last opening for one frame: an old note field took the focus and was removed 12 ms later | The form is mounted only while the pop-up is open; the reset effect is gone. Unit test listens for the focus |
+| 2 | Should fix | The short-window browser test passed with the short-window rule removed | It now reads which part scrolls at each size |
+| 3 | Note | The note could be opened or typed in while an award was being sent | Disabled while sending; unit test |
+| 4 | Note | At 320 px the rule message is two lines and, at the end of the list, covers most of the "Add a note" link while the amount is wrong | Left: it goes when the amount is corrected, and it no longer moves anything |
+| 5 | Note | A comment said three children (the fixture has two); two pages using the picker were missing from 11.2; "Android with the keyboard open" was not verified | Corrected |
+| 6 | Note | The sentence for screen readers is spoken half a second after every opening, as the old summary was | Left as it is |
+
+Added to the mutation checks: the form reset in an effect and always mounted (the focus test); the short-window classes removed (the browser test).
 
