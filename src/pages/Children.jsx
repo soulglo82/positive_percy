@@ -12,45 +12,29 @@ import { toast } from 'sonner';
 import { createPageUrl } from '@/utils';
 import { Child, Reward } from '@/api/entities';
 import { getToken, useAuth } from '@/lib/AuthContext';
-import { childOrder, childColour } from '@/lib/childColour';
-import ChildAvatar from '../components/child/ChildAvatar';
+import { childOrder } from '@/lib/childColour';
 import { loadTodaysGoals, goalRecurrenceV1, pointsText } from '@/lib/todaysGoals';
 import { useRewardMutations } from '@/hooks/useRewardMutations';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import PercyIcon from '@/components/icons/PercyIcon';
-import PointsFigure from '@/components/PointsFigure';
-import { FamilyStrip } from '../components/home/HomeSections';
+import RewardIcon from '@/components/rewards/RewardIcon';
+import { ChildSelector, PercyAvatar, PercyFox, ProgressRing, JourneyStop, SkyArt, Flag } from '../components/percy/parts';
 import WelcomeCard from '../components/home/WelcomeCard';
 import AddChildModal from '../components/child/AddChildModal';
 import EditChildModal from '../components/child/EditChildModal';
 import ManageGoalsDialog from '../components/dashboard/ManageGoalsDialog';
 import RewardForm from '../components/rewards/RewardForm';
-import RewardTile from '../components/rewards/RewardTile';
-import GoalProgress from '../components/savings/GoalProgress';
 import SavingsDialog from '../components/savings/SavingsDialog';
-import { leadingGoal, goalRewardsFor, goalOrder } from '@/lib/savings';
+import { goalRewardsFor, goalOrder, pointsWord } from '@/lib/savings';
 import { buildChildCreatePayload } from '@/lib/childPayload';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorCard from '../components/ErrorCard';
 
-const linkClass = 'inline-flex items-center min-h-11 text-sm font-semibold text-primary underline-offset-4 hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 const pct = (n, d) => (d > 0 ? Math.max(0, Math.min(100, Math.round((n / d) * 100))) : 0);
 
 // Rewards this child can see (assignment). Hidden ones are shown, tagged, for
 // the parent; Child View leaves them out. Bigger goals are listed under
-// "Saving for something bigger" instead (D1).
+// "Big Goals" instead (D1).
 export const rewardsForChild = (rewards, childId) => rewards.filter((r) => isAssignedTo(r, childId) && !r.is_bigger_goal);
-
-function SectionHead({ title, children }) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      {/* The heading wraps; its button stays on the right (design critique: the button dropped under the heading on phones, in some cards and not others). */}
-      <h2 className="min-w-0 font-display font-bold text-lg text-primary break-words">{title}</h2>
-      {children && <div className="shrink-0">{children}</div>}
-    </div>
-  );
-}
 
 export default function Children() {
   const { user } = useAuth();
@@ -85,7 +69,15 @@ export default function Children() {
     },
     enabled: !!user,
   });
-  const { data: goalsData } = useQuery({
+  // Today's ring needs what is scheduled today; the manage list holds every
+  // goal (server/todaysGoals.js), so it would be the wrong denominator.
+  const { data: todayData, isError: todayError } = useQuery({
+    queryKey: ['todaysGoals'],
+    queryFn: () => loadTodaysGoals(),
+    enabled: !!user && children.length > 0,
+    refetchOnWindowFocus: true,
+  });
+  const { data: goalsData, isLoading: goalsLoading, isError: goalsError } = useQuery({
     queryKey: ['todaysGoals', 'manage'],
     queryFn: () => loadTodaysGoals(true),
     enabled: !!user && children.length > 0,
@@ -97,9 +89,9 @@ export default function Children() {
   const ordered = [...children].sort(childOrder);
   const child = ordered.find((c) => c.id === childId) || ordered[0];
 
-  const page = (body) => (
+  const page = (body, v11 = false) => (
     <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">{body}</div>
+      {v11 ? body : <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">{body}</div>}
       <AddChildModal
         isOpen={showAddChild}
         onClose={() => setShowAddChild(false)}
@@ -125,10 +117,11 @@ export default function Children() {
   const today = goalsData?.date || '';
   const goals = (goalsData?.goals || []).filter((g) => g.child_id === child.id);
   const doneToday = goals.filter((g) => !!g.completion_id).length;
+  const scheduledToday = (todayData?.goals || []).filter((g) => g.child_id === child.id);
+  const doneScheduled = scheduledToday.filter((g) => !!g.completion_id).length;
   const treats = rewardsForChild(rewards, child.id);
   const goalRewards = goalRewardsFor(rewards, child.id, isAssignedTo);
   const savedGoals = child.goals || [];
-  const topGoal = leadingGoal(savedGoals);
   // Every current goal, at the server's figures when it has savings, else 0
   // saved (code review: a goal with nothing saved is still listed).
   const byGoal = new Map(savedGoals.map((g) => [g.rewardId, g]));
@@ -136,156 +129,236 @@ export default function Children() {
     rewardId: r.id, name: r.title, cost: r.cost_points, saved: 0, to_go: r.cost_points, icon_key: r.icon_key, emoji: r.emoji, image_url: r.image_url,
   }).sort(goalOrder);
 
+  const reached = target > 0 && week >= target;
+  // Approved V1 wording (E3: reaching the target reads 0); no target is the
+  // ring's neutral state.
+  const weekNote = target > 0 ? `${toTarget} to reach this week's target` : 'No weekly target set yet';
+  // One source for "the bigger goal" everywhere on this page: the current
+  // bigger goals in savings order (review: the manage card, the journey and
+  // Achievements must name the same goal).
+  const [lead, ...otherGoals] = goalRows;
+  const topGoal = lead || null;
+  const goalsKnown = !!goalsData;
+  const todayNote = todayError ? "Couldn't load Daily Wins" : !todayData ? 'Loading…'
+    : scheduledToday.length ? (doneScheduled === scheduledToday.length ? 'All done today' : `${scheduledToday.length - doneScheduled} to go`) : 'No Daily Wins today';
+
+  // V1.1 Children (design/v11; owner review 23 Nov): the child, then the ways
+  // to manage them, then progress. No Quick Points and no completing goals
+  // here: that is Home.
   return page(
-    <>
-      <div>
-        <h1 className="font-display font-extrabold text-title text-primary">Children</h1>
-        <p className="text-muted-foreground">See what every child has achieved and what they're saving for.</p>
-      </div>
-      <FamilyStrip children={ordered} selectedId={child.id} onSelect={setChildId} />
-
-      <Card>
-        <CardContent className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <ChildAvatar name={child.name} url={child.avatar_url} colour={childColour(child, ordered)} decorative />
-            {/* No figures here: the weekly-target card directly below shows the
-                week and the points available (owner, 22 Nov: trim repetition). */}
-            <h2 className="min-w-0 font-display font-bold text-lg text-primary break-words">{child.name}'s page</h2>
+    <div className="pv">
+      <h1 className="sr-only">Children</h1>
+      <section className="pv-scene pv-scene--journey" aria-labelledby="child-title">
+        <SkyArt />
+        <div className="pv-scene__sky"><ChildSelector children={ordered} selectedId={child.id} onSelect={setChildId} emphasise={false} /></div>
+        <div className="pv-profile">
+          <PercyAvatar child={child} children={ordered} size="profile" ring />
+          <div>
+            <h2 id="child-title" className="pv-t-page">{child.name}</h2>
+            <p className="pv-t-body"><span data-available>{available}</span> {pointsWord(available)} available now</p>
           </div>
-          <Button asChild variant="outline">
-            <Link to={createPageUrl('ChildView') + '?child=' + encodeURIComponent(child.id)}>View as child</Link>
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-4 sm:p-5 space-y-3">
-          <SectionHead title={`${child.name}'s weekly target`}>
-            <Button variant="outline" aria-label={`Edit ${child.name}'s weekly target`} onClick={() => setEditingChild(true)}>Edit</Button>
-          </SectionHead>
-          {/* The same figure as Child View's points card and Home's (owner, 22 Nov). */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <PointsFigure icon={<PercyIcon id="phosphor:target:duotone" className="h-7 w-7" />}
-              value={week} unit={`/ ${target}`} label="Earned this week" />
-            <PointsFigure icon={<PercyIcon id="phosphor:piggy-bank:duotone" className="h-7 w-7" />}
-              value={available} valueProps={{ 'data-available': true }} unit={available === 1 ? 'point' : 'points'} label="Available now" />
+          <div className="pv-profile__actions">
+            <Link to={createPageUrl('ChildView') + '?child=' + encodeURIComponent(child.id)} className="pv-btn pv-btn--secondary">View as child</Link>
           </div>
-          <div className="h-2 rounded-full bg-muted overflow-hidden" aria-hidden="true">
-            <div className="h-full rounded-full bg-sunrise" style={{ width: pct(week, target) + '%' }} />
-          </div>
-          <p className="text-sm text-muted-foreground">{toTarget} to reach this week's target</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-4 sm:p-5 space-y-4">
-          <SectionHead title="Weekly treats to choose from">
-            <Link to={createPageUrl('Rewards')} className={linkClass}>All rewards</Link>
-          </SectionHead>
-          {rewardsLoading ? (
-            <LoadingSpinner message="Loading rewards..." />
-          ) : rewardsError ? (
-            <ErrorCard message="Couldn't load rewards" onRetry={refetchRewards} />
-          ) : treats.length === 0 ? (
-            <p className="text-muted-foreground">No rewards created yet.</p>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {treats.map((reward) => <RewardTile key={reward.id} reward={reward} onEdit={setRewardEditing} />)}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-4 sm:p-5 space-y-3">
-          <SectionHead title="Big Goals">
-            {goalRewards.length > 0 && (
-              <Button ref={savingsEdit} variant="outline" aria-label={`Edit Big Goals for ${child.name}`} onClick={() => setSavingsOpen(true)}>Edit</Button>
-            )}
-          </SectionHead>
-          {goalRewards.length === 0 ? (
-            <p className="text-muted-foreground">
-              No Big Goals yet.{' '}
-              {/* Opens the pop-up on its Big Goals side (V1-F §12 W9), not the Rewards tab. */}
-              <Button variant="link" size="goal" className="px-0" onClick={() => setGoalsStart({ side: 'bigGoals' })}>Add a Big Goal</Button>
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {goalRows.map((g) => <GoalProgress key={g.rewardId} goal={g} />)}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-4 sm:p-5 space-y-3">
-          <SectionHead title={`${child.name}'s Daily Wins`}>
-            <Button onClick={() => setGoalsStart({ view: 'form' })}>
-              <PercyIcon id="phosphor:plus-circle:duotone" className="h-5 w-5" />
-              New Daily Win
-            </Button>
-          </SectionHead>
-          {goals.length > 0 && (
-            <ul className="divide-y divide-border">
-              {goals.map((goal) => (
-                <li key={goal.id} className="flex items-center justify-between gap-3 py-2">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-foreground break-words">{goal.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {[goal.category_name || 'Behaviour unavailable', goalRecurrenceV1(goal, today), pointsText(goal.category_points ?? 1)].join(' · ')}
-                    </p>
-                  </div>
-                  <Button variant="outline" aria-label={'Edit ' + goal.title} onClick={() => setGoalsStart({ goal })}>Edit</Button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="flex justify-end">
-            <Button variant="link" size="goal" className="-mr-3" onClick={() => setGoalsStart({ view: 'list' })} aria-label={'Manage all Daily Wins for ' + child.name}>
-              Manage all Daily Wins
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-4 sm:p-5 space-y-3">
-          <SectionHead title="Achievements" />
-          {/* Two plain rows with a picture each, not two boxes inside the card
-              (owner, 22 Nov: "cramped and looks bad"; V1-B design §11). One
-              under the other on a phone, with a line between; side by side
-              from 640px. The weekly sentence became a bar at the owner's word. */}
-          <div className="grid gap-4 sm:grid-cols-2" data-achievements>
-            <div className="flex min-w-0 items-start gap-3">
-              <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-warning text-primary">
-                <PercyIcon id="phosphor:check-circle:duotone" className="h-7 w-7" />
+          {/* Owner review (23 Nov): management within reach, before the journey. */}
+          {/* Each card is one button (its label stretched over the card) so the
+              spoken name contains the visible label (WCAG 2.5.3); the line
+              under it is a description, not part of the name. */}
+          <ul className="pv-manage" aria-label={`Manage ${child.name}`}>
+            <li className="pv-manage-action">
+              <span className="pv-medallion" aria-hidden="true"><PercyIcon id="phosphor:target:duotone" /></span>
+              <span className="pv-manage-action__text">
+                <button type="button" className="pv-manage-action__label pv-stretch" aria-label={`Edit ${child.name}'s weekly target`} aria-describedby="manage-target" onClick={() => setEditingChild(true)}>Weekly target</button>
+                <span id="manage-target" className="pv-t-support">{target > 0 ? `${target} points a week` : 'Not set'}</span>
               </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-foreground">Daily Wins completed</p>
-                <p className="text-sm text-muted-foreground">Recognise effort over time</p>
-                <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">{doneToday} today</p>
+            </li>
+            <li className="pv-manage-action">
+              <span className="pv-medallion" aria-hidden="true"><PercyIcon id="phosphor:calendar-dots:duotone" /></span>
+              <span className="pv-manage-action__text">
+                <button type="button" className="pv-manage-action__label pv-stretch" aria-label={'Manage all Daily Wins for ' + child.name} aria-describedby="manage-goals" onClick={() => setGoalsStart({ view: 'list' })}>All Daily Wins</button>
+                <span id="manage-goals" className="pv-t-support">{goalsKnown ? `${goals.length} set up` : goalsError ? 'Not loaded' : 'Loading…'}</span>
+              </span>
+            </li>
+            <li className="pv-manage-action">
+              <span className="pv-medallion" aria-hidden="true"><PercyIcon id="phosphor:piggy-bank:duotone" /></span>
+              <span className="pv-manage-action__text">
+                {goalRewards.length > 0 ? (
+                  <button ref={savingsEdit} type="button" className="pv-manage-action__label pv-stretch" aria-label={`Edit Big Goals for ${child.name}`} aria-describedby="manage-savings" onClick={() => setSavingsOpen(true)}>Big Goals</button>
+                ) : (
+                  <button type="button" className="pv-manage-action__label pv-stretch" aria-describedby="manage-savings" onClick={() => setGoalsStart({ side: 'bigGoals' })}>Big Goals</button>
+                )}
+                <span id="manage-savings" className="pv-t-support">{goalRewards.length === 0 ? 'None yet' : topGoal ? `${topGoal.saved} points saved` : 'Nothing saved yet'}</span>
+              </span>
+            </li>
+            <li className="pv-manage-action">
+              <span className="pv-medallion" aria-hidden="true"><PercyIcon id="phosphor:gift:duotone" /></span>
+              <span className="pv-manage-action__text">
+                <Link to={createPageUrl('Rewards')} className="pv-manage-action__label pv-stretch" aria-describedby="manage-rewards">Rewards</Link>
+                <span id="manage-rewards" className="pv-t-support">Treats and Big Goals</span>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <div className="pv-columns">
+        <div className="pv-col">
+          <section className="pv-meadow" aria-labelledby="journey-title">
+            <div className="pv-journey-head">
+              <div>
+                <h2 id="journey-title" className="pv-t-section">{child.name}'s journey</h2>
+                <p className="pv-t-support">Today, this week, and the Big Goal.</p>
               </div>
+              <PercyFox pose="walking" size="mid" />
             </div>
-            <div className="flex min-w-0 items-start gap-3 border-t border-border pt-4 sm:border-t-0 sm:pt-0">
-              <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-warning text-primary">
-                <PercyIcon id="phosphor:trophy:duotone" className="h-7 w-7" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-foreground">Next milestone</p>
-                <p className="text-sm text-muted-foreground">Weekly target and Big Goals</p>
-                {/* A small bar, not the sentence "{n} weekly points to go" (owner, 22 Nov).
-                    The sentence is still what a screen reader hears. */}
-                <div className="mt-2 h-2 w-full max-w-xs rounded-full bg-muted overflow-hidden" role="progressbar" aria-label="Weekly target"
-                  aria-valuemin={0} aria-valuemax={Math.max(target, 0)} aria-valuenow={Math.max(0, Math.min(week, target))}
-                  aria-valuetext={`${toTarget} weekly points to go`} data-milestone-bar>
-                  <div className="h-full rounded-full bg-sunrise" style={{ width: pct(week, target) + '%' }} />
+            <ol className="pv-journey">
+              <JourneyStop label="Daily Wins today" value={doneScheduled} max={scheduledToday.length} unit="done"
+                note={todayNote}
+                tone={scheduledToday.length > 0 && doneScheduled === scheduledToday.length ? 'earn' : ''}
+                ring={<ProgressRing metric="today" value={doneScheduled} max={scheduledToday.length}
+                  icon={<PercyIcon id="phosphor:list-checks:duotone" />} doneIcon={<PercyIcon id="phosphor:check-circle:duotone" />} />} />
+              <JourneyStop label="This week" value={week} max={target} unit="points" note={weekNote} tone={reached ? 'earn' : ''}
+                ring={<ProgressRing metric="week" value={week} max={target}
+                  icon={<PercyIcon id="phosphor:target:duotone" />} doneIcon={<PercyIcon id="phosphor:check-circle:duotone" />}
+                  progress={target > 0 ? { label: 'Weekly target', valueText: `${toTarget} weekly points to go` } : undefined} />} />
+            </ol>
+            <section className="pv-section" aria-labelledby="bigger-title">
+              <h3 id="bigger-title" className="pv-stop__label">Big Goals</h3>
+              {goalRewards.length === 0 ? (
+                <div className="pv-card">
+                  <p className="pv-t-body">No Big Goals yet.</p>
+                  {/* Opens the pop-up on its Big Goals side (V1-F §12 W9), not the Rewards tab. */}
+                  <button type="button" className="pv-link" onClick={() => setGoalsStart({ side: 'bigGoals' })}>Add a Big Goal</button>
                 </div>
-                {topGoal && <p className="mt-1.5 text-sm font-semibold text-foreground tabular-nums break-words">{topGoal.name}: {topGoal.to_go > 0 ? `${topGoal.to_go} to go` : 'Saved!'}</p>}
-              </div>
+              ) : (
+                <>
+                  <article className="pv-destination" data-goal={lead.rewardId} aria-label={lead.name}>
+                    <div className="pv-destination__scene">
+                      <div className="pv-destination__title"><p className="pv-t-meta">Big Goal</p><p className="pv-t-card">{lead.name}</p></div>
+                      <Flag />
+                    </div>
+                    <div className="pv-destination__body">
+                      <div className="pv-stop">
+                        <ProgressRing metric="goal" value={lead.saved} max={lead.cost} icon={<RewardIcon reward={lead} size="sm" />}
+                          doneIcon={<PercyIcon id="phosphor:check-circle:duotone" />} />
+                        <div>
+                          <p className="pv-t-card">{lead.saved} of {lead.cost} points saved</p>
+                          <p className="pv-stop__note" data-tone={lead.to_go > 0 ? undefined : 'earn'}>{lead.to_go > 0 ? `${lead.to_go} to go` : 'Saved!'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                  {otherGoals.length > 0 && (
+                    <ul className="pv-goal-list">
+                      {otherGoals.map((g) => (
+                        <li key={g.rewardId} className="pv-card" data-goal={g.rewardId}>
+                          <div className="pv-towards-row">
+                            <RewardIcon reward={g} size="md" />
+                            <div className="pv-towards-text">
+                              <p className="pv-t-card">{g.name}</p>
+                              <p className="pv-t-support">{g.saved} of {g.cost} points saved</p>
+                              <p className="pv-t-action">{g.to_go > 0 ? `${g.to_go} to go` : 'Saved!'}</p>
+                            </div>
+                          </div>
+                          <div className="pv-bar" aria-hidden="true"><i style={{ width: pct(g.saved, g.cost) + '%' }} /></div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
+            </section>
+          </section>
+        </div>
+
+        <div className="pv-col">
+          <section className="pv-section" aria-labelledby="goals-title">
+            <div className="pv-section__head">
+              <h2 id="goals-title" className="pv-t-section">{child.name}'s Daily Wins</h2>
+              <button type="button" className="pv-btn pv-btn--primary" onClick={() => setGoalsStart({ view: 'form' })}>
+                <PercyIcon id="phosphor:plus-circle:duotone" />New Daily Win
+              </button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            {goals.length > 0 ? (
+              <ul className="pv-goals">
+                {goals.map((goal) => (
+                  <li key={goal.id} className="pv-goal">
+                    <div className="pv-goal__text">
+                      <p className="pv-goal__title">{goal.title}</p>
+                      <p className="pv-goal__meta">
+                        {[goal.category_name || 'Behaviour unavailable', goalRecurrenceV1(goal, today), pointsText(goal.category_points ?? 1)].join(' · ')}
+                      </p>
+                    </div>
+                    <button type="button" className="pv-btn pv-btn--secondary" aria-label={'Edit ' + goal.title} onClick={() => setGoalsStart({ goal })}>
+                      <PercyIcon id="phosphor:pencil:duotone" />Edit
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : goalsLoading ? (
+              <p className="pv-t-support" role="status">Loading Daily Wins…</p>
+            ) : goalsError ? (
+              <p className="pv-t-support">Could not load Daily Wins.</p>
+            ) : null}
+          </section>
+
+          <section className="pv-section" aria-labelledby="treats-title">
+            <div className="pv-section__head">
+              <h2 id="treats-title" className="pv-t-section">Weekly treats to choose from</h2>
+              <Link to={createPageUrl('Rewards')} className="pv-link">All rewards</Link>
+            </div>
+            {rewardsLoading ? (
+              <LoadingSpinner message="Loading rewards..." />
+            ) : rewardsError ? (
+              <ErrorCard message="Couldn't load rewards" onRetry={refetchRewards} />
+            ) : treats.length === 0 ? (
+              <p className="pv-t-support">No rewards created yet.</p>
+            ) : (
+              <ul className="pv-treats">
+                {treats.map((reward) => {
+                  const shown = reward.visible_to_child !== false;
+                  return (
+                    // The V1 catalogue tile's content (RewardTile), at V1.1 sizes.
+                    <li key={reward.id} className="pv-treat">
+                      <RewardIcon reward={reward} size="md" />
+                      <div className="pv-towards-text">
+                        <p className="pv-t-card">{reward.title}</p>
+                        <p className="pv-t-support">{reward.cost_points} {pointsWord(reward.cost_points)}</p>
+                        <p className="pv-treat__tag" data-shown={shown ? '' : undefined}>{shown ? 'Visible to children' : 'Hidden from children'}</p>
+                      </div>
+                      <button type="button" className="pv-btn pv-btn--secondary" aria-label={`Edit ${reward.title}`} onClick={() => setRewardEditing(reward)}>
+                        <PercyIcon id="phosphor:pencil:duotone" />Edit
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
+          <section className="pv-section" aria-labelledby="ach-title">
+            <h2 id="ach-title" className="pv-t-section">Achievements</h2>
+            <ul className="pv-achievements" data-achievements>
+              <li className="pv-achievement" data-state={doneToday > 0 ? 'earned' : 'next'}>
+                <span className="pv-medallion" aria-hidden="true"><PercyIcon id="phosphor:check-circle:duotone" /></span>
+                <div>
+                  <p className="pv-t-card">Daily Wins completed</p>
+                  <p className="pv-t-support">Recognise effort over time</p>
+                  <p className="pv-t-action">{doneToday} today</p>
+                </div>
+              </li>
+              <li className="pv-achievement" data-state={reached ? 'earned' : 'next'}>
+                <span className="pv-medallion" aria-hidden="true"><PercyIcon id="phosphor:trophy:duotone" /></span>
+                <div>
+                  <p className="pv-t-card">Next milestone</p>
+                  <p className="pv-t-support">Weekly target and Big Goals</p>
+                  {topGoal && <p className="pv-t-action">{topGoal.name}: {topGoal.to_go > 0 ? `${topGoal.to_go} to go` : 'Saved!'}</p>}
+                </div>
+              </li>
+            </ul>
+          </section>
+        </div>
+      </div>
 
       {/* Edits the weekly target (and the profile). No delete here: deleting a
           child stays in Settings (plan §8.7). */}
@@ -301,7 +374,7 @@ export default function Children() {
       />}
       <SavingsDialog open={savingsOpen} onClose={() => setSavingsOpen(false)} child={child} goalRewards={goalRewards} returnFocusRef={savingsEdit} />
       <ManageGoalsDialog open={!!goalsStart} onClose={() => setGoalsStart(null)} start={goalsStart}
-        // "Add a Big Goal" is gone once a goal exists: focus then goes to the section's Edit button.
+        // "Add a Big Goal" is gone once a Big Goal exists: focus then goes to its Edit button.
         returnFocusRef={goalsStart?.side === 'bigGoals' ? savingsEdit : null}
         child={child} children={children} categories={behaviorCategories} today={today} />
       <RewardForm
@@ -312,6 +385,7 @@ export default function Children() {
         onSubmit={(data) => save(rewardEditing?.id, data)}
         onDelete={async (reward, confirm) => { const r = await remove(reward, confirm); if (r === true) setRewardEditing(null); return r; }}
       />
-    </>
+    </div>,
+    true,
   );
 }

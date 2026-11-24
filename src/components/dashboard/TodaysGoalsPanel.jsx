@@ -1,21 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight } from 'lucide-react';
 import PercyIcon from "@/components/icons/PercyIcon";
 import CategoryIcon from '@/components/CategoryIcon';
 import { toast } from 'sonner';
 import { getToken } from '@/lib/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { completeTodayGoal, loadTodaysGoals, goalDateShortLine, goalRecurrenceV1, pointsText } from '@/lib/todaysGoals';
 import { refreshPoints, undoAction, UNDO_TOAST_MS } from '@/lib/points';
 import ManageGoalsDialog from './ManageGoalsDialog';
 
-// E05 (docs/engineering/E05-DESIGN.md): the selected child is named, coloured
-// and pictured; each goal keeps its category icon when done, with a separate
-// Done mark (register completed_goal); weekly goals show their real days
-// (recurring_indicator); the completion control is the approved check-circle
-// at 24px in a 44px target (control_size_weight). Dates come from the server.
+// E05 (docs/engineering/E05-DESIGN.md): the selected child is named; each goal
+// keeps its category icon when done, with a separate Done mark (register
+// completed_goal); weekly goals show their real days (recurring_indicator);
+// Complete is a 44px button with the approved check-circle. Dates come from
+// the server. V1.1 (design/v11) restyles the markup only.
 // V1: the Home family strip chooses the child (selectedChildId); without one,
 // or for a child no longer in the list, the panel shows the first child.
 export default function TodaysGoalsPanel({ children = [], categories = [], enabled = false, selectedChildId }) {
@@ -83,88 +80,83 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
     }
   };
 
+  // V1.1 (design/v11): one section, rows on white that turn green when done.
+  // Wording, focus and every action are V1's (E05).
   return (
-    <section aria-labelledby="todays-goals-title">
-      <Card>
-        <CardContent className="p-4 sm:p-5 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="todays-goals-title" className="flex items-center gap-2 font-display font-bold text-lg text-primary">
-              {/* E03: approved header accent (goals_interactions.header_accent); decorative, no motion. */}
-              <PercyIcon id="phosphor:sparkle:duotone" className="h-5 w-5" />
-              Daily Wins
-            </h2>
-            {data && goals.length > 0 && (
-              <span className="rounded-full bg-warning px-3 py-1 text-sm font-semibold text-foreground tabular-nums">
-                {done} of {goals.length} done
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border pb-3 text-sm text-muted-foreground">
+    <section aria-labelledby="todays-goals-title" className="pv-section">
+      <div className="pv-section__head">
+        <div>
+          {/* E03: approved header accent (goals_interactions.header_accent); decorative. */}
+          <h2 id="todays-goals-title" className="pv-t-section pv-heading-icon"><PercyIcon id="phosphor:sparkle:duotone" />Daily Wins</h2>
+          <p className="pv-t-support">
             <span className="break-words">{child.name}'s checklist</span>
-            {data?.date && <span>{goalDateShortLine(data.date)}</span>}
-          </div>
+            {data?.date && <> · <span>{goalDateShortLine(data.date)}</span></>}
+          </p>
+        </div>
+        {data && goals.length > 0 && (
+          <p className="pv-t-meta">
+            <span className="pv-dots" aria-hidden="true">{goals.map((g) => <i key={g.id} data-on={g.completion_id ? '' : undefined} />)}</span>{' '}
+            {done} of {goals.length} done
+          </p>
+        )}
+      </div>
 
-
-          {isError ? (
-            <div className="space-y-2">
-              <p className="text-sm text-destructive">Could not load Daily Wins.</p>
-              <Button variant="outline" onClick={() => refetch()}>Try again</Button>
-            </div>
-          ) : isLoading ? (
-            <p className="text-sm text-muted-foreground" role="status">Loading Daily Wins…</p>
-          ) : goals.length === 0 ? (
-            <div className="rounded-md border border-dashed border-border bg-muted px-4 py-5">
-              <p className="font-medium text-foreground">No Daily Wins for {child.name} today.</p>
-              <p className="text-sm text-muted-foreground mt-1">Something to do today or every week.</p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {goals.map(goal => {
-                const completed = !!goal.completion_id;
-                const pending = pendingIds.includes(goal.id);
-                const points = goal.category_points;
-                return (
-                  <li key={goal.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
-                    {/* Below 360px the action goes under the text: beside it, the details ran to three lines ("Learning · / Today · +1 / point") (owner's handover, 22 Nov, E1). */}
-                    {/* The category icon stays the same when the goal is done (register completed_goal). */}
-                    <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center text-primary">
-                      <CategoryIcon iconKey={goal.category_icon_key} className="w-6 h-6" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-foreground break-words">{goal.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {[goal.category_name || 'Behaviour unavailable', goalRecurrenceV1(goal, data?.date),
-                          points ? pointsText(points) : null].filter(Boolean).join(' · ')}
-                      </p>
-                    </div>
-                    {completed ? (
-                      <span ref={el => { doneRefs.current[goal.id] = el; }} tabIndex={-1}
-                        className="inline-flex w-full xs:w-auto shrink-0 items-center justify-center gap-1.5 min-h-11 rounded-md border border-earn bg-earn-soft px-4 text-sm font-semibold text-earn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                        <PercyIcon id="phosphor:check-circle:duotone" className="w-4 h-4" /> Done
-                      </span>
-                    ) : (
-                      <Button variant="outline" size="goal" className="w-full xs:w-auto shrink-0 px-4 text-primary"
-                        disabled={pending || !points}
-                        aria-label={'Complete ' + goal.title}
-                        onClick={() => complete(goal)}>
-                        {pending ? 'Saving…' : 'Complete'}
-                      </Button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {/* One door for both kinds (owner's option C, V1-F §12 W2). The label
-              may wrap on a narrow phone (X30), so it is not a nowrap Button. */}
-          <button type="button" ref={manageButton} onClick={() => setManageOpen(true)}
-            className="flex w-full min-h-11 items-center gap-2 rounded-md border border-input bg-accent px-3 py-2 text-left text-sm font-semibold text-foreground transition-colors hover:bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-            <PercyIcon id="phosphor:target:duotone" className="h-5 w-5 shrink-0 text-primary" />
-            <span className="min-w-0 flex-1">Manage Daily Wins &amp; Big Goals</span>
-            <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
-          </button>
-        </CardContent>
-      </Card>
+      {isError ? (
+        <div className="pv-empty">
+          <p className="pv-t-body">Could not load Daily Wins.</p>
+          <button type="button" className="pv-btn pv-btn--secondary" onClick={() => refetch()}>Try again</button>
+        </div>
+      ) : isLoading ? (
+        <p className="pv-t-support" role="status">Loading Daily Wins…</p>
+      ) : goals.length === 0 ? (
+        <div className="pv-empty">
+          <p className="pv-t-card">No Daily Wins for {child.name} today.</p>
+          <p className="pv-t-support">Something to do today or every week.</p>
+        </div>
+      ) : (
+        <ul className="pv-goals">
+          {goals.map(goal => {
+            const completed = !!goal.completion_id;
+            const pending = pendingIds.includes(goal.id);
+            const points = goal.category_points;
+            return (
+              <li key={goal.id} className="pv-goal" data-done={completed ? '' : undefined}>
+                {/* The category icon stays the same when the goal is done (register completed_goal). */}
+                <span aria-hidden="true" className="pv-medallion">
+                  <CategoryIcon iconKey={goal.category_icon_key} className="w-6 h-6" />
+                </span>
+                <div className="pv-goal__text">
+                  <p className="pv-goal__title">{goal.title}</p>
+                  <p className="pv-goal__meta">
+                    {[goal.category_name || 'Behaviour unavailable', goalRecurrenceV1(goal, data?.date),
+                      points ? pointsText(points) : null].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                {completed ? (
+                  <span ref={el => { doneRefs.current[goal.id] = el; }} tabIndex={-1} className="pv-btn pv-goal__donechip">
+                    <PercyIcon id="phosphor:check-circle:duotone" className="w-5 h-5" /> Done
+                  </span>
+                ) : (
+                  <button type="button" className="pv-btn pv-btn--secondary"
+                    disabled={pending || !points}
+                    aria-label={'Complete ' + goal.title}
+                    onClick={() => complete(goal)}>
+                    <PercyIcon id="phosphor:check-circle:duotone" className="w-5 h-5" />
+                    {pending ? 'Saving…' : 'Complete'}
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div>
+        {/* One door for both kinds (owner's option C, V1-F §12 W2); focus comes
+            back here when the pop-up closes (W8). The label may wrap. */}
+        <button type="button" ref={manageButton} className="pv-btn pv-btn--soft pv-btn--block pv-manage-door" onClick={() => setManageOpen(true)}>
+          <PercyIcon id="phosphor:target:duotone" /><span>Manage Daily Wins &amp; Big Goals</span>
+        </button>
+      </div>
       <ManageGoalsDialog open={manageOpen} onClose={() => setManageOpen(false)} returnFocusRef={manageButton}
         child={child} children={children} categories={categories} today={data?.date || ''} />
     </section>

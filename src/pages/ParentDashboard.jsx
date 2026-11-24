@@ -11,7 +11,7 @@ import confetti from "canvas-confetti";
 import { CONFETTI_COLORS } from "@/lib/tokens";
 
 import { childOrder } from "@/lib/childColour";
-import { StreakStrip, FamilyStrip, AvailableLine, WorkingTowards, QuickPoints } from "../components/home/HomeSections";
+import { HomeHero, HomeQuickPoints, HomeWorkingTowards } from "../components/percy/HomeV11";
 import AddChildModal from "../components/child/AddChildModal";
 import AwardPointsDialog from "../components/home/AwardPointsDialog";
 import WelcomeCard from "../components/home/WelcomeCard";
@@ -82,7 +82,7 @@ export default function ParentDashboard() {
   // says "No quick points yet" for a moment and then swaps to the tiles.
   // Only the first attempt (with its one retry) holds the page back. If that
   // fails, the page is shown, and a later refetch must not take it away again
-  // (it would close an open Daily Wins & Big Goals pop-up): hence the error count.
+  // (it would close an open Manage goals dialog): hence the error count.
   const { data: behaviorCategories, isLoading: categoriesLoading, errorUpdateCount: categoriesErrors } = useQuery({
     queryKey: ['behaviorCategories'],
     queryFn: async () => {
@@ -124,6 +124,8 @@ export default function ParentDashboard() {
   // V1: the child selected in the family strip drives Goals, the summary,
   // Working towards and Quick Points.
   const [homeChildId, setHomeChildId] = useState(null);
+  // V1.1: Percy hops once after each award (the static file, moved whole).
+  const [foxPlay, setFoxPlay] = useState(0);
 
   const handleAddPoints = (child) => {
     setSelectedChild(child);
@@ -200,6 +202,7 @@ export default function ParentDashboard() {
         action: { label: 'Undo', onClick: undoAction('award', event.id, queryClient) },
       });
       refreshPoints(queryClient);
+      if (points > 0) setFoxPlay((n) => n + 1);
       if (points > 0) {
         // After the lock is released: a slow badge check must not block taps.
         // Its own broadcast refreshes the screen when badges change.
@@ -231,50 +234,36 @@ export default function ParentDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
         {isLoading ? (
-          <LoadingSpinner message="Loading your family..." />
+          <div className="max-w-5xl mx-auto p-4 sm:p-6"><LoadingSpinner message="Loading your family..." /></div>
         ) : isError && children.length === 0 ? (
           // Only when there is nothing to show: a failed background refresh
           // must not replace the page and an open pop-up (V1-F §12 X27).
-          <ErrorCard message="Couldn't load children" onRetry={refetch} />
+          <div className="max-w-5xl mx-auto p-4 sm:p-6"><ErrorCard message="Couldn't load children" onRetry={refetch} /></div>
         ) : waitingForBehaviours ? (
-          <LoadingSpinner message="Loading your family..." />
+          <div className="max-w-5xl mx-auto p-4 sm:p-6"><LoadingSpinner message="Loading your family..." /></div>
         ) : children.length === 0 ? (
-          <WelcomeCard onAddFirstChild={() => setShowAddChild(true)} />
+          <div className="max-w-5xl mx-auto p-4 sm:p-6"><WelcomeCard onAddFirstChild={() => setShowAddChild(true)} /></div>
         ) : (
-          <>
-            <StreakStrip streak={streak} />
-            <div>
-              <h1 className="font-display font-extrabold text-title text-primary">Welcome back!</h1>
-              <p className="text-muted-foreground">Good things are happening, one small step at a time.</p>
-            </div>
-            <FamilyStrip children={ordered} selectedId={homeChild.id} onSelect={setHomeChildId} />
-            {/* Owner, 24 November ("Points 1", V1-F §13): the available points
-                are one slim line under the child picker. This supersedes the
-                22 November rule that nothing sits between the picker and
-                Quick Points. Then Quick Points, Daily Wins and what the child
-                is working towards; the DOM is in that reading order. Desktop:
-                Quick Points + Daily Wins | Working towards. */}
-            <AvailableLine child={homeChild} />
-            {/* min-w-0 on each column: a grid column is otherwise as wide as its
-                longest unbroken word (a 30-letter name), and the page scrolls
-                sideways on a narrow phone (V1-F §12 X17, found by the browser test). */}
-            <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-              <div className="flex min-w-0 flex-col gap-5">
-                <QuickPoints child={homeChild} actions={homeActions} awarding={awardingIds.includes(homeChild.id)}
-                  onAward={handleQuickAction}
-                  onOpenAward={() => handleAddPoints(homeChild)}
+          // V1.1 Home, the daily action centre (design/v11; owner review 23 Nov:
+          // Quick Points sooner). Reading order: child, balance, Quick Points,
+          // Daily Wins, then what the child is working towards.
+          <div className="pv">
+            <HomeHero children={ordered} child={homeChild} streak={streak} foxPlay={foxPlay}
+              onSelect={setHomeChildId} />
+            <div className="pv-columns">
+              <div className="pv-col">
+                <HomeQuickPoints child={homeChild} actions={homeActions} awarding={awardingIds.includes(homeChild.id)}
+                  onAward={handleQuickAction} onOpenAward={() => handleAddPoints(homeChild)}
                   onOpenRewards={() => handleSpendRewards(homeChild)} />
-                <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} selectedChildId={homeChild.id} />
               </div>
-              <div className="flex min-w-0 flex-col gap-5">
-                <WorkingTowards child={homeChild} />
+              <div className="pv-col">
+                <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} selectedChildId={homeChild.id} />
+                <HomeWorkingTowards child={homeChild} />
               </div>
             </div>
-          </>
+          </div>
         )}
-      </div>
 
       {/* Modals */}
       <AddChildModal

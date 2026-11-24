@@ -59,6 +59,14 @@ export const TOKENS = {
   'chart-1': '#2a6e33',
   'chart-2': '#4b1d8c',
   'chart-4': '#594e69',
+  // V1.1 scene tints (design/v11): backgrounds only; pv-orange-text is the
+  // one that may carry text (5.1:1 on cream).
+  'pv-lilac-mist': '#f3ecfa',
+  'pv-sky-warm': '#ffe9b5',
+  'pv-peach-soft': '#ffe3cc',
+  'pv-meadow': '#cfebc9',
+  'pv-meadow-deep': '#a9d9a5',
+  'pv-orange-text': '#b34700',
 };
 
 // Confetti uses the celebration colours only.

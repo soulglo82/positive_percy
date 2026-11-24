@@ -83,7 +83,7 @@ describe('TodaysGoalsPanel (E05)', () => {
     const { container } = render(<QueryClientProvider client={client}><TodaysGoalsPanel children={[...kids, { id: 'c3', name: 'Cal' }]} enabled selectedChildId="c3" /></QueryClientProvider>);
     expect(await screen.findByText('No Daily Wins for Cal today.')).toBeTruthy();
     expect(screen.getByText('Something to do today or every week.')).toBeTruthy();
-    expect(container.querySelector('.border-dashed').querySelectorAll('button')).toHaveLength(0);
+    expect(container.querySelector('.pv-empty').querySelectorAll('button')).toHaveLength(0); // V1.1 empty state (design/v11)
     expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Manage Daily Wins & Big Goals']);
   });
 

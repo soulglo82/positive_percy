@@ -280,6 +280,10 @@ test('long names, large figures, many Daily Wins, and a failed refresh', async (
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('button', { name: new RegExp(`^Edit ${longWin} `) })).toBeVisible();
     const add = dialog.getByRole('button', { name: 'Add Daily Win' });
+    // Measure the pop-up once its opening zoom has finished (as the slim-box
+    // test does): measured on the zoom's first frame it read 417..1063 on an
+    // 800px screen (scale 0.95, no -50% translate yet), and failed under load.
+    await dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => {}))));
     const layout = await dialog.evaluate((d) => {
       const r = d.getBoundingClientRect();
       const body = [...d.children].find((c) => getComputedStyle(c).overflowY === 'auto');

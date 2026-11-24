@@ -78,39 +78,41 @@ describe('Children page (§2)', () => {
   it('1 available point is singular on the weekly-target card (code review)', async () => {
     state.children = [{ ...lara, available_points: 1 }];
     mount(Children);
-    await screen.findByRole('heading', { name: "Lara's page" });
-    expect([...document.querySelectorAll('[data-figure]')].map((f) => f.querySelector('p').textContent)[1]).toBe('1 point Available now');
+    await screen.findByRole('heading', { name: 'Lara' });
+    // V1.1: the available figure sits under the child's name.
+    expect(document.querySelector('[data-available]').closest('p').textContent).toBe('1 point available now');
   });
 
   it('approved copy and server figures for the oldest child', async () => {
     mount(Children);
-    expect(await screen.findByRole('heading', { name: 'Children' })).toBeTruthy();
-    expect(screen.getByText("See what every child has achieved and what they're saving for.")).toBeTruthy();
-    expect(screen.getByRole('heading', { name: "Lara's page" })).toBeTruthy();
-    // The page header no longer repeats the weekly-target card below it (owner, 22 Nov: trim repetition).
+    // V1.1 (design/v11, owner review 23 Nov 2026): the page title is for screen
+    // readers; the child's own profile (photo, name, points) heads the page.
+    expect(await screen.findByRole('heading', { name: 'Children', level: 1 })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Lara', level: 2 })).toBeTruthy();
     expect(document.body.textContent).not.toContain('weekly points ·');
-    expect(screen.getByRole('heading', { name: "Lara's page" }).closest('.rounded-lg').textContent).toBe("LLara's pageView as child");
+    const profile = screen.getByRole('heading', { name: 'Lara', level: 2 }).closest('.pv-profile');
+    expect(profile.querySelector('[data-avatar]').textContent).toBe('L');
+    expect(profile.textContent).toContain('90 points available now');
     expect(screen.getByRole('link', { name: 'View as child' }).getAttribute('href')).toBe('/childview?child=c1');
-    expect(screen.getByRole('heading', { name: "Lara's weekly target" })).toBeTruthy();
-    // The same figure as Child View's points card (owner, 22 Nov): an icon, the
-    // figure with its unit, and the approved label beneath.
-    const figures = [...document.querySelectorAll('[data-figure]')].map((f) => f.querySelector('p').textContent);
-    expect(figures).toEqual(['18 / 25 Earned this week', '90 points Available now']);
-    expect([...document.querySelectorAll('[data-figure] [data-icon]')].map((i) => i.getAttribute('data-icon')))
-      .toEqual(['phosphor:target:duotone', 'phosphor:piggy-bank:duotone']);
+    // Management sits straight under the profile (owner review, 23 Nov).
+    expect(screen.getByRole('button', { name: "Edit Lara's weekly target" })).toBeTruthy();
+    // The week is a journey stop: the server figures, unclamped, with the ring.
+    const week = screen.getByText('This week').closest('li');
+    expect(week.querySelector('.pv-stop__figure').textContent).toBe('18 of 25 points');
     expect(screen.getByText("7 to reach this week's target")).toBeTruthy();
     // Next milestone: a small bar for the weekly target, not a sentence (owner, 22 Nov).
     // A screen reader still hears "7 weekly points to go".
     const bar = screen.getByRole('progressbar', { name: 'Weekly target' });
     expect(bar.getAttribute('aria-valuetext')).toBe('7 weekly points to go');
     expect([bar.getAttribute('aria-valuenow'), bar.getAttribute('aria-valuemax')]).toEqual(['18', '25']);
-    expect(bar.firstElementChild.style.width).toBe('72%');
+    // The week ring is the progressbar now; its arc is 18/25 of the circle.
+    const C = 2 * Math.PI * 42;
+    expect(bar.querySelector('[data-ring-value]').getAttribute('stroke-dashoffset')).toBe((C * (1 - 18 / 25)).toFixed(2));
     expect(screen.queryByText('7 weekly points to go')).toBeNull();
-    // Achievements: two plain rows with a picture each, no boxes inside the card (owner, 22 Nov; design §11).
-    const rows = [...document.querySelectorAll('[data-achievements] > div')];
+    // Achievements: two banners with a picture each (V1.1 showcase, AchievementBanner).
+    const rows = [...document.querySelectorAll('[data-achievements] > li')];
     expect(rows.map((r) => r.querySelector('[data-icon]').getAttribute('data-icon'))).toEqual(['phosphor:check-circle:duotone', 'phosphor:trophy:duotone']);
     expect(rows.map((r) => r.querySelector('p').textContent)).toEqual(['Daily Wins completed', 'Next milestone']);
-    expect(rows.some((r) => /(^|\s)border(\s|$)/.test(r.className) || /rounded-md/.test(r.className))).toBe(false); // neither a border nor a box, in any class order
     expect(screen.getByRole('link', { name: 'All rewards' })).toBeTruthy();
     // D1 (savings §19.3): the savings section and the approved milestone
     // subtitle; with no bigger goals there is nothing to Edit. The
@@ -150,14 +152,26 @@ describe('Children page (§2)', () => {
     const bar = screen.getByRole('progressbar', { name: 'Weekly target' });
     expect(bar.getAttribute('aria-valuetext')).toBe('0 weekly points to go');
     expect([bar.getAttribute('aria-valuenow'), bar.getAttribute('aria-valuemax')]).toEqual(['25', '25']);
-    expect(bar.firstElementChild.style.width).toBe('100%');
+    // The arc is full; the figure beside it is not clamped (30 of 25).
+    expect(bar.querySelector('[data-ring-value]').getAttribute('stroke-dashoffset')).toBe('0.00');
+    expect(screen.getByText('This week').closest('li').querySelector('.pv-stop__figure').textContent).toBe('30 of 25 points');
+  });
+
+  it('no weekly target: the week figure still shows, the ring is neutral and is not a progressbar (review)', async () => {
+    state.children = [{ ...lara, weekly_target: 0, week_points: 12 }];
+    mount(Children);
+    const week = (await screen.findByText('This week')).closest('li');
+    expect(week.querySelector('.pv-stop__figure').textContent).toBe('12 points');
+    expect(screen.getByText('No weekly target set yet')).toBeTruthy();
+    expect(week.querySelector('.pv-ring').hasAttribute('data-empty')).toBe(true);
+    expect(screen.queryByRole('progressbar', { name: 'Weekly target' })).toBeNull();
   });
 
   it('?child= picks the child; an unknown id falls back to the oldest (E2)', async () => {
     mount(Children, '/children?child=c2');
-    expect(await screen.findByRole('heading', { name: "Omar's page" })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Omar', level: 2 })).toBeTruthy();
     cleanupAndMount('/children?child=nope');
-    expect(await screen.findByRole('heading', { name: "Lara's page" })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Lara', level: 2 })).toBeTruthy();
   });
 
   it('New Daily Win opens the form; a Daily Win\'s Edit opens it filled in; weekly target Edit has no Delete', async () => {

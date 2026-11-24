@@ -52,103 +52,76 @@ test('home does not show the empty Quick Points message while behaviours load', 
 test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   await go(page, '/');
   await checkScreen(page, 'home', testInfo);
-  // V1 Home: family strip selects the child; Goals before the summary.
-  await expect(page.getByRole('heading', { name: 'Welcome back!' })).toBeVisible();
-  const sam = page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: /^Sam / });
+  // V1.1 Home (design/v11; owner review 23 Nov 2026): the daily action centre.
+  // Child picker and balance in the hero, then Quick Points, Daily Wins and
+  // what the child is working towards. Progress rings belong to Children.
+  await expect(page.locator('#home-title')).toHaveText(/^What went well for .+ today\?$/);
+  const sam = page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: 'Sam', exact: true });
   await sam.click();
   await expect(sam).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText("Sam's checklist")).toBeVisible();
-  // Section 10 (owner, 24 November): the card says a box acts at once, the
-  // boxes are one row from 375px, and the form is behind "Custom points".
+  // Owner, 24 November (V1-F section 10): the card says a box acts at once,
+  // and the form is behind "Custom points" beside "Rewards".
   await expect(page.getByText('Tap a box to give its points straight away.')).toBeVisible();
   await expect(page.getByRole('button', { name: /Award points/ })).toHaveCount(0);
-  // What a box is made of at this width (code review: at 640px and above the
-  // phone sizes had leaked in, and a 44px height could not show it).
-  const boxFacts = (scope) => scope.locator('[data-tile]').evaluateAll((els) => els.map((el) => {
+  // V1.1 boxes (design/v11 P3 handback): one row (icon, name, +N) from 834px;
+  // on phones two rows, so the name keeps the V1.1 15px action size instead
+  // of the 12px a one-row phone box needs. Measured, not assumed.
+  const boxes = await page.locator('[data-tile-grid="even"] [data-tile]').evaluateAll((els) => els.map((el) => {
     const cs = getComputedStyle(el);
-    const icon = el.querySelector('[data-tile-part="icon"] svg, [data-tile-part="icon"] img') || el.querySelector('[data-tile-part="icon"]').firstElementChild;
-    return { height: Math.round(el.getBoundingClientRect().height * 2) / 2, text: cs.fontSize, padding: `${cs.paddingTop} ${cs.paddingLeft}`,
-      gap: cs.columnGap, icon: `${Math.round(icon.getBoundingClientRect().width)}px`, oneRow: cs.alignContent === 'center' };
+    const name = el.querySelector('[data-tile-part="name"]');
+    return { height: el.getBoundingClientRect().height, oneRow: cs.alignContent === 'center', text: parseFloat(getComputedStyle(name).fontSize) };
   }));
-  const expectBoxes = (facts, where) => {
-    const width = page.viewportSize().width;
-    expect(facts.length, `${where}: there are boxes to measure`).toBeGreaterThan(0);
-    for (const f of facts) {
-      if (width >= 640) expect(f, `${where}: from 640px a box is as it was`).toMatchObject({ height: 46, text: '14px', padding: '10px 10px', gap: '8px', icon: '20px', oneRow: true });
-      else if (width >= 375) expect(f, `${where}: a slim one-row box`).toMatchObject({ height: 44, text: '12px', padding: '4px 6px', gap: '4px', icon: '14px', oneRow: true });
-      else expect(f, `${where}: below 375px a box keeps two rows`).toMatchObject({ oneRow: false, icon: '20px', padding: '10px 10px' });
-    }
-  };
-  expectBoxes(await boxFacts(page.locator('[data-tile-grid="even"]')), 'Home');
-  // Owner, 24 November ("Points 1", V1-F §13): the available points are one
-  // slim line straight under the child picker. That supersedes the rule of
-  // 22 November that nothing sits between the picker and Quick Points. Then
-  // Quick Points, Daily Wins and what the child is working towards; the DOM
-  // (Tab and screen-reader) order is that reading order (review of PR #57).
-  // One column (under 1024px): the cards stack in that order. Two columns:
-  // Quick Points then Daily Wins on the left, Working towards alone on the
-  // right, the two columns equally wide; the line is above both, full width.
-  // On a screen at least 800px tall Quick Points starts on the first screen.
+  expect(boxes.length, 'there are boxes to measure').toBeGreaterThan(0);
+  for (const b of boxes) {
+    expect(b.text, 'a box name is at least 14px').toBeGreaterThanOrEqual(14);
+    expect(b.height, 'a box is at least 44px').toBeGreaterThanOrEqual(44);
+    if (page.viewportSize().width >= 834) expect(b.oneRow, 'from 834px a box is one row').toBe(true);
+    else { expect(b.oneRow, 'on phones a box is two rows').toBe(false); expect(b.height, 'a phone box stays compact').toBeLessThanOrEqual(80); }
+  }
   const order = await page.evaluate(() => {
     window.scrollTo(0, 0);
     const titles = ['Quick Points', 'Daily Wins', "What you're working towards"];
     const hs = titles.map((t) => [...document.querySelectorAll('h2')].find((h) => h.textContent.trim() === t));
     if (hs.some((h) => !h)) return { missing: titles.filter((_, i) => !hs[i]) };
-    const line = document.querySelector('[data-points-line]');
-    const pickerEl = document.querySelector('[role="group"][aria-label="Choose a child"]');
-    if (!line || !pickerEl) return { missing: ['the points line or the child picker'] };
-    const after = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-    const domOrdered = after(pickerEl, line) && after(line, hs[0]) && after(hs[0], hs[1]) && after(hs[1], hs[2]);
-    // The column that holds two cards: the nearest element containing both headings.
-    const columnOf = (a, b) => { let el = a.parentElement; while (el && !el.contains(b)) el = el.parentElement; return el; };
-    const left = columnOf(hs[0], hs[1]);
-    const grid = left.parentElement;
-    const right = [...grid.children].find((c) => c !== left && c.contains(hs[2]));
-    if (!right) return { missing: ['a right column holding What you are working towards'] };
-    const box = (el) => { const r = el.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width), height: Math.round(r.height) }; };
+    const domOrdered = hs.every((h, i) => i === 0 || !!(hs[i - 1].compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING));
+    const hero = document.querySelector('.pv-scene--morning');
     const boxes = hs.map((h) => h.getBoundingClientRect());
+    const quick = hs[0].closest('section');
     return { domOrdered, tops: boxes.map((b) => Math.round(b.top)), lefts: boxes.map((b) => Math.round(b.left)),
-      picker: box(pickerEl), line: box(line), grid: box(grid), lineInGrid: grid.contains(line),
-      lineText: line.querySelector('p').textContent, lineParagraphs: line.querySelectorAll('p').length,
-      lineHeadings: line.querySelectorAll('h1, h2, h3, [role="status"], [aria-live]').length,
-      allHeadings: [...document.querySelectorAll('main h2, h2')].map((h) => h.textContent.trim()),
-      screen: window.innerHeight, oneColumn: window.innerWidth < 1024,
-      left: box(left), right: box(right),
-      leftCards: [...left.children].map(box), rightCards: [...right.children].map(box),
-      quickCardHasAward: !!left.children[0] && left.children[0].contains(hs[0]) && [...left.children[0].querySelectorAll('button')].some((b) => b.textContent.trim() === 'Custom points') };
+      heroBottom: Math.round(hero.getBoundingClientRect().bottom), screen: window.innerHeight, oneColumn: window.innerWidth < 834,
+      balanceInHero: !!hero.querySelector('[data-available]'), pickerInHero: !!hero.querySelector('[role="group"][aria-label="Choose a child"]'),
+      rings: document.querySelectorAll('.pv-ring').length,
+      quickHasAward: [...quick.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Custom points'),
+      // The owner's points line (24 Nov, V1-F §13), in V1.1 the hero's band.
+      lineInHero: !!hero.querySelector('[data-points-line]'), lines: document.querySelectorAll('[data-points-line]').length,
+      lineText: (hero.querySelector('[data-points-line]')?.textContent || '').replace(/\s+/g, ' ').trim(),
+      lineParagraphs: hero.querySelector('[data-points-line]')?.querySelectorAll('p').length,
+      lineHeadings: hero.querySelector('[data-points-line]')?.querySelectorAll('h1, h2, h3, [role="status"], [aria-live]').length,
+      allHeadings: [...document.querySelectorAll('h2')].map((h) => h.textContent.trim()) };
   });
   expect(order.missing, 'every Home section is present').toBeUndefined();
-  expect(order.domOrdered, 'DOM order: picker, points line, Quick Points, Daily Wins, Working towards').toBe(true);
-  expect(order.allHeadings, 'the slogan card and its heading are gone').not.toContain('Little wins, big adventures!');
-  const [quickTop, winsTop, towardsTop] = order.tops;
-  const [quickLeft, winsLeft] = order.lefts;
-  // The points line: one paragraph, no heading, directly under the picker,
-  // full width, slim; Quick Points directly under it (20px is the page's gap).
+  expect(order.domOrdered, 'DOM order: Quick Points, Daily Wins, Working towards').toBe(true);
+  expect(order.pickerInHero && order.balanceInHero, 'the child picker and the balance are in the hero').toBe(true);
+  expect(order.rings, 'Home has no progress rings (the balance is a number)').toBe(0);
+  expect(order.quickHasAward, 'Custom points sits in the Quick Points section').toBe(true);
+  expect([order.lineInHero, order.lines], 'one points line, in the hero').toEqual([true, 1]);
   expect(order.lineText, 'the line reads as one sentence').toMatch(/^Available now for .+ \d+ points?$/);
   expect([order.lineParagraphs, order.lineHeadings], 'one paragraph; no heading or live region').toEqual([1, 0]);
-  expect(order.line.top - order.picker.bottom, 'the points line is directly under the child picker').toBe(20);
-  expect(order.leftCards[0].top - order.line.bottom, 'Quick Points is directly under the points line').toBe(20);
-  expect(order.lineInGrid, 'the line is above the columns, not in one').toBe(false);
-  expect(order.line.width, 'the line spans the page').toBe(order.grid.width);
-  expect(order.line.height, 'the line is slim (a long name may take two lines)').toBeLessThanOrEqual(84);
+  expect(order.allHeadings, 'the slogan card and its heading are gone').not.toContain('Little wins, big adventures!');
+  const [quickTop, goalsTop, towardsTop] = order.tops;
+  const [quickLeft, goalsLeft, towardsLeft] = order.lefts;
+  expect(quickTop, 'Quick Points comes after the hero').toBeGreaterThan(order.heroBottom);
+  expect(quickTop - order.heroBottom, 'nothing between the hero and Quick Points but the gap').toBeLessThanOrEqual(48);
   if (order.screen >= 800) expect(quickTop, 'Quick Points starts on the first screen').toBeLessThan(order.screen);
-  expect(quickTop, 'Quick Points is above Daily Wins').toBeLessThan(winsTop);
-  // The left column is Quick Points then Daily Wins, nothing between them but
-  // the gap; the right column is one card. The Quick Points card is the whole
-  // card (its Custom points button is in it).
-  expect(order.leftCards.length, 'left column: Quick Points and Daily Wins only').toBe(2);
-  expect(order.rightCards.length, 'right column: Working towards only').toBe(1);
-  expect(order.quickCardHasAward, 'the first card is Quick Points, with its Custom points button').toBe(true);
-  expect(order.leftCards[1].top - order.leftCards[0].bottom, 'the gap between Quick Points and Daily Wins').toBe(20);
+  expect(goalsTop, 'Daily Wins is above Working towards').toBeLessThan(towardsTop);
   if (order.oneColumn) {
-    expect(winsTop, 'one column: Daily Wins is above Working towards').toBeLessThan(towardsTop);
-    expect(new Set(order.lefts).size, 'one column: every card starts at the same left edge').toBe(1);
-    expect(order.right.top - order.left.bottom, 'one column: the gap between Daily Wins and Working towards').toBe(20);
+    expect(quickTop, 'one column: Quick Points is above Daily Wins').toBeLessThan(goalsTop);
+    expect(new Set(order.lefts).size, 'one column: every section starts at the same left edge').toBe(1);
   } else {
-    expect(winsLeft, 'two columns: Daily Wins is under Quick Points, in the left column').toBe(quickLeft);
-    expect(order.right.left, 'two columns: the right column starts after the left one ends').toBeGreaterThan(order.left.right);
-    expect(Math.abs(order.left.width - order.right.width), 'two columns: equally wide').toBeLessThanOrEqual(1);
-    expect(Math.abs(order.right.top - order.left.top), 'two columns: the columns start level').toBeLessThanOrEqual(1);
+    expect(goalsLeft, 'two columns: Daily Wins is in the right column').toBeGreaterThan(quickLeft);
+    expect(towardsLeft, 'two columns: Working towards is under Daily Wins').toBe(goalsLeft);
+    expect(Math.abs(goalsTop - quickTop), 'two columns: the columns start level').toBeLessThanOrEqual(1);
   }
 
   // V1-D (D5): a child's request shows in the parent's Rewards dialog; "Not this time" removes it.
@@ -159,7 +132,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
   const cheap = await (await page.request.post('/api/rewards', { headers, data: { title: 'Sticker ' + testInfo.project.name, cost_points: 1, emoji: '⭐', visible_to_child: true } })).json();
   expect((await page.request.post(`/api/children/${samId}/stack/add`, { headers, data: { reward_id: cheap.id } })).status()).toBe(200);
   await go(page, '/');
-  await page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: /^Sam / }).click();
+  await page.getByRole('group', { name: 'Choose a child' }).getByRole('button', { name: 'Sam', exact: true }).click();
   await page.getByRole('button', { name: /^Rewards$/ }).last().click();
   const spend = page.getByRole('dialog');
   await expect(spend.getByRole('heading', { name: 'Sam asked for' })).toBeVisible();
@@ -355,12 +328,12 @@ test('slim behaviour boxes hold their names at 320, 360, 375, 390 and 414px', as
       await go(page, '/');
       const home = await measure(page.locator('[data-tile-grid="even"]'));
       expect(home.length, `${width}px: Quick Points boxes`).toBe(4);
+      // V1.1 Home (design/v11): on phones a compact two-row box with the name
+      // at 15px; every default name on one line with room to spare.
       for (const t of home) {
-        if (width >= 375) {
-          expect(t, `${width}px Home: ${t.name}`).toMatchObject({ height: 44, lines: 1 });
-          expect(t.spare, `${width}px Home: ${t.name} has room to spare`).toBeGreaterThanOrEqual(SPARE);
-        }
-        else expect(t.height, `${width}px Home: two rows`).toBeGreaterThan(56);
+        expect(t.lines, `${width}px Home: ${t.name} on one line`).toBe(1);
+        expect(t.spare, `${width}px Home: ${t.name} has room to spare`).toBeGreaterThanOrEqual(SPARE);
+        expect(t.height, `${width}px Home: a compact box`).toBeLessThanOrEqual(80);
       }
       await checkScreen(page, `home at ${width}`, testInfo);
       await page.getByRole('button', { name: 'Custom points' }).click();

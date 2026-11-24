@@ -1,0 +1,2598 @@
+{
+  "version": "0.1.0",
+  "issued": "2026-11-23",
+  "owner": "Percy V1.1 design engineering",
+  "status": "PASSING",
+  "total": 515,
+  "passed": 515,
+  "failed": 0,
+  "widths": [
+    320,
+    359,
+    360,
+    390,
+    834,
+    1280
+  ],
+  "results": [
+    {
+      "name": "home 320: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 359: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 359: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 359: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 359: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 360: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 360: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 360: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 360: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 834: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 834: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 834: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 834: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 1280: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 1280: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 (one child): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (one child): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 (one child): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (one child): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 (one child): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (one child): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 (one child): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (one child): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 1280 (one child): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (one child): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 1280 (one child): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (one child): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (two children): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 (two children): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (two children): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (two children): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (two children): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (two children): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (two children): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (two children): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (two children): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 (two children): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (two children): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (two children): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (two children): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (two children): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (two children): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (two children): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (two children): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 (two children): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (two children): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (two children): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (two children): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (two children): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (two children): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (two children): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (two children): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 (two children): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (two children): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (two children): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (two children): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (two children): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (two children): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (two children): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (two children): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 1280 (two children): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (two children): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (two children): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (two children): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (two children): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (two children): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (two children): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (two children): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 1280 (two children): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (two children): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (two children): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (two children): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (two children): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (two children): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (two children): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 (six children, long name): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (six children, long name): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 (six children, long name): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (six children, long name): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 (six children, long name): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (six children, long name): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 (six children, long name): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (six children, long name): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 1280 (six children, long name): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (six children, long name): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 1280 (six children, long name): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (six children, long name): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (no goals, no target, no bigger goal): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 (no goals, no target, no bigger goal): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (no goals, no target, no bigger goal): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (no goals, no target, no bigger goal): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (no goals, no target, no bigger goal): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (no goals, no target, no bigger goal): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (no goals, no target, no bigger goal): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (no goals, no target, no bigger goal): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (no goals, no target, no bigger goal): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 (no goals, no target, no bigger goal): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (no goals, no target, no bigger goal): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (no goals, no target, no bigger goal): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (no goals, no target, no bigger goal): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (no goals, no target, no bigger goal): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (no goals, no target, no bigger goal): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (no goals, no target, no bigger goal): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (no goals, no target, no bigger goal): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 (no goals, no target, no bigger goal): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (no goals, no target, no bigger goal): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (no goals, no target, no bigger goal): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (no goals, no target, no bigger goal): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (no goals, no target, no bigger goal): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (no goals, no target, no bigger goal): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (no goals, no target, no bigger goal): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (no goals, no target, no bigger goal): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 (no goals, no target, no bigger goal): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (no goals, no target, no bigger goal): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (no goals, no target, no bigger goal): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (no goals, no target, no bigger goal): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (no goals, no target, no bigger goal): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (no goals, no target, no bigger goal): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (no goals, no target, no bigger goal): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (no goals, no target, no bigger goal): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 1280 (no goals, no target, no bigger goal): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (no goals, no target, no bigger goal): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (no goals, no target, no bigger goal): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (no goals, no target, no bigger goal): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (no goals, no target, no bigger goal): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (no goals, no target, no bigger goal): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (no goals, no target, no bigger goal): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (no goals, no target, no bigger goal): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 1280 (no goals, no target, no bigger goal): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (no goals, no target, no bigger goal): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (no goals, no target, no bigger goal): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (no goals, no target, no bigger goal): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (no goals, no target, no bigger goal): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (no goals, no target, no bigger goal): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (no goals, no target, no bigger goal): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (long goal, long reward, 4-digit totals): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 (long goal, long reward, 4-digit totals): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (long goal, long reward, 4-digit totals): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (long goal, long reward, 4-digit totals): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (long goal, long reward, 4-digit totals): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (long goal, long reward, 4-digit totals): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (long goal, long reward, 4-digit totals): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (long goal, long reward, 4-digit totals): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (long goal, long reward, 4-digit totals): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 (long goal, long reward, 4-digit totals): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (long goal, long reward, 4-digit totals): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (long goal, long reward, 4-digit totals): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (long goal, long reward, 4-digit totals): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (long goal, long reward, 4-digit totals): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (long goal, long reward, 4-digit totals): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (long goal, long reward, 4-digit totals): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (long goal, long reward, 4-digit totals): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 (long goal, long reward, 4-digit totals): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (long goal, long reward, 4-digit totals): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (long goal, long reward, 4-digit totals): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (long goal, long reward, 4-digit totals): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (long goal, long reward, 4-digit totals): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (long goal, long reward, 4-digit totals): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (long goal, long reward, 4-digit totals): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (long goal, long reward, 4-digit totals): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 (long goal, long reward, 4-digit totals): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (long goal, long reward, 4-digit totals): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (long goal, long reward, 4-digit totals): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (long goal, long reward, 4-digit totals): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (long goal, long reward, 4-digit totals): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (long goal, long reward, 4-digit totals): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (long goal, long reward, 4-digit totals): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (long goal, long reward, 4-digit totals): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 1280 (long goal, long reward, 4-digit totals): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (long goal, long reward, 4-digit totals): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (long goal, long reward, 4-digit totals): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (long goal, long reward, 4-digit totals): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (long goal, long reward, 4-digit totals): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (long goal, long reward, 4-digit totals): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (long goal, long reward, 4-digit totals): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (long goal, long reward, 4-digit totals): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 1280 (long goal, long reward, 4-digit totals): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (long goal, long reward, 4-digit totals): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (long goal, long reward, 4-digit totals): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (long goal, long reward, 4-digit totals): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (long goal, long reward, 4-digit totals): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (long goal, long reward, 4-digit totals): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (long goal, long reward, 4-digit totals): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (failed photo, zero points): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 (failed photo, zero points): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (failed photo, zero points): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (failed photo, zero points): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (failed photo, zero points): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (failed photo, zero points): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (failed photo, zero points): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 (failed photo, zero points): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (failed photo, zero points): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 (failed photo, zero points): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (failed photo, zero points): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (failed photo, zero points): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (failed photo, zero points): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (failed photo, zero points): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (failed photo, zero points): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 (failed photo, zero points): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (failed photo, zero points): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 (failed photo, zero points): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (failed photo, zero points): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (failed photo, zero points): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (failed photo, zero points): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (failed photo, zero points): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (failed photo, zero points): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 (failed photo, zero points): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (failed photo, zero points): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 (failed photo, zero points): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (failed photo, zero points): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (failed photo, zero points): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (failed photo, zero points): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (failed photo, zero points): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (failed photo, zero points): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 (failed photo, zero points): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (failed photo, zero points): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 1280 (failed photo, zero points): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (failed photo, zero points): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (failed photo, zero points): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (failed photo, zero points): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (failed photo, zero points): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (failed photo, zero points): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 1280 (failed photo, zero points): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (failed photo, zero points): no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 1280 (failed photo, zero points): nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (failed photo, zero points): no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (failed photo, zero points): no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (failed photo, zero points): no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (failed photo, zero points): touch targets at least 44px",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (failed photo, zero points): every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 1280 (failed photo, zero points): fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 125% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 at 125% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 125% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 125% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 125% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 at 125% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 125% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 125% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 125% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 at 125% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 125% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 125% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 125% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 at 125% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 125% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 125% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 150% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 at 150% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 150% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 150% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 150% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 at 150% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 150% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 150% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 150% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 at 150% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 150% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 150% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 150% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 at 150% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 150% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 150% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 200% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 320 at 200% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 200% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 320 at 200% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 200% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 320 at 200% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 200% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 320 at 200% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 200% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "home 390 at 200% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 200% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "home 390 at 200% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 200% text: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "children 390 at 200% text: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 200% text: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "children 390 at 200% text: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "quick point adds 1 to the balance",
+      "pass": true,
+      "detail": "112 -> 113"
+    },
+    {
+      "name": "quick point shows a toast with Undo",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "undo restores the balance",
+      "pass": true,
+      "detail": "112"
+    },
+    {
+      "name": "completing a goal marks the row done",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "completing a goal adds its points",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "goal count reads 3 of 3",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "goal undo restores the balance",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "switching child changes the headline",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "switching child changes the balance",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "selected child is announced as pressed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "child selection carries over to Children",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Children has no Quick Points tiles",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Children has no goal completion controls",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "week ring is full when over target",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "over-target number is shown unclamped (34 of 30)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "week arc offset is clamped at 0",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "editing the weekly target updates the figure",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "zero target draws the neutral ring, no fraction",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Home has no progress rings (balance is a number)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "keyboard reaches the child selector",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Enter selects a child",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "reduced motion: Percy does not animate",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "showcase 320: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "showcase 320: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 320: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 320: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 320: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 320: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 320: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 390: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "showcase 390: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 390: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 390: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 390: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 390: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 390: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 390: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 1280: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "showcase 1280: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 1280: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 1280: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 1280: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 1280: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 1280: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "showcase 1280: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 320: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "fox board 320: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 320: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 320: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 320: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 320: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 320: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 390: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "fox board 390: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 390: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 390: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 390: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 390: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 390: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 390: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 1280: no horizontal page overflow",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "fox board 1280: nothing outside the viewport",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 1280: no text under 14px (12px for tab labels and overlines)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 1280: no clipped text",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 1280: no word squeezed into a column of letters",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 1280: every image loaded or fell back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 1280: fox never mirrored",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fox board 1280: axe WCAG 2.1 A and AA",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no console or page errors",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no network requests (pages are self-contained)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "control: type-size check fails on the PR #71 prototype",
+      "pass": true,
+      "detail": "51 elements under the limit, e.g. small \"Two clearly different jobs · r\" 12px",
+      "control": {
+        "smallText": 51,
+        "smallTargets": 12
+      }
+    }
+  ]
+}
