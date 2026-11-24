@@ -56,7 +56,7 @@ describe('Activity screen', () => {
     await waitFor(() => expect(screen.getByText('36')).toBeTruthy());
     expect(screen.getByText('Points earned')).toBeTruthy();
     expect(screen.getByText('7')).toBeTruthy();
-    expect(screen.getByText('Goals completed')).toBeTruthy();
+    expect(screen.getByText('Daily Wins completed')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Activity log' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Corrections and Undo' })).toBeTruthy();
     expect(screen.getByText('Historical entries remain visible when a parent corrects a mistaken award or reverses an eligible action.')).toBeTruthy();
@@ -85,7 +85,7 @@ describe('Activity screen', () => {
     mount();
     await screen.findByText('“Finish homework”');
     expect(feedCalls.at(-1).get('filter')).toBe('all');
-    for (const [label, key] of [['Earned', 'earned'], ['Goals', 'goals'], ['Spent', 'spent'], ['All', 'all']]) {
+    for (const [label, key] of [['Earned', 'earned'], ['Daily Wins', 'goals'], ['Spent', 'spent'], ['All', 'all']]) {
       fireEvent.click(screen.getByRole('button', { name: label }));
       await waitFor(() => expect(feedCalls.at(-1).get('filter')).toBe(key));
       expect(screen.getByRole('button', { name: label }).getAttribute('aria-pressed')).toBe('true');
@@ -238,8 +238,8 @@ describe('row text and day labels', () => {
     expect(goalTitleOf({ ...base, note: 'Today’s Goal: Old name' })).toBe('Old name');
     expect(rowText({ ...base, note: 'Today’s Goal: Old name' }, 'UTC').what).toBe('“Old name”');
     expect(rowText({ ...base, note: 'Today’s Goal: Old name' }, 'UTC').sub).toBe('Learning · 9:00\u00a0AM'); // the behaviour and the time; no kind repeated
-    expect(rowText({ ...base, note: null }, 'UTC').what).toBe('a goal');
-    expect(rowText({ ...base, note: 'Today’s Goal: ' }, 'UTC').what).toBe('a goal');
+    expect(rowText({ ...base, note: null }, 'UTC').what).toBe('a Daily Win');
+    expect(rowText({ ...base, note: 'Today’s Goal: ' }, 'UTC').what).toBe('a Daily Win');
     // Not linked to a completion: the note is just a note.
     expect(goalTitleOf({ ...base, goal_completion_id: null, note: 'Today’s Goal: Fake' })).toBeNull();
   });

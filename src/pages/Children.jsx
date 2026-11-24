@@ -113,7 +113,9 @@ export default function Children() {
     </div>
   );
 
-  if (isError) return page(<ErrorCard message="Couldn't load children" onRetry={refetch} />);
+  // Only when there is nothing to show: a failed background refresh must not
+  // replace the page and an open pop-up (V1-F §12 X27).
+  if (isError && children.length === 0) return page(<ErrorCard message="Couldn't load children" onRetry={refetch} />);
   if (!child) return page(<WelcomeCard onAddFirstChild={() => setShowAddChild(true)} />);
 
   const week = child.week_points ?? 0;
@@ -196,15 +198,16 @@ export default function Children() {
 
       <Card>
         <CardContent className="p-4 sm:p-5 space-y-3">
-          <SectionHead title="Saving for something bigger">
+          <SectionHead title="Big Goals">
             {goalRewards.length > 0 && (
-              <Button ref={savingsEdit} variant="outline" aria-label={`Edit saving for something bigger for ${child.name}`} onClick={() => setSavingsOpen(true)}>Edit</Button>
+              <Button ref={savingsEdit} variant="outline" aria-label={`Edit Big Goals for ${child.name}`} onClick={() => setSavingsOpen(true)}>Edit</Button>
             )}
           </SectionHead>
           {goalRewards.length === 0 ? (
             <p className="text-muted-foreground">
-              No bigger goals yet.{' '}
-              <Link to={createPageUrl('Rewards')} className={linkClass}>Mark a reward as a bigger goal</Link>
+              No Big Goals yet.{' '}
+              {/* Opens the pop-up on its Big Goals side (V1-F §12 W9), not the Rewards tab. */}
+              <Button variant="link" size="goal" className="px-0" onClick={() => setGoalsStart({ side: 'bigGoals' })}>Add a Big Goal</Button>
             </p>
           ) : (
             <div className="space-y-4">
@@ -216,10 +219,10 @@ export default function Children() {
 
       <Card>
         <CardContent className="p-4 sm:p-5 space-y-3">
-          <SectionHead title={`${child.name}'s goals`}>
+          <SectionHead title={`${child.name}'s Daily Wins`}>
             <Button onClick={() => setGoalsStart({ view: 'form' })}>
               <PercyIcon id="phosphor:plus-circle:duotone" className="h-5 w-5" />
-              New goal
+              New Daily Win
             </Button>
           </SectionHead>
           {goals.length > 0 && (
@@ -238,8 +241,8 @@ export default function Children() {
             </ul>
           )}
           <div className="flex justify-end">
-            <Button variant="link" size="goal" className="-mr-3" onClick={() => setGoalsStart({ view: 'list' })} aria-label={'Manage all goals for ' + child.name}>
-              Manage all goals
+            <Button variant="link" size="goal" className="-mr-3" onClick={() => setGoalsStart({ view: 'list' })} aria-label={'Manage all Daily Wins for ' + child.name}>
+              Manage all Daily Wins
             </Button>
           </div>
         </CardContent>
@@ -258,7 +261,7 @@ export default function Children() {
                 <PercyIcon id="phosphor:check-circle:duotone" className="h-7 w-7" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="font-semibold text-foreground">Goals completed</p>
+                <p className="font-semibold text-foreground">Daily Wins completed</p>
                 <p className="text-sm text-muted-foreground">Recognise effort over time</p>
                 <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">{doneToday} today</p>
               </div>
@@ -269,7 +272,7 @@ export default function Children() {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-foreground">Next milestone</p>
-                <p className="text-sm text-muted-foreground">Weekly target and bigger goal</p>
+                <p className="text-sm text-muted-foreground">Weekly target and Big Goals</p>
                 {/* A small bar, not the sentence "{n} weekly points to go" (owner, 22 Nov).
                     The sentence is still what a screen reader hears. */}
                 <div className="mt-2 h-2 w-full max-w-xs rounded-full bg-muted overflow-hidden" role="progressbar" aria-label="Weekly target"
@@ -298,6 +301,8 @@ export default function Children() {
       />}
       <SavingsDialog open={savingsOpen} onClose={() => setSavingsOpen(false)} child={child} goalRewards={goalRewards} returnFocusRef={savingsEdit} />
       <ManageGoalsDialog open={!!goalsStart} onClose={() => setGoalsStart(null)} start={goalsStart}
+        // "Add a Big Goal" is gone once a goal exists: focus then goes to the section's Edit button.
+        returnFocusRef={goalsStart?.side === 'bigGoals' ? savingsEdit : null}
         child={child} children={children} categories={behaviorCategories} today={today} />
       <RewardForm
         isOpen={!!rewardEditing}

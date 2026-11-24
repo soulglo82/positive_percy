@@ -14,7 +14,7 @@ function validDate(value) {
 }
 function parseGoal(data) {
   const title = typeof data?.title === 'string' ? data.title.trim() : '';
-  if (!title || title.length > TITLE_MAX) return { error: 'Goal title must be 1–100 characters.' };
+  if (!title || title.length > TITLE_MAX) return { error: 'Daily Win name must be 1–100 characters.' };
   if (!isUuid(data?.child_id) || !isUuid(data?.category_id)) {
     return { error: 'Choose a child and a positive behaviour category.' };
   }
@@ -22,7 +22,7 @@ function parseGoal(data) {
   // moves), so normalise the case the UUID pattern accepts.
   data = { ...data, child_id: data.child_id.toLowerCase(), category_id: data.category_id.toLowerCase() };
   const kind = data?.schedule_kind;
-  if (kind !== 'one_off' && kind !== 'weekly') return { error: 'Choose a one-off or weekly routine.' };
+  if (kind !== 'one_off' && kind !== 'weekly') return { error: 'Choose every week or one day.' };
   if (kind === 'one_off') {
     if (!validDate(data?.scheduled_date)) return { error: 'Choose a valid calendar date.' };
     return { title, child_id: data.child_id, category_id: data.category_id,
@@ -59,7 +59,7 @@ function conflict(res, err) {
 
 function fail(res, err, context) {
   console.error(context, err instanceof Error ? err.message : 'unexpected error');
-  return res.status(500).json({ error: 'Unable to save this goal right now.' });
+  return res.status(500).json({ error: 'Unable to save this Daily Win right now.' });
 }
 
 async function localToday(db, familyCode) {
@@ -159,7 +159,7 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
   });
 
   router.put('/:id', async (req, res) => {
-    if (!isUuid(req.params.id)) return res.status(404).json({ error: 'Goal not found.' });
+    if (!isUuid(req.params.id)) return res.status(404).json({ error: 'Daily Win not found.' });
     const goal = parseGoal(req.body);
     if (goal.error) return res.status(400).json({ error: goal.error });
     const client = await pool.connect();
@@ -180,7 +180,7 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
           to_char(scheduled_date, 'YYYY-MM-DD') AS scheduled_day
         FROM today_goals WHERE id = $1 AND family_code = $2 AND archived_at IS NULL FOR UPDATE`,
         [req.params.id, req.familyCode]);
-      if (!existing.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Goal not found.' }); }
+      if (!existing.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Daily Win not found.' }); }
       const prev = existing[0];
       const activeCompletion = async () => (await client.query(
         'SELECT 1 FROM today_goal_completions WHERE goal_id = $1 AND undone_at IS NULL LIMIT 1', [req.params.id])).rowCount > 0;
@@ -188,18 +188,18 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
       // with completions must keep its kind. Create a separate goal instead.
       if (prev.schedule_kind !== goal.schedule_kind && await activeCompletion()) {
         await client.query('ROLLBACK');
-        return res.status(409).json({ error: 'This goal has been completed before. Create a separate goal for a different schedule.' });
+        return res.status(409).json({ error: 'This Daily Win has been completed before. Create a separate Daily Win for a different schedule.' });
       }
       // E05 B2: for the same reason, a completed one-off keeps its date.
       if (prev.schedule_kind === 'one_off' && goal.schedule_kind === 'one_off' &&
           goal.scheduled_date !== prev.scheduled_day && await activeCompletion()) {
         await client.query('ROLLBACK');
-        return res.status(409).json({ error: 'This goal has been completed. Create a separate goal for another date.' });
+        return res.status(409).json({ error: 'This Daily Win has been completed. Create a separate Daily Win for another date.' });
       }
       // Changes to the child would detach historical completions from their
       // original owner. Create a different goal instead.
       if (prev.child_id !== goal.child_id) {
-        await client.query('ROLLBACK'); return res.status(409).json({ error: 'Create a separate goal for another child.' });
+        await client.query('ROLLBACK'); return res.status(409).json({ error: 'Create a separate Daily Win for another child.' });
       }
       const choice = await ownedChoice(client, req.familyCode, goal.child_id, goal.category_id);
       if (!choice) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Child or category not found.' }); }
@@ -249,13 +249,13 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
   });
 
   router.delete('/:id', async (req, res) => {
-    if (!isUuid(req.params.id)) return res.status(404).json({ error: 'Goal not found.' });
+    if (!isUuid(req.params.id)) return res.status(404).json({ error: 'Daily Win not found.' });
     try {
       const { rows } = await pool.query(`
         UPDATE today_goals SET archived_at=NOW(), updated_at=NOW()
         WHERE id=$1 AND family_code=$2 AND archived_at IS NULL RETURNING id
       `, [req.params.id, req.familyCode]);
-      if (!rows.length) return res.status(404).json({ error: 'Goal not found.' });
+      if (!rows.length) return res.status(404).json({ error: 'Daily Win not found.' });
       broadcast(req.familyCode, { type: 'todays_goals_updated' });
       return res.json({ archived: true, id: rows[0].id });
     } catch (err) { return fail(res, err, 'Archive today goal'); }
@@ -263,7 +263,7 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
 
   router.post('/:id/complete', async (req, res) => {
     const id = req.params.id, requestId = req.body?.request_id;
-    if (!isUuid(id)) return res.status(404).json({ error: 'Goal not found.' });
+    if (!isUuid(id)) return res.status(404).json({ error: 'Daily Win not found.' });
     if (!isUuid(requestId)) return res.status(400).json({ error: 'Invalid request.' });
     const client = await pool.connect();
     const args = { goal_id: id };
@@ -272,7 +272,7 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
       const { rows: initial } = await client.query(
         'SELECT child_id FROM today_goals WHERE id=$1 AND family_code=$2 AND archived_at IS NULL',
         [id, req.familyCode]);
-      if (!initial.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Goal not found.' }); }
+      if (!initial.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Daily Win not found.' }); }
       const { rows: childRows } = await client.query(
         'SELECT * FROM children WHERE id=$1 AND family_code=$2 FOR UPDATE',
         [initial[0].child_id, req.familyCode]);
@@ -283,7 +283,7 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
           to_char(start_date, 'YYYY-MM-DD') AS begins_day
          FROM today_goals WHERE id=$1 AND family_code=$2 AND archived_at IS NULL FOR UPDATE`,
         [id, req.familyCode]);
-      if (!goals.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Goal not found.' }); }
+      if (!goals.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Daily Win not found.' }); }
       const g = goals[0];
       const { rows: prior } = await client.query(`
         SELECT result, endpoint, args FROM idempotency_keys
@@ -306,7 +306,7 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
         : g.begins_day <= today.date && g.weekdays.includes(today.weekday);
       if (!due) {
         await client.query('ROLLBACK');
-        return res.status(409).json({ error: 'This goal is not scheduled for today.' });
+        return res.status(409).json({ error: 'This Daily Win is not scheduled for today.' });
       }
       const choice = await ownedChoice(client, req.familyCode, child.id, g.category_id);
       if (!choice || !Number.isInteger(choice.points) || choice.points < 1 || choice.points > 1000) {
@@ -318,7 +318,7 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
         WHERE goal_id=$1 AND undone_at IS NULL
           AND ($3::boolean OR scheduled_for=$2::date)
       `, [id, today.date, g.schedule_kind === 'one_off']);
-      if (done) { await client.query('ROLLBACK'); return res.status(409).json({ error: 'Goal already completed today.' }); }
+      if (done) { await client.query('ROLLBACK'); return res.status(409).json({ error: 'Daily Win already completed today.' }); }
 
       const points = choice.points, category = choice.category_name;
       const { rows: events } = await client.query(`
@@ -362,7 +362,7 @@ export function createTodaysGoalsRouter({ pool, broadcast, recordStreak, weekPoi
             JSON.stringify(rows[0].args) === JSON.stringify(args)) {
           return res.json({ ...rows[0].result, duplicate: true });
         }
-        return res.status(409).json({ error: 'Goal already completed today or request reused.' });
+        return res.status(409).json({ error: 'Daily Win already completed today or request reused.' });
       }
       return fail(res, err, 'Complete today goal');
     } finally { client.release(); }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronRight } from 'lucide-react';
 import PercyIcon from "@/components/icons/PercyIcon";
 import CategoryIcon from '@/components/CategoryIcon';
 import { toast } from 'sonner';
@@ -20,6 +21,8 @@ import ManageGoalsDialog from './ManageGoalsDialog';
 export default function TodaysGoalsPanel({ children = [], categories = [], enabled = false, selectedChildId }) {
   const queryClient = useQueryClient();
   const [manageOpen, setManageOpen] = useState(false);
+  // Focus returns here when the pop-up closes (V1-F §12 W8, X32).
+  const manageButton = useRef(null);
   const [pendingIds, setPendingIds] = useState([]);
   const inFlight = useRef(new Set());
   // After a completion, focus moves to that row's Done label (design N4).
@@ -59,7 +62,7 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
           action: { label: 'Undo', onClick: undoAction('award', result.event.id, queryClient) },
         });
       } else {
-        toast.info('That goal is already recorded.');
+        toast.info('That Daily Win is already recorded.');
       }
       refreshPoints(queryClient);
       setFocusGoalId(goal.id);
@@ -70,9 +73,9 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
     } catch (err) {
       if (err.status === 409) {
         refreshPoints(queryClient);
-        toast.info(err.message || 'This goal has already been completed.');
+        toast.info(err.message || 'This Daily Win has already been completed.');
       } else {
-        toast.error(err.message || 'Could not complete the goal. Please try again.');
+        toast.error(err.message || 'Could not complete the Daily Win. Please try again.');
       }
     } finally {
       inFlight.current.delete(goal.id);
@@ -88,7 +91,7 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
             <h2 id="todays-goals-title" className="flex items-center gap-2 font-display font-bold text-lg text-primary">
               {/* E03: approved header accent (goals_interactions.header_accent); decorative, no motion. */}
               <PercyIcon id="phosphor:sparkle:duotone" className="h-5 w-5" />
-              Today's Goals
+              Daily Wins
             </h2>
             {data && goals.length > 0 && (
               <span className="rounded-full bg-warning px-3 py-1 text-sm font-semibold text-foreground tabular-nums">
@@ -104,20 +107,15 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
 
           {isError ? (
             <div className="space-y-2">
-              <p className="text-sm text-destructive">Could not load today's goals.</p>
+              <p className="text-sm text-destructive">Could not load Daily Wins.</p>
               <Button variant="outline" onClick={() => refetch()}>Try again</Button>
             </div>
           ) : isLoading ? (
-            <p className="text-sm text-muted-foreground" role="status">Loading goals…</p>
+            <p className="text-sm text-muted-foreground" role="status">Loading Daily Wins…</p>
           ) : goals.length === 0 ? (
             <div className="rounded-md border border-dashed border-border bg-muted px-4 py-5">
-              <p className="font-medium text-foreground">No goals scheduled for {child.name} today.</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Add a weekly routine or a one-off task to give them something to work towards.
-              </p>
-              <Button className="mt-3" size="sm" onClick={() => setManageOpen(true)}>
-                Set up goals
-              </Button>
+              <p className="font-medium text-foreground">No Daily Wins for {child.name} today.</p>
+              <p className="text-sm text-muted-foreground mt-1">Something to do today or every week.</p>
             </div>
           ) : (
             <ul className="divide-y divide-border">
@@ -157,14 +155,17 @@ export default function TodaysGoalsPanel({ children = [], categories = [], enabl
               })}
             </ul>
           )}
-          <div className="flex justify-end">
-            <Button variant="link" size="goal" className="-mr-3" onClick={() => setManageOpen(true)} aria-label={'Manage goals for ' + child.name}>
-              <PercyIcon id="phosphor:target:duotone" className="h-4 w-4" /> Manage goals
-            </Button>
-          </div>
+          {/* One door for both kinds (owner's option C, V1-F §12 W2). The label
+              may wrap on a narrow phone (X30), so it is not a nowrap Button. */}
+          <button type="button" ref={manageButton} onClick={() => setManageOpen(true)}
+            className="flex w-full min-h-11 items-center gap-2 rounded-md border border-input bg-accent px-3 py-2 text-left text-sm font-semibold text-foreground transition-colors hover:bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <PercyIcon id="phosphor:target:duotone" className="h-5 w-5 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1">Manage Daily Wins &amp; Big Goals</span>
+            <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </button>
         </CardContent>
       </Card>
-      <ManageGoalsDialog open={manageOpen} onClose={() => setManageOpen(false)}
+      <ManageGoalsDialog open={manageOpen} onClose={() => setManageOpen(false)} returnFocusRef={manageButton}
         child={child} children={children} categories={categories} today={data?.date || ''} />
     </section>
   );

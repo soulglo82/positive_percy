@@ -2,7 +2,7 @@
 // shows a separate Done mark, names the selected child, and the completion
 // control's accessible name includes the visible points.
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('@/lib/todaysGoals', async (orig) => {
@@ -20,6 +20,9 @@ vi.mock('@/lib/todaysGoals', async (orig) => {
     })),
   };
 });
+
+// The pop-up loads the reward list while it is open (V1-F §12 W5).
+vi.mock('@/api/entities', () => ({ Reward: { list: vi.fn(async () => []) } }));
 
 import TodaysGoalsPanel from './TodaysGoalsPanel';
 
@@ -63,6 +66,37 @@ describe('TodaysGoalsPanel (E05)', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<QueryClientProvider client={client}><TodaysGoalsPanel children={kids} enabled selectedChildId="c2" /></QueryClientProvider>);
     expect(await screen.findByText("Ben's checklist")).toBeTruthy();
+  });
+
+  it('Daily Wins: the new names and one door for both kinds (V1-F §12 W1, W2)', async () => {
+    const { container } = renderPanel();
+    await screen.findAllByRole('listitem');
+    expect(screen.getByRole('heading', { name: 'Daily Wins' })).toBeTruthy();
+    const door = screen.getByRole('button', { name: 'Manage Daily Wins & Big Goals' });
+    // A native button whose label may wrap on a narrow phone (X30), not a nowrap Button.
+    expect(door.className).not.toContain('whitespace-nowrap');
+    expect(container.textContent).not.toMatch(/Today's Goals|Manage goals|Set up goals/);
+  });
+
+  it('nothing today: the empty state has no button of its own; the one door stays (W2)', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { container } = render(<QueryClientProvider client={client}><TodaysGoalsPanel children={[...kids, { id: 'c3', name: 'Cal' }]} enabled selectedChildId="c3" /></QueryClientProvider>);
+    expect(await screen.findByText('No Daily Wins for Cal today.')).toBeTruthy();
+    expect(screen.getByText('Something to do today or every week.')).toBeTruthy();
+    expect(container.querySelector('.border-dashed').querySelectorAll('button')).toHaveLength(0);
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Manage Daily Wins & Big Goals']);
+  });
+
+  it('the pop-up opens from the door, and closing it returns focus to the door (X32)', async () => {
+    renderPanel();
+    await screen.findAllByRole('listitem');
+    const door = screen.getByRole('button', { name: 'Manage Daily Wins & Big Goals' });
+    fireEvent.click(door);
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: 'Daily Wins & Big Goals' })).toBeTruthy();
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(door));
   });
 
   it('a selected id no longer in the list shows the first child', async () => {

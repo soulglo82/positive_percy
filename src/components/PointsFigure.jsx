@@ -1,9 +1,9 @@
 // One points figure with its picture: the icon in a tile, the figure with its
 // unit on one baseline, and a label beneath, all from one left edge
 // (docs/engineering/V1-B-DESIGN.md §10). Child View's points card was drawn
-// this way first; Home's "Little wins" and the Children weekly-target card use
-// the same component, so the three screens cannot drift apart (owner, 22 Nov:
-// "the changes we just made … need to be consistently applied").
+// this way first; the Children weekly-target card uses the same component, so
+// the two screens cannot drift apart (owner, 22 Nov). Home showed it too until
+// the owner chose a slim points line there instead (24 Nov, V1-F §13).
 //
 // `icon` is the element itself (an approved icon with a literal id), not an id:
 // approved icon ids are never computed (src/test/approvedIcons.test.js).

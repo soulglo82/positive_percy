@@ -117,3 +117,7 @@ The journey covers:
 - **Welcome** has no treasure map. The Freepik map stays behind its licence gate (standing constraint).
 - **The reward form** opens with the picker, as approved.
 
+## 24 November 2026: Daily Wins & Big Goals, and the Home points line
+
+The pack was rebuilt from the build of `V1-F-DESIGN.md` §12 and §13 (the owner's option C and "Points 1"). `home-*` now shows the points line under the child picker, the Daily Wins card and its one button. `goalsmanage-*` is the pop-up's Daily Wins side and `goalform-*` the Daily Win form; new files: `biggoals-*` (the Big Goals side), `biggoalform-*` (the Big Goal form) and `savings-view-*` (saving points inside the pop-up). The approved design `9de1df2` predates these screens, so their `compare` sheets show the owner's later choice beside the earlier design, not a defect.
+

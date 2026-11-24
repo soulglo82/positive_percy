@@ -35,7 +35,7 @@ const PAGE_SIZE = 50;
 export const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'earned', label: 'Earned' },
-  { key: 'goals', label: 'Goals' },
+  { key: 'goals', label: 'Daily Wins' },
   { key: 'spent', label: 'Spent' },
 ];
 
@@ -214,7 +214,7 @@ export default function Activity() {
               </div>
               <div className="rounded-md border border-border p-3 text-center">
                 <p className="font-display font-extrabold text-title text-foreground tabular-nums">{goalsCompleted}</p>
-                <p className="text-sm font-medium text-muted-foreground">Goals completed</p>
+                <p className="text-sm font-medium text-muted-foreground">Daily Wins completed</p>
               </div>
             </div>
           </CardContent>
@@ -343,7 +343,7 @@ export function rowText(event, timeZone = undefined) {
     const title = goalTitleOf(event);
     // The second line holds only what the first does not say (owner, 22 Nov:
     // trim repetition): "completed" already says it was a goal.
-    return { lead: 'completed', what: title ? `“${title}”` : 'a goal', sub: `${event.label} · ${time}` };
+    return { lead: 'completed', what: title ? `“${title}”` : 'a Daily Win', sub: `${event.label} · ${time}` };
   }
   if (event.type === 'earn') {
     const swap = event.label === 'Other' && event.note;
@@ -365,7 +365,7 @@ export function rowText(event, timeZone = undefined) {
   if (event.type === 'savings_ended') {
     // Owner wording (handover 21 Nov): "{Child}'s {Goal} savings are back in
     // their points." · "{n} points returned · {reason}".
-    const cause = event.note === 'unmarked' ? 'Bigger goal removed'
+    const cause = event.note === 'unmarked' ? 'Big Goal removed'
       : event.note === 'deleted' ? 'Reward deleted' : 'No longer assigned';
     return { possessive: true, lead: '', what: event.label, after: 'savings are back in their points.',
       sub: `${event.points} ${pointsWord(event.points)} returned · ${cause} · ${time}` };

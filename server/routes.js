@@ -1326,7 +1326,7 @@ async function savingsMove(req, res, kind) {
       if ((child.total_points ?? 0) - bal.committed < points) return fail(400, 'Not enough points'); // I2/I3
       // Never more than the goal needs (code review of 9e674c9): an excess can
       // only come from a cost lowered later (E12).
-      if (saved + points > reward.cost_points) return fail(400, 'More than this goal needs');
+      if (saved + points > reward.cost_points) return fail(400, 'More than this Big Goal needs');
     } else if (points > saved) {
       return fail(400, 'Not enough points saved'); // I1
     }
@@ -1393,7 +1393,7 @@ router.post('/api/savings-events/:id/undo', authMiddleware, async (req, res) => 
       if (bal.stack.some((i) => i.rewardId === reward.id)) return fail(409, STALE_REQUESTS);
       if ((child.total_points ?? 0) - bal.committed < -ev.delta) return fail(409, SPENT_ALREADY); // I2
       const saved = bal.goals.find((g) => g.rewardId === reward.id)?.saved ?? 0;
-      if (saved - ev.delta > reward.cost_points) return fail(409, 'More than this goal needs');
+      if (saved - ev.delta > reward.cost_points) return fail(409, 'More than this Big Goal needs');
     }
     const { rows: [event] } = await client.query(
       `INSERT INTO savings_events (family_code, child_id, reward_id, reward_title, generation, delta, kind, request_id, undoes)

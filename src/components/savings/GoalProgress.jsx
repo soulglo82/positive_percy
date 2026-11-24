@@ -1,5 +1,5 @@
-// One bigger goal's progress (D1, savings design §19.3). Approved wording:
-// "Saving for something bigger", "{saved} of {cost} points saved", "{n} to go".
+// One Big Goal's progress (D1, savings design §19.3). Wording: the caller's
+// label ("Big Goal"), "{saved} of {cost} points saved", "{n} to go".
 // Every figure comes from the server (child.goals).
 import RewardIcon from '@/components/rewards/RewardIcon';
 

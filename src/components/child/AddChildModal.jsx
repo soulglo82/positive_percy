@@ -194,7 +194,7 @@ export default function AddChildModal({ isOpen, onClose, onSubmit }) {
               className="text-lg font-semibold"
             />
             <p className="text-xs text-muted-foreground mt-2">
-              Goal they'll work towards each week
+              Target they'll work towards each week
             </p>
           </div>
 

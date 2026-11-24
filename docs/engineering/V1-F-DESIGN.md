@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Version | 1.6 |
+| Version | 1.7 |
 | Issued | 2026-11-18 |
 | Owner | Percy V1 engineering (branch `claude/percy-v1-f-forms`, stacked on V1-A `claude/percy-v1-a-home`) |
 | Status | Reviewed (design peer review v1.1; code review of PR #58 fixed, v1.2; §9 design and code reviews, v1.3 and v1.4) |
@@ -19,6 +19,7 @@
 | 1.4 | 2026-11-23 | Review of PR #73 found that the amount field was replaced on the first typed character, which dropped the keyboard. The field is no longer replaced at all (§9, "Review of the pull request") |
 | 1.5 | 2026-11-24 | The owner rejected the §9 layout as too clunky and chose a new one from mock-ups: slim one-line behaviour boxes, one Points row under them in the form, and on Home a "Custom points" button in place of "Award points" (§10). §10 replaces §9's layout, §9's rule that a chosen amount survives a change of behaviour, and the 22 November two-line tile rule from 375 px up |
 | 1.6 | 2026-11-24 | The owner saw the built §10 form and asked for more: − and + always on screen, no points on the category boxes, the amount set only by the Points box, and the whole pop-up compressed. Version "B" was chosen from mock-ups (§11). §11 replaces §10's form layout and amount rules; §10's Home card and slim tile stand |
+| 1.7 | 2026-11-24 | The owner found creating a daily goal versus a bigger goal confusing and hard to navigate, chose option C from mock-ups (one button on Home, one pop-up with two sides) and set the names: Daily Wins and Big Goals (§12). §12 replaces the list and form layout of G1 to G4 and the wording of the goal screens; the E05 rules and every server contract are unchanged |
 
 ## 1. Scope
 
@@ -592,4 +593,248 @@ No blocking finding. It confirmed that what is sent is what is shown on every pa
 | 6 | Note | The sentence for screen readers is spoken half a second after every opening, as the old summary was | Left as it is |
 
 Added to the mutation checks: the form reset in an effect and always mounted (the focus test); the short-window classes removed (the browser test).
+
+## 12. Daily Wins & Big Goals, option C (owner, 24 November 2026) (v1.7)
+
+The owner's report: "creating a daily goal vs a big goal is confusing and difficult to navigate". Found by reading the live code: a daily goal is added through a small "Manage goals" link (three taps); a bigger goal is added in the Rewards tab by ticking a box at the bottom of the reward form and is then funded from the Children tab; nothing on Home adds one; and "goal" names three things. The owner chose option C from mock-ups (rounds 1 to 3, sent as pictures) and set the names **Daily Wins** and **Big Goals**. The owner also asked for the Daily Win icons to be kept on the pop-up's rows.
+
+The owner also called the "Little wins, big adventures!" card out of place and chose "Points 1" from two mock-ups; that is §13.
+
+### 12.1 Contract
+
+| ID | Rule |
+| --- | --- |
+| W1 | **Two names, one each.** The daily item is a "Daily Win"; the reward a child saves towards is a "Big Goal". Every string a parent or child can read, client and server, uses these names (table in §12.6). The word "goal" alone no longer names either; the weekly figure is always "weekly target". This is wording only: no table, column, API path, field name or query key changes, and no stored value changes: a completion still writes the note prefix `Today’s Goal: ` (it is parsed by `Activity.jsx::goalTitleOf`), and the family report shows it as "Daily Win: " |
+| W2 | **One door on Home.** The Daily Wins card ends with one full-width button, "Manage Daily Wins & Big Goals". It opens the pop-up for the child selected on Home, on the Daily Wins side. The card's empty state has no button of its own |
+| W3 | **One pop-up, two sides.** One Radix dialog with four views: the list, the Daily Win form, the Big Goal form and the savings view. List view: title "Daily Wins & Big Goals" (with a screen-reader description naming the child); in the body, the compact child picker (only with two or more children), then a switch: a group labelled "Show" of two `aria-pressed` buttons, "Daily Wins" and "Big Goals" (pressing the pressed one does nothing; focus stays on it), then a named region with the chosen child's items for the chosen side. The footer holds exactly one button, "Add Daily Win" or "Add Big Goal". Only the header and footer are fixed; the body (picker, switch, list) scrolls as one. Changing child keeps the side; changing side keeps the child |
+| W4 | **Daily Wins side.** One row per Daily Win of the child that is not archived (the query the list uses today, `loadTodaysGoals(true)`): the behaviour's icon, the title, and "behaviour · recurrence · points". The whole row is one native button named "Edit {title}" that opens the form for that Daily Win. Loading, failure with "Try again", and empty ("No Daily Wins yet for {name}.") as today |
+| W5 | **Big Goals side.** One list item per reward that is marked `is_bigger_goal` and assigned to the child (`goalRewardsFor`), at the server's figures when the child has savings in it (`child.goals` holds only goals with savings), else 0 saved, in `goalOrder`. Each item holds two sibling controls, never one inside the other: a native button named "Edit {name}" (the picture, name, "{saved} of {cost} points saved", the progress bar, and "Hidden from children" when it is), which opens the Big Goal form; and a button "Save points" (named "Save points for {name}") that opens the savings view on that goal, or "Redeem" (named "Redeem {name}") when the saved points already cover the cost. A goal the child has already asked for (in `reward_stack_priced`) has neither and says "Asked for" (rule S1 of the savings design). Rewards load while the pop-up is open (not per view); loading shows "Loading Big Goals…", a failure with no data shows "Could not load Big Goals." and "Try again"; empty: "No Big Goals yet for {name}." |
+| W6 | **Daily Win form.** The fields, limits and rules of today's goal form, unchanged (G2 to G4, E05: a running routine never sends `start_date`; a completed one-off keeps its date; the server's 409s show inline). Layout: title "New Daily Win" / "Edit Daily Win", "For {name}"; "What is it?" (name); "Points for" (the behaviour select; each option reads "{behaviour} · {n} point(s)" and the chosen behaviour's icon shows beside the select); "When" ("Every week" / "One day", then the days and "Starts on", or "Date"); "Archive Daily Win" when editing. Buttons: Cancel, "Save Daily Win". No numbered steps, no hint lines |
+| W7 | **Big Goal form.** `RewardForm` with `variant="bigGoal"` and `forChild`, shown inside the pop-up (`embedded`), so there is one save path and one delete path for rewards. It shows: title "New Big Goal" / "Edit Big Goal"; who it is for; "What is it?"; "Points needed"; the picture row with Change (the picker opens only on Change, with no numbered heading); "Delete Big Goal" when editing. It hides the description, "Visible to children", the Big Goal tick-box and the child list (by variant; `children` is still passed, the savings warnings need it). **New:** the payload is the form's usual one with `is_bigger_goal: true`, `assigned_child_ids: [forChild.id]` (an id taken from the live children list) and `visible_to_child: true`. **Edit:** the payload is only `title`, `cost_points` and, if the picture was changed, `icon_key`; the server's update is partial (`scopedUpdate` sets only the keys sent), so an edit here cannot change who the goal is for, hide it, un-mark it or end anyone's savings, whatever another device did meanwhile. Who it is for: "For {name}" on a new one; on an edit the names of the assigned children that still exist (ids compared in lower case), or "For the whole family". Delete uses the form's existing confirmation and savings warning (D1 §21) and says it deletes the Big Goal for everyone it is for |
+| W8 | **One dialog, four views.** `ManageGoalsDialog` owns the child, the side and the view. The Big Goal form and the savings view are `RewardForm` and `SavingsDialog` rendered `embedded` (their own header, body and footer without their own dialog), so no dialog is ever stacked on or swapped for another (the confirmation alerts inside a form are the existing exception) and the picker's child and the side survive every view change. On every view change focus moves to the new view's title, as the pop-up does today. **Leaving a view:** Cancel or Close returns to the list on the side it came from; Escape, the X and a tap outside close the whole pop-up from any view, as they do from today's goal form. **After a savings move or a redeem succeeds the whole pop-up closes**, because the Undo toast cannot be used while a dialog is open (`SavingsDialog` reports `acted`). **After the pop-up closes** focus returns to the button that opened it when the caller passes it (`returnFocusRef`; Home does) |
+| W9 | **Nothing a parent knows stops working.** Children page (its Daily Win buttons, its savings Edit, its reward form), Settings and the Rewards tab keep their routes and behaviour, with the new names. One addition: `start` accepts `{ side: 'bigGoals' }`, used by the Children page's "No Big Goals yet" line so it no longer sends the parent to the Rewards tab. A Big Goal for the whole family or for several children is still made in the Rewards tab; the pop-up makes one for one child |
+
+### 12.2 Every path that touches the contract
+
+| Path | File | Change |
+| --- | --- | --- |
+| Home card | `dashboard/TodaysGoalsPanel.jsx` | Title, empty state, messages (W1); one button (W2); passes `rewards` nothing: the pop-up loads its own |
+| Pop-up | `dashboard/ManageGoalsDialog.jsx` | List view rebuilt (W3 to W5); form view relaid (W6); opens `RewardForm` and `SavingsDialog` as siblings (W7, W8); loads `['rewards']` only while open |
+| Opened from | `TodaysGoalsPanel` (Home), `pages/Children.jsx` (`start`: list, new form, one goal, and now `side`), `pages/ParentProfile.jsx` (Settings) | All keep opening on the Daily Wins side unless `start.side` says otherwise |
+| Big Goal form | `rewards/RewardForm.jsx` | `variant` prop (W7). Default variant unchanged except names |
+| Reward save and delete | `hooks/useRewardMutations.js` | Optional toast words so a Big Goal says "Big Goal added." |
+| Savings pop-up | `savings/SavingsDialog.jsx` | `embedded`, `initialGoalId` (honoured in the opening effect only when it is one of the options), `onClose({ acted })`, a line when there is nothing to save towards; names |
+| Server messages | `server/todaysGoals.js`, `server/routes.js` | Message text only (W1). The stored note prefix is not changed |
+| Family report | `lib/familyReport.js` | Shows the stored prefix as "Daily Win: " |
+| Page error cards | `pages/ParentDashboard.jsx`, `pages/Children.jsx` | The "Couldn't load children" card shows only when there is nothing to show: a failed background refresh no longer unmounts the page and the open pop-up |
+| Reward mutations | `hooks/useRewardMutations.js` | `save` resolves after the lists have been refetched, so the pop-up never returns to a stale list |
+| Home "working towards" | `home/HomeSections.jsx`, `savings/GoalProgress.jsx` | Label "Big Goal" |
+| Names elsewhere | `pages/Children.jsx`, `pages/Rewards.jsx`, `rewards/RewardTile.jsx`, `pages/Activity.jsx`, `pages/ChildView.jsx`, `pages/ParentProfile.jsx`, `OnboardingTips.jsx`, `home/WelcomeCard.jsx`, `lib/todaysGoals.js`, `server/routes.js` (messages only) | W1, per §12.6 |
+
+Input survey (what has never run on this path): `RewardForm` has never been opened from Home or Settings, never without its child list, and never with a preset child; `SavingsDialog` has never been opened with a goal chosen for it; the goals pop-up has never loaded rewards. Each is an edge case below.
+
+### 12.3 Edge cases (input → expected)
+
+| # | Input | Expected |
+| --- | --- | --- |
+| X1 | One child in the family | No child picker; everything else the same |
+| X2 | Child with no Daily Wins and no Big Goals | Both sides show their empty line and their Add button |
+| X3 | Switch child while on the Big Goals side | Stays on Big Goals, lists the new child's |
+| X4 | A Big Goal assigned to the whole family (empty `assigned_child_ids`) | Listed for every child; its form says "For the whole family"; saving an edit keeps the list empty |
+| X5 | A Big Goal assigned to two children, edited from one child's pop-up | Form says "For Lara and Omar"; the save sends no assignment at all (W7), so both keep it |
+| X6 | New Big Goal while another child is selected in the picker | Assigned to the child the picker shows, not the child Home shows |
+| X7 | Big Goal with nothing saved | Listed at "0 of {cost} points saved" |
+| X8 | Big Goal the child has asked for | Listed, "Asked for", no "Save points" |
+| X9 | Big Goal fully saved | "{cost} of {cost} points saved"; the item's button reads "Redeem" and opens the savings view, where Redeem and its confirmation are |
+| X10 | Editing a Big Goal's cost below what a child has saved | Server and form behave as from the Rewards tab (the form is the same component) |
+| X11 | Delete a Big Goal with savings | The form's existing warning and confirmation; on success the row is gone and the pop-up is back |
+| X12 | Rewards fail to load | Big Goals side shows "Could not load Big Goals." and "Try again"; Daily Wins side unaffected |
+| X13 | Leave the Big Goal form or the savings view with Cancel / Close; with Escape, X or a tap outside | Cancel / Close: back on the Big Goals list for the same child, nothing saved. Escape, X, outside: the whole pop-up closes, nothing saved |
+| X14 | Save points (or move back, or redeem) from the pop-up | The whole pop-up closes; the toast's Undo can be tapped; Home shows the new figure |
+| X15 | Daily Win whose behaviour was removed | Row reads "Behaviour unavailable"; the form makes the parent choose again (unchanged rule) |
+| X16 | Opened from Children with `start: { goal }` or `{ view: 'form' }` | Opens on that form; Cancel returns to the Daily Wins list |
+| X17 | Long names (60 characters, no spaces) in rows and titles | Wrap inside the row; no sideways scroll at 320px |
+| X18 | 320px wide; 390px with 12 Daily Wins; six children on a 568px-high screen | The title and the Add button stay put; the picker, switch and list scroll together; the list is never squeezed to nothing |
+| X19 | Double tap on "Save Daily Win" or "Save Big Goal" | One request (the forms' existing guards) |
+| X20 | A behaviour with 1 point and one with 5 | Options read "· 1 point" and "· 5 points" |
+| X21 | Another device changes who a Big Goal is for, hides it or un-marks it while its form is open here; the parent then renames it | Only the name, cost and picture are sent; the other device's change stands; no savings warning appears |
+| X22 | The reward was deleted elsewhere; Save | The server's 404 shows as an error toast, the form stays; Cancel returns to the list, which no longer shows it |
+| X23 | A Daily Win archived elsewhere while its form is open; Save | The server's message shows inline (existing rule) |
+| X24 | A Big Goal hidden from children | Listed, with "Hidden from children" |
+| X25 | Saved more than the cost (cost lowered later) | The row shows the server's figures and offers Redeem |
+| X26 | Rewards still loading when the Big Goals side is chosen; rewards refetch fails while a list is already shown | "Loading Big Goals…"; the list stays |
+| X27 | The children refetch fails after a save while the pop-up is open | The page and pop-up stay; no error card replaces them |
+| X28 | Points needed: empty, 0, 1, 1001, a decimal | Save is disabled for empty, 0 and a decimal; 1 and 1001 save |
+| X29 | Two Big Goals with the same name | Both listed, each with its own figures |
+| X30 | The Home button's label at 320px | Wraps inside the button; nothing is cut off |
+| X31 | Child chosen in the picker differs from the child the pop-up opened for; open a form; Cancel | Back on the list for the picker's child |
+| X32 | The pop-up closes after being opened from Home | Focus is on "Manage Daily Wins & Big Goals" |
+
+### 12.4 Abuse, outcome records
+
+No new input reaches the server: the Daily Win form sends today's payload and the Big Goal form sends a subset of `RewardForm`'s payload. Checked in `server/routes.js` (design review): a reward title is trimmed and cut to 100 characters, a cost must be a number of at least 1, an icon key must be a known one, and `assigned_child_ids` is lower-cased but **not** checked against the family. That gap is older than this change and is inert across families (the balance rule and migration 016's trigger are family-scoped), and this change does not widen it: the only id the pop-up sends is one read from the family's own children list. A decimal cost is refused by the form (`Number.isInteger`), as today. Both server gaps are recorded for the backlog rather than changed here, because a check must tolerate rows that already hold a deleted child's id. Outcome records are unchanged: Daily Win completions and savings moves are ledger rows as before; creating or editing either kind writes no points.
+
+### 12.5 Tests
+
+Unit (Vitest, failing first): the pop-up's sides and switch (W3), rows and their two sibling controls (W4, W5, X3, X7, X8, X9, X24, X25), one Add button per side, loading, empty and failed states (X2, X12, X26), the four views, return to the same child and side (W8, X13, X31), close after a savings move (X14), no nested interactive control (axe on both sides of the pop-up); the Daily Win form's payloads for a new weekly, a new one-day, an edit of a running routine (no `start_date`) and the option text (X20); `RewardForm` `bigGoal` variant: new payload (W7, X6), **an edit sends exactly `title`, `cost_points` and a changed `icon_key`, also after the `reward` prop changes under the open form (X21)**, who-it-is-for line (X4, X5, deleted child skipped), hidden controls absent, default variant's payload unchanged; `SavingsDialog`: `initialGoalId` honoured and ignored when not an option, `acted`; Home card: one button, new names, empty state without a button; family report prefix. Server: the message texts that tests already assert. Browser (Playwright, all four sizes): Home to pop-up to each form and back; add a Daily Win and see it on Home; add a Big Goal, save points towards it, **tap Undo on the toast**, save again and see it under "Big Goal" on Home; focus returns to the Home button (X32); the Children page's `start` paths and Settings open the pop-up; X17, X18 and X30 by measurement; no page scrolls sideways.
+
+Naming guard (`src/test/naming.test.js`): parses every non-test `.js` and `.jsx` under `src` and every `.js` under `server` with `@babel/parser` and reads only string literals, template text and JSX text (never comments or identifiers). A text that reads as prose (it has a space, or starts with a capital letter) fails when it matches `/\bgoals?\b/i` not directly preceded by "Big ", or `/bigger|routine|Today.s Goal/i`, unless the exact text is in a short allow-list with a reason beside each entry (the stored note prefix, the unused "Goal Getter" badge and terminology file, the family-goals API messages, which have no screen). Its own counter-examples run in the same file: a fixture string "Edit goal" fails and "Edit Big Goal" passes. What it cannot see, text assembled from pieces at run time, is covered by the browser journey reading the rendered pop-up, forms, Home, Children, Rewards, Activity and Settings for the retired words.
+
+Not covered: a real phone's on-screen keyboard over the forms; a screen reader in a real browser; the dialog's 200 ms open and close animation (the browser tests run with reduced motion).
+
+### 12.6 Wording (for the owner's approval on built screens)
+
+| Where | Today | New |
+| --- | --- | --- |
+| Home card title | Today's Goals | Daily Wins |
+| Home card, nothing today | No goals scheduled for {name} today. / Add a weekly routine or a one-off task to give them something to work towards. / Set up goals | No Daily Wins for {name} today. / Something to do today or every week. |
+| Home card button | Manage goals | Manage Daily Wins & Big Goals |
+| Home card messages | Loading goals… / Could not complete the goal. Please try again. / That goal is already recorded. / This goal has already been completed. | Loading Daily Wins… / Could not complete the Daily Win. Please try again. / That Daily Win is already recorded. / This Daily Win has already been completed. |
+| Pop-up title | Manage {name}'s goals | Daily Wins & Big Goals |
+| Pop-up, removed | Create routines, update schedules or archive goals safely. / Current goals / {n} goals for {name} / Existing completions and earned points remain safe when a goal is edited or archived. | (none; the archive confirmation still says earned points stay) |
+| Pop-up lists | Add goal / No goals yet for {name}. / Could not load goals. | Add Daily Win / No Daily Wins yet for {name}. / Could not load Daily Wins. / Add Big Goal / No Big Goals yet for {name}. / Loading Big Goals… / Could not load Big Goals. / Save points / Redeem / Asked for / Hidden from children |
+| Daily Win form | New goal / Edit goal / Goal name / Positive behaviour / Repeat weekly / One-off / Create goal / Save changes / Archive goal | New Daily Win / Edit Daily Win / What is it? / Points for / Every week / One day / Save Daily Win / Archive Daily Win |
+| Daily Win form, removed | the two numbered headings and their hints; "earned points are awarded when you mark a goal complete"; "Point value comes from the selected behaviour." | For {name} |
+| Daily Win messages | Goal added. / Goal updated. / Goal archived. Earned points stay in history. / Archive this goal? / {title} will no longer appear in daily goals. … / Could not save the goal. / Could not archive the goal. | Daily Win added. / Daily Win updated. / Daily Win archived. Earned points stay in history. / Archive this Daily Win? / {title} will no longer appear in Daily Wins. … / Could not save the Daily Win. / Could not archive the Daily Win. |
+| Big Goal form | (new) | New Big Goal / Edit Big Goal / For {name} / For the whole family / What is it? / Points needed / Picture / Change / Save Big Goal / Delete Big Goal / Big Goal added. / Big Goal updated. |
+| Home label | Saving for something bigger | Big Goal |
+| Savings pop-up | Saving for something bigger / Set points aside for {name}'s bigger goal. … / Bigger goal | Save points for a Big Goal / Set points aside for {name}'s Big Goal. … / Big Goal |
+| Reward form (Rewards tab) | Bigger goal / End this bigger goal's savings? / … if you re-enable the goal. | Big Goal / End this Big Goal's savings? / … if you make it a Big Goal again. |
+| Rewards tab | Bigger rewards / · Bigger achievement | Big Goals / · Big Goal |
+| Activity | Goals completed / Bigger goal removed | Daily Wins completed / Big Goal removed |
+| Tips and welcome | 1. Today's Goals / Make daily and weekly routines easy to see and celebrate. / 3. Save for something bigger / … or something bigger to save towards. / Every adventure starts with a goal! | 1. Daily Wins / Make things to do each day easy to see and celebrate. / 3. Save for a Big Goal / … or a Big Goal to save towards. / Every adventure starts with a Big Goal! |
+| Home, other | Could not load today's goals. / View all goals and rewards / {name} hit their weekly goal. | Could not load Daily Wins. / View all Big Goals and rewards / {name} hit their weekly target. |
+| Daily Win form, other | No behaviours available / Behaviour unavailable / Add a behaviour in Family settings first. / The new schedule starts on … / Started … | unchanged |
+| Add a child | Goal they'll work towards each week | Target they'll work towards each week |
+| Children page | Saving for something bigger / No bigger goals yet. / Mark a reward as a bigger goal / {name}'s goals / New goal / Manage all goals / Goals completed / Weekly target and bigger goal | Big Goals / No Big Goals yet. / Add a Big Goal / {name}'s Daily Wins / New Daily Win / Manage all Daily Wins / Daily Wins completed / Weekly target and Big Goals |
+| Settings | Children & goals / Today's Goals / Recurring routines and one-off achievements | Children, Daily Wins & Big Goals / Daily Wins & Big Goals / Things to do and things to save for |
+| Child View | A child-friendly view of goals, points and rewards. / My next big adventure | A child-friendly view of Daily Wins, points and rewards. / My Big Goal |
+| Activity, other | Goals (filter) / a goal | Daily Wins / a Daily Win |
+| Savings pop-up, other | … more than this goal needs. … | … more than this Big Goal needs. … |
+| Big Goal form, other | Delete {title}? / This will permanently delete this reward. … / Reward deleted | Delete {title}? / This will permanently delete this Big Goal for everyone it is for. … / Big Goal deleted. |
+| Server messages (shown as they are) | Goal title must be 1–100 characters. / Choose a one-off or weekly routine. / Unable to save this goal right now. / Goal not found. / … Create a separate goal … / This goal is not scheduled for today. / Goal already completed today… / More than this goal needs / Could not update goals | Daily Win name must be 1–100 characters. / Choose every week or one day. / Unable to save this Daily Win right now. / Daily Win not found. / … Create a separate Daily Win … / This Daily Win is not scheduled for today. / Daily Win already completed today… / More than this Big Goal needs / Could not update Daily Wins |
+
+Any other string found by the naming guard is renamed by the same two rules and added to this table. "Little wins, big adventures!" would have sat beside "Daily Wins"; §13 removes it.
+
+### 12.7 Rollout and reversal
+
+Client and server-message change only; no migration, no data change, nothing irreversible. Release is the usual merge after the owner approves the built screens and the exact commit. Reversal is a revert of the merge commit; a Daily Win or Big Goal made meanwhile is an ordinary goal or reward and stays valid.
+
+### 12.8 Design review (fresh context, before the build; read against the code at `c256c5f`)
+
+Seven blocking findings, all adopted in the text above; fourteen non-blocking, adopted unless noted.
+
+| # | Finding | Ruling |
+| --- | --- | --- |
+| B1 | §12.4 claimed the server checks `assigned_child_ids` against the family; it only lower-cases them. It also accepts a decimal cost (500) and cuts, not refuses, a long title | §12.4 corrected. The id sent comes from the live children list (W7). The two server gaps predate this change and are not widened by it; recorded for the backlog (the reviewer offered this as one of two acceptable fixes) |
+| B2 | "An edit sends the stored values for every hidden field" is a lost update: the form copies the reward once per opening, so a rename could revert another device's change or re-mark a goal | W7: an edit sends only `title`, `cost_points`, changed `icon_key`. X21 and its test |
+| B3 | W8 did not say where state lives; closing and reopening the dialog around a sibling would lose the child, the side and the `start` form, and focus | W8 rewritten: one dialog, four views, `embedded` forms, focus rule, leaving rules; X13, X31, X32 |
+| B4 | X14 was wrong: returning to a modal pop-up makes the Undo toast unusable | W8: the pop-up closes after a savings move or redeem; X14; the browser test taps Undo |
+| B5 | W5 put a button inside a button | W5: two sibling controls per item; axe on the pop-up in the unit plan |
+| B6 | The stored note prefix `Today’s Goal: ` is parsed by Activity and printed by the family report; W1 contradicted itself | W1: the stored prefix stays; the report translates it for display; `server/todaysGoals.js` added to §12.2 |
+| B7 | The naming guard as drafted could not enforce W1 (only `.jsx`, six phrases, comments indistinguishable) | §12.5: parser-based guard over `src` and `server`, allow-list with reasons, counter-examples, plus rendered-page checks |
+| N8, N9 | Strings the table missed; replacements that read wrongly ("Big Goal" over a list, "weekly goal", Child View's third name) | §12.6 extended; Children heading is "Big Goals"; "weekly goal" becomes "weekly target"; Child View's "My next big adventure" becomes "My Big Goal" (for the owner's approval with the rest) |
+| N10 | Size of the test change, and mocks that break once the pop-up loads rewards | Accepted; the three suites get a `Reward` mock |
+| N11 | Variant traps: defaults at open, hide by variant not by an empty child list, who-it-is-for matching, delete affects every child it is for, `done()` not awaited | W7; reward mutations row in §12.2 |
+| N12, N13 | `initialGoalId` only if an option; nothing-to-save state; rewards query must follow the outer `open` | §12.2 savings row; W5 |
+| N14 | A failed children refetch replaces the page (and the pop-up) with an error card | §12.2 page error cards row; X27 |
+| N15 | Children's "No bigger goals yet" still sends the parent to Rewards; Settings row needs new words | W9 (`start.side`); §12.6 Settings row |
+| N16 | Missing edge cases | X21 to X31 |
+| N17, N18 | Switch details; the Home button at 320px | W3; X30 |
+| N19, N20 | Test gaps; a description for each view | §12.5; W3 |
+| N21 | The pop-up makes a Big Goal for one child only | W9 says so. Not changed: a whole-family goal stays a Rewards-tab task |
+
+### 12.9 Build record
+
+Structure as designed: `ManageGoalsDialog` is a thin dialog whose content (`Popup`) is mounted only while it is open, so every opening starts from its own `start` and no reset effect can draw the previous opening for a frame; `RewardForm` and `SavingsDialog` gained `embedded`. Rows are named by their own text ("Edit {title} {details}", with real spaces between the parts) rather than by an `aria-label`: the browser checks' axe rule `label-content-name-mismatch` refused a label that differed from the visible text.
+
+Wording found during the build and added to §12.6 by the same two rules: Rewards page "Choose little treats and bigger adventures together." became "Choose little treats and Big Goals together."; the server's "This goal has been completed before. Create a separate goal for a different schedule." and its two siblings became "This Daily Win has been completed … Create a separate Daily Win …"; "Goal already completed today or request reused." became "Daily Win already completed today or request reused.".
+
+Naming guard allow-list (each with its reason in `src/test/naming.test.js`): the stored note prefix; "Goal Getter" (badge definition, no V1 screen); the family-goals API messages (no screen); seven server log labels (written to the server log only); "Goals" and "Routines" as names of behaviour icons in the approved icon register (they name pictures, not a Daily Win). The guard depends on `@babel/parser`, present through the Vite React plugin.
+
+Mutation checks (each makes a named test fail; the file is copied aside and copied back):
+
+| # | Change | Test that fails |
+| --- | --- | --- |
+| M1 | A Big Goal edit sends the long form's whole payload | "an edit sends exactly the name, the cost and a changed picture …" (and two more) |
+| M2 | The end-of-savings guard for a Big Goal edit removed | "an edit that loses a child with savings still asks nothing" |
+| M3 | The pop-up returns to the list after a savings move | "… a move closes the whole pop-up (X14)" |
+| M4 | `initialGoalId` ignored | the same test: the goal the row was for is not the one chosen |
+| M5 | "Asked for" ignored | "Big Goals: the child's marked rewards in order …" |
+| M6 | No space between the figure and "points" in the Home line | "one paragraph that reads …" (and two more) |
+| M7 | The opener is not passed to the pop-up | "… closing it returns focus to the door (X32)" |
+| M8 | A new Big Goal is assigned to nobody (the whole family) | "Add Big Goal for the child the picker shows … (X6)" |
+| M9 | A retired word in a rendered string | naming guard |
+| M10 | Changing child resets the side | "the child picker … keeps the side (X3)" |
+| M11 | A button inside a button in a Big Goal item | "Big Goals: … with their own controls" |
+
+### 12.10 Code review (fresh context, after the build; read at `decdbcf`)
+
+No blocking finding: the review confirmed by reading the server path that a Big Goal edit from the pop-up sends only the name, the cost and a changed picture, that `acted` is sent only after a successful move or redeem, and that the long reward form's behaviour is unchanged. Seven should-fix findings and ten smaller ones, all fixed unless noted.
+
+| # | Finding | Fix |
+| --- | --- | --- |
+| 1 | The reward save now waited for both lists to be refetched before answering, so on a slow connection the Rewards and Children forms stayed locked after a successful save | `useRewardMutations`: only the pop-up asks to wait (`awaitRefetch`), and for at most 4 seconds; the page forms close as before. New `useRewardMutations.test.jsx` |
+| 2 | The "icons stay on the rows" assertions could not fail (the row's chevron satisfied them) | Unit and browser tests now read the behaviour icon in its own span |
+| 3 | Deleting a Big Goal from the pop-up had no test | Unit test (warning, confirmed snapshot, back on the list, one dialog) and a browser step that deletes a goal with savings through the pop-up |
+| 4 | The error-card change (X27) had no test | Unit test on the Children page; browser test on Home (a failed refresh keeps the page and the pop-up; a failed first load still shows the card) |
+| 5 | The pop-up could be closed under a request in the Big Goal form or the savings view | Both report busy (`onBusyChange`); the pop-up refuses to close meanwhile |
+| 6 | The embedded forms filled their state after the first paint | `RewardForm` and `SavingsDialog` start from their props (lazy initial state), so a view mounted already open is right on its first paint. Not unit-testable in jsdom; by construction |
+| 7 | Test gaps the design promised: move back and redeem through the pop-up, a refused move, a goal that is not an option, a changed picture, Escape from every view, loading, a failed refresh over a shown list, long names and many items by measurement | Tests added for each; a second browser journey measures a 30-letter name, a seven-figure balance, a 60-letter Daily Win and twelve Daily Wins at all four sizes |
+| 8 | Naming guard: one lower-case word between tags was skipped; "Big goal" passed; the old slogan was not covered | All text between tags is checked; the product name must be spelled exactly; "Little wins" added |
+| 9 | After the first Big Goal is added from the Children page its opener is gone, so focus fell to the page | Focus goes to the section's Edit button |
+| 10 | Design text out of step with the code (X5, X9, a full stop) | Corrected above |
+| 11 | With nothing to save for, the savings pop-up drew an empty group under its new line | The group is drawn only when there is a goal |
+| 12 | A Big Goal edit that the server asked to confirm would have looped | It says it failed instead (unreachable today: such an edit cannot end savings) |
+| 13 | Server refusals shown in the Big Goal form still say "reward" | Not changed: the form's own checks stop the two that could occur; "Not found" is generic |
+| 14 | The pop-up and the Children page asked for the reward list in different orders under one key | The pop-up makes the same call as the page |
+| 15 | Enter did nothing in the Big Goal form | Enter saves, as in the Daily Win form |
+| 16 | "reads and copies as" over-claimed | P1 means how it reads; copying from the screen is not claimed |
+| 17 | Stale comments and a stale test fixture | Corrected |
+
+**Found by the new browser journey, not by review:** on a 320px screen a child's name of 30 letters with no space made Home scroll sideways (the page was 355px wide; with a 60-letter Daily Win, 729px). The cause predates this change: each Home column is a grid item, which is as wide as its longest unbroken word. Both columns now carry `min-w-0`, so `break-words` can act; the other main screens and the pop-up measured 320px.
+
+Second round of mutation checks (each makes a named test fail): the Children error card on any failure; page forms waiting for the refetch; the wait without its cap; the pop-up ignoring a view's request; the empty group; a row without its icon; a delete that does not return to the list; Enter ignored; and, in the browser, the Home error card on a failed refresh. The sideways scroll at 320px failed the new journey before the fix.
+
+## 13. The points line on Home, "Points 1" (owner, 24 November 2026) (v1.7)
+
+The owner: the "Little wins, big adventures!" card "looks out of place". It is a heading and a slogan around one number. From two mock-ups the owner chose Points 1: one slim line directly under the child picker.
+
+### 13.1 Contract
+
+| ID | Rule |
+| --- | --- |
+| P1 | Home shows the selected child's available points once, in one slim card directly under the child picker and above Quick Points: a 36px piggy-bank tile, "Available now for {name}", and "{n} point(s)" at `text-lg`. One `<p>` holds the label and the figure with a real space between them, so it reads and copies as "Available now for Lara 90 points"; the name is in `<bdi>`; the icon is hidden from screen readers; it is not a live region (an award already raises a toast). On a phone the figure sits at the right and drops under the label when both are too long for one line; from `lg` the figure follows the label directly rather than sitting at the far edge of a wide page. **This supersedes the owner's rule of 22 November (`V1-RELEASE-ASSESSMENT.md` §3.5, "Nothing sits between the child picker and Quick Points"), by the owner's own choice of this layout from a picture on 24 November.** The cost is measured on the built page and reported to the owner: where Quick Points now starts and whether its boxes and both buttons are still on the first screen at 390 × 844 |
+| P2 | The figure is the one shown today: `available_points`, falling back to `total_points`, then 0, printed as plain digits. `data-available` stays on the bare number. The line carries no `data-figure` (that hook's alignment check in `e2e/checks.js` is for the stacked figure on Children and Child View, which keep `PointsFigure`); Home now differs from those two screens on purpose |
+| P3 | The heading "Little wins, big adventures!" and the line "Every positive step counts." are removed. The line is a paragraph, not a heading, so the heading outline of Home is Welcome back, Quick Points, Daily Wins, What you're working towards |
+| P4 | Order on a phone and in the DOM: child picker, points line, Quick Points, Daily Wins, What you're working towards. At desktop width the left column is Quick Points then Daily Wins and the right column is What you're working towards alone |
+
+### 13.2 Paths, edge cases, tests
+
+Paths: `home/HomeSections.jsx` (`LittleWins` becomes `AvailableLine`), `pages/ParentDashboard.jsx` (placement), their tests, the Home order test in `e2e/ui.spec.js`, `src/test/a11y.test.jsx`. `PointsFigure` stays for the Children page and Child View.
+
+| # | Input | Expected |
+| --- | --- | --- |
+| A1 | 1 point | "1 point" |
+| A2 | 0 points; no `available_points` but `total_points` 40; neither field | "0 points"; "40 points"; "0 points" |
+| A3 | A 30-character name with no spaces and 1000000 points at 320px | The name breaks inside the line, the figure drops under it, nothing is clipped and the page does not scroll sideways |
+| A4 | 1000000 points with a short name | "1000000 points" on one line at the right |
+| A5 | Select another child | The name and the figure both change |
+| A6 | Home loading, failed with nothing to show, or no children | No line |
+| A7 | A name in Arabic script | The number and "points" keep their order (`<bdi>`) |
+| A8 | Desktop, child with no Big Goal and no requests | The right column is the short "What you're working towards" card alone; columns stay level at the top |
+
+Tests: unit for P1 to P3 (the exact text of the line, the bare number hook, no heading, no live region) and A1, A2, A5 (as a prop change), A7. Browser, all four sizes: the Home order test is rewritten, not edited: three headings (Quick Points, Daily Wins, What you're working towards); the line is directly under the picker and Quick Points directly under the line (replacing "Quick Points is within 48px of the picker"); the Quick Points heading is still on the first screen at 800px tall or more, and at 390 × 844 the Quick Points card ends above the bottom navigation for the test family; the line is outside the two-column grid; the right column holds exactly one card; columns level and equal width as before; A3 and A4 by measurement; A6. Not covered: a screen reader in a real browser; text zoom at 200%; widths under 320px.
+
+### 13.3 Design review (fresh context, before the build)
+
+Two blocking findings, both adopted: P1 overrode the owner's recorded rule of 22 November without saying so or measuring the cost (now stated in P1, measured and reported); the Home order test needed a rewrite, not an edit (now listed). Ten non-blocking, adopted: no `data-figure` and the bare-number hook (P2); the other readers of `LittleWins` (path list); one paragraph with a real separator and no live region (P1); the heading trade-off (the line belongs to no heading and is reached by reading on from the child picker: accepted); edge cases A2 split, A3 with A4, A6 to A8; the desktop figure kept next to its label (P1); "card" and "line" are the same thing: a card-styled row of about 52px.
+
+Wording: "Available now for {name}" is new (today: "Available now" under the figure). Removed: "Little wins, big adventures!", "Every positive step counts.".
+
+Rollout and reversal: as §12.7.
+
+### 13.4 Build record: the measured cost of the line
+
+Measured on the built page at 390 × 844 with a three-child family with short names: the line is 54px tall; Quick Points starts 74px lower than before (at 487px) and its card, with four boxes and both buttons, ends at 731px, above the bottom navigation (779px). So the whole Quick Points card is still on the first screen for that family; a family with more Quick Points boxes or longer names scrolls sooner than before by those 74px. Reported to the owner with the built screens.
 
