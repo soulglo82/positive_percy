@@ -641,11 +641,11 @@ Input survey (what has never run on this path): `RewardForm` has never been open
 | X2 | Child with no Daily Wins and no Big Goals | Both sides show their empty line and their Add button |
 | X3 | Switch child while on the Big Goals side | Stays on Big Goals, lists the new child's |
 | X4 | A Big Goal assigned to the whole family (empty `assigned_child_ids`) | Listed for every child; its form says "For the whole family"; saving an edit keeps the list empty |
-| X5 | A Big Goal assigned to two children, edited from one child's pop-up | Form says "For Lara and Omar"; the save sends the same two ids |
+| X5 | A Big Goal assigned to two children, edited from one child's pop-up | Form says "For Lara and Omar"; the save sends no assignment at all (W7), so both keep it |
 | X6 | New Big Goal while another child is selected in the picker | Assigned to the child the picker shows, not the child Home shows |
 | X7 | Big Goal with nothing saved | Listed at "0 of {cost} points saved" |
 | X8 | Big Goal the child has asked for | Listed, "Asked for", no "Save points" |
-| X9 | Big Goal fully saved | "{cost} of {cost} points saved · Ready to redeem"; "Save points" still opens the savings pop-up, where Redeem is |
+| X9 | Big Goal fully saved | "{cost} of {cost} points saved"; the item's button reads "Redeem" and opens the savings view, where Redeem and its confirmation are |
 | X10 | Editing a Big Goal's cost below what a child has saved | Server and form behave as from the Rewards tab (the form is the same component) |
 | X11 | Delete a Big Goal with savings | The form's existing warning and confirmation; on success the row is gone and the pop-up is back |
 | X12 | Rewards fail to load | Big Goals side shows "Could not load Big Goals." and "Try again"; Daily Wins side unaffected |
@@ -711,7 +711,7 @@ Not covered: a real phone's on-screen keyboard over the forms; a screen reader i
 | Child View | A child-friendly view of goals, points and rewards. / My next big adventure | A child-friendly view of Daily Wins, points and rewards. / My Big Goal |
 | Activity, other | Goals (filter) / a goal | Daily Wins / a Daily Win |
 | Savings pop-up, other | … more than this goal needs. … | … more than this Big Goal needs. … |
-| Big Goal form, other | Delete {title}? / This will permanently delete this reward. … / Reward deleted | Delete {title}? / This will permanently delete this Big Goal for everyone it is for. … / Big Goal deleted |
+| Big Goal form, other | Delete {title}? / This will permanently delete this reward. … / Reward deleted | Delete {title}? / This will permanently delete this Big Goal for everyone it is for. … / Big Goal deleted. |
 | Server messages (shown as they are) | Goal title must be 1–100 characters. / Choose a one-off or weekly routine. / Unable to save this goal right now. / Goal not found. / … Create a separate goal … / This goal is not scheduled for today. / Goal already completed today… / More than this goal needs / Could not update goals | Daily Win name must be 1–100 characters. / Choose every week or one day. / Unable to save this Daily Win right now. / Daily Win not found. / … Create a separate Daily Win … / This Daily Win is not scheduled for today. / Daily Win already completed today… / More than this Big Goal needs / Could not update Daily Wins |
 
 Any other string found by the naming guard is renamed by the same two rules and added to this table. "Little wins, big adventures!" would have sat beside "Daily Wins"; §13 removes it.
@@ -767,6 +767,34 @@ Mutation checks (each makes a named test fail; the file is copied aside and copi
 | M9 | A retired word in a rendered string | naming guard |
 | M10 | Changing child resets the side | "the child picker … keeps the side (X3)" |
 | M11 | A button inside a button in a Big Goal item | "Big Goals: … with their own controls" |
+
+### 12.10 Code review (fresh context, after the build; read at `decdbcf`)
+
+No blocking finding: the review confirmed by reading the server path that a Big Goal edit from the pop-up sends only the name, the cost and a changed picture, that `acted` is sent only after a successful move or redeem, and that the long reward form's behaviour is unchanged. Seven should-fix findings and ten smaller ones, all fixed unless noted.
+
+| # | Finding | Fix |
+| --- | --- | --- |
+| 1 | The reward save now waited for both lists to be refetched before answering, so on a slow connection the Rewards and Children forms stayed locked after a successful save | `useRewardMutations`: only the pop-up asks to wait (`awaitRefetch`), and for at most 4 seconds; the page forms close as before. New `useRewardMutations.test.jsx` |
+| 2 | The "icons stay on the rows" assertions could not fail (the row's chevron satisfied them) | Unit and browser tests now read the behaviour icon in its own span |
+| 3 | Deleting a Big Goal from the pop-up had no test | Unit test (warning, confirmed snapshot, back on the list, one dialog) and a browser step that deletes a goal with savings through the pop-up |
+| 4 | The error-card change (X27) had no test | Unit test on the Children page; browser test on Home (a failed refresh keeps the page and the pop-up; a failed first load still shows the card) |
+| 5 | The pop-up could be closed under a request in the Big Goal form or the savings view | Both report busy (`onBusyChange`); the pop-up refuses to close meanwhile |
+| 6 | The embedded forms filled their state after the first paint | `RewardForm` and `SavingsDialog` start from their props (lazy initial state), so a view mounted already open is right on its first paint. Not unit-testable in jsdom; by construction |
+| 7 | Test gaps the design promised: move back and redeem through the pop-up, a refused move, a goal that is not an option, a changed picture, Escape from every view, loading, a failed refresh over a shown list, long names and many items by measurement | Tests added for each; a second browser journey measures a 30-letter name, a seven-figure balance, a 60-letter Daily Win and twelve Daily Wins at all four sizes |
+| 8 | Naming guard: one lower-case word between tags was skipped; "Big goal" passed; the old slogan was not covered | All text between tags is checked; the product name must be spelled exactly; "Little wins" added |
+| 9 | After the first Big Goal is added from the Children page its opener is gone, so focus fell to the page | Focus goes to the section's Edit button |
+| 10 | Design text out of step with the code (X5, X9, a full stop) | Corrected above |
+| 11 | With nothing to save for, the savings pop-up drew an empty group under its new line | The group is drawn only when there is a goal |
+| 12 | A Big Goal edit that the server asked to confirm would have looped | It says it failed instead (unreachable today: such an edit cannot end savings) |
+| 13 | Server refusals shown in the Big Goal form still say "reward" | Not changed: the form's own checks stop the two that could occur; "Not found" is generic |
+| 14 | The pop-up and the Children page asked for the reward list in different orders under one key | The pop-up makes the same call as the page |
+| 15 | Enter did nothing in the Big Goal form | Enter saves, as in the Daily Win form |
+| 16 | "reads and copies as" over-claimed | P1 means how it reads; copying from the screen is not claimed |
+| 17 | Stale comments and a stale test fixture | Corrected |
+
+**Found by the new browser journey, not by review:** on a 320px screen a child's name of 30 letters with no space made Home scroll sideways (the page was 355px wide; with a 60-letter Daily Win, 729px). The cause predates this change: each Home column is a grid item, which is as wide as its longest unbroken word. Both columns now carry `min-w-0`, so `break-words` can act; the other main screens and the pop-up measured 320px.
+
+Second round of mutation checks (each makes a named test fail): the Children error card on any failure; page forms waiting for the refetch; the wait without its cap; the pop-up ignoring a view's request; the empty group; a row without its icon; a delete that does not return to the list; Enter ignored; and, in the browser, the Home error card on a failed refresh. The sideways scroll at 320px failed the new journey before the fix.
 
 ## 13. The points line on Home, "Points 1" (owner, 24 November 2026) (v1.7)
 

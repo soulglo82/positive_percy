@@ -4,9 +4,8 @@
 // (O7). Limits come from the server's figures (child.available_points and the
 // goal's saved, cost and to_go in child.goals); the server re-checks every one.
 //
-// Wording: "Saving for something bigger" and "Saved: {n}" are approved; "Save
-// points" and "Move points back" are the owner's proposed O4 wording; the
-// rest is provisional for the owner's screen review (§19.8).
+// Wording: "Saved: {n}", "Save points" and "Move points back" are the owner's
+// (O4); the names "Big Goal" and "Save points for a Big Goal" are V1-F §12.6.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -59,18 +58,8 @@ export function undoSavingsAction(eventId, queryClient, requestId = newRequestId
 // on that goal when it is one of the options. `onClose({ acted: true })`
 // after a move or a redeem, so the pop-up can close and leave Undo usable.
 export default function SavingsDialog({ open, onClose, child, goalRewards, returnFocusRef = null,
-  embedded = false, initialGoalId = null, titleRef = null }) {
+  embedded = false, initialGoalId = null, titleRef = null, onBusyChange = null }) {
   const queryClient = useQueryClient();
-  const [goalId, setGoalId] = useState(null);
-  const [amount, setAmount] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [confirmRedeem, setConfirmRedeem] = useState(false);
-  const busyRef = useRef(false); // state alone lets two taps in one tick through
-  // One request id per action for the life of the open dialog, kept until
-  // that action succeeds or is refused, so a retry after a lost reply can
-  // only replay, whatever else was tried in between (code review).
-  const ids = useRef(new Map());
-
   // A goal already asked for cannot be saved towards (S1): left out here.
   const requested = useMemo(() => new Set((child?.reward_stack_priced || []).map((i) => i.rewardId)), [child]);
   const serverGoals = useMemo(() => new Map((child?.goals || []).map((g) => [g.rewardId, g])), [child]);
@@ -83,15 +72,33 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
       : { id: r.id, name: r.title, cost: r.cost_points, saved: 0, toGo: r.cost_points, reward: r };
   }), [goalRewards, requested, serverGoals]);
 
+  // The goal an opening starts on: the one asked for when it is an option,
+  // else the goal Home and Child View lead with, else the first.
+  const startGoal = () => {
+    const lead = leadingGoal(child?.goals || []);
+    return options.some((o) => o.id === initialGoalId) ? initialGoalId
+      : options.some((o) => o.id === lead?.rewardId) ? lead.rewardId : (options[0]?.id ?? null);
+  };
+  // Starts there, so a view mounted already open (embedded) is right on its
+  // first paint; the effect below does the same for a later opening.
+  const [goalId, setGoalId] = useState(startGoal);
+  const [amount, setAmount] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [confirmRedeem, setConfirmRedeem] = useState(false);
+  const busyRef = useRef(false); // state alone lets two taps in one tick through
+  // One request id per action for the life of the open dialog, kept until
+  // that action succeeds or is refused, so a retry after a lost reply can
+  // only replay, whatever else was tried in between (code review).
+  const ids = useRef(new Map());
+  // The pop-up it is embedded in must not close under a request (code review 5).
+  useEffect(() => { onBusyChange?.(busy); }, [busy]);
+
   useEffect(() => {
     if (!open) return;
     setAmount(0);
     setConfirmRedeem(false);
     ids.current = new Map();
-    // The same goal Home and Child View lead with.
-    const lead = leadingGoal(child?.goals || []);
-    setGoalId(options.some((o) => o.id === initialGoalId) ? initialGoalId
-      : options.some((o) => o.id === lead?.rewardId) ? lead.rewardId : (options[0]?.id ?? null));
+    setGoalId(startGoal());
   }, [open, child?.id]); // reset on each opening, and for another child
 
   if (!child) return null;
@@ -184,6 +191,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
           </DialogHeader>
           <DialogBody className="space-y-4">
             {options.length === 0 && <p className="text-sm text-muted-foreground">No Big Goals to save for yet.</p>}
+            {options.length > 0 && (
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium text-foreground">Big Goal</legend>
               {options.map((o) => (
@@ -201,6 +209,7 @@ export default function SavingsDialog({ open, onClose, child, goalRewards, retur
                 </label>
               ))}
             </fieldset>
+            )}
             {goal && (
               <>
                 <div className="grid grid-cols-2 gap-3">

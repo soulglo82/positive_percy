@@ -2,7 +2,7 @@
 // the Daily Win form with the E05 start-date safeguard, the Big Goal form and
 // the savings view, all in one dialog.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const saveTodayGoal = vi.fn();
@@ -35,10 +35,13 @@ vi.mock('@/api/entities', () => ({
   Reward: { list: (...a) => rewardApi.list(...a), create: (...a) => rewardApi.create(...a), update: (...a) => rewardApi.update(...a), delete: (...a) => rewardApi.delete(...a) },
 }));
 const saveTowards = vi.fn();
-vi.mock('@/lib/savings', async (orig) => ({ ...(await orig()), saveTowards: (...a) => saveTowards(...a) }));
+const moveBack = vi.fn();
+const redeemGoal = vi.fn();
+vi.mock('@/lib/savings', async (orig) => ({ ...(await orig()), saveTowards: (...a) => saveTowards(...a), moveBack: (...a) => moveBack(...a), redeemGoal: (...a) => redeemGoal(...a) }));
 
 import ManageGoalsDialog from './ManageGoalsDialog';
 import RewardForm from '@/components/rewards/RewardForm';
+import SavingsDialog from '@/components/savings/SavingsDialog';
 
 const kids = [
   { id: 'c2', name: 'Omar', colour_index: 1, created_date: '2026-01-02', week_points: 10, weekly_target: 20, available_points: 5,
@@ -68,6 +71,7 @@ function open(props = {}) {
   </QueryClientProvider>);
   const d = screen.getByRole('dialog');
   d.onClose = onClose;
+  d.client = client;
   return d;
 }
 const pressed = (d, name) => within(d).getByRole('button', { name, exact: true }).getAttribute('aria-pressed');
@@ -77,6 +81,8 @@ const toBigGoals = async (d) => { fireEvent.click(within(d).getByRole('button', 
 beforeEach(() => {
   saveTodayGoal.mockReset(); saveTodayGoal.mockResolvedValue({});
   saveTowards.mockReset(); saveTowards.mockResolvedValue({ event: { id: 'e1' }, child: {} });
+  moveBack.mockReset(); moveBack.mockResolvedValue({ event: { id: 'e2' }, child: {} });
+  redeemGoal.mockReset(); redeemGoal.mockResolvedValue({ redemption: { id: 'x1' }, child: {} });
   for (const f of Object.values(rewardApi)) f.mockReset();
   rewardApi.list.mockResolvedValue(rewards);
   rewardApi.create.mockResolvedValue({ id: 'r9' }); rewardApi.update.mockResolvedValue({}); rewardApi.delete.mockResolvedValue({});
@@ -94,7 +100,10 @@ describe('The list: two sides in one pop-up (W3 to W5)', () => {
     expect(region.textContent).toContain('Learning · Today · +1 point');
     expect(region.textContent).toContain('Helping · Daily · +1 point');
     expect(region.textContent).toContain('Reading · Mon, Wed, Fri · +2 points');
-    expect(region.querySelectorAll('li [data-category-icon], li svg').length).toBeGreaterThanOrEqual(3); // the icons stay (owner, 24 Nov)
+    // Each row keeps its behaviour's icon (owner, 24 Nov): the icon in its own hidden span, not just the row's chevron.
+    const icons = [...region.querySelectorAll('li')].map((li) => li.querySelector('span[aria-hidden="true"] svg')?.getAttribute('data-icon'));
+    expect(icons).toHaveLength(3);
+    for (const icon of icons) expect(icon).toMatch(/^phosphor:/);
     expect(within(d).queryByRole('button', { name: /^Archive/ })).toBeNull(); // archive lives in the edit form
     expect(within(d).getByRole('button', { name: 'Add Daily Win' })).toBeTruthy();
     expect(within(d).queryByRole('button', { name: 'Add Big Goal' })).toBeNull();
@@ -493,3 +502,135 @@ describe('RewardForm, bigGoal variant (W7)', () => {
       visible_to_child: false, is_bigger_goal: true, assigned_child_ids: ['c1'] });
   });
 });
+
+describe('Code review of the build (decdbcf)', () => {
+  it('deleting a Big Goal with savings from the pop-up: the warning, the confirmed snapshot, then the list (X11)', async () => {
+    const withSavings = [kids[0], { ...kids[1], goals: [...kids[1].goals, { rewardId: 'r2', name: 'Telescope', cost: 120, saved: 40, to_go: 80 }] }];
+    const d = open({ children: withSavings, child: withSavings[1] });
+    await toBigGoals(d);
+    fireEvent.click(within(d).getByRole('button', { name: /^Edit Telescope/ }));
+    fireEvent.click(within(d).getByRole('button', { name: 'Delete Big Goal' }));
+    const confirm = await screen.findByRole('alertdialog');
+    expect(confirm.textContent).toContain('This will permanently delete this Big Goal for everyone it is for.');
+    expect(within(confirm).getByRole('status').textContent).toContain('Lara: 40 saved points will become available again.');
+    rewardApi.list.mockResolvedValue(rewards.filter((r) => r.id !== 'r2'));
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(rewardApi.delete).toHaveBeenCalledTimes(1));
+    expect(rewardApi.delete.mock.calls[0]).toEqual(['r2', { confirm_end_savings: { goal_epoch: 0, goal_child_epochs: {}, children: [{ child_id: 'c1', saved: 40 }] } }]);
+    // Back on the Big Goals side, without the goal, and with nothing left open over the pop-up.
+    await screen.findByRole('region', { name: "Lara's Big Goals" });
+    await waitFor(() => expect(screen.queryByRole('button', { name: /^Edit Telescope/ })).toBeNull());
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  });
+
+  it('a refused move keeps the savings view open; moving points back then closes the whole pop-up (X14)', async () => {
+    saveTowards.mockRejectedValueOnce(Object.assign(new Error('Not enough points'), { status: 409 }));
+    const d = open();
+    await toBigGoals(d);
+    fireEvent.click(within(d).getByRole('button', { name: 'Save points for New bike' }));
+    fireEvent.change(within(d).getByLabelText('Points'), { target: { value: '10' } });
+    fireEvent.click(within(d).getByRole('button', { name: 'Save points' }));
+    await waitFor(() => expect(saveTowards).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(within(d).getByRole('button', { name: 'Save points' }).disabled).toBe(false));
+    expect(d.onClose).not.toHaveBeenCalled();
+    expect(within(d).getByRole('heading', { name: 'Save points for a Big Goal' })).toBeTruthy();
+    fireEvent.click(within(d).getByRole('button', { name: 'Move points back' }));
+    await waitFor(() => expect(moveBack).toHaveBeenCalledTimes(1));
+    expect(moveBack.mock.calls[0].slice(0, 3)).toEqual(['c1', 'r1', 10]);
+    await waitFor(() => expect(d.onClose).toHaveBeenCalledTimes(1));
+  });
+
+  it('redeeming from the pop-up closes the whole pop-up too (X14)', async () => {
+    const d = open({ child: kids[0] });
+    await toBigGoals(d);
+    fireEvent.click(within(d).getByRole('button', { name: 'Redeem Lego set' }));
+    expect(within(d).getByRole('radio', { name: /Lego set/ }).checked).toBe(true);
+    fireEvent.click(within(d).getByRole('button', { name: 'Redeem Lego set' }));
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Redeem' }));
+    await waitFor(() => expect(redeemGoal).toHaveBeenCalledTimes(1));
+    expect(redeemGoal.mock.calls[0].slice(0, 2)).toEqual(['c2', 'r5']);
+    await waitFor(() => expect(d.onClose).toHaveBeenCalledTimes(1));
+  });
+
+  it('Escape closes the whole pop-up from the Daily Win form and from the savings view (X13)', async () => {
+    const d = open();
+    await listed(d);
+    fireEvent.click(within(d).getByRole('button', { name: 'Add Daily Win' }));
+    fireEvent.keyDown(d, { key: 'Escape' });
+    expect(d.onClose).toHaveBeenCalledTimes(1);
+    fireEvent.click(within(d).getByRole('button', { name: 'Cancel' }));
+    await toBigGoals(d);
+    fireEvent.click(within(d).getByRole('button', { name: 'Save points for New bike' }));
+    fireEvent.keyDown(d, { key: 'Escape' });
+    expect(d.onClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('while a Big Goal is being saved the pop-up cannot be closed under the request', async () => {
+    let answer;
+    rewardApi.create.mockReturnValueOnce(new Promise((resolve) => { answer = resolve; }));
+    const d = open();
+    await toBigGoals(d);
+    fireEvent.click(within(d).getByRole('button', { name: 'Add Big Goal' }));
+    fireEvent.change(within(d).getByLabelText('What is it?'), { target: { value: 'Kite' } });
+    fireEvent.click(within(d).getByRole('button', { name: 'Save Big Goal' }));
+    await waitFor(() => expect(rewardApi.create).toHaveBeenCalledTimes(1));
+    fireEvent.keyDown(d, { key: 'Escape' });
+    expect(d.onClose).not.toHaveBeenCalled();
+    answer({ id: 'r9' });
+    await screen.findByRole('region', { name: "Lara's Big Goals" });
+    fireEvent.keyDown(d, { key: 'Escape' });
+    expect(d.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('Enter in the Big Goal form saves it', async () => {
+    const d = open();
+    await toBigGoals(d);
+    fireEvent.click(within(d).getByRole('button', { name: 'Add Big Goal' }));
+    fireEvent.change(within(d).getByLabelText('What is it?'), { target: { value: 'Kite' } });
+    fireEvent.keyDown(within(d).getByLabelText('What is it?'), { key: 'Enter' });
+    await waitFor(() => expect(rewardApi.create).toHaveBeenCalledTimes(1));
+    expect(rewardApi.create.mock.calls[0][0]).toMatchObject({ title: 'Kite', cost_points: 100, assigned_child_ids: ['c1'] });
+  });
+
+  it('Big Goals: loading says so; a failed refresh keeps the list already shown (X26)', async () => {
+    let release;
+    rewardApi.list.mockReturnValueOnce(new Promise((resolve) => { release = resolve; }));
+    const d = open();
+    await listed(d);
+    fireEvent.click(within(d).getByRole('button', { name: 'Big Goals' }));
+    expect(within(d).getByText('Loading Big Goals…')).toBeTruthy();
+    release(rewards);
+    await within(d).findByRole('button', { name: /^Edit New bike/ });
+    rewardApi.list.mockRejectedValue(new Error('offline'));
+    await act(async () => { await d.client.invalidateQueries({ queryKey: ['rewards'] }); });
+    expect(within(d).getByRole('button', { name: /^Edit New bike/ })).toBeTruthy();
+    expect(within(d).queryByText('Could not load Big Goals.')).toBeNull();
+  });
+
+  it('a Big Goal edit sends a changed picture, and only then (W7)', async () => {
+    const onSubmit = vi.fn(async () => true);
+    render(<RewardForm isOpen onClose={() => {}} variant="bigGoal" children={kids} onSubmit={onSubmit} reward={rewards[1]} />);
+    expect(screen.queryByRole('button', { name: 'Fun & games' })).toBeNull(); // the pictures open only on Change
+    fireEvent.click(screen.getByRole('button', { name: 'Change picture' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fun & games' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Game Controller' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Big Goal' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0]).toEqual({ title: 'Telescope', cost_points: 120, icon_key: expect.stringContaining('controller') });
+  });
+
+  it('SavingsDialog: a goal that is not an option is ignored; with nothing to save for it says so, with no empty group', () => {
+    const client = new QueryClient();
+    const view = (props) => <QueryClientProvider client={client}><SavingsDialog open onClose={() => {}} child={kids[1]} {...props} /></QueryClientProvider>;
+    // Zoo trip (r3) is asked for, so it is not an option: the opening falls back to the leading goal.
+    const { unmount } = render(view({ goalRewards: rewards.filter((r) => r.is_bigger_goal), initialGoalId: 'r3' }));
+    expect(screen.getByRole('radio', { name: /New bike/ }).checked).toBe(true);
+    expect(screen.queryByRole('radio', { name: /Zoo trip/ })).toBeNull();
+    unmount();
+    render(view({ goalRewards: [] }));
+    expect(screen.getByText('No Big Goals to save for yet.')).toBeTruthy();
+    expect(screen.queryByRole('group')).toBeNull();
+  });
+});
+

@@ -114,7 +114,9 @@ function Popup({ onClose, busy, child: initialChild, children = [], categories =
   const [saving, setSaving] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [archiving, setArchiving] = useState(false);
-  busy.current = saving || archiving;
+  // A request in the Big Goal form or the savings view (they report it).
+  const [viewBusy, setViewBusy] = useState(false);
+  busy.current = saving || archiving || viewBusy;
 
   // Review of PR #58: swapping views unmounts the focused button, so focus
   // moves to the new view's title (announced, then Tab continues from there).
@@ -135,14 +137,17 @@ function Popup({ onClose, busy, child: initialChild, children = [], categories =
     refetchOnWindowFocus: true,
   });
   // Loaded for as long as the pop-up is open, whichever view shows (N13).
-  const rewardsQuery = useQuery({ queryKey: ['rewards'], queryFn: () => Reward.list('-created_date') });
+  // The same call as the Children page makes for this key, so opening the
+  // pop-up there cannot reorder that page's list (code review 14); the Big
+  // Goals side sorts its own rows.
+  const rewardsQuery = useQuery({ queryKey: ['rewards'], queryFn: () => Reward.list() });
   const rewards = rewardsQuery.data || [];
   const { save: saveReward, remove: removeReward } = useRewardMutations();
   const localToday = today || data?.date || '';
 
   const { editingGoal, title, categoryId, schedule, scheduledDate, startDate, weekdays } = fields;
   const set = (patch) => setFields((previous) => ({ ...previous, ...patch }));
-  const backToList = () => { setSaveError(''); setView('list'); };
+  const backToList = () => { setSaveError(''); setViewBusy(false); setView('list'); };
   const startAdding = () => { setSaveError(''); setFields(dailyWinFields(null, available, localToday)); setView('form'); };
   const startEditing = (goal) => { setSaveError(''); setFields(dailyWinFields(goal, available, localToday)); setView('form'); };
 
@@ -430,17 +435,18 @@ function Popup({ onClose, busy, child: initialChild, children = [], categories =
           // The live copy, so the form's savings warnings use current figures.
           reward={bigGoal ? (rewards.find((r) => r.id === bigGoal.id) || bigGoal) : null}
           children={children}
-          onClose={backToList}
-          onSubmit={(payload) => saveReward(bigGoal?.id, payload, BIG_GOAL_WORDS)}
+          onClose={backToList} onBusyChange={setViewBusy}
+          // Waits (briefly) for the lists, so the Big Goals side it returns to is current.
+          onSubmit={(payload) => saveReward(bigGoal?.id, payload, BIG_GOAL_WORDS, { awaitRefetch: true })}
           onDelete={bigGoal ? async (reward, confirm) => {
-            const result = await removeReward(reward, confirm, BIG_GOAL_WORDS);
+            const result = await removeReward(reward, confirm, BIG_GOAL_WORDS, { awaitRefetch: true });
             if (result === true) backToList();
             return result;
           } : undefined} />
       )}
 
       {view === 'savings' && (
-        <SavingsDialog key={savingsFor} embedded open child={child} titleRef={titleRef}
+        <SavingsDialog key={savingsFor} embedded open child={child} titleRef={titleRef} onBusyChange={setViewBusy}
           goalRewards={goalRewardsFor(rewards, child?.id, isAssignedTo)} initialGoalId={savingsFor}
           // After a move or a redeem the whole pop-up closes: the toast's
           // Undo cannot be used while a dialog is open (§12 W8, X14).

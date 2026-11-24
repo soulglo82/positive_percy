@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { StepHeading } from '@/components/home/AwardPointsDialog';
+import { toast } from 'sonner';
 import { pickerLabel } from '@/lib/rewardPicker';
 import { ChildAssignList } from './RewardFormParts';
 import RewardIcon, { rewardArt } from './RewardIcon';
@@ -37,18 +38,22 @@ export const currentArtLabel = (reward) =>
 // is for, hide it, un-mark it or end savings. `embedded` renders the form's
 // header, body and footer without a dialog of its own (§12 W8).
 export default function RewardForm({ isOpen, onClose, reward = null, initialTemplate = null, children = [], onSubmit, onDelete,
-  variant = 'reward', forChild = null, embedded = false, titleRef = null }) {
+  variant = 'reward', forChild = null, embedded = false, titleRef = null, onBusyChange = null }) {
   const editing = !!reward;
   const big = variant === 'bigGoal';
-  const [title, setTitle] = useState('');
-  const [costPoints, setCostPoints] = useState(50);
-  const [description, setDescription] = useState('');
-  const [visible, setVisible] = useState(true);
-  const [biggerGoal, setBiggerGoal] = useState(false);
-  const [assigned, setAssigned] = useState([]);
-  const [iconKey, setIconKey] = useState(null);
+  // What the form starts from. The states below begin there, so a form
+  // mounted already open (embedded) is right on its first paint; the effect
+  // further down does the same for a form that is opened later.
+  const first = reward || initialTemplate || {};
+  const [title, setTitle] = useState(() => first.title || '');
+  const [costPoints, setCostPoints] = useState(() => first.cost_points ?? (big ? 100 : 50));
+  const [description, setDescription] = useState(() => first.description || '');
+  const [visible, setVisible] = useState(() => (reward ? reward.visible_to_child !== false : true));
+  const [biggerGoal, setBiggerGoal] = useState(() => (big ? true : !!reward?.is_bigger_goal));
+  const [assigned, setAssigned] = useState(() => reward?.assigned_child_ids || (big && forChild ? [forChild.id] : []));
+  const [iconKey, setIconKey] = useState(() => reward?.icon_key ?? null);
   const [iconTouched, setIconTouched] = useState(false);
-  const [pickerOpen, setPickerOpen] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(() => (big ? false : !reward));
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
@@ -59,6 +64,8 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
   const [deleteEnding, setDeleteEnding] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const opened = useRef(false);
+  // The pop-up it is embedded in must not close under a request (code review 5).
+  useEffect(() => { onBusyChange?.(saving || deleting); }, [saving, deleting]);
 
   // Fresh form on each opening: from the reward, the starter template, or blank.
   useEffect(() => {
@@ -145,6 +152,10 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
         ...(confirmed === true && endsSavings ? { confirm_end_savings: serverEnding ? serverEnding.snapshot : snapshotOf(losing) } : {}),
       };
       const ok = await onSubmit(payload);
+      // A Big Goal edit sends nothing that can end savings, so it has nothing
+      // to confirm: were the server ever to ask, say it failed rather than
+      // ask the parent a question this form cannot answer (code review 12).
+      if (ok?.needsConfirm && big && editing) { toast.error("Couldn't save the Big Goal."); return; }
       if (ok?.needsConfirm) { setServerEnding(ok.needsConfirm); setConfirmEnd(true); return; }
       if (ok === false) return;
       onClose();
@@ -152,6 +163,10 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
       setSaving(false);
     }
   };
+
+  // The short form has no <form>: Enter (a phone keyboard's Go) saves, as it
+  // does in the Daily Win form beside it.
+  const saveOnEnter = (event) => { if (event.key === 'Enter') { event.preventDefault(); save(); } };
 
   // Who a Big Goal is for: the child it is being made for, or on an edit the
   // assigned children who still exist (ids compared in lower case).
@@ -177,12 +192,12 @@ export default function RewardForm({ isOpen, onClose, reward = null, initialTemp
               <section className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="reward-name">What is it?</Label>
-                  <Input id="reward-name" value={title} maxLength={100} placeholder="e.g. New bike"
+                  <Input id="reward-name" value={title} maxLength={100} placeholder="e.g. New bike" onKeyDown={saveOnEnter}
                     onChange={(e) => setTitle(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="reward-cost">Points needed</Label>
-                  <NumberInput id="reward-cost" value={costPoints} onChange={setCostPoints} min="1" />
+                  <NumberInput id="reward-cost" value={costPoints} onChange={setCostPoints} min="1" onKeyDown={saveOnEnter} />
                 </div>
                 <div className="flex items-center gap-3">
                   <RewardIcon reward={preview} size="md" />

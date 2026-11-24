@@ -301,6 +301,8 @@ export default function Children() {
       />}
       <SavingsDialog open={savingsOpen} onClose={() => setSavingsOpen(false)} child={child} goalRewards={goalRewards} returnFocusRef={savingsEdit} />
       <ManageGoalsDialog open={!!goalsStart} onClose={() => setGoalsStart(null)} start={goalsStart}
+        // "Add a Big Goal" is gone once a goal exists: focus then goes to the section's Edit button.
+        returnFocusRef={goalsStart?.side === 'bigGoals' ? savingsEdit : null}
         child={child} children={children} categories={behaviorCategories} today={today} />
       <RewardForm
         isOpen={!!rewardEditing}

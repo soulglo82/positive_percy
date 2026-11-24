@@ -82,7 +82,7 @@ export default function ParentDashboard() {
   // says "No quick points yet" for a moment and then swaps to the tiles.
   // Only the first attempt (with its one retry) holds the page back. If that
   // fails, the page is shown, and a later refetch must not take it away again
-  // (it would close an open Manage goals dialog): hence the error count.
+  // (it would close an open Daily Wins & Big Goals pop-up): hence the error count.
   const { data: behaviorCategories, isLoading: categoriesLoading, errorUpdateCount: categoriesErrors } = useQuery({
     queryKey: ['behaviorCategories'],
     queryFn: async () => {
@@ -257,15 +257,18 @@ export default function ParentDashboard() {
                 is working towards; the DOM is in that reading order. Desktop:
                 Quick Points + Daily Wins | Working towards. */}
             <AvailableLine child={homeChild} />
+            {/* min-w-0 on each column: a grid column is otherwise as wide as its
+                longest unbroken word (a 30-letter name), and the page scrolls
+                sideways on a narrow phone (V1-F §12 X17, found by the browser test). */}
             <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-              <div className="flex flex-col gap-5">
+              <div className="flex min-w-0 flex-col gap-5">
                 <QuickPoints child={homeChild} actions={homeActions} awarding={awardingIds.includes(homeChild.id)}
                   onAward={handleQuickAction}
                   onOpenAward={() => handleAddPoints(homeChild)}
                   onOpenRewards={() => handleSpendRewards(homeChild)} />
                 <TodaysGoalsPanel children={children} categories={behaviorCategories || []} enabled={!!user} selectedChildId={homeChild.id} />
               </div>
-              <div className="flex flex-col gap-5">
+              <div className="flex min-w-0 flex-col gap-5">
                 <WorkingTowards child={homeChild} />
               </div>
             </div>

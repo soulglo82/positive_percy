@@ -57,6 +57,23 @@ beforeEach(() => {
   global.fetch = vi.fn(async () => ({ ok: true, json: async () => [] }));
 });
 
+describe("Children page: the error card only when there is nothing to show (V1-F §12 X27)", () => {
+  it("a failed first load shows the card; a failed refresh keeps the page", async () => {
+    const { Child } = await import('@/api/entities');
+    Child.list.mockRejectedValueOnce(new Error('offline'));
+    mount(Children, '/children?child=c1');
+    expect(await screen.findByText("Couldn't load children")).toBeTruthy();
+    cleanup();
+    const client = mount(Children, '/children?child=c1');
+    expect(await screen.findByRole('heading', { name: "Lara's Daily Wins" })).toBeTruthy();
+    Child.list.mockRejectedValueOnce(new Error('offline'));
+    await act(async () => { await client.invalidateQueries({ queryKey: ['children'] }); });
+    expect(Child.list.mock.results.at(-1).type).toBe('return'); // the refresh was attempted (and rejected)
+    expect(screen.queryByText("Couldn't load children")).toBeNull();
+    expect(screen.getByRole('heading', { name: "Lara's Daily Wins" })).toBeTruthy();
+  });
+});
+
 describe('Children page (§2)', () => {
   it('1 available point is singular on the weekly-target card (code review)', async () => {
     state.children = [{ ...lara, available_points: 1 }];

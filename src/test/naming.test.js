@@ -32,14 +32,14 @@ export function readsAsProse(text) {
 // tokens are set aside; the words around them are still checked.
 const SNAKE_CASE = /\w*_\w*/g;
 
-const RETIRED = /bigger|\broutines?\b|Today.s Goal/i;
+const RETIRED = /bigger|\broutines?\b|Today.s Goal|Little wins/i;
 
 // The retired word found in a text, or null. "goal" and "goals" pass only as
-// the product name, directly after "Big " (capital B).
+// the product name, spelled exactly "Big Goal" or "Big Goals".
 export function retiredWord(text) {
   const t = text.replace(SNAKE_CASE, ' ').replace(/\s+/g, ' ');
   for (const m of t.matchAll(/\bgoals?\b/gi)) {
-    if (t.slice(Math.max(0, m.index - 4), m.index) !== 'Big ') return m[0];
+    if (t.slice(Math.max(0, m.index - 4), m.index) !== 'Big ' || !/^Goals?$/.test(m[0])) return m[0];
   }
   const other = t.match(RETIRED);
   return other ? other[0] : null;
@@ -128,7 +128,9 @@ export function collectTexts(code) {
   const add = (node, value, excused) => {
     if (typeof value !== 'string') return;
     const text = value.replace(/\s+/g, ' ').trim();
-    if (text) out.push({ line: node.loc.start.line, text, value, excused });
+    // Text between tags is always wording, even one lower-case word beside an
+    // expression ("{n} goals"), so it is checked whatever it looks like.
+    if (text) out.push({ line: node.loc.start.line, text, value, excused, shown: node.type === 'JSXText' });
   };
   const cooked = (quasi) => quasi.value.cooked ?? quasi.value.raw;
   const visit = (node, excused) => {
@@ -167,7 +169,7 @@ function lineOf(entry, word) {
 export function offencesIn(code, file) {
   return collectTexts(code)
     .filter((e) => !e.excused)
-    .map((e) => ({ e, word: offence(e.text) }))
+    .map((e) => ({ e, word: e.shown ? retiredWord(e.text) : offence(e.text) }))
     .filter(({ e, word }) => word && !isAllowed(file, e.value))
     .map(({ e, word }) => ({ file, line: lineOf(e, word), text: e.text, word }))
     .sort((a, b) => a.line - b.line);
@@ -204,6 +206,9 @@ describe('naming guard: the rule (counter-examples)', () => {
     'big goal',
     'Edit Big Goal and another goal',
     'A big Goal',
+    'Big goal',
+    'Big goals yet',
+    'Little wins, big adventures!',
     // Lower-case prose is not excused: only its place in the code can excuse a
     // text (a className), never its look.
     'could not save the goal',
@@ -301,6 +306,9 @@ describe('naming guard: the collector (counter-examples)', () => {
     expect(classes).toEqual(['goal bigger routine', 'weekly goal', 'bigger goal']);
     // The same words outside a className are checked.
     expect(offencesIn("const c = 'goal bigger routine';", 'fixture.js')).toHaveLength(1);
+    // One lower-case word between tags, beside an expression, is still wording on a screen.
+    expect(offencesIn('const A = ({ n }) => <p>{n} goals</p>;', 'fixture.jsx')).toHaveLength(1);
+    expect(offencesIn("const key = 'goals';", 'fixture.js')).toHaveLength(0);
   });
 
   it('excuses SQL only by its shape: a query string, a whole query template', () => {

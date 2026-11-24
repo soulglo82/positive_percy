@@ -172,8 +172,12 @@ describe('Children: Big Goals', () => {
     state.children = [{ ...lara, goals: [], saved_total: 0 }];
     mount(<Children />);
     expect(await screen.findByText('No Big Goals yet.', { exact: false })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Add a Big Goal' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Edit Big Goals/ })).toBeNull();
+    // It opens the pop-up on its Big Goals side, not the Rewards tab (V1-F §12 W9).
+    fireEvent.click(screen.getByRole('button', { name: 'Add a Big Goal' }));
+    const popup = await screen.findByRole('dialog');
+    expect(within(popup).getByRole('heading', { name: 'Daily Wins & Big Goals' })).toBeTruthy();
+    expect(within(popup).getByRole('button', { name: 'Big Goals' }).getAttribute('aria-pressed')).toBe('true');
   });
 });
 
@@ -347,14 +351,14 @@ describe('code review of the screens', () => {
 
   it('a goal already requested is not offered (S1); the server message is shown when it refuses', async () => {
     state.children = [{ ...lara, reward_stack_priced: [{ rewardId: 'g2', name: 'Tent', cost: 80, stackIndex: 0 }] }];
-    saveTowards.mockRejectedValue(Object.assign(new Error('More than this goal needs'), { status: 400 }));
+    saveTowards.mockRejectedValue(Object.assign(new Error('More than this Big Goal needs'), { status: 400 }));
     mount(<Children />);
     fireEvent.click(await screen.findByRole('button', { name: 'Edit Big Goals for Lara' }));
     const d = await screen.findByRole('dialog');
     expect(within(d).queryByRole('radio', { name: /Tent/ })).toBeNull();
     fireEvent.change(within(d).getByLabelText('Points', { exact: true }), { target: { value: '5' } });
     fireEvent.click(within(d).getByRole('button', { name: 'Save points' }));
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith('More than this goal needs'));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('More than this Big Goal needs'));
   });
 
   it('a retry after a lost reply reuses the request id, even after another action; a refusal does not', async () => {
