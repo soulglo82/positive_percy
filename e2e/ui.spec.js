@@ -75,7 +75,7 @@ test('home, its dialogs and the Undo toast', async ({ page }, testInfo) => {
     expect(facts.length, `${where}: there are boxes to measure`).toBeGreaterThan(0);
     for (const f of facts) {
       if (width >= 640) expect(f, `${where}: from 640px a box is as it was`).toMatchObject({ height: 46, text: '14px', padding: '10px 10px', gap: '8px', icon: '20px', oneRow: true });
-      else if (width >= 375) expect(f, `${where}: a slim one-row box`).toMatchObject({ height: 44, text: '12px', padding: '4px 6px', gap: '4px', icon: '16px', oneRow: true });
+      else if (width >= 375) expect(f, `${where}: a slim one-row box`).toMatchObject({ height: 44, text: '12px', padding: '4px 6px', gap: '4px', icon: '14px', oneRow: true });
       else expect(f, `${where}: below 375px a box keeps two rows`).toMatchObject({ oneRow: false, icon: '20px', padding: '10px 10px' });
     }
   };
@@ -293,9 +293,15 @@ test('slim behaviour boxes hold their names at 360, 375, 390 and 414px', async (
   const DEFAULTS = ['Kindness', 'Helpfulness', 'Bravery', 'Resilience', 'Caring', 'Chores', 'Homework', 'Adventurous'];
   const measure = (scope) => scope.locator('[data-tile]').evaluateAll((els) => els.map((el) => {
     const name = el.querySelector('[data-tile-part="name"]');
+    // Room left beside the name's text: text is drawn a few pixels wider on
+    // some machines (CI broke "Adventurous" at 375px when 3px were spare).
+    const range = document.createRange(); range.selectNodeContents(name);
+    const widest = Math.max(...[...range.getClientRects()].map((r) => r.width));
     return { name: name.textContent, height: Math.round(el.getBoundingClientRect().height * 2) / 2,
-      lines: Math.round(name.getBoundingClientRect().height / parseFloat(getComputedStyle(name).lineHeight)) };
+      lines: Math.round(name.getBoundingClientRect().height / parseFloat(getComputedStyle(name).lineHeight)),
+      spare: Math.round((name.getBoundingClientRect().width - widest) * 10) / 10 };
   }));
+  const SPARE = 7; // px a one-line default name must have left over
   try {
     await call('POST', '/api/behavior-categories', { name: TWO_LINES, icon: '🪥', points: 10 });
     for (const width of [360, 375, 390, 414]) {
@@ -304,19 +310,28 @@ test('slim behaviour boxes hold their names at 360, 375, 390 and 414px', async (
       const home = await measure(page.locator('[data-tile-grid="even"]'));
       expect(home.length, `${width}px: Quick Points boxes`).toBe(4);
       for (const t of home) {
-        if (width >= 375) expect(t, `${width}px Home: ${t.name}`).toMatchObject({ height: 44, lines: 1 });
+        if (width >= 375) {
+          expect(t, `${width}px Home: ${t.name}`).toMatchObject({ height: 44, lines: 1 });
+          expect(t.spare, `${width}px Home: ${t.name} has room to spare`).toBeGreaterThanOrEqual(SPARE);
+        }
         else expect(t.height, `${width}px Home: two rows`).toBeGreaterThan(56);
       }
       await checkScreen(page, `home at ${width}`, testInfo);
       await page.getByRole('button', { name: 'Custom points' }).click();
       const form = page.getByRole('dialog');
       await expect(form.getByRole('heading', { name: 'Give Percy Points' })).toBeVisible();
+      // The dialog opens with a short zoom; a box measured during it is a
+      // fraction short (this test failed that way when run after others).
+      await form.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => {}))));
       const check = async (state) => {
         const tiles = await measure(form);
         for (const name of DEFAULTS) {
           const t = tiles.find((x) => x.name === name);
           expect(t, `${width}px form: ${name} is listed`).toBeTruthy();
-          if (width >= 375) expect(t, `${width}px form, ${state}: ${name}`).toMatchObject({ height: 44, lines: 1 });
+          if (width >= 375) {
+            expect(t, `${width}px form, ${state}: ${name}`).toMatchObject({ height: 44, lines: 1 });
+            expect(t.spare, `${width}px form, ${state}: ${name} has room to spare`).toBeGreaterThanOrEqual(SPARE);
+          }
           else expect(t.height, `${width}px form: two rows`).toBeGreaterThan(56);
         }
         const two = tiles.find((x) => x.name === TWO_LINES);

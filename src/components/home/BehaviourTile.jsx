@@ -8,6 +8,10 @@
 // - From 375px: icon, name, "+N" on one row, centred on the tile's middle
 //   line. The name is 12px up to 640px, so two lines of it fit inside the
 //   44px tile: a one-line name and a two-line name give the same height.
+//   The icon is 14px and the badge's side padding 4px there, so the widest
+//   default name ("Adventurous") has room to spare at 375px in the form
+//   (CI drew it a few pixels wider than the machine it was built on, and
+//   with 3px spare it broke onto a second line).
 // - Below 375px: icon top left, "+N" top right, the name beneath on its own
 //   line(s), as since 22 November. One row cannot hold the name there: at
 //   360px in the form "Adventurous" would break, and at 320px even
@@ -38,12 +42,12 @@ export default function BehaviourTileParts({ iconKey, name, points }) {
   return (
     <>
       <span aria-hidden="true" data-tile-part="icon" className="col-start-1 row-start-1 text-primary">
-        <CategoryIcon iconKey={iconKey} className="h-5 w-5 phone:h-4 phone:w-4 sm:h-5 sm:w-5" />
+        <CategoryIcon iconKey={iconKey} className="h-5 w-5 phone:h-3.5 phone:w-3.5 sm:h-5 sm:w-5" />
       </span>
       <span data-tile-part="name" className="col-span-2 row-start-2 min-w-0 break-words phone:col-span-1 phone:col-start-2 phone:row-start-1">{name}</span>
       {/* The space keeps the spoken name "Kindness +1" where the tile has no aria-label; a grid ignores it. */}
       {' '}
-      <span data-tile-part="badge" className="col-start-2 row-start-1 justify-self-end rounded-md bg-star px-1.5 py-0.5 tabular-nums phone:col-start-3">+{points}</span>
+      <span data-tile-part="badge" className="col-start-2 row-start-1 justify-self-end rounded-md bg-star px-1.5 py-0.5 tabular-nums phone:col-start-3 phone:px-1 sm:px-1.5">+{points}</span>
     </>
   );
 }

@@ -343,13 +343,13 @@ The §9 layout (a full "How many points?" step with six quick amounts and a numb
 ### 10.1 Contract
 
 **Behaviour tile (Home Quick Points and the form share `BehaviourTile.jsx`).**
-- From 375 px (new breakpoint `phone`): one row, icon, name, "+N", centred on the tile's middle line. From 375 to 639 px the name is 12 px and the icon 16 px, with 6 px side padding, 4 px top and bottom, and 4 px between parts; from 640 px it is as before (14 px, 20 px icon).
+- From 375 px (new breakpoint `phone`): one row, icon, name, "+N", centred on the tile's middle line. From 375 to 639 px the name is 12 px and the icon 14 px, with 6 px side padding, 4 px top and bottom, 4 px between parts, and 4 px side padding in the badge; from 640 px it is as before (14 px, 20 px icon).
 - Minimum height 44 px. Two lines of a 12 px name are 32 px; with 8 px of padding and a 1 px border each side that is 42 px, so a tile with a one-line name and a tile with a two-line name are both 44 px.
 - A tile's border is 1 px in every state. The form marks the selected tile with a ring (a shadow, which takes no room), so selecting a tile cannot change the room its name has.
 - A name wraps at spaces. A single word wider than its space breaks; it is never clipped and never runs under the badge. There is no hyphenation (measured: the browser left capitalised words alone and hyphenated a short word that fitted the next line).
 - A name needing three or more lines makes its row taller (on Home, every tile).
 - Below 375 px: unchanged from 22 November (icon and "+N" above, name beneath; 14 px from 360 px, 12 px below). One row cannot hold the default names there: at 360 px in the form "Adventurous" has about 65 px and needs 79.
-- Measured room for the name with a "+1" badge: 82 px at 375 px in the form, 88 px at 390 px; the widest default name, "Adventurous", needs 79 px. A longer single word, or a default name beside a wide badge at 375 px, breaks onto a second line inside the same 44 px.
+- Measured room for the name with a "+1" badge: 88 px at 375 px in the form, 95 px at 390 px; the widest default name, "Adventurous", needs 79 px on the build machine and a few pixels more on CI's. A browser test requires at least 7 px spare for every default name from 375 px. A longer single word, or a default name beside a wide badge at 375 px, breaks onto a second line inside the same 44 px.
 - The tile's accessible name, tap behaviour and order in the page are unchanged.
 
 **Home Quick Points card.**
@@ -468,4 +468,10 @@ Not held by a test: the selected tile's border width (with the final spacing, a 
 | 9 | Note | The selected tile's ring and the focus ring do not clash and are not clipped | Confirmed |
 
 Added to the mutation checks: an amount coming back after the behaviour moves away and back.
+
+### 10.10 CI failure on `31d0016` and its cause
+
+CI's `ui` job failed in the widths test: at 375 px in the form, "Adventurous" was on two lines. Locally it had 2.6 px to spare (16 px icon, 6 px badge padding); CI's machine draws the same text a few pixels wider. Not a flake: a real phone could do the same. Fix: 14 px icon and 4 px badge padding from 375 to 639 px, which gives about 9 px spare at the tightest place, and the test now requires 7 px spare, so a knife-edge pass fails on any machine. The check failed locally on the old spacing (2.6 px) before the fix.
+
+A second fault was in the test itself, found while fixing the first: run after other tests, it sometimes measured the boxes while the pop-up was still zooming open, and read a box a fraction short. It failed twice in two repeated runs before the change and passed six times in six after it; the test now waits for the pop-up's animations to finish before measuring.
 
